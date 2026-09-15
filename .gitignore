@@ -1,0 +1,20 @@
+.venv/
+models/
+runtime/
+__pycache__/
+*.pyc
+*.log
+reports/requests.jsonl
+outputs/
+.pytest_cache/
+
+# Local data and full environment snapshots stay on this computer.
+knowledge/sources/
+reports/*
+!reports/stages/
+tests.zip
+.env
+.env.*
+!.env.example
+*.pem
+*.key

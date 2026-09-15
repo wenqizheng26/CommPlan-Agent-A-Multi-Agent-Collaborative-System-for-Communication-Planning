@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "python": ".venv/Scripts/python.exe",
+  "embedding": {
+    "model_id": "BAAI/bge-small-zh-v1.5",
+    "revision": "7999e1d3359715c523056ef9478215996d62a620",
+    "path": "models/bge-small-zh-v1.5",
+    "backend": "transformers-torch-cpu",
+    "pooling": "CLS",
+    "normalize": true,
+    "dimension": 512,
+    "query_prefix": "为这个句子生成表示以用于检索相关文章：",
+    "max_length": 512,
+    "local_files_only": true,
+    "trust_remote_code": false
+  },
+  "generation": {
+    "model_id": "Qwen/Qwen3-4B-GGUF",
+    "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+    "path": "models/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf",
+    "backend": "llama.cpp-b10950-vulkan",
+    "executable": "runtime/llama.cpp-b10950/llama-server.exe",
+    "alias": "signal-formula-qwen3",
+    "host": "127.0.0.1",
+    "port": 18081,
+    "endpoint": "http://127.0.0.1:18081/v1/chat/completions",
+    "context_size": 4096,
+    "gpu_layers": 99,
+    "device": "Vulkan1",
+    "temperature": 0,
+    "enable_thinking": false
+  },
+  "runtime_network": "loopback-only; startup never downloads"
+}

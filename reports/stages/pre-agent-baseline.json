@@ -1,0 +1,17 @@
+{
+  "stage": "pre-agent",
+  "date": "2026-09-15",
+  "backup_files": 27063,
+  "backup_bytes": 6868980308,
+  "all_copied_file_sha256_verified": true,
+  "tests": {
+    "command": "python -B -X utf8 -m unittest discover -s tests -v",
+    "working_tree": "full backup project directory",
+    "total": 82,
+    "exit_code": 0,
+    "elapsed_seconds": 6.001,
+    "dense_retrieval": false,
+    "local_llm": false
+  },
+  "limitations": ["No new model inference evaluation", "No screen input automation", "Existing virtual environment needs this machine's external base Python", "Known P1 scientific scope defects remain in this baseline"]
+}
