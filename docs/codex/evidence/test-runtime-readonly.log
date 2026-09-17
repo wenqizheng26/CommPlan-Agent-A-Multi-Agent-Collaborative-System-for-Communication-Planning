@@ -1,0 +1,20 @@
+embedding_path_exists= True
+generation_endpoint= http://127.0.0.1:18081/v1/chat/completions
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+KeyError: 'model_path'
+Available devices:
+  Vulkan0: AMD Radeon(TM) 610M (8043 MiB, 7640 MiB free)
+  Vulkan1: NVIDIA GeForce RTX 4060 Laptop GPU (7956 MiB, 7188 MiB free)
+
+[llama_list_devices_exit_code=0]
+[elapsed_seconds=3.208]
+embedding_path_exists= True
+generation_path_exists= True
+generation_endpoint= http://127.0.0.1:18081/v1/chat/completions
+embedding_shape= [1, 512] finite= True norm= 0.9999999403953552
+port_18081_connect=False TimeoutError
+packages= {'torch': '2.8.0+cpu', 'transformers': '4.57.6', 'numpy': '2.2.6', 'tokenizers': '0.22.2', 'safetensors': '0.8.0'}
+
+[corrected_probe_exit_code=0]
+[elapsed_seconds=26.825]

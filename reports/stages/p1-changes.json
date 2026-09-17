@@ -1,0 +1,62 @@
+[
+  {
+    "path": "app.py",
+    "before": "f1ac4c4594911c46b1e39a63a14d637d72f36bcc5f016936cac2347600952367",
+    "after": "aadb0dc6e883a156974534aee3c409144719f52625df7f0583e1cb07bb4df1f7"
+  },
+  {
+    "path": "HANDOVER.md",
+    "before": "afacf97cbffdd08be0d7eb8002721a489d1c6f3d7b9e38b069e393cb69fa439d",
+    "after": "aefb50ef88e12754bde1b7d56e94ba36358711a7d8228d77fb50c4a435cf06a7"
+  },
+  {
+    "path": "README.md",
+    "before": "3f66595584b18e8eff8c6f60348e28cf5db3dc9723f5e4a7937c065525274128",
+    "after": "ddd3fbefaaca55545a32993772215351b6d059b78ba56e915ef7e2dbf295a7e0"
+  },
+  {
+    "path": "docs/p1-applicability.md",
+    "before": null,
+    "after": "a9aa2441e0c1119dd82fc0933f291041b2847759226f74e2a221211a644a80b6"
+  },
+  {
+    "path": "docs/requirements.md",
+    "before": "fca211e19e8495c36ca7c6e6705bd2b98260ec104cb202a1cdbabd175680b711",
+    "after": "b8d99358ddd3402d5fc31c1312dd4fd965359595e0959eefab5f34ab289ed754"
+  },
+  {
+    "path": "examples/complete_budget.txt",
+    "before": "6b15826dd03a438694bc0ca161bd44dc5954ab608445e1109c10573e29945ff9",
+    "after": "e4fb4f10f1823136e4bee25d4295fd070624040c5ff828d3316185fb38c28b2d"
+  },
+  {
+    "path": "formula_rag/applicability.py",
+    "before": null,
+    "after": "82a007ba012d16395858470fc31ab24cca8905b048323e6743204f64ce212292"
+  },
+  {
+    "path": "formula_rag/pipeline.py",
+    "before": "99f97c054e13e8424a016cf5cc438b5cb550d241ebaa46afd980e1a08de37afd",
+    "after": "daca206146268e6ae39abd75b020aef3be43ea89243338f7509074d07a2f474e"
+  },
+  {
+    "path": "tests/test_app.py",
+    "before": "a6fbfdeaae1d178df64abe5e912ae6f3e00d5746ffa1c982099cfbb8dd9ce765",
+    "after": "0242ef835e5383a2096faa0951499a4cfcdab7a41ac4b4be9335a669b6ab9b7a"
+  },
+  {
+    "path": "tests/test_pasted_input.py",
+    "before": "c22b9e512a59b5600f89e3bb4e47d8274f15a559b105298e23561c52136235f9",
+    "after": "846dd5264c5ef3e80ab7ef8baec5c742567e0424832a54f741fe8328e42fe0c3"
+  },
+  {
+    "path": "tests/test_scientific_scope.py",
+    "before": null,
+    "after": "7a0666f26399a4317f4b460caef0ad7e3b22e3e2c4386234040e7d90df15cdc2"
+  },
+  {
+    "path": "docs/superpowers/plans/2026-09-14-01-applicability.md",
+    "before": "9d383ac7fe9f2194d33ee31be2d9b0fafcbc826dff8a22d2964e74400bc6bbfa",
+    "after": "1457ee015e7fe91dd56a1b725a84e41655c4a44583d02fbe216ceb7b88135b3b"
+  }
+]

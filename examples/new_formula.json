@@ -1,0 +1,13 @@
+{
+  "id": "vacuum_wavelength",
+  "title": "真空中的波长",
+  "description": "由真空中波速与频率计算波长。适用于真空波长，不替代介质内传播波长。",
+  "version": "1.0.0",
+  "status": "draft",
+  "expression": "299792458 / (frequency_ghz * 1000000000)",
+  "output": {"name": "vacuum_wavelength_m", "unit": "m"},
+  "parameters": {"frequency_ghz": {"unit": "GHz", "description": "载波频率", "exclusive_min": 0}},
+  "applicability": {"requires": [], "notes": ["输出仅指真空波长。"]},
+  "sources": [{"title": "NIST: speed of light in vacuum", "url": "https://physics.nist.gov/cuu/Constants/Value/c.html", "locator": "c = 299792458 m/s, exact"}],
+  "examples": [{"inputs": {"frequency_ghz": 1}, "expected": 0.299792458, "tolerance": 1e-12}]
+}

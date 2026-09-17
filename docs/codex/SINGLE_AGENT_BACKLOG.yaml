@@ -1,0 +1,205 @@
+profile: requirements-slice-v1
+execution_state: STOPPED_BY_USER
+execution_note: "仅允许一次上传到用户明确指定 CommPlan-Agent；开发/审查/测试停止；planning WIP 未验收"
+contract_sha256: a164435340f44ce9590b623fdec44e6eff0376c6cfe8b8df05b50a21b24be790
+scope: single requirements/planning agent
+tasks:
+- id: SA-ENV
+  status: IN_REVIEW
+  dependencies: []
+  phase: SINGLE_AGENT
+  objective: StateGraph/conditional/interrupt dependency tests plus original regressions
+  owner: environment_worker
+  allowed_files: &id001
+  - .venv/**
+  - requirements.lock.txt
+  - tests/test_workflow_dependencies.py
+  - docs/codex/DEPENDENCY_DECISION.md
+  - docs/codex/evidence/sa_env.json
+  forbidden_files:
+  - formula_rag/**
+  - app.py
+  - web/**
+  - knowledge/formulas.json
+  - original WBS/VSDX
+  - source .venv/**
+  inputs:
+  - docs/codex/SINGLE_AGENT_PLAN.md
+  - docs/codex/CONTRACTS.md
+  outputs: *id001
+  acceptance_criteria:
+  - StateGraph/conditional/interrupt dependency tests plus original regressions
+  test_command: .venv/Scripts/python.exe -X utf8 -B -m unittest discover -s tests -v
+  retry_budget: 2
+  assigned_agent: agent_env_astra
+  evidence: docs/codex/evidence/sa_env.json
+- id: SA-CORE
+  status: IN_PROGRESS
+  dependencies: []
+  phase: SINGLE_AGENT
+  objective: strict request/report; provenance and conflicts; no compute/implicit confirmation; controlled selection
+  owner: requirements_implementer
+  allowed_files: &id002
+  - planning/__init__.py
+  - planning/requirements_contract.py
+  - planning/agents/__init__.py
+  - planning/agents/requirements.py
+  - planning/services/__init__.py
+  - planning/services/requirement_parameters.py
+  - planning/services/requirement_evidence.py
+  - tests/test_requirements_contract.py
+  - tests/test_requirements_agent.py
+  - docs/codex/evidence/sa_core.json
+  forbidden_files:
+  - formula_rag/**
+  - app.py
+  - web/**
+  - knowledge/formulas.json
+  - original WBS/VSDX
+  - source .venv/**
+  inputs:
+  - docs/codex/SINGLE_AGENT_PLAN.md
+  - docs/codex/CONTRACTS.md
+  outputs: *id002
+  acceptance_criteria:
+  - strict request/report; provenance and conflicts; no compute/implicit confirmation; controlled selection
+  test_command: .venv/Scripts/python.exe -X utf8 -B -m unittest discover -s tests -v
+  retry_budget: 2
+  assigned_agent: requirements_impl_astra
+- id: SA-GRAPH
+  status: BLOCKED_DEPENDENCIES
+  dependencies:
+  - SA-ENV
+  - SA-CORE
+  phase: SINGLE_AGENT
+  objective: normal/missing/conflict/model gap graph and CLI; bounded trace; no calculation
+  owner: requirements_implementer
+  allowed_files: &id003
+  - planning/workflow/__init__.py
+  - planning/workflow/requirements_graph.py
+  - planning/demo.py
+  - tests/test_requirements_graph.py
+  - tests/test_requirements_demo.py
+  forbidden_files:
+  - formula_rag/**
+  - app.py
+  - web/**
+  - knowledge/formulas.json
+  - original WBS/VSDX
+  - source .venv/**
+  inputs:
+  - docs/codex/SINGLE_AGENT_PLAN.md
+  - docs/codex/CONTRACTS.md
+  outputs: *id003
+  acceptance_criteria:
+  - normal/missing/conflict/model gap graph and CLI; bounded trace; no calculation
+  test_command: .venv/Scripts/python.exe -X utf8 -B -m unittest discover -s tests -v
+  retry_budget: 2
+- id: SA-REVIEW
+  status: BLOCKED_DEPENDENCIES
+  dependencies:
+  - SA-GRAPH
+  phase: SINGLE_AGENT
+  objective: independent review no open P0/P1
+  owner: independent_reviewer
+  allowed_files: &id004
+  - docs/codex/evidence/single_agent_review.json
+  forbidden_files:
+  - formula_rag/**
+  - app.py
+  - web/**
+  - knowledge/formulas.json
+  - original WBS/VSDX
+  - source .venv/**
+  inputs:
+  - docs/codex/SINGLE_AGENT_PLAN.md
+  - docs/codex/CONTRACTS.md
+  outputs: *id004
+  acceptance_criteria:
+  - independent review no open P0/P1
+  test_command: .venv/Scripts/python.exe -X utf8 -B -m unittest discover -s tests -v
+  retry_budget: 2
+- id: SA-RUN
+  status: BLOCKED_DEPENDENCIES
+  dependencies:
+  - SA-GRAPH
+  phase: SINGLE_AGENT
+  objective: all regressions and honest real-model evidence
+  owner: independent_tester
+  allowed_files: &id005
+  - docs/codex/evidence/sa_validation.json
+  - docs/codex/evidence/sa-tests.log
+  - docs/codex/evidence/sa-live.json
+  - docs/codex/evidence/sa-model.err.log
+  - docs/codex/evidence/sa-model.out.log
+  - docs/codex/evidence/sa_model_process.json
+  - docs/codex/evidence/sa_model_process.json
+  forbidden_files:
+  - formula_rag/**
+  - app.py
+  - web/**
+  - knowledge/formulas.json
+  - original WBS/VSDX
+  - source .venv/**
+  inputs:
+  - docs/codex/SINGLE_AGENT_PLAN.md
+  - docs/codex/CONTRACTS.md
+  outputs: *id005
+  acceptance_criteria:
+  - all regressions and honest real-model evidence
+  test_command: .venv/Scripts/python.exe -X utf8 -B -m unittest discover -s tests -v
+  retry_budget: 2
+- id: SA-HANDOFF
+  status: BLOCKED_DEPENDENCIES
+  dependencies:
+  - SA-REVIEW
+  - SA-RUN
+  phase: SINGLE_AGENT
+  objective: recovery state matches tested delivery
+  owner: main
+  allowed_files: &id006
+  - docs/codex/SINGLE_AGENT_HANDOFF.md
+  - docs/codex/IMPLEMENTATION_LOG.md
+  - docs/codex/NEXT_ACTION.md
+  - docs/codex/PROJECT_CONTEXT.md
+  - docs/codex/SINGLE_AGENT_BACKLOG.yaml
+  forbidden_files:
+  - formula_rag/**
+  - app.py
+  - web/**
+  - knowledge/formulas.json
+  - original WBS/VSDX
+  - source .venv/**
+  inputs:
+  - docs/codex/SINGLE_AGENT_PLAN.md
+  - docs/codex/CONTRACTS.md
+  outputs: *id006
+  acceptance_criteria:
+  - recovery state matches tested delivery
+  test_command: .venv/Scripts/python.exe -X utf8 -B -m unittest discover -s tests -v
+  retry_budget: 2
+- id: SA-PUBLISH
+  status: BLOCKED_EXTERNAL
+  dependencies:
+  - SA-HANDOFF
+  phase: SINGLE_AGENT
+  objective: explicit reviewed allowlist; remote SHA checked; blocked if unavailable
+  owner: github_luna
+  allowed_files: &id007
+  - docs/codex/GITHUB_PUBLICATION.md
+  - docs/codex/evidence/publication.json
+  forbidden_files:
+  - formula_rag/**
+  - app.py
+  - web/**
+  - knowledge/formulas.json
+  - original WBS/VSDX
+  - source .venv/**
+  inputs:
+  - docs/codex/SINGLE_AGENT_PLAN.md
+  - docs/codex/CONTRACTS.md
+  outputs: *id007
+  acceptance_criteria:
+  - explicit reviewed allowlist; remote SHA checked; blocked if unavailable
+  test_command: .venv/Scripts/python.exe -X utf8 -B -m unittest discover -s tests -v
+  retry_budget: 2

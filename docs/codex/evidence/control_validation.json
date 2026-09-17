@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "tasks": 44,
+  "implementation_tasks": 35,
+  "wbs_items": 38,
+  "wbs_coverage": 38,
+  "dependency_dag": "acyclic",
+  "human_gate_0_approved": false,
+  "errors": [],
+  "warnings": [],
+  "scope": "control document structure only; not business implementation or scientific validation",
+  "exit_code": 0
+}

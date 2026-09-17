@@ -1,0 +1,10 @@
+{
+  "status": "BLOCKED_EXECUTION_POLICY",
+  "attempted_action": "start existing local Qwen llama-server process on loopback with offline mode",
+  "rejection": "blocked by policy",
+  "process_created": false,
+  "bypass_attempted": false,
+  "time": "2026-09-17T07:20:32.734709+00:00",
+  "assets_verified": true,
+  "listen_18081_at_check": false
+}

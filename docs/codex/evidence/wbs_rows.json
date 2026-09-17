@@ -1,0 +1,642 @@
+{
+  "source": "C:\\Users\\nntm\\Desktop\\天大信号\\WBS分解-智能体.xlsx",
+  "rows": [
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 1,
+      "cells": {
+        "B1": "WBS 是 Work Breakdown Structure，中文一般叫 工作分解结构。",
+        "E1": "WBS 是把一个大项目，按照“从整体到局部”的方式，一层一层拆成可以执行、可以分工、可以验收的小任务"
+      }
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 3,
+      "cells": {
+        "B3": "WBS编号",
+        "C3": "一级任务",
+        "D3": "二级任务",
+        "E3": "负责人",
+        "F3": "协作人",
+        "G3": "建议工作量（人日）",
+        "H3": "主要输出"
+      }
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 4,
+      "cells": {
+        "B4": "1",
+        "C4": "系统需求与总体方案设计",
+        "D4": "首月研究目标与实现边界定义",
+        "G4": "1",
+        "H4": "首月目标、功能边界、实现范围",
+        "I4": "郑文奇统稿 全员参与"
+      },
+      "id": "1.0",
+      "raw_id": "1",
+      "parent": "1",
+      "task": "首月研究目标与实现边界定义",
+      "deliverable": "首月目标、功能边界、实现范围"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 5,
+      "cells": {
+        "B5": "1.1000000000000001",
+        "C5": "系统需求与总体方案设计",
+        "D5": "通信链路筹划业务流程梳理",
+        "G5": "1",
+        "H5": "通信筹划业务流程图"
+      },
+      "id": "1.1",
+      "raw_id": "1.1000000000000001",
+      "parent": "1",
+      "task": "通信链路筹划业务流程梳理",
+      "deliverable": "通信筹划业务流程图"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 6,
+      "cells": {
+        "B6": "1.2",
+        "C6": "系统需求与总体方案设计",
+        "D6": "系统总体技术架构设计",
+        "G6": "1",
+        "H6": "系统总体架构图"
+      },
+      "id": "1.2",
+      "raw_id": "1.2",
+      "parent": "1",
+      "task": "系统总体技术架构设计",
+      "deliverable": "系统总体架构图"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 7,
+      "cells": {
+        "B7": "1.3",
+        "C7": "系统需求与总体方案设计",
+        "D7": "多智能体角色及协同关系设计",
+        "G7": "1",
+        "H7": "Agent角色与协同关系说明"
+      },
+      "id": "1.3",
+      "raw_id": "1.3",
+      "parent": "1",
+      "task": "多智能体角色及协同关系设计",
+      "deliverable": "Agent角色与协同关系说明"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 8,
+      "cells": {
+        "B8": "1.4",
+        "C8": "系统需求与总体方案设计",
+        "D8": "数据结构及模块接口设计",
+        "G8": "2",
+        "H8": "参数字段、接口及数据结构定义"
+      },
+      "id": "1.4",
+      "raw_id": "1.4",
+      "parent": "1",
+      "task": "数据结构及模块接口设计",
+      "deliverable": "参数字段、接口及数据结构定义"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 9,
+      "cells": {
+        "B9": "1.5",
+        "C9": "系统需求与总体方案设计",
+        "D9": "测试指标及阶段验收目标定义",
+        "G9": "1",
+        "H9": "测试指标及验收标准"
+      },
+      "id": "1.5",
+      "raw_id": "1.5",
+      "parent": "1",
+      "task": "测试指标及阶段验收目标定义",
+      "deliverable": "测试指标及验收标准"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 11,
+      "cells": {
+        "B11": "2",
+        "C11": "专业知识与RAG能力构建",
+        "D11": "通信链路筹划知识体系梳理",
+        "G11": "2",
+        "H11": "通信筹划知识体系及分类",
+        "I11": "于状、杨迦棋"
+      },
+      "id": "2.0",
+      "raw_id": "2",
+      "parent": "2",
+      "task": "通信链路筹划知识体系梳理",
+      "deliverable": "通信筹划知识体系及分类"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 12,
+      "cells": {
+        "B12": "2.1",
+        "C12": "专业知识与RAG能力构建",
+        "D12": "专业资料与知识条目整理",
+        "G12": "3",
+        "H12": "知识文档及知识条目"
+      },
+      "id": "2.1",
+      "raw_id": "2.1",
+      "parent": "2",
+      "task": "专业资料与知识条目整理",
+      "deliverable": "知识文档及知识条目"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 13,
+      "cells": {
+        "B13": "2.2000000000000002",
+        "C13": "专业知识与RAG能力构建",
+        "D13": "通信筹划参数字典与规则整理",
+        "G13": "2",
+        "H13": "参数字典、参数说明及规则库"
+      },
+      "id": "2.2",
+      "raw_id": "2.2000000000000002",
+      "parent": "2",
+      "task": "通信筹划参数字典与规则整理",
+      "deliverable": "参数字典、参数说明及规则库"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 14,
+      "cells": {
+        "B14": "2.2999999999999998",
+        "C14": "专业知识与RAG能力构建",
+        "D14": "文档分块、向量化与索引构建",
+        "G14": "3",
+        "H14": "RAG向量知识库"
+      },
+      "id": "2.3",
+      "raw_id": "2.2999999999999998",
+      "parent": "2",
+      "task": "文档分块、向量化与索引构建",
+      "deliverable": "RAG向量知识库"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 15,
+      "cells": {
+        "B15": "2.4",
+        "C15": "专业知识与RAG能力构建",
+        "D15": "RAG检索流程实现",
+        "G15": "3",
+        "H15": "知识检索接口"
+      },
+      "id": "2.4",
+      "raw_id": "2.4",
+      "parent": "2",
+      "task": "RAG检索流程实现",
+      "deliverable": "知识检索接口"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 16,
+      "cells": {
+        "B16": "2.5",
+        "C16": "专业知识与RAG能力构建",
+        "D16": "检索结果与任务参数关联",
+        "G16": "2",
+        "H16": "RAG与Agent接口"
+      },
+      "id": "2.5",
+      "raw_id": "2.5",
+      "parent": "2",
+      "task": "检索结果与任务参数关联",
+      "deliverable": "RAG与Agent接口"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 17,
+      "cells": {
+        "B17": "2.6",
+        "C17": "专业知识与RAG能力构建",
+        "D17": "RAG基础测试与优化",
+        "G17": "2",
+        "H17": "检索测试结果"
+      },
+      "id": "2.6",
+      "raw_id": "2.6",
+      "parent": "2",
+      "task": "RAG基础测试与优化",
+      "deliverable": "检索测试结果"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 18,
+      "cells": {
+        "B18": "2.7",
+        "C18": "专业知识与RAG能力构建",
+        "D18": "知识库及接口整理",
+        "G18": "1",
+        "H18": "知识库说明及接口文档"
+      },
+      "id": "2.7",
+      "raw_id": "2.7",
+      "parent": "2",
+      "task": "知识库及接口整理",
+      "deliverable": "知识库说明及接口文档"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 20,
+      "cells": {
+        "B20": "3",
+        "C20": "通信专业计算能力构建",
+        "D20": "单链路计算输入参数定义",
+        "G20": "2",
+        "H20": "计算输入参数表",
+        "I20": "武嘉辉"
+      },
+      "id": "3.0",
+      "raw_id": "3",
+      "parent": "3",
+      "task": "单链路计算输入参数定义",
+      "deliverable": "计算输入参数表"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 21,
+      "cells": {
+        "B21": "3.1",
+        "C21": "通信专业计算能力构建",
+        "D21": "自由空间传播损耗模型实现",
+        "G21": "2",
+        "H21": "传播损耗计算模块"
+      },
+      "id": "3.1",
+      "raw_id": "3.1",
+      "parent": "3",
+      "task": "自由空间传播损耗模型实现",
+      "deliverable": "传播损耗计算模块"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 22,
+      "cells": {
+        "B22": "3.2",
+        "C22": "通信专业计算能力构建",
+        "D22": "链路预算模型实现",
+        "G22": "3",
+        "H22": "链路预算模型"
+      },
+      "id": "3.2",
+      "raw_id": "3.2",
+      "parent": "3",
+      "task": "链路预算模型实现",
+      "deliverable": "链路预算模型"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 23,
+      "cells": {
+        "B23": "3.3",
+        "C23": "通信专业计算能力构建",
+        "D23": "接收电平与链路余量计算",
+        "G23": "2",
+        "H23": "接收功率及链路余量计算模块"
+      },
+      "id": "3.3",
+      "raw_id": "3.3",
+      "parent": "3",
+      "task": "接收电平与链路余量计算",
+      "deliverable": "接收功率及链路余量计算模块"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 24,
+      "cells": {
+        "B24": "3.4",
+        "C24": "通信专业计算能力构建",
+        "D24": "附加损耗与典型参数处理",
+        "G24": "2",
+        "H24": "附加损耗及缺省参数处理规则"
+      },
+      "id": "3.4",
+      "raw_id": "3.4",
+      "parent": "3",
+      "task": "附加损耗与典型参数处理",
+      "deliverable": "附加损耗及缺省参数处理规则"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 25,
+      "cells": {
+        "B25": "3.5",
+        "C25": "通信专业计算能力构建",
+        "D25": "专业计算函数接口封装",
+        "G25": "2",
+        "H25": "Agent可调用计算接口"
+      },
+      "id": "3.5",
+      "raw_id": "3.5",
+      "parent": "3",
+      "task": "专业计算函数接口封装",
+      "deliverable": "Agent可调用计算接口"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 26,
+      "cells": {
+        "B26": "3.6",
+        "C26": "通信专业计算能力构建",
+        "D26": "参数单位及合法性检查",
+        "G26": "2",
+        "H26": "参数检查模块"
+      },
+      "id": "3.6",
+      "raw_id": "3.6",
+      "parent": "3",
+      "task": "参数单位及合法性检查",
+      "deliverable": "参数检查模块"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 27,
+      "cells": {
+        "B27": "3.7",
+        "C27": "通信专业计算能力构建",
+        "D27": "专业计算模型独立验证",
+        "G27": "2",
+        "H27": "模型测试案例及结果"
+      },
+      "id": "3.7",
+      "raw_id": "3.7",
+      "parent": "3",
+      "task": "专业计算模型独立验证",
+      "deliverable": "模型测试案例及结果"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 28,
+      "cells": {
+        "B28": "3.8",
+        "C28": "通信专业计算能力构建",
+        "D28": "复杂传播模型扩展接口预留",
+        "G28": "1",
+        "H28": "模型扩展接口"
+      },
+      "id": "3.8",
+      "raw_id": "3.8",
+      "parent": "3",
+      "task": "复杂传播模型扩展接口预留",
+      "deliverable": "模型扩展接口"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 29,
+      "cells": {
+        "B29": "3.9",
+        "C29": "通信专业计算能力构建",
+        "D29": "专业模型说明及接口整理",
+        "G29": "1",
+        "H29": "专业模型说明文档"
+      },
+      "id": "3.9",
+      "raw_id": "3.9",
+      "parent": "3",
+      "task": "专业模型说明及接口整理",
+      "deliverable": "专业模型说明文档"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 31,
+      "cells": {
+        "B31": "4",
+        "C31": "多智能体协同与任务执行",
+        "D31": "多智能体工作流框架搭建",
+        "G31": "2",
+        "H31": "LangGraph工作流骨架",
+        "I31": "郑文奇、吴伟豪"
+      },
+      "id": "4.0",
+      "raw_id": "4",
+      "parent": "4",
+      "task": "多智能体工作流框架搭建",
+      "deliverable": "LangGraph工作流骨架"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 32,
+      "cells": {
+        "B32": "4.0999999999999996",
+        "C32": "多智能体协同与任务执行",
+        "D32": "总控智能体实现",
+        "G32": "2",
+        "H32": "任务识别、分解及调度能力"
+      },
+      "id": "4.1",
+      "raw_id": "4.0999999999999996",
+      "parent": "4",
+      "task": "总控智能体实现",
+      "deliverable": "任务识别、分解及调度能力"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 33,
+      "cells": {
+        "B33": "4.2",
+        "C33": "多智能体协同与任务执行",
+        "D33": "需求解析与参数提取实现",
+        "G33": "2",
+        "H33": "自然语言参数提取能力"
+      },
+      "id": "4.2",
+      "raw_id": "4.2",
+      "parent": "4",
+      "task": "需求解析与参数提取实现",
+      "deliverable": "自然语言参数提取能力"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 34,
+      "cells": {
+        "B34": "4.3",
+        "C34": "多智能体协同与任务执行",
+        "D34": "缺失参数识别与用户确认",
+        "G34": "2",
+        "H34": "缺参判断及参数补充流程"
+      },
+      "id": "4.3",
+      "raw_id": "4.3",
+      "parent": "4",
+      "task": "缺失参数识别与用户确认",
+      "deliverable": "缺参判断及参数补充流程"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 35,
+      "cells": {
+        "B35": "4.4000000000000004",
+        "C35": "多智能体协同与任务执行",
+        "D35": "专业计算智能体实现",
+        "G35": "2",
+        "H35": "专业计算Agent"
+      },
+      "id": "4.4",
+      "raw_id": "4.4000000000000004",
+      "parent": "4",
+      "task": "专业计算智能体实现",
+      "deliverable": "专业计算Agent"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 36,
+      "cells": {
+        "B36": "4.5",
+        "C36": "多智能体协同与任务执行",
+        "D36": "RAG知识检索能力接入",
+        "G36": "1",
+        "H36": "RAG工具调用能力"
+      },
+      "id": "4.5",
+      "raw_id": "4.5",
+      "parent": "4",
+      "task": "RAG知识检索能力接入",
+      "deliverable": "RAG工具调用能力"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 37,
+      "cells": {
+        "B37": "4.5999999999999996",
+        "C37": "多智能体协同与任务执行",
+        "D37": "专业工具调用与受控路由",
+        "G37": "2",
+        "H37": "工具路由及调用机制"
+      },
+      "id": "4.6",
+      "raw_id": "4.5999999999999996",
+      "parent": "4",
+      "task": "专业工具调用与受控路由",
+      "deliverable": "工具路由及调用机制"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 38,
+      "cells": {
+        "B38": "4.7",
+        "C38": "多智能体协同与任务执行",
+        "D38": "任务状态管理机制",
+        "G38": "1",
+        "H38": "任务共享状态"
+      },
+      "id": "4.7",
+      "raw_id": "4.7",
+      "parent": "4",
+      "task": "任务状态管理机制",
+      "deliverable": "任务共享状态"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 39,
+      "cells": {
+        "B39": "4.8",
+        "C39": "多智能体协同与任务执行",
+        "D39": "结果校验与解释机制",
+        "G39": "2",
+        "H39": "结果验证与解释输出"
+      },
+      "id": "4.8",
+      "raw_id": "4.8",
+      "parent": "4",
+      "task": "结果校验与解释机制",
+      "deliverable": "结果验证与解释输出"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 41,
+      "cells": {
+        "B41": "5",
+        "C41": "原型系统与人机交互",
+        "D41": "原型系统界面总体设计",
+        "G41": "2",
+        "H41": "原型界面设计",
+        "I41": "杨双润"
+      },
+      "id": "5.0",
+      "raw_id": "5",
+      "parent": "5",
+      "task": "原型系统界面总体设计",
+      "deliverable": "原型界面设计"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 42,
+      "cells": {
+        "B42": "5.0999999999999996",
+        "C42": "原型系统与人机交互",
+        "D42": "用户任务输入界面实现",
+        "G42": "2",
+        "H42": "任务输入界面"
+      },
+      "id": "5.1",
+      "raw_id": "5.0999999999999996",
+      "parent": "5",
+      "task": "用户任务输入界面实现",
+      "deliverable": "任务输入界面"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 43,
+      "cells": {
+        "B43": "5.2",
+        "C43": "原型系统与人机交互",
+        "D43": "参数识别与用户确认界面",
+        "G43": "3",
+        "H43": "参数确认界面"
+      },
+      "id": "5.2",
+      "raw_id": "5.2",
+      "parent": "5",
+      "task": "参数识别与用户确认界面",
+      "deliverable": "参数确认界面"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 44,
+      "cells": {
+        "B44": "5.3",
+        "C44": "原型系统与人机交互",
+        "D44": "多智能体执行过程展示",
+        "G44": "3",
+        "H44": "Agent执行流程展示"
+      },
+      "id": "5.3",
+      "raw_id": "5.3",
+      "parent": "5",
+      "task": "多智能体执行过程展示",
+      "deliverable": "Agent执行流程展示"
+    },
+    {
+      "part": "xl/worksheets/sheet1.xml",
+      "row": 45,
+      "cells": {
+        "B45": "5.4",
+        "C45": "原型系统与人机交互",
+        "D45": "RAG检索结果展示",
+        "G45": "2",
+        "H45": "知识检索展示界面"
+      },
+      "id": "5.4",
+      "raw_id": "5.4",
+      "parent": "5",
+      "task": "RAG检索结果展示",
+      "deliverable": "知识检索展示界面"
+    }
+  ],
+  "workbook_xml": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\r\n<workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\" mc:Ignorable=\"x15 xr xr6 xr10 xr2\" xmlns:x15=\"http://schemas.microsoft.com/office/spreadsheetml/2010/11/main\" xmlns:xr=\"http://schemas.microsoft.com/office/spreadsheetml/2014/revision\" xmlns:xr6=\"http://schemas.microsoft.com/office/spreadsheetml/2016/revision6\" xmlns:xr10=\"http://schemas.microsoft.com/office/spreadsheetml/2016/revision10\" xmlns:xr2=\"http://schemas.microsoft.com/office/spreadsheetml/2015/revision2\"><fileVersion appName=\"xl\" lastEdited=\"7\" lowestEdited=\"6\" rupBuild=\"30026\"/><workbookPr/><mc:AlternateContent xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\"><mc:Choice Requires=\"x15\"><x15ac:absPath url=\"D:\\日常参考\\\" xmlns:x15ac=\"http://schemas.microsoft.com/office/spreadsheetml/2010/11/ac\"/></mc:Choice></mc:AlternateContent><xr:revisionPtr revIDLastSave=\"0\" documentId=\"13_ncr:1_{E6088C6A-BB2F-4899-9ABE-E235ABFF2E95}\" xr6:coauthVersionLast=\"47\" xr6:coauthVersionMax=\"47\" xr10:uidLastSave=\"{00000000-0000-0000-0000-000000000000}\"/><bookViews><workbookView xWindow=\"-98\" yWindow=\"-98\" windowWidth=\"21795\" windowHeight=\"12975\" xr2:uid=\"{00000000-000D-0000-FFFF-FFFF00000000}\"/></bookViews><sheets><sheet name=\"Sheet1\" sheetId=\"1\" r:id=\"rId1\"/></sheets><calcPr calcId=\"162913\"/><extLst><ext uri=\"{140A7094-0E35-4892-8432-C4D2E57EDEB5}\" xmlns:x15=\"http://schemas.microsoft.com/office/spreadsheetml/2010/11/main\"><x15:workbookPr chartTrackingRefBase=\"1\"/></ext></extLst></workbook>",
+  "sha256": "16694970eb4797e0261b35ea03c8535149a37ec94326b2bcdaaaa07c754c3f2b",
+  "task_count": 38
+}

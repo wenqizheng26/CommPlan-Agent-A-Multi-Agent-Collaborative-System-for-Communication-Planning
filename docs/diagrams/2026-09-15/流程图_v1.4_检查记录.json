@@ -1,0 +1,14 @@
+{
+  "version": "1.4",
+  "nodes": 19,
+  "edges": 26,
+  "markdown_mermaid_equal": true,
+  "svg_matches_mermaid_nodes_and_edges": true,
+  "agent_dispatch_submission_retrieval_no_shared_segments": true,
+  "original_upload_unchanged": true,
+  "runtime_source_files_checked": 16,
+  "runtime_source_files_changed": [],
+  "png_rendered": true,
+  "visual_review": "PNG rendered and inspected; separate Agent lines; no obscured node text.",
+  "scope": "diagram artifacts only; no application tests or model calls"
+}
