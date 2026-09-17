@@ -44,6 +44,7 @@
     "Tests exercised deterministic paths; real embedding/LLM/RAG runtime was not started or validated."
   ],
   "t001_accept": true,
+  "local_baseline_commit": "2121d137ea5831d323cb1b46895e1756a4dfc835",
   "notes": [
     "No business files were changed by the tester.",
     "No git mutation, commit, or push was performed.",

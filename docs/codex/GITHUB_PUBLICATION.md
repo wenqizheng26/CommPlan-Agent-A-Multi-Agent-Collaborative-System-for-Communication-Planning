@@ -1,6 +1,8 @@
 # GitHub publication record
 
-Status: documentation prepared; repository/bundle/commits not created; `upload=false`.
+Status: documentation prepared; remote repository/bundle not created; `upload=false`.
+
+The accepted local H0 baseline is committed as `2121d137ea5831d323cb1b46895e1756a4dfc835`; no remote repository has been created and no push has occurred.
 
 ## Scope
 
