@@ -1,0 +1,20 @@
+{
+  "author": "Main",
+  "status": "FIXES_VERIFIED_BY_MAIN_INDEPENDENT_FINALIZATION_PENDING",
+  "reviewer_second_round_message_received": true,
+  "reviewer_final_report_written": false,
+  "corrected_findings": [
+    "CP-01",
+    "CP-02",
+    "CP-03",
+    "CP-04",
+    "CP-05"
+  ],
+  "last_correction": "MASTER_IMPLEMENTATION_PLAN T007 dependency synchronized to T003",
+  "blocker": "Reviewer account usage limit",
+  "business_implementation_started": false,
+  "human_gate_0_approved": false,
+  "publication_directory_created": false,
+  "remote_repository_created": false,
+  "uploaded": false
+}

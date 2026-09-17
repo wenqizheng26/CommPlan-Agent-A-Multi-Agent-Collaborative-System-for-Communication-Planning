@@ -1,0 +1,2233 @@
+{
+  "audit_id": "AUD-02",
+  "date": "2026-09-17",
+  "mode": "read-only code audit plus calculator-only in-memory probes; no full test suite, dense model or live LLM run",
+  "catalog_hash": "fa3362f384e6a09887ba6947f32bc25b876c0ae1a73b29d15425780c102ada4b",
+  "formula_cards": [
+    {
+      "id": "fspl_ghz",
+      "title": "自由空间基本传输损耗",
+      "description": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。",
+      "version": "1.0.0",
+      "status": "verified",
+      "expression": "92.4 + 20*log10(frequency_ghz) + 20*log10(distance_km)",
+      "output": {
+        "name": "path_loss_db",
+        "unit": "dB"
+      },
+      "parameters": {
+        "frequency_ghz": {
+          "unit": "GHz",
+          "description": "载波频率",
+          "exclusive_min": 0
+        },
+        "distance_km": {
+          "unit": "km",
+          "description": "发射端到接收端的路径距离",
+          "exclusive_min": 0
+        }
+      },
+      "applicability": {
+        "requires": [
+          "free_space"
+        ],
+        "notes": [
+          "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+          "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。"
+        ]
+      },
+      "sources": [
+        {
+          "title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+          "url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+          "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+          "checked_date": "2026-09-14",
+          "derivation": "原式 f 为 MHz、d 为 km；此卡将 f 换为 GHz，保持原标准舍入常数。"
+        }
+      ],
+      "examples": [
+        {
+          "inputs": {
+            "frequency_ghz": 4.5,
+            "distance_km": 0.2
+          },
+          "expected": 91.48485018878651,
+          "tolerance": 1e-10
+        },
+        {
+          "inputs": {
+            "frequency_ghz": 4.5,
+            "distance_km": 0.4
+          },
+          "expected": 97.50545010206613,
+          "tolerance": 1e-10
+        }
+      ]
+    },
+    {
+      "id": "doppler_max",
+      "title": "单程最大多普勒频移上界",
+      "description": "用相对速率估计单程无线电链路的一阶多普勒频移幅度上界。上界取全部速度为径向分量；实际有符号频移还需要运动方向，不是任意方向的实际频移，也不适用于双程雷达。",
+      "version": "1.0.0",
+      "status": "verified",
+      "expression": "frequency_ghz * 1000000000 * (speed_kmh / 3.6) / 299792458",
+      "output": {
+        "name": "maximum_doppler_hz",
+        "unit": "Hz"
+      },
+      "parameters": {
+        "frequency_ghz": {
+          "unit": "GHz",
+          "description": "载波频率",
+          "exclusive_min": 0
+        },
+        "speed_kmh": {
+          "unit": "km/h",
+          "description": "收发端相对速率的非负幅值",
+          "min": 0,
+          "max": 1079252.8488
+        }
+      },
+      "applicability": {
+        "requires": [
+          "maximum_doppler"
+        ],
+        "notes": [
+          "一阶非相对论近似，以 |径向速度| ≤ 相对速率 得到幅度上界。",
+          "项目计算范围限制为 v ≤ 0.001c，以避免将低速近似用于接近光速的输入；这是实现范围，不是来源规定的物理阈值。"
+        ]
+      },
+      "sources": [
+        {
+          "title": "NASA/JPL IPN Progress Report 42-154, Biswas and Piazzolla (2003)",
+          "url": "https://ipnpr.jpl.nasa.gov/progress_report/42-154/154L.pdf",
+          "locator": "printed page 21, equation (14)",
+          "checked_date": "2026-09-14",
+          "derivation": "原文为电磁波单程径向一阶频移；由径向分量的幅值不超过相对速率得到最大幅度上界。"
+        },
+        {
+          "title": "NIST CODATA: speed of light in vacuum",
+          "url": "https://physics.nist.gov/cuu/Constants/Value/c.html",
+          "locator": "Numerical value: 299792458 m/s, exact",
+          "checked_date": "2026-09-14"
+        }
+      ],
+      "examples": [
+        {
+          "inputs": {
+            "frequency_ghz": 4.5,
+            "speed_kmh": 108
+          },
+          "expected": 450.3115285175053,
+          "tolerance": 1e-09
+        }
+      ]
+    },
+    {
+      "id": "thermal_noise",
+      "title": "指定温度与带宽的热噪声功率",
+      "description": "按 N=kTB 计算指定等效噪声温度和噪声等效带宽内的可用热噪声功率，转换为 dBm。温度必须显式输入，不默认 290 K，也不将比特率直接当作噪声带宽。",
+      "version": "1.0.0",
+      "status": "verified",
+      "expression": "10*log10(1.380649e-23 * temperature_k * bandwidth_hz * 1000)",
+      "output": {
+        "name": "noise_power_dbm",
+        "unit": "dBm"
+      },
+      "parameters": {
+        "temperature_k": {
+          "unit": "K",
+          "description": "输入参考面上的等效噪声温度",
+          "exclusive_min": 0
+        },
+        "bandwidth_hz": {
+          "unit": "Hz",
+          "description": "噪声等效带宽，不是未经说明的比特率",
+          "exclusive_min": 0
+        }
+      },
+      "applicability": {
+        "requires": [],
+        "notes": [
+          "经典热噪声模型，匹配接收输入的可用功率；射频能量量子远小于 kT。",
+          "温度、带宽和噪声参考面由用户明确提供；未自动增加接收机噪声系数或外部干扰功率。",
+          "采用 SI 精确定义的 Boltzmann 常数 1.380649e-23 J/K。"
+        ]
+      },
+      "sources": [
+        {
+          "title": "NASA Radio JOVE, Tech Talk #1 - Antenna Temperature",
+          "url": "https://radiojove.gsfc.nasa.gov/radio_telescope/resources/tech_talk-1.php",
+          "locator": "P=kTB equation, variable definitions and matched input condition",
+          "checked_date": "2026-09-14",
+          "derivation": "将瓦特乘 1000 转成毫瓦，再取 10log10 得 dBm。"
+        },
+        {
+          "title": "NIST: Kelvin - Boltzmann Constant",
+          "url": "https://www.nist.gov/si-redefinition/kelvin/kelvin-boltzmann-constant",
+          "locator": "fixed SI value 1.380649 x 10^-23 J/K",
+          "checked_date": "2026-09-14"
+        }
+      ],
+      "examples": [
+        {
+          "inputs": {
+            "temperature_k": 290,
+            "bandwidth_hz": 1000000
+          },
+          "expected": -113.97518719422808,
+          "tolerance": 1e-09
+        }
+      ]
+    },
+    {
+      "id": "received_power",
+      "title": "链路预算接收电平",
+      "description": "按发射功率加收发天线增益、减去馈线、路径及额外损耗计算接收功率。路径损耗必须来自适用模型、测量或用户明确提供；此式不会根据环境自动估出路径损耗。",
+      "version": "1.0.0",
+      "status": "verified",
+      "expression": "tx_power_dbm + tx_gain_dbi + rx_gain_dbi - tx_loss_db - rx_loss_db - path_loss_db - extra_loss_db",
+      "output": {
+        "name": "rx_power_dbm",
+        "unit": "dBm"
+      },
+      "parameters": {
+        "tx_power_dbm": {
+          "unit": "dBm",
+          "description": "发射机输出功率，不是已含天线增益的 EIRP"
+        },
+        "tx_gain_dbi": {
+          "unit": "dBi",
+          "description": "发射天线沿接收方向的增益，参考各向同性天线"
+        },
+        "rx_gain_dbi": {
+          "unit": "dBi",
+          "description": "接收天线沿发射方向的增益，参考各向同性天线"
+        },
+        "tx_loss_db": {
+          "unit": "dB",
+          "description": "发射馈线损耗；无损耗请显式填写 0",
+          "min": 0
+        },
+        "rx_loss_db": {
+          "unit": "dB",
+          "description": "接收馈线损耗；无损耗请显式填写 0",
+          "min": 0
+        },
+        "path_loss_db": {
+          "unit": "dB",
+          "description": "符合场景的基本路径损耗，不重复包含天线增益或馈线损耗",
+          "min": 0
+        },
+        "extra_loss_db": {
+          "unit": "dB",
+          "description": "尚未计入其他项的额外损耗；无损耗请显式填写 0",
+          "min": 0
+        }
+      },
+      "applicability": {
+        "requires": [],
+        "notes": [
+          "所有项必须属于同一条单程链路、同一频率和一致功率参考面。",
+          "本式只做功率收支，不由正接收功率或正余量推断现场可用率。"
+        ]
+      },
+      "sources": [
+        {
+          "title": "NASA, State-of-the-Art of Small Spacecraft Technology, Ground Data Systems and Mission Operations",
+          "url": "https://www.nasa.gov/smallsat-institute/sst-soa/ground-data-systems-and-mission-operations/",
+          "locator": "11.3.1 Frequency Selection: Link Budget",
+          "checked_date": "2026-09-14",
+          "derivation": "对文中描述的 RF 功率预算按统一参考面展开，正值损耗取减号。"
+        }
+      ],
+      "examples": [
+        {
+          "inputs": {
+            "tx_power_dbm": 40,
+            "tx_gain_dbi": 2,
+            "rx_gain_dbi": 2,
+            "tx_loss_db": 2,
+            "rx_loss_db": 2,
+            "path_loss_db": 91.48485018878651,
+            "extra_loss_db": 0
+          },
+          "expected": -51.48485018878651,
+          "tolerance": 1e-10
+        }
+      ]
+    },
+    {
+      "id": "link_margin",
+      "title": "扣除预留量后的链路电平余量",
+      "description": "计算接收电平高于接收门限的余量，再扣除用户指定的工程预留量。接收门限必须对应同一调制、码率及误码或丢包要求；正余量不等于已经验证现场可靠度。",
+      "version": "1.0.0",
+      "status": "verified",
+      "expression": "rx_power_dbm - rx_threshold_dbm - reserve_db",
+      "output": {
+        "name": "link_margin_db",
+        "unit": "dB"
+      },
+      "parameters": {
+        "rx_power_dbm": {
+          "unit": "dBm",
+          "description": "接收端输入参考面的信号电平"
+        },
+        "rx_threshold_dbm": {
+          "unit": "dBm",
+          "description": "满足指定通信质量的接收灵敏度或门限"
+        },
+        "reserve_db": {
+          "unit": "dB",
+          "description": "未计入接收电平或门限的工程预留量；不预留请显式填写 0",
+          "min": 0
+        }
+      },
+      "applicability": {
+        "requires": [],
+        "notes": [
+          "接收电平和门限必须使用同一输入参考面，避免把已经扣减的损耗再次作为预留量扣减。",
+          "reserve_db 是此项目显式扣除的预留量；来源中的基本余量为接收功率减灵敏度。"
+        ]
+      },
+      "sources": [
+        {
+          "title": "Texas Instruments SWRA479A, Achieving Optimum Radio Range (2017)",
+          "url": "https://www.ti.com/lit/an/swra479a/swra479a.pdf",
+          "locator": "page 4, section 2.4: link margin definition",
+          "checked_date": "2026-09-14",
+          "derivation": "采用接收功率减灵敏度的定义；此项目再扣除显式 reserve_db。"
+        }
+      ],
+      "examples": [
+        {
+          "inputs": {
+            "rx_power_dbm": -51.48485018878651,
+            "rx_threshold_dbm": -62,
+            "reserve_db": 0
+          },
+          "expected": 10.51514981121349,
+          "tolerance": 1e-10
+        }
+      ]
+    },
+    {
+      "id": "noise_density",
+      "title": "指定温度的热噪声谱密度",
+      "description": "由明确给出的参考噪声温度计算 kT 并转换为 dBm/Hz。温度必须输入，不默认为290 K。",
+      "version": "1.0.0",
+      "status": "verified",
+      "expression": "10*log10(1.380649e-23*temperature_k*1000)",
+      "output": {
+        "name": "noise_density_dbm_hz",
+        "unit": "dBm/Hz"
+      },
+      "parameters": {
+        "temperature_k": {
+          "unit": "K",
+          "description": "尚未计入接收机噪声系数的参考噪声温度",
+          "exclusive_min": 0
+        }
+      },
+      "applicability": {
+        "requires": [],
+        "notes": [
+          "用于接收门限时，输入为参考热噪声温度；若谱密度已经包含接收机附加噪声，不能再重复加噪声系数。"
+        ]
+      },
+      "sources": [
+        {
+          "title": "Analog Devices, Improving Receiver Sensitivity with External LNA",
+          "url": "https://www.analog.com/en/resources/technical-articles/improving-receiver-sensitivity-with-external-lna.html",
+          "locator": "Receiver sensitivity S = NF + S/N + thermal noise; noise density at 290 K",
+          "checked_date": "2026-09-14"
+        },
+        {
+          "title": "NIST CODATA: Boltzmann constant",
+          "url": "https://physics.nist.gov/cuu/Constants/Value/k.html",
+          "locator": "k = 1.380649e-23 J/K, exact"
+        }
+      ],
+      "examples": [
+        {
+          "inputs": {
+            "temperature_k": 290
+          },
+          "expected": -173.97518719422808,
+          "tolerance": 1e-10
+        }
+      ]
+    },
+    {
+      "id": "receiver_threshold",
+      "title": "由 Eb/N0 与比特率计算接收门限",
+      "description": "按噪声谱密度、比特速率、所需 Eb/N0、接收机噪声系数和工程损失计算接收门限。参考噪声谱密度必须明确输入，或由显式参考温度计算；不会固定为-174。",
+      "version": "1.0.0",
+      "status": "verified",
+      "expression": "noise_density_dbm_hz + 10*log10(bit_rate_bps) + ebn0_db + noise_figure_db + engineering_loss_db",
+      "output": {
+        "name": "rx_threshold_dbm",
+        "unit": "dBm"
+      },
+      "parameters": {
+        "noise_density_dbm_hz": {
+          "unit": "dBm/Hz",
+          "description": "接收机附加噪声之前的参考噪声谱密度；已含噪声系数时不可重复加算"
+        },
+        "bit_rate_bps": {
+          "unit": "bit/s",
+          "description": "与 Eb/N0 定义一致的信息比特率；不能混用符号率或编码后速率",
+          "exclusive_min": 0
+        },
+        "ebn0_db": {
+          "unit": "dB",
+          "description": "指定调制、编码和误码率下所需 Eb/N0，以dB输入"
+        },
+        "noise_figure_db": {
+          "unit": "dB",
+          "description": "相对于所采用参考温度的接收机噪声系数，不能与输入谱密度重复计入",
+          "min": 0
+        },
+        "engineering_loss_db": {
+          "unit": "dB",
+          "description": "尚未计入 Eb/N0 门限的实现或工程损失；无损失需输入0",
+          "min": 0
+        }
+      },
+      "applicability": {
+        "requires": [],
+        "notes": [
+          "由 Eb/N0 = C/N0 - 10log10(Rb) 移项，加入尚未计入的接收机噪声系数和工程损失。比特速率单位为 bit/s，不把它当作噪声带宽。",
+          "噪声谱密度和噪声系数需采用一致的参考温度；输入若已含接收机噪声，噪声系数项应明确为0。",
+          "-174 dBm/Hz 是约290 K时的常用舍入值；使用精确k和290 K得到-173.97518719，两者有0.02481281 dB差异。"
+        ]
+      },
+      "sources": [
+        {
+          "title": "NASA/TM-2002-212006, Appendix 1: Test Descriptions",
+          "url": "https://ntrs.nasa.gov/api/citations/20030015751/downloads/20030015751.pdf",
+          "locator": "printed page 15, section 2: Eb/No = C/No - 10 log(data rate)",
+          "checked_date": "2026-09-14",
+          "verification_copy": "https://citeseerx.ist.psu.edu/document?doi=0e1acf446a4b6282eececfaebdb9ef8ebe04a4e4&repid=rep1&type=pdf"
+        },
+        {
+          "title": "Analog Devices, Improving Receiver Sensitivity with External LNA",
+          "url": "https://www.analog.com/en/resources/technical-articles/improving-receiver-sensitivity-with-external-lna.html",
+          "locator": "Receiver sensitivity S = NF + S/N + thermal noise; noise density at 290 K",
+          "checked_date": "2026-09-14"
+        }
+      ],
+      "examples": [
+        {
+          "inputs": {
+            "noise_density_dbm_hz": -174,
+            "bit_rate_bps": 1000000000.0,
+            "ebn0_db": 15,
+            "noise_figure_db": 4,
+            "engineering_loss_db": 3
+          },
+          "expected": -62,
+          "tolerance": 1e-10
+        }
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "id": "manual_overwrite",
+      "input": "自由空间，频率4.5GHz，距离200米，计算路径损耗",
+      "kwargs": {
+        "parameters": {
+          "distance_km": 1
+        }
+      },
+      "response": {
+        "status": "ok",
+        "request": {
+          "text": "自由空间，频率4.5GHz，距离200米，计算路径损耗",
+          "parameters": {
+            "frequency_ghz": 4.5,
+            "distance_km": 1.0
+          },
+          "evidence": {
+            "frequency_ghz": [
+              "频率4.5GHz"
+            ],
+            "distance_km": [
+              "手动输入（规范单位）"
+            ]
+          },
+          "conditions": [
+            "free_space"
+          ],
+          "issues": [],
+          "targets": [
+            "fspl_ghz"
+          ],
+          "unsupported_targets": [],
+          "target_origin": "explicit_text",
+          "noise_reference": {
+            "mode": "standard_290k",
+            "confirmed": false,
+            "origin": "unconfirmed"
+          }
+        },
+        "interpretation": {
+          "target_origin": "explicit_text",
+          "targets": [
+            "fspl_ghz"
+          ],
+          "conditions": [
+            {
+              "id": "free_space",
+              "label": "理想自由空间模型"
+            }
+          ],
+          "accepted": [],
+          "rejected": [],
+          "condition_origin": "text"
+        },
+        "candidates": [
+          {
+            "id": "fspl_ghz",
+            "rank": 1,
+            "lexical_similarity": 0.4722250688807642,
+            "dense_similarity": null,
+            "title": "自由空间基本传输损耗",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+                "url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+                "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+                "checked_date": "2026-09-14",
+                "derivation": "原式 f 为 MHz、d 为 km；此卡将 f 换为 GHz，保持原标准舍入常数。"
+              }
+            ]
+          },
+          {
+            "id": "received_power",
+            "rank": 2,
+            "lexical_similarity": 0.18969493131482118,
+            "dense_similarity": null,
+            "title": "链路预算接收电平",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "NASA, State-of-the-Art of Small Spacecraft Technology, Ground Data Systems and Mission Operations",
+                "url": "https://www.nasa.gov/smallsat-institute/sst-soa/ground-data-systems-and-mission-operations/",
+                "locator": "11.3.1 Frequency Selection: Link Budget",
+                "checked_date": "2026-09-14",
+                "derivation": "对文中描述的 RF 功率预算按统一参考面展开，正值损耗取减号。"
+              }
+            ]
+          },
+          {
+            "id": "doppler_max",
+            "rank": 3,
+            "lexical_similarity": 0.03321361106966265,
+            "dense_similarity": null,
+            "title": "单程最大多普勒频移上界",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "NASA/JPL IPN Progress Report 42-154, Biswas and Piazzolla (2003)",
+                "url": "https://ipnpr.jpl.nasa.gov/progress_report/42-154/154L.pdf",
+                "locator": "printed page 21, equation (14)",
+                "checked_date": "2026-09-14",
+                "derivation": "原文为电磁波单程径向一阶频移；由径向分量的幅值不超过相对速率得到最大幅度上界。"
+              },
+              {
+                "title": "NIST CODATA: speed of light in vacuum",
+                "url": "https://physics.nist.gov/cuu/Constants/Value/c.html",
+                "locator": "Numerical value: 299792458 m/s, exact",
+                "checked_date": "2026-09-14"
+              }
+            ]
+          },
+          {
+            "id": "link_margin",
+            "rank": 4,
+            "lexical_similarity": 0.025837119466440087,
+            "dense_similarity": null,
+            "title": "扣除预留量后的链路电平余量",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "Texas Instruments SWRA479A, Achieving Optimum Radio Range (2017)",
+                "url": "https://www.ti.com/lit/an/swra479a/swra479a.pdf",
+                "locator": "page 4, section 2.4: link margin definition",
+                "checked_date": "2026-09-14",
+                "derivation": "采用接收功率减灵敏度的定义；此项目再扣除显式 reserve_db。"
+              }
+            ]
+          },
+          {
+            "id": "receiver_threshold",
+            "rank": 5,
+            "lexical_similarity": 0.02539274536967933,
+            "dense_similarity": null,
+            "title": "由 Eb/N0 与比特率计算接收门限",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "NASA/TM-2002-212006, Appendix 1: Test Descriptions",
+                "url": "https://ntrs.nasa.gov/api/citations/20030015751/downloads/20030015751.pdf",
+                "locator": "printed page 15, section 2: Eb/No = C/No - 10 log(data rate)",
+                "checked_date": "2026-09-14",
+                "verification_copy": "https://citeseerx.ist.psu.edu/document?doi=0e1acf446a4b6282eececfaebdb9ef8ebe04a4e4&repid=rep1&type=pdf"
+              },
+              {
+                "title": "Analog Devices, Improving Receiver Sensitivity with External LNA",
+                "url": "https://www.analog.com/en/resources/technical-articles/improving-receiver-sensitivity-with-external-lna.html",
+                "locator": "Receiver sensitivity S = NF + S/N + thermal noise; noise density at 290 K",
+                "checked_date": "2026-09-14"
+              }
+            ]
+          },
+          {
+            "id": "noise_density",
+            "rank": 6,
+            "lexical_similarity": 0.018712029714127994,
+            "dense_similarity": null,
+            "title": "指定温度的热噪声谱密度",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "Analog Devices, Improving Receiver Sensitivity with External LNA",
+                "url": "https://www.analog.com/en/resources/technical-articles/improving-receiver-sensitivity-with-external-lna.html",
+                "locator": "Receiver sensitivity S = NF + S/N + thermal noise; noise density at 290 K",
+                "checked_date": "2026-09-14"
+              },
+              {
+                "title": "NIST CODATA: Boltzmann constant",
+                "url": "https://physics.nist.gov/cuu/Constants/Value/k.html",
+                "locator": "k = 1.380649e-23 J/K, exact"
+              }
+            ]
+          },
+          {
+            "id": "thermal_noise",
+            "rank": 7,
+            "lexical_similarity": 0.01360323904477358,
+            "dense_similarity": null,
+            "title": "指定温度与带宽的热噪声功率",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "NASA Radio JOVE, Tech Talk #1 - Antenna Temperature",
+                "url": "https://radiojove.gsfc.nasa.gov/radio_telescope/resources/tech_talk-1.php",
+                "locator": "P=kTB equation, variable definitions and matched input condition",
+                "checked_date": "2026-09-14",
+                "derivation": "将瓦特乘 1000 转成毫瓦，再取 10log10 得 dBm。"
+              },
+              {
+                "title": "NIST: Kelvin - Boltzmann Constant",
+                "url": "https://www.nist.gov/si-redefinition/kelvin/kelvin-boltzmann-constant",
+                "locator": "fixed SI value 1.380649 x 10^-23 J/K",
+                "checked_date": "2026-09-14"
+              }
+            ]
+          }
+        ],
+        "calculations": [
+          {
+            "id": "fspl_ghz",
+            "title": "自由空间基本传输损耗",
+            "version": "1.0.0",
+            "expression": "92.4 + 20*log10(frequency_ghz) + 20*log10(distance_km)",
+            "sources": [
+              {
+                "title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+                "url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+                "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+                "checked_date": "2026-09-14",
+                "derivation": "原式 f 为 MHz、d 为 km；此卡将 f 换为 GHz，保持原标准舍入常数。"
+              }
+            ],
+            "description": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。",
+            "value_origin": "deterministic_calculator",
+            "display": {
+              "latex": "L_{\\mathrm{p}} = 92.4 + 20\\,\\cdot\\,\\log_{10}\\left(f\\right) + 20\\,\\cdot\\,\\log_{10}\\left(d\\right)",
+              "output_unit": "dB",
+              "symbols": [
+                {
+                  "field": "frequency_ghz",
+                  "latex": "f",
+                  "label": "工作频率",
+                  "unit": "GHz",
+                  "description": "载波频率"
+                },
+                {
+                  "field": "distance_km",
+                  "latex": "d",
+                  "label": "通信距离",
+                  "unit": "km",
+                  "description": "发射端到接收端的路径距离"
+                }
+              ]
+            },
+            "declared_conditions": [
+              "free_space"
+            ],
+            "applicability": {
+              "requires": [
+                "free_space"
+              ],
+              "notes": [
+                "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+                "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。"
+              ]
+            },
+            "status": "ok",
+            "value": 105.46425027550688,
+            "unit": "dB",
+            "inputs": {
+              "frequency_ghz": 4.5,
+              "distance_km": 1.0
+            },
+            "dependencies": [],
+            "display_value": "105.46425028"
+          }
+        ],
+        "questions": [],
+        "warnings": [
+          "当前只检查了明显异常的距离/波长组合，未完整验证天线远场条件；结果仅用于所声明的自由空间基准。"
+        ],
+        "runtime": {
+          "dense_used": false,
+          "llm_used": false,
+          "model_output_rejected": false,
+          "catalog_hash": "fa3362f384e6a09887ba6947f32bc25b876c0ae1a73b29d15425780c102ada4b",
+          "network": "local_only",
+          "scope_rule_version": "p1-1.0.0",
+          "elapsed_seconds": 0.021
+        }
+      }
+    },
+    {
+      "id": "conflicting_derived",
+      "input": "自由空间，频率4.5GHz，距离200米，路径损耗100dB，发射功率40dBm，发射天线增益2dBi，接收天线增益2dBi，发馈线损耗2dB，收馈线损耗2dB，额外损耗0dB，计算路径损耗和接收功率",
+      "kwargs": {},
+      "response": {
+        "status": "ok",
+        "request": {
+          "text": "自由空间，频率4.5GHz，距离200米，路径损耗100dB，发射功率40dBm，发射天线增益2dBi，接收天线增益2dBi，发馈线损耗2dB，收馈线损耗2dB，额外损耗0dB，计算路径损耗和接收功率",
+          "parameters": {
+            "frequency_ghz": 4.5,
+            "distance_km": 0.2,
+            "tx_power_dbm": 40.0,
+            "tx_gain_dbi": 2.0,
+            "rx_gain_dbi": 2.0,
+            "tx_loss_db": 2.0,
+            "rx_loss_db": 2.0,
+            "path_loss_db": 100.0,
+            "extra_loss_db": 0.0
+          },
+          "evidence": {
+            "frequency_ghz": [
+              "频率4.5GHz"
+            ],
+            "distance_km": [
+              "距离200米"
+            ],
+            "tx_power_dbm": [
+              "发射功率40dBm"
+            ],
+            "tx_gain_dbi": [
+              "发射天线增益2dBi"
+            ],
+            "rx_gain_dbi": [
+              "接收天线增益2dBi"
+            ],
+            "tx_loss_db": [
+              "发馈线损耗2dB"
+            ],
+            "rx_loss_db": [
+              "收馈线损耗2dB"
+            ],
+            "path_loss_db": [
+              "路径损耗100dB"
+            ],
+            "extra_loss_db": [
+              "额外损耗0dB"
+            ]
+          },
+          "conditions": [
+            "free_space"
+          ],
+          "issues": [],
+          "targets": [
+            "received_power",
+            "fspl_ghz"
+          ],
+          "unsupported_targets": [],
+          "target_origin": "explicit_text",
+          "noise_reference": {
+            "mode": "standard_290k",
+            "confirmed": false,
+            "origin": "unconfirmed"
+          }
+        },
+        "interpretation": {
+          "target_origin": "explicit_text",
+          "targets": [
+            "received_power",
+            "fspl_ghz"
+          ],
+          "conditions": [
+            {
+              "id": "free_space",
+              "label": "理想自由空间模型"
+            }
+          ],
+          "accepted": [],
+          "rejected": [],
+          "condition_origin": "text"
+        },
+        "candidates": [
+          {
+            "id": "received_power",
+            "rank": 1,
+            "lexical_similarity": 0.5729292644293213,
+            "dense_similarity": null,
+            "title": "链路预算接收电平",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "NASA, State-of-the-Art of Small Spacecraft Technology, Ground Data Systems and Mission Operations",
+                "url": "https://www.nasa.gov/smallsat-institute/sst-soa/ground-data-systems-and-mission-operations/",
+                "locator": "11.3.1 Frequency Selection: Link Budget",
+                "checked_date": "2026-09-14",
+                "derivation": "对文中描述的 RF 功率预算按统一参考面展开，正值损耗取减号。"
+              }
+            ]
+          },
+          {
+            "id": "fspl_ghz",
+            "rank": 2,
+            "lexical_similarity": 0.31955974555335376,
+            "dense_similarity": null,
+            "title": "自由空间基本传输损耗",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+                "url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+                "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+                "checked_date": "2026-09-14",
+                "derivation": "原式 f 为 MHz、d 为 km；此卡将 f 换为 GHz，保持原标准舍入常数。"
+              }
+            ]
+          },
+          {
+            "id": "link_margin",
+            "rank": 3,
+            "lexical_similarity": 0.12269652335590668,
+            "dense_similarity": null,
+            "title": "扣除预留量后的链路电平余量",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "Texas Instruments SWRA479A, Achieving Optimum Radio Range (2017)",
+                "url": "https://www.ti.com/lit/an/swra479a/swra479a.pdf",
+                "locator": "page 4, section 2.4: link margin definition",
+                "checked_date": "2026-09-14",
+                "derivation": "采用接收功率减灵敏度的定义；此项目再扣除显式 reserve_db。"
+              }
+            ]
+          },
+          {
+            "id": "thermal_noise",
+            "rank": 4,
+            "lexical_similarity": 0.06718368682370508,
+            "dense_similarity": null,
+            "title": "指定温度与带宽的热噪声功率",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "NASA Radio JOVE, Tech Talk #1 - Antenna Temperature",
+                "url": "https://radiojove.gsfc.nasa.gov/radio_telescope/resources/tech_talk-1.php",
+                "locator": "P=kTB equation, variable definitions and matched input condition",
+                "checked_date": "2026-09-14",
+                "derivation": "将瓦特乘 1000 转成毫瓦，再取 10log10 得 dBm。"
+              },
+              {
+                "title": "NIST: Kelvin - Boltzmann Constant",
+                "url": "https://www.nist.gov/si-redefinition/kelvin/kelvin-boltzmann-constant",
+                "locator": "fixed SI value 1.380649 x 10^-23 J/K",
+                "checked_date": "2026-09-14"
+              }
+            ]
+          },
+          {
+            "id": "receiver_threshold",
+            "rank": 5,
+            "lexical_similarity": 0.05466577066819063,
+            "dense_similarity": null,
+            "title": "由 Eb/N0 与比特率计算接收门限",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "NASA/TM-2002-212006, Appendix 1: Test Descriptions",
+                "url": "https://ntrs.nasa.gov/api/citations/20030015751/downloads/20030015751.pdf",
+                "locator": "printed page 15, section 2: Eb/No = C/No - 10 log(data rate)",
+                "checked_date": "2026-09-14",
+                "verification_copy": "https://citeseerx.ist.psu.edu/document?doi=0e1acf446a4b6282eececfaebdb9ef8ebe04a4e4&repid=rep1&type=pdf"
+              },
+              {
+                "title": "Analog Devices, Improving Receiver Sensitivity with External LNA",
+                "url": "https://www.analog.com/en/resources/technical-articles/improving-receiver-sensitivity-with-external-lna.html",
+                "locator": "Receiver sensitivity S = NF + S/N + thermal noise; noise density at 290 K",
+                "checked_date": "2026-09-14"
+              }
+            ]
+          },
+          {
+            "id": "noise_density",
+            "rank": 6,
+            "lexical_similarity": 0.04976191547007876,
+            "dense_similarity": null,
+            "title": "指定温度的热噪声谱密度",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "Analog Devices, Improving Receiver Sensitivity with External LNA",
+                "url": "https://www.analog.com/en/resources/technical-articles/improving-receiver-sensitivity-with-external-lna.html",
+                "locator": "Receiver sensitivity S = NF + S/N + thermal noise; noise density at 290 K",
+                "checked_date": "2026-09-14"
+              },
+              {
+                "title": "NIST CODATA: Boltzmann constant",
+                "url": "https://physics.nist.gov/cuu/Constants/Value/k.html",
+                "locator": "k = 1.380649e-23 J/K, exact"
+              }
+            ]
+          },
+          {
+            "id": "doppler_max",
+            "rank": 7,
+            "lexical_similarity": 0.012618108180785854,
+            "dense_similarity": null,
+            "title": "单程最大多普勒频移上界",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "NASA/JPL IPN Progress Report 42-154, Biswas and Piazzolla (2003)",
+                "url": "https://ipnpr.jpl.nasa.gov/progress_report/42-154/154L.pdf",
+                "locator": "printed page 21, equation (14)",
+                "checked_date": "2026-09-14",
+                "derivation": "原文为电磁波单程径向一阶频移；由径向分量的幅值不超过相对速率得到最大幅度上界。"
+              },
+              {
+                "title": "NIST CODATA: speed of light in vacuum",
+                "url": "https://physics.nist.gov/cuu/Constants/Value/c.html",
+                "locator": "Numerical value: 299792458 m/s, exact",
+                "checked_date": "2026-09-14"
+              }
+            ]
+          }
+        ],
+        "calculations": [
+          {
+            "id": "received_power",
+            "title": "链路预算接收电平",
+            "version": "1.0.0",
+            "expression": "tx_power_dbm + tx_gain_dbi + rx_gain_dbi - tx_loss_db - rx_loss_db - path_loss_db - extra_loss_db",
+            "sources": [
+              {
+                "title": "NASA, State-of-the-Art of Small Spacecraft Technology, Ground Data Systems and Mission Operations",
+                "url": "https://www.nasa.gov/smallsat-institute/sst-soa/ground-data-systems-and-mission-operations/",
+                "locator": "11.3.1 Frequency Selection: Link Budget",
+                "checked_date": "2026-09-14",
+                "derivation": "对文中描述的 RF 功率预算按统一参考面展开，正值损耗取减号。"
+              }
+            ],
+            "description": "按发射功率加收发天线增益、减去馈线、路径及额外损耗计算接收功率。路径损耗必须来自适用模型、测量或用户明确提供；此式不会根据环境自动估出路径损耗。",
+            "value_origin": "deterministic_calculator",
+            "display": {
+              "latex": "P_{\\mathrm{r}} = P_{\\mathrm{t}} + G_{\\mathrm{t}} + G_{\\mathrm{r}} - L_{\\mathrm{t}} - L_{\\mathrm{r}} - L_{\\mathrm{p}} - L_{\\mathrm{e}}",
+              "output_unit": "dBm",
+              "symbols": [
+                {
+                  "field": "tx_power_dbm",
+                  "latex": "P_{\\mathrm{t}}",
+                  "label": "发射功率",
+                  "unit": "dBm",
+                  "description": "发射机输出功率，不是已含天线增益的 EIRP"
+                },
+                {
+                  "field": "tx_gain_dbi",
+                  "latex": "G_{\\mathrm{t}}",
+                  "label": "发射天线增益",
+                  "unit": "dBi",
+                  "description": "发射天线沿接收方向的增益，参考各向同性天线"
+                },
+                {
+                  "field": "rx_gain_dbi",
+                  "latex": "G_{\\mathrm{r}}",
+                  "label": "接收天线增益",
+                  "unit": "dBi",
+                  "description": "接收天线沿发射方向的增益，参考各向同性天线"
+                },
+                {
+                  "field": "tx_loss_db",
+                  "latex": "L_{\\mathrm{t}}",
+                  "label": "发馈线损耗",
+                  "unit": "dB",
+                  "description": "发射馈线损耗；无损耗请显式填写 0"
+                },
+                {
+                  "field": "rx_loss_db",
+                  "latex": "L_{\\mathrm{r}}",
+                  "label": "收馈线损耗",
+                  "unit": "dB",
+                  "description": "接收馈线损耗；无损耗请显式填写 0"
+                },
+                {
+                  "field": "path_loss_db",
+                  "latex": "L_{\\mathrm{p}}",
+                  "label": "路径损耗",
+                  "unit": "dB",
+                  "description": "符合场景的基本路径损耗，不重复包含天线增益或馈线损耗"
+                },
+                {
+                  "field": "extra_loss_db",
+                  "latex": "L_{\\mathrm{e}}",
+                  "label": "额外损耗",
+                  "unit": "dB",
+                  "description": "尚未计入其他项的额外损耗；无损耗请显式填写 0"
+                }
+              ]
+            },
+            "declared_conditions": [
+              "free_space"
+            ],
+            "applicability": {
+              "requires": [],
+              "notes": [
+                "所有项必须属于同一条单程链路、同一频率和一致功率参考面。",
+                "本式只做功率收支，不由正接收功率或正余量推断现场可用率。"
+              ]
+            },
+            "status": "ok",
+            "value": -60.0,
+            "unit": "dBm",
+            "inputs": {
+              "tx_power_dbm": 40.0,
+              "tx_gain_dbi": 2.0,
+              "rx_gain_dbi": 2.0,
+              "tx_loss_db": 2.0,
+              "rx_loss_db": 2.0,
+              "path_loss_db": 100.0,
+              "extra_loss_db": 0.0
+            },
+            "dependencies": [],
+            "display_value": "-60",
+            "assessment": {
+              "code": "power_level",
+              "rule_version": "p1-1.0.0",
+              "message": "dBm 是相对于 1 mW 的功率电平；负 dBm 表示低于 1 mW，不代表负功率或计算错误。"
+            }
+          },
+          {
+            "id": "fspl_ghz",
+            "title": "自由空间基本传输损耗",
+            "version": "1.0.0",
+            "expression": "92.4 + 20*log10(frequency_ghz) + 20*log10(distance_km)",
+            "sources": [
+              {
+                "title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+                "url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+                "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+                "checked_date": "2026-09-14",
+                "derivation": "原式 f 为 MHz、d 为 km；此卡将 f 换为 GHz，保持原标准舍入常数。"
+              }
+            ],
+            "description": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。",
+            "value_origin": "deterministic_calculator",
+            "display": {
+              "latex": "L_{\\mathrm{p}} = 92.4 + 20\\,\\cdot\\,\\log_{10}\\left(f\\right) + 20\\,\\cdot\\,\\log_{10}\\left(d\\right)",
+              "output_unit": "dB",
+              "symbols": [
+                {
+                  "field": "frequency_ghz",
+                  "latex": "f",
+                  "label": "工作频率",
+                  "unit": "GHz",
+                  "description": "载波频率"
+                },
+                {
+                  "field": "distance_km",
+                  "latex": "d",
+                  "label": "通信距离",
+                  "unit": "km",
+                  "description": "发射端到接收端的路径距离"
+                }
+              ]
+            },
+            "declared_conditions": [
+              "free_space"
+            ],
+            "applicability": {
+              "requires": [
+                "free_space"
+              ],
+              "notes": [
+                "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+                "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。"
+              ]
+            },
+            "status": "ok",
+            "value": 91.48485018878651,
+            "unit": "dB",
+            "inputs": {
+              "frequency_ghz": 4.5,
+              "distance_km": 0.2
+            },
+            "dependencies": [],
+            "display_value": "91.48485019"
+          }
+        ],
+        "questions": [],
+        "warnings": [
+          "dBm 是相对于 1 mW 的功率电平；负 dBm 表示低于 1 mW，不代表负功率或计算错误。",
+          "当前只检查了明显异常的距离/波长组合，未完整验证天线远场条件；结果仅用于所声明的自由空间基准。"
+        ],
+        "runtime": {
+          "dense_used": false,
+          "llm_used": false,
+          "model_output_rejected": false,
+          "catalog_hash": "fa3362f384e6a09887ba6947f32bc25b876c0ae1a73b29d15425780c102ada4b",
+          "network": "local_only",
+          "scope_rule_version": "p1-1.0.0",
+          "elapsed_seconds": 0.002
+        }
+      }
+    },
+    {
+      "id": "scatter",
+      "input": "散射链路，频率4.5GHz，距离200米，计算路径损耗",
+      "kwargs": {},
+      "response": {
+        "status": "not_applicable",
+        "request": {
+          "text": "散射链路，频率4.5GHz，距离200米，计算路径损耗",
+          "parameters": {
+            "frequency_ghz": 4.5,
+            "distance_km": 0.2
+          },
+          "evidence": {
+            "frequency_ghz": [
+              "频率4.5GHz"
+            ],
+            "distance_km": [
+              "距离200米"
+            ]
+          },
+          "conditions": [
+            "non_free_space"
+          ],
+          "issues": [],
+          "targets": [
+            "fspl_ghz"
+          ],
+          "unsupported_targets": [],
+          "target_origin": "explicit_text",
+          "noise_reference": {
+            "mode": "standard_290k",
+            "confirmed": false,
+            "origin": "unconfirmed"
+          }
+        },
+        "interpretation": {
+          "target_origin": "explicit_text",
+          "targets": [
+            "fspl_ghz"
+          ],
+          "conditions": [
+            {
+              "id": "non_free_space",
+              "label": "存在其他传播机制"
+            }
+          ],
+          "accepted": [],
+          "rejected": [],
+          "condition_origin": "text"
+        },
+        "candidates": [
+          {
+            "id": "received_power",
+            "rank": 1,
+            "lexical_similarity": 0.2086644244463033,
+            "dense_similarity": null,
+            "title": "链路预算接收电平",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "NASA, State-of-the-Art of Small Spacecraft Technology, Ground Data Systems and Mission Operations",
+                "url": "https://www.nasa.gov/smallsat-institute/sst-soa/ground-data-systems-and-mission-operations/",
+                "locator": "11.3.1 Frequency Selection: Link Budget",
+                "checked_date": "2026-09-14",
+                "derivation": "对文中描述的 RF 功率预算按统一参考面展开，正值损耗取减号。"
+              }
+            ]
+          },
+          {
+            "id": "fspl_ghz",
+            "rank": 2,
+            "lexical_similarity": 0.20659846763533435,
+            "dense_similarity": null,
+            "title": "自由空间基本传输损耗",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+                "url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+                "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+                "checked_date": "2026-09-14",
+                "derivation": "原式 f 为 MHz、d 为 km；此卡将 f 换为 GHz，保持原标准舍入常数。"
+              }
+            ]
+          },
+          {
+            "id": "doppler_max",
+            "rank": 3,
+            "lexical_similarity": 0.049820416604493975,
+            "dense_similarity": null,
+            "title": "单程最大多普勒频移上界",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "NASA/JPL IPN Progress Report 42-154, Biswas and Piazzolla (2003)",
+                "url": "https://ipnpr.jpl.nasa.gov/progress_report/42-154/154L.pdf",
+                "locator": "printed page 21, equation (14)",
+                "checked_date": "2026-09-14",
+                "derivation": "原文为电磁波单程径向一阶频移；由径向分量的幅值不超过相对速率得到最大幅度上界。"
+              },
+              {
+                "title": "NIST CODATA: speed of light in vacuum",
+                "url": "https://physics.nist.gov/cuu/Constants/Value/c.html",
+                "locator": "Numerical value: 299792458 m/s, exact",
+                "checked_date": "2026-09-14"
+              }
+            ]
+          },
+          {
+            "id": "link_margin",
+            "rank": 4,
+            "lexical_similarity": 0.03875567919966013,
+            "dense_similarity": null,
+            "title": "扣除预留量后的链路电平余量",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "Texas Instruments SWRA479A, Achieving Optimum Radio Range (2017)",
+                "url": "https://www.ti.com/lit/an/swra479a/swra479a.pdf",
+                "locator": "page 4, section 2.4: link margin definition",
+                "checked_date": "2026-09-14",
+                "derivation": "采用接收功率减灵敏度的定义；此项目再扣除显式 reserve_db。"
+              }
+            ]
+          },
+          {
+            "id": "receiver_threshold",
+            "rank": 5,
+            "lexical_similarity": 0.02539274536967933,
+            "dense_similarity": null,
+            "title": "由 Eb/N0 与比特率计算接收门限",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "NASA/TM-2002-212006, Appendix 1: Test Descriptions",
+                "url": "https://ntrs.nasa.gov/api/citations/20030015751/downloads/20030015751.pdf",
+                "locator": "printed page 15, section 2: Eb/No = C/No - 10 log(data rate)",
+                "checked_date": "2026-09-14",
+                "verification_copy": "https://citeseerx.ist.psu.edu/document?doi=0e1acf446a4b6282eececfaebdb9ef8ebe04a4e4&repid=rep1&type=pdf"
+              },
+              {
+                "title": "Analog Devices, Improving Receiver Sensitivity with External LNA",
+                "url": "https://www.analog.com/en/resources/technical-articles/improving-receiver-sensitivity-with-external-lna.html",
+                "locator": "Receiver sensitivity S = NF + S/N + thermal noise; noise density at 290 K",
+                "checked_date": "2026-09-14"
+              }
+            ]
+          },
+          {
+            "id": "noise_density",
+            "rank": 6,
+            "lexical_similarity": 0.018712029714127994,
+            "dense_similarity": null,
+            "title": "指定温度的热噪声谱密度",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "Analog Devices, Improving Receiver Sensitivity with External LNA",
+                "url": "https://www.analog.com/en/resources/technical-articles/improving-receiver-sensitivity-with-external-lna.html",
+                "locator": "Receiver sensitivity S = NF + S/N + thermal noise; noise density at 290 K",
+                "checked_date": "2026-09-14"
+              },
+              {
+                "title": "NIST CODATA: Boltzmann constant",
+                "url": "https://physics.nist.gov/cuu/Constants/Value/k.html",
+                "locator": "k = 1.380649e-23 J/K, exact"
+              }
+            ]
+          },
+          {
+            "id": "thermal_noise",
+            "rank": 7,
+            "lexical_similarity": 0.01360323904477358,
+            "dense_similarity": null,
+            "title": "指定温度与带宽的热噪声功率",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "NASA Radio JOVE, Tech Talk #1 - Antenna Temperature",
+                "url": "https://radiojove.gsfc.nasa.gov/radio_telescope/resources/tech_talk-1.php",
+                "locator": "P=kTB equation, variable definitions and matched input condition",
+                "checked_date": "2026-09-14",
+                "derivation": "将瓦特乘 1000 转成毫瓦，再取 10log10 得 dBm。"
+              },
+              {
+                "title": "NIST: Kelvin - Boltzmann Constant",
+                "url": "https://www.nist.gov/si-redefinition/kelvin/kelvin-boltzmann-constant",
+                "locator": "fixed SI value 1.380649 x 10^-23 J/K",
+                "checked_date": "2026-09-14"
+              }
+            ]
+          }
+        ],
+        "calculations": [
+          {
+            "id": "fspl_ghz",
+            "title": "自由空间基本传输损耗",
+            "version": "1.0.0",
+            "expression": "92.4 + 20*log10(frequency_ghz) + 20*log10(distance_km)",
+            "sources": [
+              {
+                "title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+                "url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+                "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+                "checked_date": "2026-09-14",
+                "derivation": "原式 f 为 MHz、d 为 km；此卡将 f 换为 GHz，保持原标准舍入常数。"
+              }
+            ],
+            "description": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。",
+            "value_origin": "deterministic_calculator",
+            "display": {
+              "latex": "L_{\\mathrm{p}} = 92.4 + 20\\,\\cdot\\,\\log_{10}\\left(f\\right) + 20\\,\\cdot\\,\\log_{10}\\left(d\\right)",
+              "output_unit": "dB",
+              "symbols": [
+                {
+                  "field": "frequency_ghz",
+                  "latex": "f",
+                  "label": "工作频率",
+                  "unit": "GHz",
+                  "description": "载波频率"
+                },
+                {
+                  "field": "distance_km",
+                  "latex": "d",
+                  "label": "通信距离",
+                  "unit": "km",
+                  "description": "发射端到接收端的路径距离"
+                }
+              ]
+            },
+            "declared_conditions": [
+              "non_free_space"
+            ],
+            "applicability": {
+              "requires": [
+                "free_space"
+              ],
+              "notes": [
+                "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+                "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。"
+              ]
+            },
+            "status": "not_applicable",
+            "scope_issues": [
+              {
+                "code": "model_coverage_gap",
+                "severity": "needs_input",
+                "message": "当前传播模型库只覆盖自由空间基准，未覆盖实际海面反射、遮挡等传播机制。请明确此次是否只求自由空间基准；若求真实环境传播损耗，需补充经审核的环境模型及其条件，当前无法给出实际传播数值。",
+                "fields": [],
+                "rule_version": "p1-1.0.0"
+              }
+            ],
+            "errors": [
+              "当前传播模型库只覆盖自由空间基准，未覆盖实际海面反射、遮挡等传播机制。请明确此次是否只求自由空间基准；若求真实环境传播损耗，需补充经审核的环境模型及其条件，当前无法给出实际传播数值。"
+            ]
+          }
+        ],
+        "questions": [
+          "当前传播模型库只覆盖自由空间基准，未覆盖实际海面反射、遮挡等传播机制。请明确此次是否只求自由空间基准；若求真实环境传播损耗，需补充经审核的环境模型及其条件，当前无法给出实际传播数值。"
+        ],
+        "warnings": [],
+        "runtime": {
+          "dense_used": false,
+          "llm_used": false,
+          "model_output_rejected": false,
+          "catalog_hash": "fa3362f384e6a09887ba6947f32bc25b876c0ae1a73b29d15425780c102ada4b",
+          "network": "local_only",
+          "scope_rule_version": "p1-1.0.0",
+          "elapsed_seconds": 0.001
+        }
+      }
+    },
+    {
+      "id": "missing_loss",
+      "input": "发射功率40dBm，发射天线增益2dBi，接收天线增益2dBi，路径损耗100dB，计算接收功率",
+      "kwargs": {},
+      "response": {
+        "status": "needs_input",
+        "request": {
+          "text": "发射功率40dBm，发射天线增益2dBi，接收天线增益2dBi，路径损耗100dB，计算接收功率",
+          "parameters": {
+            "tx_power_dbm": 40.0,
+            "tx_gain_dbi": 2.0,
+            "rx_gain_dbi": 2.0,
+            "path_loss_db": 100.0
+          },
+          "evidence": {
+            "tx_power_dbm": [
+              "发射功率40dBm"
+            ],
+            "tx_gain_dbi": [
+              "发射天线增益2dBi"
+            ],
+            "rx_gain_dbi": [
+              "接收天线增益2dBi"
+            ],
+            "path_loss_db": [
+              "路径损耗100dB"
+            ]
+          },
+          "conditions": [],
+          "issues": [],
+          "targets": [
+            "received_power"
+          ],
+          "unsupported_targets": [],
+          "target_origin": "explicit_text",
+          "noise_reference": {
+            "mode": "standard_290k",
+            "confirmed": false,
+            "origin": "unconfirmed"
+          }
+        },
+        "interpretation": {
+          "target_origin": "explicit_text",
+          "targets": [
+            "received_power"
+          ],
+          "conditions": [],
+          "accepted": [],
+          "rejected": [],
+          "condition_origin": "text"
+        },
+        "candidates": [
+          {
+            "id": "received_power",
+            "rank": 1,
+            "lexical_similarity": 0.5114461982635824,
+            "dense_similarity": null,
+            "title": "链路预算接收电平",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "NASA, State-of-the-Art of Small Spacecraft Technology, Ground Data Systems and Mission Operations",
+                "url": "https://www.nasa.gov/smallsat-institute/sst-soa/ground-data-systems-and-mission-operations/",
+                "locator": "11.3.1 Frequency Selection: Link Budget",
+                "checked_date": "2026-09-14",
+                "derivation": "对文中描述的 RF 功率预算按统一参考面展开，正值损耗取减号。"
+              }
+            ]
+          },
+          {
+            "id": "link_margin",
+            "rank": 2,
+            "lexical_similarity": 0.17028190212758332,
+            "dense_similarity": null,
+            "title": "扣除预留量后的链路电平余量",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "Texas Instruments SWRA479A, Achieving Optimum Radio Range (2017)",
+                "url": "https://www.ti.com/lit/an/swra479a/swra479a.pdf",
+                "locator": "page 4, section 2.4: link margin definition",
+                "checked_date": "2026-09-14",
+                "derivation": "采用接收功率减灵敏度的定义；此项目再扣除显式 reserve_db。"
+              }
+            ]
+          },
+          {
+            "id": "fspl_ghz",
+            "rank": 3,
+            "lexical_similarity": 0.11494077654958285,
+            "dense_similarity": null,
+            "title": "自由空间基本传输损耗",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+                "url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+                "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+                "checked_date": "2026-09-14",
+                "derivation": "原式 f 为 MHz、d 为 km；此卡将 f 换为 GHz，保持原标准舍入常数。"
+              }
+            ]
+          },
+          {
+            "id": "thermal_noise",
+            "rank": 4,
+            "lexical_similarity": 0.10595400964047867,
+            "dense_similarity": null,
+            "title": "指定温度与带宽的热噪声功率",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "NASA Radio JOVE, Tech Talk #1 - Antenna Temperature",
+                "url": "https://radiojove.gsfc.nasa.gov/radio_telescope/resources/tech_talk-1.php",
+                "locator": "P=kTB equation, variable definitions and matched input condition",
+                "checked_date": "2026-09-14",
+                "derivation": "将瓦特乘 1000 转成毫瓦，再取 10log10 得 dBm。"
+              },
+              {
+                "title": "NIST: Kelvin - Boltzmann Constant",
+                "url": "https://www.nist.gov/si-redefinition/kelvin/kelvin-boltzmann-constant",
+                "locator": "fixed SI value 1.380649 x 10^-23 J/K",
+                "checked_date": "2026-09-14"
+              }
+            ]
+          },
+          {
+            "id": "receiver_threshold",
+            "rank": 5,
+            "lexical_similarity": 0.0963548807562279,
+            "dense_similarity": null,
+            "title": "由 Eb/N0 与比特率计算接收门限",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "NASA/TM-2002-212006, Appendix 1: Test Descriptions",
+                "url": "https://ntrs.nasa.gov/api/citations/20030015751/downloads/20030015751.pdf",
+                "locator": "printed page 15, section 2: Eb/No = C/No - 10 log(data rate)",
+                "checked_date": "2026-09-14",
+                "verification_copy": "https://citeseerx.ist.psu.edu/document?doi=0e1acf446a4b6282eececfaebdb9ef8ebe04a4e4&repid=rep1&type=pdf"
+              },
+              {
+                "title": "Analog Devices, Improving Receiver Sensitivity with External LNA",
+                "url": "https://www.analog.com/en/resources/technical-articles/improving-receiver-sensitivity-with-external-lna.html",
+                "locator": "Receiver sensitivity S = NF + S/N + thermal noise; noise density at 290 K",
+                "checked_date": "2026-09-14"
+              }
+            ]
+          },
+          {
+            "id": "noise_density",
+            "rank": 6,
+            "lexical_similarity": 0.07847849263290312,
+            "dense_similarity": null,
+            "title": "指定温度的热噪声谱密度",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "Analog Devices, Improving Receiver Sensitivity with External LNA",
+                "url": "https://www.analog.com/en/resources/technical-articles/improving-receiver-sensitivity-with-external-lna.html",
+                "locator": "Receiver sensitivity S = NF + S/N + thermal noise; noise density at 290 K",
+                "checked_date": "2026-09-14"
+              },
+              {
+                "title": "NIST CODATA: Boltzmann constant",
+                "url": "https://physics.nist.gov/cuu/Constants/Value/k.html",
+                "locator": "k = 1.380649e-23 J/K, exact"
+              }
+            ]
+          },
+          {
+            "id": "doppler_max",
+            "rank": 7,
+            "lexical_similarity": 0.009949879346007117,
+            "dense_similarity": null,
+            "title": "单程最大多普勒频移上界",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "NASA/JPL IPN Progress Report 42-154, Biswas and Piazzolla (2003)",
+                "url": "https://ipnpr.jpl.nasa.gov/progress_report/42-154/154L.pdf",
+                "locator": "printed page 21, equation (14)",
+                "checked_date": "2026-09-14",
+                "derivation": "原文为电磁波单程径向一阶频移；由径向分量的幅值不超过相对速率得到最大幅度上界。"
+              },
+              {
+                "title": "NIST CODATA: speed of light in vacuum",
+                "url": "https://physics.nist.gov/cuu/Constants/Value/c.html",
+                "locator": "Numerical value: 299792458 m/s, exact",
+                "checked_date": "2026-09-14"
+              }
+            ]
+          }
+        ],
+        "calculations": [
+          {
+            "id": "received_power",
+            "title": "链路预算接收电平",
+            "version": "1.0.0",
+            "expression": "tx_power_dbm + tx_gain_dbi + rx_gain_dbi - tx_loss_db - rx_loss_db - path_loss_db - extra_loss_db",
+            "sources": [
+              {
+                "title": "NASA, State-of-the-Art of Small Spacecraft Technology, Ground Data Systems and Mission Operations",
+                "url": "https://www.nasa.gov/smallsat-institute/sst-soa/ground-data-systems-and-mission-operations/",
+                "locator": "11.3.1 Frequency Selection: Link Budget",
+                "checked_date": "2026-09-14",
+                "derivation": "对文中描述的 RF 功率预算按统一参考面展开，正值损耗取减号。"
+              }
+            ],
+            "description": "按发射功率加收发天线增益、减去馈线、路径及额外损耗计算接收功率。路径损耗必须来自适用模型、测量或用户明确提供；此式不会根据环境自动估出路径损耗。",
+            "value_origin": "deterministic_calculator",
+            "display": {
+              "latex": "P_{\\mathrm{r}} = P_{\\mathrm{t}} + G_{\\mathrm{t}} + G_{\\mathrm{r}} - L_{\\mathrm{t}} - L_{\\mathrm{r}} - L_{\\mathrm{p}} - L_{\\mathrm{e}}",
+              "output_unit": "dBm",
+              "symbols": [
+                {
+                  "field": "tx_power_dbm",
+                  "latex": "P_{\\mathrm{t}}",
+                  "label": "发射功率",
+                  "unit": "dBm",
+                  "description": "发射机输出功率，不是已含天线增益的 EIRP"
+                },
+                {
+                  "field": "tx_gain_dbi",
+                  "latex": "G_{\\mathrm{t}}",
+                  "label": "发射天线增益",
+                  "unit": "dBi",
+                  "description": "发射天线沿接收方向的增益，参考各向同性天线"
+                },
+                {
+                  "field": "rx_gain_dbi",
+                  "latex": "G_{\\mathrm{r}}",
+                  "label": "接收天线增益",
+                  "unit": "dBi",
+                  "description": "接收天线沿发射方向的增益，参考各向同性天线"
+                },
+                {
+                  "field": "tx_loss_db",
+                  "latex": "L_{\\mathrm{t}}",
+                  "label": "发馈线损耗",
+                  "unit": "dB",
+                  "description": "发射馈线损耗；无损耗请显式填写 0"
+                },
+                {
+                  "field": "rx_loss_db",
+                  "latex": "L_{\\mathrm{r}}",
+                  "label": "收馈线损耗",
+                  "unit": "dB",
+                  "description": "接收馈线损耗；无损耗请显式填写 0"
+                },
+                {
+                  "field": "path_loss_db",
+                  "latex": "L_{\\mathrm{p}}",
+                  "label": "路径损耗",
+                  "unit": "dB",
+                  "description": "符合场景的基本路径损耗，不重复包含天线增益或馈线损耗"
+                },
+                {
+                  "field": "extra_loss_db",
+                  "latex": "L_{\\mathrm{e}}",
+                  "label": "额外损耗",
+                  "unit": "dB",
+                  "description": "尚未计入其他项的额外损耗；无损耗请显式填写 0"
+                }
+              ]
+            },
+            "declared_conditions": [],
+            "applicability": {
+              "requires": [],
+              "notes": [
+                "所有项必须属于同一条单程链路、同一频率和一致功率参考面。",
+                "本式只做功率收支，不由正接收功率或正余量推断现场可用率。"
+              ]
+            },
+            "status": "missing_parameters",
+            "missing": [
+              "tx_loss_db",
+              "rx_loss_db",
+              "extra_loss_db"
+            ],
+            "dependencies": []
+          }
+        ],
+        "questions": [
+          "请补充发馈线损耗（dB）",
+          "请补充收馈线损耗（dB）",
+          "请补充额外损耗（dB）"
+        ],
+        "warnings": [],
+        "runtime": {
+          "dense_used": false,
+          "llm_used": false,
+          "model_output_rejected": false,
+          "catalog_hash": "fa3362f384e6a09887ba6947f32bc25b876c0ae1a73b29d15425780c102ada4b",
+          "network": "local_only",
+          "scope_rule_version": "p1-1.0.0",
+          "elapsed_seconds": 0.001
+        }
+      }
+    },
+    {
+      "id": "stale_eval_threshold",
+      "input": "噪声谱密度（dBm/Hz）-174\n比特速率（kb/s）1000000\n解调门限Eb/N0（dB）15\n工程损失（dB）3\n收信机噪声系数（dB）4\n求接收门限",
+      "kwargs": {},
+      "response": {
+        "status": "needs_input",
+        "request": {
+          "text": "噪声谱密度（dBm/Hz）-174\n比特速率（kb/s）1000000\n解调门限Eb/N0（dB）15\n工程损失（dB）3\n收信机噪声系数（dB）4\n求接收门限",
+          "parameters": {
+            "bit_rate_bps": 1000000000.0,
+            "ebn0_db": 15.0,
+            "engineering_loss_db": 3.0,
+            "noise_figure_db": 4.0,
+            "noise_density_dbm_hz": -174.0
+          },
+          "evidence": {
+            "bit_rate_bps": [
+              "比特速率(kb/s)1000000"
+            ],
+            "ebn0_db": [
+              "解调门限Eb/N0(dB)15"
+            ],
+            "engineering_loss_db": [
+              "工程损失(dB)3"
+            ],
+            "noise_figure_db": [
+              "收信机噪声系数(dB)4"
+            ],
+            "noise_density_dbm_hz": [
+              "噪声谱密度(dBm/Hz)-174"
+            ]
+          },
+          "conditions": [],
+          "issues": [],
+          "targets": [
+            "receiver_threshold"
+          ],
+          "unsupported_targets": [],
+          "target_origin": "explicit_text",
+          "noise_reference": {
+            "mode": "standard_290k",
+            "confirmed": false,
+            "origin": "unconfirmed"
+          }
+        },
+        "interpretation": {
+          "target_origin": "explicit_text",
+          "targets": [
+            "receiver_threshold"
+          ],
+          "conditions": [],
+          "accepted": [],
+          "rejected": [],
+          "condition_origin": "text"
+        },
+        "candidates": [
+          {
+            "id": "receiver_threshold",
+            "rank": 1,
+            "lexical_similarity": 0.5820684194985033,
+            "dense_similarity": null,
+            "title": "由 Eb/N0 与比特率计算接收门限",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "NASA/TM-2002-212006, Appendix 1: Test Descriptions",
+                "url": "https://ntrs.nasa.gov/api/citations/20030015751/downloads/20030015751.pdf",
+                "locator": "printed page 15, section 2: Eb/No = C/No - 10 log(data rate)",
+                "checked_date": "2026-09-14",
+                "verification_copy": "https://citeseerx.ist.psu.edu/document?doi=0e1acf446a4b6282eececfaebdb9ef8ebe04a4e4&repid=rep1&type=pdf"
+              },
+              {
+                "title": "Analog Devices, Improving Receiver Sensitivity with External LNA",
+                "url": "https://www.analog.com/en/resources/technical-articles/improving-receiver-sensitivity-with-external-lna.html",
+                "locator": "Receiver sensitivity S = NF + S/N + thermal noise; noise density at 290 K",
+                "checked_date": "2026-09-14"
+              }
+            ]
+          },
+          {
+            "id": "noise_density",
+            "rank": 2,
+            "lexical_similarity": 0.32680294808226673,
+            "dense_similarity": null,
+            "title": "指定温度的热噪声谱密度",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "Analog Devices, Improving Receiver Sensitivity with External LNA",
+                "url": "https://www.analog.com/en/resources/technical-articles/improving-receiver-sensitivity-with-external-lna.html",
+                "locator": "Receiver sensitivity S = NF + S/N + thermal noise; noise density at 290 K",
+                "checked_date": "2026-09-14"
+              },
+              {
+                "title": "NIST CODATA: Boltzmann constant",
+                "url": "https://physics.nist.gov/cuu/Constants/Value/k.html",
+                "locator": "k = 1.380649e-23 J/K, exact"
+              }
+            ]
+          },
+          {
+            "id": "thermal_noise",
+            "rank": 3,
+            "lexical_similarity": 0.21530564502703903,
+            "dense_similarity": null,
+            "title": "指定温度与带宽的热噪声功率",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "NASA Radio JOVE, Tech Talk #1 - Antenna Temperature",
+                "url": "https://radiojove.gsfc.nasa.gov/radio_telescope/resources/tech_talk-1.php",
+                "locator": "P=kTB equation, variable definitions and matched input condition",
+                "checked_date": "2026-09-14",
+                "derivation": "将瓦特乘 1000 转成毫瓦，再取 10log10 得 dBm。"
+              },
+              {
+                "title": "NIST: Kelvin - Boltzmann Constant",
+                "url": "https://www.nist.gov/si-redefinition/kelvin/kelvin-boltzmann-constant",
+                "locator": "fixed SI value 1.380649 x 10^-23 J/K",
+                "checked_date": "2026-09-14"
+              }
+            ]
+          },
+          {
+            "id": "link_margin",
+            "rank": 4,
+            "lexical_similarity": 0.1903675631697227,
+            "dense_similarity": null,
+            "title": "扣除预留量后的链路电平余量",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "Texas Instruments SWRA479A, Achieving Optimum Radio Range (2017)",
+                "url": "https://www.ti.com/lit/an/swra479a/swra479a.pdf",
+                "locator": "page 4, section 2.4: link margin definition",
+                "checked_date": "2026-09-14",
+                "derivation": "采用接收功率减灵敏度的定义；此项目再扣除显式 reserve_db。"
+              }
+            ]
+          },
+          {
+            "id": "received_power",
+            "rank": 5,
+            "lexical_similarity": 0.0983545420883438,
+            "dense_similarity": null,
+            "title": "链路预算接收电平",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "NASA, State-of-the-Art of Small Spacecraft Technology, Ground Data Systems and Mission Operations",
+                "url": "https://www.nasa.gov/smallsat-institute/sst-soa/ground-data-systems-and-mission-operations/",
+                "locator": "11.3.1 Frequency Selection: Link Budget",
+                "checked_date": "2026-09-14",
+                "derivation": "对文中描述的 RF 功率预算按统一参考面展开，正值损耗取减号。"
+              }
+            ]
+          },
+          {
+            "id": "fspl_ghz",
+            "rank": 6,
+            "lexical_similarity": 0.056378327642024544,
+            "dense_similarity": null,
+            "title": "自由空间基本传输损耗",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+                "url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+                "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+                "checked_date": "2026-09-14",
+                "derivation": "原式 f 为 MHz、d 为 km；此卡将 f 换为 GHz，保持原标准舍入常数。"
+              }
+            ]
+          },
+          {
+            "id": "doppler_max",
+            "rank": 7,
+            "lexical_similarity": 0.027190828690444133,
+            "dense_similarity": null,
+            "title": "单程最大多普勒频移上界",
+            "review_status": "verified",
+            "sources": [
+              {
+                "title": "NASA/JPL IPN Progress Report 42-154, Biswas and Piazzolla (2003)",
+                "url": "https://ipnpr.jpl.nasa.gov/progress_report/42-154/154L.pdf",
+                "locator": "printed page 21, equation (14)",
+                "checked_date": "2026-09-14",
+                "derivation": "原文为电磁波单程径向一阶频移；由径向分量的幅值不超过相对速率得到最大幅度上界。"
+              },
+              {
+                "title": "NIST CODATA: speed of light in vacuum",
+                "url": "https://physics.nist.gov/cuu/Constants/Value/c.html",
+                "locator": "Numerical value: 299792458 m/s, exact",
+                "checked_date": "2026-09-14"
+              }
+            ]
+          }
+        ],
+        "calculations": [
+          {
+            "id": "receiver_threshold",
+            "title": "由 Eb/N0 与比特率计算接收门限",
+            "version": "1.0.0",
+            "expression": "noise_density_dbm_hz + 10*log10(bit_rate_bps) + ebn0_db + noise_figure_db + engineering_loss_db",
+            "sources": [
+              {
+                "title": "NASA/TM-2002-212006, Appendix 1: Test Descriptions",
+                "url": "https://ntrs.nasa.gov/api/citations/20030015751/downloads/20030015751.pdf",
+                "locator": "printed page 15, section 2: Eb/No = C/No - 10 log(data rate)",
+                "checked_date": "2026-09-14",
+                "verification_copy": "https://citeseerx.ist.psu.edu/document?doi=0e1acf446a4b6282eececfaebdb9ef8ebe04a4e4&repid=rep1&type=pdf"
+              },
+              {
+                "title": "Analog Devices, Improving Receiver Sensitivity with External LNA",
+                "url": "https://www.analog.com/en/resources/technical-articles/improving-receiver-sensitivity-with-external-lna.html",
+                "locator": "Receiver sensitivity S = NF + S/N + thermal noise; noise density at 290 K",
+                "checked_date": "2026-09-14"
+              }
+            ],
+            "description": "按噪声谱密度、比特速率、所需 Eb/N0、接收机噪声系数和工程损失计算接收门限。参考噪声谱密度必须明确输入，或由显式参考温度计算；不会固定为-174。",
+            "value_origin": "deterministic_calculator",
+            "display": {
+              "latex": "P_{\\mathrm{min}} = N_0 + 10\\,\\cdot\\,\\log_{10}\\left(R_{\\mathrm{b}}\\right) + \\gamma_{\\mathrm{b}} + F_{\\mathrm{n}} + L_{\\mathrm{impl}}",
+              "output_unit": "dBm",
+              "symbols": [
+                {
+                  "field": "noise_density_dbm_hz",
+                  "latex": "N_0",
+                  "label": "噪声谱密度",
+                  "unit": "dBm/Hz",
+                  "description": "接收机附加噪声之前的参考噪声谱密度；已含噪声系数时不可重复加算"
+                },
+                {
+                  "field": "bit_rate_bps",
+                  "latex": "R_{\\mathrm{b}}",
+                  "label": "比特速率",
+                  "unit": "bit/s",
+                  "description": "与 Eb/N0 定义一致的信息比特率；不能混用符号率或编码后速率"
+                },
+                {
+                  "field": "ebn0_db",
+                  "latex": "\\gamma_{\\mathrm{b}}",
+                  "label": "解调门限 Eb/N0",
+                  "unit": "dB",
+                  "description": "指定调制、编码和误码率下所需 Eb/N0，以dB输入"
+                },
+                {
+                  "field": "noise_figure_db",
+                  "latex": "F_{\\mathrm{n}}",
+                  "label": "接收机噪声系数",
+                  "unit": "dB",
+                  "description": "相对于所采用参考温度的接收机噪声系数，不能与输入谱密度重复计入"
+                },
+                {
+                  "field": "engineering_loss_db",
+                  "latex": "L_{\\mathrm{impl}}",
+                  "label": "工程损失",
+                  "unit": "dB",
+                  "description": "尚未计入 Eb/N0 门限的实现或工程损失；无损失需输入0"
+                }
+              ]
+            },
+            "declared_conditions": [],
+            "applicability": {
+              "requires": [],
+              "notes": [
+                "由 Eb/N0 = C/N0 - 10log10(Rb) 移项，加入尚未计入的接收机噪声系数和工程损失。比特速率单位为 bit/s，不把它当作噪声带宽。",
+                "噪声谱密度和噪声系数需采用一致的参考温度；输入若已含接收机噪声，噪声系数项应明确为0。",
+                "-174 dBm/Hz 是约290 K时的常用舍入值；使用精确k和290 K得到-173.97518719，两者有0.02481281 dB差异。"
+              ]
+            },
+            "status": "missing_conditions",
+            "scope_issues": [
+              {
+                "code": "noise_reference_unconfirmed",
+                "severity": "needs_input",
+                "message": "请确认噪声参考：输入温度/谱密度是否仅为接收机输入端的源噪声，尚未包含接收机噪声？噪声系数 NF 是否按 T0=290 K 定义？当前仅支持匹配源温度为 290 K 的标准路线。若确实满足，可另起一行输入“确认采用标准290K噪声路线”，并明确输入温度或谱密度；其他源温度或已含接收机噪声的系统总噪声路线待后续公式版本支持。",
+                "fields": [
+                  "temperature_k",
+                  "noise_density_dbm_hz",
+                  "noise_figure_db"
+                ],
+                "rule_version": "p1-1.0.0"
+              }
+            ],
+            "errors": [
+              "请确认噪声参考：输入温度/谱密度是否仅为接收机输入端的源噪声，尚未包含接收机噪声？噪声系数 NF 是否按 T0=290 K 定义？当前仅支持匹配源温度为 290 K 的标准路线。若确实满足，可另起一行输入“确认采用标准290K噪声路线”，并明确输入温度或谱密度；其他源温度或已含接收机噪声的系统总噪声路线待后续公式版本支持。"
+            ],
+            "missing": [],
+            "dependencies": []
+          }
+        ],
+        "questions": [
+          "请确认噪声参考：输入温度/谱密度是否仅为接收机输入端的源噪声，尚未包含接收机噪声？噪声系数 NF 是否按 T0=290 K 定义？当前仅支持匹配源温度为 290 K 的标准路线。若确实满足，可另起一行输入“确认采用标准290K噪声路线”，并明确输入温度或谱密度；其他源温度或已含接收机噪声的系统总噪声路线待后续公式版本支持。"
+        ],
+        "warnings": [],
+        "runtime": {
+          "dense_used": false,
+          "llm_used": false,
+          "model_output_rejected": false,
+          "catalog_hash": "fa3362f384e6a09887ba6947f32bc25b876c0ae1a73b29d15425780c102ada4b",
+          "network": "local_only",
+          "scope_rule_version": "p1-1.0.0",
+          "elapsed_seconds": 0.002
+        }
+      }
+    }
+  ],
+  "examples": [
+    {
+      "formula_id": "fspl_ghz",
+      "sample": {
+        "inputs": {
+          "frequency_ghz": 4.5,
+          "distance_km": 0.2
+        },
+        "expected": 91.48485018878651,
+        "tolerance": 1e-10
+      },
+      "actual": {
+        "status": "ok",
+        "value": 91.48485018878651,
+        "unit": "dB",
+        "inputs": {
+          "frequency_ghz": 4.5,
+          "distance_km": 0.2
+        }
+      },
+      "passed": true
+    },
+    {
+      "formula_id": "fspl_ghz",
+      "sample": {
+        "inputs": {
+          "frequency_ghz": 4.5,
+          "distance_km": 0.4
+        },
+        "expected": 97.50545010206613,
+        "tolerance": 1e-10
+      },
+      "actual": {
+        "status": "ok",
+        "value": 97.50545010206613,
+        "unit": "dB",
+        "inputs": {
+          "frequency_ghz": 4.5,
+          "distance_km": 0.4
+        }
+      },
+      "passed": true
+    },
+    {
+      "formula_id": "doppler_max",
+      "sample": {
+        "inputs": {
+          "frequency_ghz": 4.5,
+          "speed_kmh": 108
+        },
+        "expected": 450.3115285175053,
+        "tolerance": 1e-09
+      },
+      "actual": {
+        "status": "ok",
+        "value": 450.3115285175053,
+        "unit": "Hz",
+        "inputs": {
+          "frequency_ghz": 4.5,
+          "speed_kmh": 108.0
+        }
+      },
+      "passed": true
+    },
+    {
+      "formula_id": "thermal_noise",
+      "sample": {
+        "inputs": {
+          "temperature_k": 290,
+          "bandwidth_hz": 1000000
+        },
+        "expected": -113.97518719422808,
+        "tolerance": 1e-09
+      },
+      "actual": {
+        "status": "ok",
+        "value": -113.97518719422811,
+        "unit": "dBm",
+        "inputs": {
+          "temperature_k": 290.0,
+          "bandwidth_hz": 1000000.0
+        }
+      },
+      "passed": true
+    },
+    {
+      "formula_id": "received_power",
+      "sample": {
+        "inputs": {
+          "tx_power_dbm": 40,
+          "tx_gain_dbi": 2,
+          "rx_gain_dbi": 2,
+          "tx_loss_db": 2,
+          "rx_loss_db": 2,
+          "path_loss_db": 91.48485018878651,
+          "extra_loss_db": 0
+        },
+        "expected": -51.48485018878651,
+        "tolerance": 1e-10
+      },
+      "actual": {
+        "status": "ok",
+        "value": -51.48485018878651,
+        "unit": "dBm",
+        "inputs": {
+          "tx_power_dbm": 40.0,
+          "tx_gain_dbi": 2.0,
+          "rx_gain_dbi": 2.0,
+          "tx_loss_db": 2.0,
+          "rx_loss_db": 2.0,
+          "path_loss_db": 91.48485018878651,
+          "extra_loss_db": 0.0
+        }
+      },
+      "passed": true
+    },
+    {
+      "formula_id": "link_margin",
+      "sample": {
+        "inputs": {
+          "rx_power_dbm": -51.48485018878651,
+          "rx_threshold_dbm": -62,
+          "reserve_db": 0
+        },
+        "expected": 10.51514981121349,
+        "tolerance": 1e-10
+      },
+      "actual": {
+        "status": "ok",
+        "value": 10.51514981121349,
+        "unit": "dB",
+        "inputs": {
+          "rx_power_dbm": -51.48485018878651,
+          "rx_threshold_dbm": -62.0,
+          "reserve_db": 0.0
+        }
+      },
+      "passed": true
+    },
+    {
+      "formula_id": "noise_density",
+      "sample": {
+        "inputs": {
+          "temperature_k": 290
+        },
+        "expected": -173.97518719422808,
+        "tolerance": 1e-10
+      },
+      "actual": {
+        "status": "ok",
+        "value": -173.97518719422808,
+        "unit": "dBm/Hz",
+        "inputs": {
+          "temperature_k": 290.0
+        }
+      },
+      "passed": true
+    },
+    {
+      "formula_id": "receiver_threshold",
+      "sample": {
+        "inputs": {
+          "noise_density_dbm_hz": -174,
+          "bit_rate_bps": 1000000000.0,
+          "ebn0_db": 15,
+          "noise_figure_db": 4,
+          "engineering_loss_db": 3
+        },
+        "expected": -62,
+        "tolerance": 1e-10
+      },
+      "actual": {
+        "status": "ok",
+        "value": -62.0,
+        "unit": "dBm",
+        "inputs": {
+          "noise_density_dbm_hz": -174.0,
+          "bit_rate_bps": 1000000000.0,
+          "ebn0_db": 15.0,
+          "noise_figure_db": 4.0,
+          "engineering_loss_db": 3.0
+        }
+      },
+      "passed": true
+    }
+  ],
+  "retrieval_unrelated": [
+    {
+      "id": "doppler_max",
+      "rank": 1,
+      "lexical_similarity": 0.0,
+      "dense_similarity": null
+    },
+    {
+      "id": "fspl_ghz",
+      "rank": 2,
+      "lexical_similarity": 0.0,
+      "dense_similarity": null
+    },
+    {
+      "id": "link_margin",
+      "rank": 3,
+      "lexical_similarity": 0.0,
+      "dense_similarity": null
+    },
+    {
+      "id": "noise_density",
+      "rank": 4,
+      "lexical_similarity": 0.0,
+      "dense_similarity": null
+    },
+    {
+      "id": "received_power",
+      "rank": 5,
+      "lexical_similarity": 0.0,
+      "dense_similarity": null
+    },
+    {
+      "id": "receiver_threshold",
+      "rank": 6,
+      "lexical_similarity": 0.0,
+      "dense_similarity": null
+    },
+    {
+      "id": "thermal_noise",
+      "rank": 7,
+      "lexical_similarity": 0.0,
+      "dense_similarity": null
+    }
+  ],
+  "core_scope_bypass": {
+    "status": "ok",
+    "value": -87.6,
+    "unit": "dB",
+    "inputs": {
+      "frequency_ghz": 1.0,
+      "distance_km": 1e-09
+    }
+  },
+  "external_sources_revalidated": false,
+  "writes": [
+    "docs/codex/RAG_CALCULATION_AUDIT.md",
+    "docs/codex/evidence/rag_calculation_assets.json",
+    "docs/codex/evidence/aud02_tasks.json"
+  ]
+}

@@ -58,6 +58,7 @@ class PastedInputTests(unittest.TestCase):
 
     def test_explicit_completed_budget_matches_reference_numbers(self):
         text = '''按自由空间基准计算
+确认采用标准290K噪声路线
 工作频率（GHz）4.5
 通信距离（km）0.2
 比特速率（kb/s）1000000

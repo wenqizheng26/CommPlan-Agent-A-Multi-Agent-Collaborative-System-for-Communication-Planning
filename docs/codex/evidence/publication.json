@@ -1,0 +1,30 @@
+{
+  "publisher": "PUB-01",
+  "intended_owner": "wenqizheng26",
+  "connected_owner": "WenqiZheng2004",
+  "owner_match": false,
+  "proposed_repository_name": "signal-formula-rag-takeover",
+  "visibility": "private",
+  "repository_created": false,
+  "upload": false,
+  "source_origin_unchanged": true,
+  "old_origin": "https://github.com/wenqizheng26/signal-formula-rag.git",
+  "old_origin_status": "retired_for_this_publication_attempt",
+  "errors": [
+    "git ls-remote: Failed to connect to github.com:443 after 21117 ms",
+    "gh CLI: command not found",
+    "GitHub connector account mismatch: connected WenqiZheng2004, intended wenqizheng26",
+    "GitHub connector repository metadata: API 404 Not Found for old target",
+    "GitHub connector: no callable repository creation operation",
+    "CUA createBrowserTab: nodeRepl.fetch request failed",
+    "Publisher subagent stopped: account usage limit; no publication directory exists at final read-only check"
+  ],
+  "review_gate": "stage_1_allowlist_authorized",
+  "history_imported": false,
+  "files_uploaded": [],
+  "local_publication_directory_created": false,
+  "local_commits": [],
+  "stage1_status": "BLOCKED_USAGE_LIMIT",
+  "stage2_status": "WAITING_REVIEW_CLOSURE",
+  "last_state_writer": "Main - publisher stopped on usage limit"
+}

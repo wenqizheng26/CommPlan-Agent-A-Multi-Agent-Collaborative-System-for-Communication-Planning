@@ -1,0 +1,169 @@
+[
+  {
+    "candidate_id": "scope",
+    "title": "明确Demo与总体WBS阶段边界",
+    "wbs_refs": [
+      "1.0",
+      "1.1",
+      "1.2"
+    ],
+    "dependencies": [],
+    "status": "DRAFT",
+    "acceptance_criteria": [
+      "损耗Demo不删除预算/候选比较范围",
+      "3.4默认值语义明确"
+    ],
+    "owner": "main_agent_to_assign",
+    "test_commands_candidates": [
+      "python -m unittest discover -s tests -v (existing regression; baseline owner only)",
+      "future scoped unittest modules to be defined after ownership/contract freeze"
+    ]
+  },
+  {
+    "candidate_id": "contracts",
+    "title": "冻结状态、角色、工具、证据、确认版本契约",
+    "wbs_refs": [
+      "1.3",
+      "1.4",
+      "4.7"
+    ],
+    "dependencies": [
+      "scope"
+    ],
+    "status": "DRAFT",
+    "acceptance_criteria": [
+      "JSON往返、非法数字拒绝",
+      "suggested/confirmed/conflicting分离",
+      "旧/晚到结果拒绝"
+    ],
+    "owner": "main_agent_to_assign",
+    "test_commands_candidates": [
+      "python -m unittest discover -s tests -v (existing regression; baseline owner only)",
+      "future scoped unittest modules to be defined after ownership/contract freeze"
+    ]
+  },
+  {
+    "candidate_id": "wrappers",
+    "title": "增量封装RAG/计算/校验",
+    "wbs_refs": [
+      "2.4",
+      "2.5",
+      "3.5",
+      "3.6",
+      "4.5"
+    ],
+    "dependencies": [
+      "contracts"
+    ],
+    "status": "DRAFT",
+    "acceptance_criteria": [
+      "禁止直接core绕过scope",
+      "Evidence含source/version/snapshot",
+      "输入与派生结果冲突拒绝"
+    ],
+    "owner": "main_agent_to_assign",
+    "test_commands_candidates": [
+      "python -m unittest discover -s tests -v (existing regression; baseline owner only)",
+      "future scoped unittest modules to be defined after ownership/contract freeze"
+    ]
+  },
+  {
+    "candidate_id": "workflow",
+    "title": "实现受控路由与持久状态",
+    "wbs_refs": [
+      "4.0",
+      "4.1",
+      "4.3",
+      "4.6",
+      "4.7"
+    ],
+    "dependencies": [
+      "contracts",
+      "wrappers"
+    ],
+    "status": "DRAFT",
+    "acceptance_criteria": [
+      "跨重启恢复",
+      "有限retry耗尽终止",
+      "四条stub路径通过",
+      "提交幂等且revision失效"
+    ],
+    "owner": "main_agent_to_assign",
+    "test_commands_candidates": [
+      "python -m unittest discover -s tests -v (existing regression; baseline owner only)",
+      "future scoped unittest modules to be defined after ownership/contract freeze"
+    ]
+  },
+  {
+    "candidate_id": "agents",
+    "title": "接入四角色结构化协议",
+    "wbs_refs": [
+      "4.2",
+      "4.4",
+      "4.8"
+    ],
+    "dependencies": [
+      "workflow"
+    ],
+    "status": "DRAFT",
+    "acceptance_criteria": [
+      "角色身份程序绑定",
+      "LLM不能改ToolResult",
+      "真实模型调用证据独立于stub"
+    ],
+    "owner": "main_agent_to_assign",
+    "test_commands_candidates": [
+      "python -m unittest discover -s tests -v (existing regression; baseline owner only)",
+      "future scoped unittest modules to be defined after ownership/contract freeze"
+    ]
+  },
+  {
+    "candidate_id": "ui",
+    "title": "接确认、过程、证据与导出",
+    "wbs_refs": [
+      "5.0",
+      "5.1",
+      "5.2",
+      "5.3",
+      "5.4"
+    ],
+    "dependencies": [
+      "agents"
+    ],
+    "status": "DRAFT",
+    "acceptance_criteria": [
+      "计算前显式确认",
+      "过期确认拒绝",
+      "UI消费trace且仅展示安全摘要"
+    ],
+    "owner": "main_agent_to_assign",
+    "test_commands_candidates": [
+      "python -m unittest discover -s tests -v (existing regression; baseline owner only)",
+      "future scoped unittest modules to be defined after ownership/contract freeze"
+    ]
+  },
+  {
+    "candidate_id": "eval",
+    "title": "同条件三模式与科学/引用验收",
+    "wbs_refs": [
+      "1.5",
+      "2.6",
+      "3.7"
+    ],
+    "dependencies": [
+      "agents",
+      "ui"
+    ],
+    "status": "DRAFT",
+    "acceptance_criteria": [
+      "固定/单Agent/多Agent共用数据工具预算",
+      "错误放行与错误拒绝分列",
+      "原回归保持"
+    ],
+    "owner": "main_agent_to_assign",
+    "test_commands_candidates": [
+      "python -m unittest discover -s tests -v (existing regression; baseline owner only)",
+      "future scoped unittest modules to be defined after ownership/contract freeze"
+    ]
+  }
+]

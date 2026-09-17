@@ -54,6 +54,40 @@ class AppTests(unittest.TestCase):
             urllib.request.urlopen(req)
         self.assertEqual(ctx.exception.code, 400)
 
+    def test_noise_confirmation_is_forwarded_and_saved_with_result(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            from formula_rag.pipeline import Engine
+            root = Path(__file__).resolve().parents[1]
+            server = create_server(root, Engine(root, dense=False, llm=False), port=0, output_dir=Path(tmp))
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            def post(path, body):
+                req = urllib.request.Request(f'http://127.0.0.1:{server.server_port}'+path,
+                    json.dumps(body).encode(), {'Content-Type':'application/json'})
+                with urllib.request.urlopen(req) as response:
+                    return json.load(response)
+            try:
+                body = {'text':'噪声谱密度-174dBm/Hz，比特率1000000bit/s，Eb/N0 10dB，噪声系数3dB，工程损失0dB，求接收门限'}
+                blocked = post('/api/query', body)
+                self.assertNotIn('value', blocked['calculations'][-1])
+                body['noise_reference'] = {'mode':'standard_290k', 'confirmed':True}
+                result = post('/api/query', body)
+                self.assertEqual(result['calculations'][-1]['value'], -101)
+                saved = post('/api/save-result', {'result_id':result['result_id']})
+                stored = json.loads(Path(saved['path']).read_text(encoding='utf-8'))
+                self.assertEqual(stored, result)
+                self.assertEqual(stored['request']['noise_reference']['origin'], 'structured_input')
+                self.assertEqual(stored['calculations'][-1]['assessment']['code'], 'power_level')
+            finally:
+                server.shutdown()
+                server.server_close()
+
+    def test_noise_confirmation_string_boolean_is_not_accepted(self):
+        data = json.dumps({'text':'求接收门限','noise_reference':{'mode':'standard_290k','confirmed':'true'}}).encode()
+        req = urllib.request.Request(self.url+'/api/query', data, {'Content-Type':'application/json'})
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            urllib.request.urlopen(req)
+        self.assertEqual(ctx.exception.code, 400)
+
     def test_cross_origin_post_rejected(self):
         req = urllib.request.Request(self.url+'/api/query', b'{"text":"x"}', {'Content-Type': 'application/json', 'Origin': 'https://unrelated.example'})
         with self.assertRaises(urllib.error.HTTPError) as ctx:

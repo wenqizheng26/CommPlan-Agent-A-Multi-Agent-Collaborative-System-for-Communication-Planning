@@ -4,7 +4,7 @@
 
 最新需求见 [工程需求基线 R1](docs/requirements.md)，配套 [多 Agent + LangGraph 目标流程 v1.4](docs/diagrams/2026-09-15/通信筹划协同流程_v1.4.md)。已确定：自然语言自动填表、核对确认后计算、一个总控与三个专业 Agent、在用户确认范围内生成参数组合、并列比较方案并由用户选择。
 
-2026-09-15 本轮已将这些要求及必要工程规则计入文档，**尚未实现新版流程**。当前程序仍是下述本地公式 RAG；LangGraph 尚未安装，科学审查所列问题仍待逐项修复。当前状态、历史证据与实施顺序见 [HANDOVER](HANDOVER.md)、[科学审查](docs/superpowers/specs/2026-09-14-scientific-review-design.md)和[需求基线](docs/requirements.md)。
+2026-09-15 已保存非多 Agent 旧版，完成 P1 适用性与结果解释修复。**LangGraph、多 Agent 和先解析后确认表单仍待 P4/P5 实现**。当前程序继续使用本地公式 RAG；P2 的公式基本式与噪声路线、P3 的显示精度尚未实施。备份入口见 [BACKUP.md](BACKUP.md)，P1 规则见 [P1 说明](docs/p1-applicability.md)。当前状态、历史证据与实施顺序见 [HANDOVER](HANDOVER.md)、[科学审查](docs/superpowers/specs/2026-09-14-scientific-review-design.md)和[需求基线](docs/requirements.md)。
 
 ## 现有程序
 
@@ -43,7 +43,7 @@ Set-Location -LiteralPath 'E:\codex\项目\信号与AI\signal-formula-rag'
 
 支持按行粘贴 `工作频率（GHz）4.5`、`发射信号电平（dBm）40` 这类“单位在前”的输入。在“计算”之后分行列出多个待求量，会分别计算。缺参数、单位不明或缺适用模型时，提示用户补充，不使用参考表中的默认值。
 
-完整链路示例见 `examples/complete_budget.txt`。它明确写出噪声谱密度 -174 dBm/Hz、Eb/N0 的 dB 单位、dBi 增益和损耗。算得路径损耗 91.48485019 dB、接收电平 -51.48485019 dBm、门限 -62 dBm、余量 10.51514981 dB。这些输入仅用于示例，不会预填到其他查询。
+完整链路示例见 `examples/complete_budget.txt`。它明确确认标准 290 K 噪声路线，并写出噪声谱密度 -174 dBm/Hz、Eb/N0 的 dB 单位、dBi 增益和损耗。算得路径损耗 91.48485019 dB、接收电平 -51.48485019 dBm、门限 -62 dBm、余量 10.51514981 dB。这些输入仅用于示例，不会预填到其他查询。
 
 计算目标和传播条件默认自动识别，手动覆盖收在“修正识别”；参数名称精简，悬停 ⓘ 查看定义。结果中的公式由本地 KaTeX 排版，点击“查看定义与来源”自动展开下方公式集合、定位并高亮；“返回结果”保留当前输入和结果。
 
@@ -88,7 +88,7 @@ Set-Location -LiteralPath 'E:\codex\项目\信号与AI\signal-formula-rag'
 
 ## 验证
 
-2026-09-14 的历史检查和浏览器核验见 `reports/final_checks.json`、`reports/acceptance.json`、`reports/browser_qa.json`。23 个案例为预设断言通过，包含完整计算、部分结果、追问和拒算；不能解释为 23 题全部完整算通。它们也不是新版多 Agent 的验收证据。最新文档状态见 `HANDOVER.md`。
+2026-09-14 的历史检查和浏览器核验见 `reports/final_checks.json`、`reports/acceptance.json`、`reports/browser_qa.json`。23 个案例为预设断言通过，包含完整计算、部分结果、追问和拒算；不能解释为 23 题全部完整算通。它们也不是新版多 Agent 的验收证据。这些历史报告只保留本机，未上传 GitHub；P1 无模型验证见 [阶段报告](reports/stages/p1-applicability.json)。最新状态见 `HANDOVER.md`。
 
 ```powershell
 & '.\.venv\Scripts\python.exe' -X utf8 -m unittest discover -s tests -v
@@ -111,7 +111,7 @@ Set-Location -LiteralPath 'E:\codex\项目\信号与AI\signal-formula-rag'
 - `docs/requirements.md`：当前工程需求与阶段验收基线。
 - `docs/diagrams/2026-09-15/通信筹划协同流程_v1.4.md`：当前目标图与可编辑图稿入口。
 - `docs/superpowers/specs/2026-09-14-scientific-review-design.md`：科学缺陷、来源与修复依据。
-- `docs/superpowers/plans/2026-09-14-01-applicability.md`：P1 适用性修复计划，尚未实施。
+- `docs/superpowers/plans/2026-09-14-01-applicability.md`：P1 已完成的实施计划与验收清单。
 - `formula_rag/`：解析、检索、模型接口、公式计算与校验。
 - `knowledge/formulas.json`：版本化知识库。
 - `reports/`：原表复算、模型运行、依赖清单及验收结果。

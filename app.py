@@ -94,7 +94,8 @@ def create_server(root, engine, port=18080, output_dir=None):
                     raise ValueError('请输入问题文本')
                 with gate:
                     result = engine.query(body['text'], parameters=body.get('parameters'),
-                                          condition=body.get('condition'), target=body.get('target'))
+                                          condition=body.get('condition'), target=body.get('target'),
+                                          noise_reference=body.get('noise_reference'))
                     identifier = uuid.uuid4().hex
                     result['result_id'] = identifier
                     filename = '计算结果-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ-') + identifier + '.json'

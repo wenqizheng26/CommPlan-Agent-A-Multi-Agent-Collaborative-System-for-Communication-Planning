@@ -1,0 +1,8 @@
+{
+  "approved": true,
+  "recorded_at_utc": "2026-09-17T04:37:00.766223+00:00",
+  "user_message": "执行",
+  "scope": "批准已呈交H0总体方案及普通任务自动连续执行，保留重大升级条件",
+  "contract_draft_sha256": "f52fdeeac9eb33f9e07ea4a6df69a0740d35b190a83b3e38aeeeb9ced6294d34",
+  "independent_review": "REV-02 round 2 PASS_WITH_LIMITATIONS, CP-01..05 RESOLVED"
+}
