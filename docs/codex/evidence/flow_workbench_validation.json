@@ -1,0 +1,112 @@
+{
+  "recorded_utc": "2026-09-18T08:19:22.495223+00:00",
+  "status": "verified_with_scope_limits",
+  "reference": {
+    "path": "C:\\Users\\nntm\\Desktop\\天大信号\\通信筹划多智能体协同流程.vsdx",
+    "sha256": "e5cf33fbcf22e8a7d48d2254cfc8efea90321f9dd6b3394ac28de891f0cb8fb8",
+    "modified": false
+  },
+  "python_tests": {
+    "count": 169,
+    "seconds": 56.463,
+    "failures": 0,
+    "log": "flow-workbench-tests.log"
+  },
+  "node_tests": {
+    "count": 7,
+    "failures": 0,
+    "command": "node --test tests/planning_flow.test.mjs tests/planning_web_text.test.mjs",
+    "after_last_frontend_fix": true
+  },
+  "pip_check": "passed",
+  "browser": {
+    "provider": "visible Chrome via cua",
+    "task_id": "2d52ddc2-b3bc-4648-9a49-72da82f38875",
+    "final_status": "COMPLETED",
+    "revision": 2,
+    "state_version": 5,
+    "result": [
+      {
+        "name": "path_loss_db",
+        "unit": "dB",
+        "value": 98.42059991327963
+      }
+    ],
+    "cases": [
+      "dual execution/architecture views",
+      "unimplemented/partial nodes labelled",
+      "2000MHz and 1000m normalized to 2GHz and 1km",
+      "emoji source highlighting",
+      "parameter to mathematical formula to source metadata",
+      "actual substitution after confirmation",
+      "expanded detail layout",
+      "real start/end timeline with timings",
+      "historical draft read-only and return current",
+      "JSON download parsed from Downloads",
+      "edit removes current result, missing distance routes to supplement",
+      "refresh restores saved task",
+      "completed demo restored"
+    ],
+    "download": "C:/Users/nntm/Downloads/planning-2d52ddc2-b3bc-4648-9a49-72da82f38875-r0-v2.json",
+    "mobile_tested": false
+  },
+  "review": {
+    "reviewer": "flow_workbench_review",
+    "P2_found": 2,
+    "P2_closed": 2,
+    "fixes": [
+      "late observation generation/seq ordering and committed state priority",
+      "task-bound historical responses and closures; clear history on task switch"
+    ],
+    "independent_recheck": "both original Node VM reproductions now closed"
+  },
+  "activity": {
+    "events_observed": 56,
+    "last_phase": "committed",
+    "separate_from_business_transaction": true,
+    "query_limit": 1000
+  },
+  "legacy_paths_unchanged": true,
+  "git_published": false,
+  "real_qwen_rerun_this_phase": false,
+  "source_sha256": {
+    "planning/demo.py": "e797c946832cb0c3c43e6b595bc2b790d78f01a624b6a816a898a98913ec1b56",
+    "planning/requirements_contract.py": "f184c4bb928d9b92c1d8fb4591a0bfee4090aca71bbc1555713adf99dbb24699",
+    "planning/web_server.py": "671562fba5b717cad82dc4c7df70faf9da6deddac307fb63c51cb108abe9d46b",
+    "planning/__init__.py": "5f2a8770b78e5248988b9e614876da52654a1c92e21e8e6a611b83cf47f82d5c",
+    "planning/agents/calculation.py": "d309bb59ffdcc92f9a3aa6c69bb7411f9419fc0640468ac64db0b69c41e9c875",
+    "planning/agents/requirements.py": "3e2a78db435df90e0ba662be1df969a4d9ec08853ba38f21e3f8c5cdb025edf9",
+    "planning/agents/__init__.py": "b03416c4900de2e4171efda1f0de5898c765577790b1cdb7f786d026a4607663",
+    "planning/services/calculation.py": "5fb7c009ab4de125785eefede3c0a0ed9547784448d0effede7f865dfee7cab1",
+    "planning/services/confirmation.py": "bd1b6bb94999b79aef7b5bf4a73cd96007af7cb5ecbcd667cefe411ef4eff2dc",
+    "planning/services/requirement_evidence.py": "ba6d400ef933f5c6afa36bbbf988b0514086a50917ab1b28cd1a681fd299e663",
+    "planning/services/requirement_parameters.py": "ff93754b8aaeadb266611444ab97f097bf28eec75dc1307aeafe4e1ee7173c40",
+    "planning/services/requirement_policy.py": "ef817b450b8e429370a24bebbd025aa7f0a7440aa5c02bdae1f290b21491023f",
+    "planning/services/requirement_validation.py": "363b5224f86940783614d73f9dd18a53c216d9f0303d9c01863a029cd66636f5",
+    "planning/services/__init__.py": "c0230d85f5fd781dad12086fca2a340b30ef6c5765ece37f9d049639fad70474",
+    "planning/workflow/activity.py": "67a9ba0cb9f9113fd66c8cb6afd2339f2d5e1a1bee8824df37460f23e1b3e9c8",
+    "planning/workflow/planning_graph.py": "0451d12ec1f42d282cc5465583cfe7c75d1030639ab6f810bc227f8ddf90b7a7",
+    "planning/workflow/requirements_graph.py": "46614602e9c9412ca9a86fa724f450b16580af7ff493ae96ca0d0c95f577e9ec",
+    "planning/workflow/task_service.py": "ef64c11c014474383340337ce3eb13a3dd53f8af5f9b360637a8c75e061457d1",
+    "planning/workflow/task_store.py": "2c36759fb3cc01b17c9428cd2cd1c00d85c2560779fcc4fb2593512682ca8c35",
+    "planning/workflow/__init__.py": "1516cc9720c6a6baec282a644d3edc69e3092706c7084de6dd344ff136c45b15",
+    "planning/web/app.css": "027947a7429feb8c112188cb62ed77dae66b9bd1a96df73606cb9f8df0f4ee05",
+    "planning/web/app.js": "f238db825ceba75485be158c5aa6dc57b6b9e0966dd0b0e228e26e729d77fb88",
+    "planning/web/details.mjs": "562eb35436c3ad30f71f7d100f88d5fe803ab4b28297092f915ccba500123020",
+    "planning/web/flow.mjs": "e07711f04f63c62b54a2672ee84e0f99185407a83e3a71922afb93fc7371b2dd",
+    "planning/web/index.html": "d2cb379d5dffbe096dd8f8021757a7e83f8959b8a997d3edb6f02e0548446a85",
+    "planning/web/text.mjs": "15c519589bc1ee457504b52ec3622f26bb91bbe488c00b2606481214ab6556db",
+    "tests/planning_flow.test.mjs": "c335bdf7332758a69a3f52404e6e2fc63af1de1977ec62c88a9d775209c56354",
+    "tests/planning_web_text.test.mjs": "a671d6fc3ea9a563152c63bd0f2d1dd343bbb0d21e24cb97bad12f2bd8262524",
+    "tests/test_planning_activity.py": "059f68e5ec99cf8de3b8f9f41e3516dbdb484318cf83bccf95c98d0c9f1ac3be",
+    "tests/test_planning_loop.py": "4a635abb91e50256cb8b04618417ab203ccd9068ed83c414bbf475192d334c60",
+    "tests/test_planning_web.py": "972f342f759a349bc47af139e95a22a7d2c4e4e735ea951112ede1e9c01e03fc"
+  },
+  "limitations": [
+    "free-space single-link only",
+    "fixed routing; full orchestrator not implemented",
+    "full LLM explanation and review not implemented",
+    "lexical retrieval; sources not independently re-reviewed",
+    "activity best effort, main state authoritative"
+  ]
+}

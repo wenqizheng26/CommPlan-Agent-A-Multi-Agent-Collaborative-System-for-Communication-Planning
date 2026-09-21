@@ -1,0 +1,130 @@
+{
+  "recorded_utc": "2026-09-18T07:10:09.048722+00:00",
+  "profile": "confirmed-fspl-loop-v1",
+  "python_full_suite": {
+    "tests": 164,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 50.05,
+    "log": "planning-loop-tests.log",
+    "timing": "before final emoji/module fix; relevant HTTP tests rerun afterward"
+  },
+  "post_fix_tests": {
+    "http_tests": 4,
+    "node_tests": 1,
+    "status": "passed",
+    "node_command": "node --test tests/planning_web_text.test.mjs",
+    "javascript_syntax": "node --check planning/web/app.js passed"
+  },
+  "browser": {
+    "provider": "visible Chrome / cua",
+    "cases": [
+      "unconfirmed result absent; confirm checkbox gates action",
+      "2 GHz result 98.420600 dB",
+      "reload persisted completion",
+      "edit to 3 GHz clears previous result",
+      "unsaved edit disables confirmation",
+      "restart restored revision; confirmed 3 GHz result 101.942425 dB",
+      "missing distance blocks",
+      "manual distance resolves missing",
+      "manual 3 GHz conflicts with original 2 GHz and blocks",
+      "cancel persisted",
+      "emoji source excerpts exact; confirmed complete"
+    ],
+    "restored_task_id": "9318d9ed-7e53-40e4-b363-b98a4dd2ca17",
+    "missing_conflict_cancel_task_id": "d72aeb16-2af5-4c32-802e-5dcf81d31902",
+    "final_demo_task_id": "98097d8f-af7a-40a1-8ca6-d4aec6d799ac",
+    "mobile_responsive_tested": false
+  },
+  "live_model": {
+    "evidence": "planning-loop-live.json",
+    "status": "COMPLETED",
+    "mode": {
+      "interpretation": "llm",
+      "retrieval": "lexical_fallback"
+    }
+  },
+  "offline_model": {
+    "evidence": "planning-loop-offline.json",
+    "status": "COMPLETED",
+    "component_modes": {
+      "interpretation": "deterministic",
+      "retrieval": "lexical_fallback"
+    },
+    "runtime_health": "degraded"
+  },
+  "model_process": {
+    "pid": 32924,
+    "command": [
+      "E:\\codex\\项目\\信号与AI\\signal-formula-rag\\runtime\\llama.cpp-b10950\\llama-server.exe",
+      "-m",
+      "E:\\codex\\项目\\信号与AI\\signal-formula-rag\\models\\Qwen3-4B-GGUF\\Qwen3-4B-Q4_K_M.gguf",
+      "--alias",
+      "signal-formula-qwen3",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "18081",
+      "-c",
+      "4096",
+      "-np",
+      "1",
+      "-ngl",
+      "99",
+      "--offline",
+      "--reasoning",
+      "off",
+      "--no-webui",
+      "-t",
+      "6",
+      "--cors-origins",
+      "http://127.0.0.1:18080",
+      "--no-cors-credentials",
+      "--device",
+      "Vulkan1"
+    ],
+    "started_utc": "2026-09-18T07:52:04.184376+01:00",
+    "owned": true,
+    "stopped_utc": "2026-09-18T07:04:46.6819060Z"
+  },
+  "web_http_status": 200,
+  "legacy_paths_diff_exit": 0,
+  "git_publish_performed": false,
+  "review": "planning_loop_review.json",
+  "source_sha256": {
+    "planning/__init__.py": "5f2a8770b78e5248988b9e614876da52654a1c92e21e8e6a611b83cf47f82d5c",
+    "planning/agents/__init__.py": "b03416c4900de2e4171efda1f0de5898c765577790b1cdb7f786d026a4607663",
+    "planning/agents/calculation.py": "d309bb59ffdcc92f9a3aa6c69bb7411f9419fc0640468ac64db0b69c41e9c875",
+    "planning/agents/requirements.py": "42810edc8743a2ac6b21a1a1a8606523c899b90824507e4773990f39ab17147f",
+    "planning/demo.py": "e797c946832cb0c3c43e6b595bc2b790d78f01a624b6a816a898a98913ec1b56",
+    "planning/requirements_contract.py": "f184c4bb928d9b92c1d8fb4591a0bfee4090aca71bbc1555713adf99dbb24699",
+    "planning/services/__init__.py": "c0230d85f5fd781dad12086fca2a340b30ef6c5765ece37f9d049639fad70474",
+    "planning/services/calculation.py": "5fb7c009ab4de125785eefede3c0a0ed9547784448d0effede7f865dfee7cab1",
+    "planning/services/confirmation.py": "bd1b6bb94999b79aef7b5bf4a73cd96007af7cb5ecbcd667cefe411ef4eff2dc",
+    "planning/services/requirement_evidence.py": "ba6d400ef933f5c6afa36bbbf988b0514086a50917ab1b28cd1a681fd299e663",
+    "planning/services/requirement_parameters.py": "ff93754b8aaeadb266611444ab97f097bf28eec75dc1307aeafe4e1ee7173c40",
+    "planning/services/requirement_policy.py": "ef817b450b8e429370a24bebbd025aa7f0a7440aa5c02bdae1f290b21491023f",
+    "planning/services/requirement_validation.py": "363b5224f86940783614d73f9dd18a53c216d9f0303d9c01863a029cd66636f5",
+    "planning/web/app.css": "22d45fd3024dbbe73ede7567f1470cbb1090059405278ce462b17c6c889946c9",
+    "planning/web/app.js": "9541f83f304e37b9ff22c6f50e1a25367b1a937124ac542573e83352cdaccce5",
+    "planning/web/index.html": "85fa1081e8a65449fdfb385c8227e4ac4c71f8bebf2e9348b46a6cb91f8d72c6",
+    "planning/web/text.mjs": "15c519589bc1ee457504b52ec3622f26bb91bbe488c00b2606481214ab6556db",
+    "planning/web_server.py": "e155b9533d949695d68f52b31e1a46afd737d80a55ffd6d46b5f8c824ae7c2fa",
+    "planning/workflow/__init__.py": "1516cc9720c6a6baec282a644d3edc69e3092706c7084de6dd344ff136c45b15",
+    "planning/workflow/planning_graph.py": "4b3230c053d4a12e164805d8b06a35c3cd260bd5403b85fe62fd6b50dd6b7599",
+    "planning/workflow/requirements_graph.py": "46614602e9c9412ca9a86fa724f450b16580af7ff493ae96ca0d0c95f577e9ec",
+    "planning/workflow/task_service.py": "b50b0c385092a86ccbe2989783c82d6a48019259d599197906e55318c6f5a329",
+    "planning/workflow/task_store.py": "2c36759fb3cc01b17c9428cd2cd1c00d85c2560779fcc4fb2593512682ca8c35",
+    "requirements.lock.txt": "46252c4c9cd587020258111d636c280ab26b3fd814ea1682346862dfea44f582",
+    "tests/planning_web_text.test.mjs": "a671d6fc3ea9a563152c63bd0f2d1dd343bbb0d21e24cb97bad12f2bd8262524",
+    "tests/test_planning_loop.py": "4a635abb91e50256cb8b04618417ab203ccd9068ed83c414bbf475192d334c60",
+    "tests/test_planning_web.py": "b3d40281fdb3149bfc5a200e0412afbd2ff25067e1a4cfee9324157f4e7b90df"
+  },
+  "limitations": [
+    "local single user serialized SQLite",
+    "free-space single-link only",
+    "lexical retrieval",
+    "no independent re-review of original scientific literature",
+    "not full CONTRACTS/35-task completion"
+  ]
+}

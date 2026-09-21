@@ -6,18 +6,18 @@
 
 | 开发角色 | 模型 / 推理 | 任务 | Ownership | 状态 |
 |---|---|---|---|---|
-| Main Tech Lead / Architect / Integrator | 当前主 Agent；关键架构推理 HIGH 级责任 | PLN-01，H0 汇总 | 本文件、PROJECT_CONTEXT、AUDIT_REPORT、ARCHITECTURE_DECISIONS、CONTRACTS、MASTER_IMPLEMENTATION_PLAN、TASK_BACKLOG、RISK_REGISTER、IMPLEMENTATION_LOG、NEXT_ACTION、REVIEW_RESOLUTION、控制文件校验器 | 文档落盘；H0停止 |
+| Main Tech Lead / Architect / Integrator | 当前主 Agent；关键架构推理 HIGH 级责任 | PLN-01，H0 汇总 | 本文件、PROJECT_CONTEXT、AUDIT_REPORT、ARCHITECTURE_DECISIONS、CONTRACTS、MASTER_IMPLEMENTATION_PLAN、TASK_BACKLOG、RISK_REGISTER、IMPLEMENTATION_LOG、NEXT_ACTION、REVIEW_RESOLUTION、控制文件校验器 | H0已批准；串行处理共享Contract与调度 |
 | repo_wbs_astra | gpt-6-astra / low | AUD-01 | REPOSITORY_BASELINE、WBS_STATUS、WORKFLOW_GAP_ANALYSIS；wbs_rows/repository_inventory/diagram_nodes/aud01_tasks JSON | 已交付 |
 | rag_calc_astra | gpt-6-astra / low | AUD-02 | RAG_CALCULATION_AUDIT；rag_calculation_assets/aud02_tasks JSON | 已交付 |
 | baseline_luna | gpt-5.6-luna / medium | AUD-03 | TEST_BASELINE；test_baseline JSON、test-*.log | 已交付 |
 | independent_review_astra | gpt-6-astra / low；复杂问题升级 medium/high | REV-01 / 事实子包 | REVIEW_REPORT、review_checks JSON；只读其他文件 | PARTIAL范围审查已交付，P2修正已复核 |
-| contract_review_astra | gpt-6-astra / low | REV-02 | CONTRACT_PLAN_REVIEW、contract_plan_review JSON；只读被审计划 | 最终记录被usage limit中止 |
-| github_luna | gpt-5.6-luna / low | PUB-01 / PUB-02 | GITHUB_PUBLICATION、publication JSON；拟独立文档仓库的已批准 docs allowlist | 创建/上传受阻；usage limit中止 |
+| contract_review_astra | gpt-6-astra / low | REV-02 | CONTRACT_PLAN_REVIEW、contract_plan_review JSON；只读被审计划 | 已恢复；REV02二轮闭合，当前复核T002/T003 |
+| github_luna | gpt-5.6-luna / low | PUB-01 / PUB-02 | GITHUB_PUBLICATION、publication JSON；当前隔离工作树的逐阶段明确allowlist | 已恢复；本地基线两次commit，远端尚未创建/上传 |
 | repo_wbs_auditor | Sol / high（被用户指示替换） | 无最终产物 | 无 | 已中断，不再调度 |
 
 最大同时运行：Main + 3 个 Subagent。上表为角色池，不意味着全部同时活跃。当前停止的 Agent 不占用实现任务 ownership。只有 github_luna 可以 git commit/push；不允许实现者私自发布。
 
-最终交接例外：publisher与Contract reviewer因额度停止后，Main仅在PLN-01新列明的路径记录修正结果/发布事实，不改写独立Reviewer原始结论，不代替publisher进行Git操作。当前没有仍在后台运行的施工任务。
+历史额度阻塞已解除，原记录保留在 IMPLEMENTATION_LOG。Main 不改写独立 Reviewer 结论，不代替 publisher 做 Git 变更；当前具体派发见 TASK_BACKLOG，所有工程修改仅发生于隔离工作树。
 
 Astra 本次可调用最低档为 low，不存在 minimal 档；也通过 [OpenAI 官方模型页](https://developers.openai.com/api/docs/models/gpt-6-astra) 核实。OpenAI Docs 仅用于模型设置核验，不改变项目本地业务模型。
 
@@ -78,3 +78,13 @@ WHAT_WAS_NOT_TRIED / RECOMMENDED_NEXT_OWNER
 ~~~
 
 Agent 的 PASS 只是提交审查，不自动等于任务 ACCEPTED。非实现者 Reviewer 核验 diff、验收和失败路径；Tester 在合并后的同一基线上跑集成；Main 决定 Accept，更新 Backlog/WBS/log 后释放锁。禁止多个 Agent 争写状态文件。
+
+## 单 Agent 切片当前派发
+
+- Main：冻结语义、SINGLE_AGENT_PLAN/BACKLOG、证据整合，当前仅需求与规划角色。
+- agent_env_astra：Astra low，隔离依赖与真实最小图测试；已交付待独立review。
+- requirements_impl_astra：Astra low，SA-CORE与SA-GRAPH的唯一代码owner，不改旧formula_rag。
+- contract_review_astra：Astra low，计划/环境/实现独立审查，不能审自己实现。
+- github_luna：Luna low，唯一Git writer；当前正确账号wenqizheng26，新仓库创建工具受阻。
+
+实际并发始终最多3个子Agent。单Agent指业务角色范围，不是减少必要的独立工程review。

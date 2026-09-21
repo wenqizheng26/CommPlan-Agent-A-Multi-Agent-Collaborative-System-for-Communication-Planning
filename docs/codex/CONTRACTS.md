@@ -1,6 +1,6 @@
-# Contract v1 草案
+# Contract v1
 
-版本：1.0.0-draft.1。状态：DRAFT，HUMAN_GATE_0 未批准。本文描述未来接口，不声明这些类型、路由或状态管理已实现。Main 是唯一语义 owner；不修改现有 /api/query 或 formula_selection schema。
+版本：1.0.0。状态：FROZEN，HUMAN_GATE_0 已批准。本文描述未来接口，不声明这些类型、路由或状态管理已实现。Main 是唯一语义 owner；不修改现有 /api/query 或 formula_selection schema。
 
 ## 1. 运行时边界与路径
 
@@ -151,9 +151,9 @@ TraceEvent：event_id、task_id、revision、state_version、node、operation、
 
 Runtime retry：每node/op/revision默认 retry_budget=2（首次+最多2次重试）；全图 max_node_steps=40，达到上限失败并保留trace；此上限为拟定可测试参数，H0后可在不放宽无限循环约束前提下经Contract review调整。预算持久保存，重启不能重置。确定性输入错误交用户，不做重复计算。
 
-## 9. API v1 草案与旧接口兼容
+## 9. API v1 与旧接口兼容
 
-只新增拟议端点，不在本轮修改 app.py：
+以下为后续任务实施的新增端点；当前单 Agent 切片不修改 app.py：
 - POST /api/tasks：创建草稿任务；返回task_id/revision/state_version/status，正式计算不在确认前执行。
 - GET /api/tasks/{id}：状态、当前确认请求、安全trace与可展示结果。
 - POST /api/tasks/{id}/confirm：expected_revision、snapshot_hash、interrupt_id、action=confirm/edit/cancel、idempotency_key；新过期请求返回409，已成功请求的完全重复返回原ack。edit仅导航至输入状态，不接收patch，不在此端点增加revision；待parameters提交实际修改。

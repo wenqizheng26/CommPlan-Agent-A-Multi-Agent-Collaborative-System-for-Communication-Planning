@@ -1,7 +1,7 @@
 # 总体施工计划
 
 目标：保留现有 formula_rag 与旧接口，先证明单链路损耗工作流的确认、计算、校验和恢复闭环，再完成 WBS 后续预算、资料治理与评测。
-状态：HUMAN_GATE_0 待批准；35 个后续工程任务全部阻塞，完整参数见 TASK_BACKLOG.yaml。当前只有审计与控制文件已产出，没有已运行的后台施工调度程序。
+状态：HUMAN_GATE_0 已批准，Main 正按 TASK_BACKLOG.yaml 派发依赖就绪的任务；状态以 YAML 与证据为准。调度由当前 Codex Main 执行，未部署独立后台调度服务。
 执行方式：用户已指定 Main/Subagent 组织；Main 按下列状态机派发，子 Agent 接 Task Packet。不再询问选择工作模式，不虚构当前未安装的技能。
 
 ## 建议保留、修改、新增

@@ -1,0 +1,132 @@
+{
+  "status": "ACCEPTED_LOCAL_RUNNABLE_SLICE",
+  "timestamp": "2026-09-18T03:11:20.491849+00:00",
+  "scope": "first requirements/planning agent + bounded LangGraph + CLI; no calculation or confirmation execution",
+  "command": ".venv/Scripts/python.exe -B -X utf8 -m unittest discover -s tests -v",
+  "exit_code": 0,
+  "tests": 143,
+  "elapsed_seconds": 57.113,
+  "original_regressions": 101,
+  "dependency_tests": 2,
+  "slice_tests": 40,
+  "log": "docs/codex/evidence/sa-tests-20260918.log",
+  "log_sha256": "2769636867a23308bfb9a7a9c69e83bf0523477aff9935f92044e65f7503a4df",
+  "demo": "docs/codex/evidence/sa-demo-20260918.json",
+  "demo_sha256": "4e849b829a995b7b39bacbdd550efdd08cf8d8d09e425a49d3ab66d3d5704f39",
+  "independent_review": "docs/codex/evidence/single_agent_review_20260918.json",
+  "cases": [
+    {
+      "case": "complete",
+      "status": "AWAITING_CONFIRMATION",
+      "mode": {
+        "interpretation": "deterministic",
+        "retrieval": "lexical_fallback"
+      },
+      "health": "ready"
+    },
+    {
+      "case": "missing",
+      "status": "AWAITING_INPUT",
+      "mode": {
+        "interpretation": "deterministic",
+        "retrieval": "lexical_fallback"
+      },
+      "health": "ready"
+    },
+    {
+      "case": "conflict",
+      "status": "AWAITING_INPUT",
+      "mode": {
+        "interpretation": "deterministic",
+        "retrieval": "lexical_fallback"
+      },
+      "health": "ready"
+    },
+    {
+      "case": "live-complete",
+      "status": "AWAITING_CONFIRMATION",
+      "mode": {
+        "interpretation": "llm",
+        "retrieval": "lexical_fallback"
+      },
+      "health": "ready"
+    },
+    {
+      "case": "live-missing",
+      "status": "AWAITING_INPUT",
+      "mode": {
+        "interpretation": "llm",
+        "retrieval": "lexical_fallback"
+      },
+      "health": "ready"
+    },
+    {
+      "case": "live-conflict",
+      "status": "AWAITING_INPUT",
+      "mode": {
+        "interpretation": "llm",
+        "retrieval": "lexical_fallback"
+      },
+      "health": "ready"
+    },
+    {
+      "case": "live-unsupported",
+      "status": "NEEDS_MODEL",
+      "mode": {
+        "interpretation": "deterministic",
+        "retrieval": "lexical_fallback"
+      },
+      "health": "ready"
+    },
+    {
+      "case": "offline-fallback",
+      "status": "AWAITING_CONFIRMATION",
+      "mode": {
+        "interpretation": "deterministic",
+        "retrieval": "lexical_fallback"
+      },
+      "health": "degraded"
+    },
+    {
+      "case": "offline-no-fallback",
+      "status": "FAILED",
+      "mode": {
+        "interpretation": "deterministic",
+        "retrieval": "lexical_fallback"
+      },
+      "health": "unavailable"
+    }
+  ],
+  "files": {
+    "planning/__init__.py": "5f2a8770b78e5248988b9e614876da52654a1c92e21e8e6a611b83cf47f82d5c",
+    "planning/agents/__init__.py": "b03416c4900de2e4171efda1f0de5898c765577790b1cdb7f786d026a4607663",
+    "planning/agents/requirements.py": "42810edc8743a2ac6b21a1a1a8606523c899b90824507e4773990f39ab17147f",
+    "planning/demo.py": "e797c946832cb0c3c43e6b595bc2b790d78f01a624b6a816a898a98913ec1b56",
+    "planning/examples/complete.json": "2cd733dfcce4e73cb2b35547f0a6bd90192ba15f9f97a29bba1d261eab1b5099",
+    "planning/examples/conflict.json": "33c4146e21f4a709d0ae3ae9b90a6936628f73200543d072fe97ffe78a1036d3",
+    "planning/examples/missing.json": "09ed226d8b99fdba2366f4e47ea8bc862de7e2f4c060d2db44241124e473d62e",
+    "planning/README.md": "7447b466cbc173c21aa74699847ecc56869df8d1415df6d98edb1412034d2a51",
+    "planning/requirements_contract.py": "f184c4bb928d9b92c1d8fb4591a0bfee4090aca71bbc1555713adf99dbb24699",
+    "planning/run_requirements.cmd": "d7b4993cb39afd83134769022612675a7d7b5ab59e1f4d395663e066a149ce1a",
+    "planning/services/__init__.py": "c0230d85f5fd781dad12086fca2a340b30ef6c5765ece37f9d049639fad70474",
+    "planning/services/requirement_evidence.py": "ba6d400ef933f5c6afa36bbbf988b0514086a50917ab1b28cd1a681fd299e663",
+    "planning/services/requirement_parameters.py": "ff93754b8aaeadb266611444ab97f097bf28eec75dc1307aeafe4e1ee7173c40",
+    "planning/services/requirement_policy.py": "ef817b450b8e429370a24bebbd025aa7f0a7440aa5c02bdae1f290b21491023f",
+    "planning/services/requirement_validation.py": "363b5224f86940783614d73f9dd18a53c216d9f0303d9c01863a029cd66636f5",
+    "planning/workflow/__init__.py": "1516cc9720c6a6baec282a644d3edc69e3092706c7084de6dd344ff136c45b15",
+    "planning/workflow/requirements_graph.py": "46614602e9c9412ca9a86fa724f450b16580af7ff493ae96ca0d0c95f577e9ec",
+    "tests/test_requirements_agent.py": "fbe1619857a49a434752b1763b977fe963518a7de18f5665613d6ed6552c3a3c",
+    "tests/test_requirements_contract.py": "a4886f1cd77fddf73509046f8d8b5f79aef1c0aeda14f42b1d2568aa7d98f27b",
+    "tests/test_requirements_demo.py": "cee3b8755e2e0b6a3a7b92b6142d7fe4894fc30cb42b4d2e66a9e71ade04670a",
+    "tests/test_requirements_graph.py": "6b318c160b6d035de8f0dea2a0183d2d42370ef7562165e8dc75acff0e65cd63"
+  },
+  "limits": [
+    "CLI product; no new web UI",
+    "lexical retrieval only",
+    "human confirmation and numerical calculation not implemented in slice",
+    "no persistent task CAS/checkpoint/resume",
+    "bounded language and model probes, not general accuracy evaluation",
+    "scientific sources not independently re-audited"
+  ],
+  "git_publication": "not performed"
+}

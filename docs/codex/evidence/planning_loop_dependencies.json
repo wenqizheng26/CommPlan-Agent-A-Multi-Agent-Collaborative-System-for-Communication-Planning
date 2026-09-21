@@ -1,0 +1,47 @@
+{
+  "scope": "active isolated venv only",
+  "packages": [
+    {
+      "name": "langgraph-checkpoint-sqlite",
+      "version": "3.1.1",
+      "download": {
+        "url": "https://files.pythonhosted.org/packages/f5/b9/e458601a1718337839bcfeec9d1b27b8b16ce135be2bd50ed0395d33a878/langgraph_checkpoint_sqlite-3.1.1-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=8505c54c94a658080525d7e6780fdd4e0c078ff2566b30d399c02cc9f9af1c63",
+          "hashes": {
+            "sha256": "8505c54c94a658080525d7e6780fdd4e0c078ff2566b30d399c02cc9f9af1c63"
+          }
+        }
+      }
+    },
+    {
+      "name": "aiosqlite",
+      "version": "0.22.1",
+      "download": {
+        "url": "https://files.pythonhosted.org/packages/00/b7/e3bf5133d697a08128598c8d0abc5e16377b51465a33756de24fa7dee953/aiosqlite-0.22.1-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=21c002eb13823fad740196c5a2e9d8e62f6243bd9e7e4a1f87fb5e44ecb4fceb",
+          "hashes": {
+            "sha256": "21c002eb13823fad740196c5a2e9d8e62f6243bd9e7e4a1f87fb5e44ecb4fceb"
+          }
+        }
+      }
+    },
+    {
+      "name": "sqlite-vec",
+      "version": "0.1.9",
+      "download": {
+        "url": "https://files.pythonhosted.org/packages/42/89/81b2907cda14e566b9bf215e2ad82fc9b349edf07d2010756ffdb902f328/sqlite_vec-0.1.9-py3-none-win_amd64.whl",
+        "archive_info": {
+          "hash": "sha256=4a28dc12fa4b53d7b1dced22da2488fade444e96b5d16fd2d698cd670675cf32",
+          "hashes": {
+            "sha256": "4a28dc12fa4b53d7b1dced22da2488fade444e96b5d16fd2d698cd670675cf32"
+          }
+        }
+      }
+    }
+  ],
+  "source_report": "runtime/sqlite-install.json",
+  "pip_check": "passed",
+  "vector_index_used": false
+}
