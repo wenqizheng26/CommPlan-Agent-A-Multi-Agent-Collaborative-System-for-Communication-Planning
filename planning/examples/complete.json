@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "example-complete",
+  "revision": 0,
+  "request_id": "example-complete-0",
+  "raw_text": "按自由空间基准计算，频率2GHz，距离1km，求路径损耗。",
+  "manual_parameters": {},
+  "condition": null,
+  "target": null
+}

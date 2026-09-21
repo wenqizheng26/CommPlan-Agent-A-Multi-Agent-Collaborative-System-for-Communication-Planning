@@ -1,11 +1,11 @@
 profile: requirements-slice-v1
-execution_state: STOPPED_BY_USER
-execution_note: "仅允许一次上传到用户明确指定 CommPlan-Agent；开发/审查/测试停止；planning WIP 未验收"
+execution_state: ACCEPTED_LOCAL_RUNNABLE_SLICE
+execution_note: 2026-09-18 用户授权做到可初步运行成品；首个Agent/图/CLI本地验收通过，未扩大完整工程或发布。
 contract_sha256: a164435340f44ce9590b623fdec44e6eff0376c6cfe8b8df05b50a21b24be790
 scope: single requirements/planning agent
 tasks:
 - id: SA-ENV
-  status: IN_REVIEW
+  status: ACCEPTED
   dependencies: []
   phase: SINGLE_AGENT
   objective: StateGraph/conditional/interrupt dependency tests plus original regressions
@@ -32,9 +32,9 @@ tasks:
   test_command: .venv/Scripts/python.exe -X utf8 -B -m unittest discover -s tests -v
   retry_budget: 2
   assigned_agent: agent_env_astra
-  evidence: docs/codex/evidence/sa_env.json
+  evidence: docs/codex/evidence/sa_validation.json
 - id: SA-CORE
-  status: IN_PROGRESS
+  status: ACCEPTED
   dependencies: []
   phase: SINGLE_AGENT
   objective: strict request/report; provenance and conflicts; no compute/implicit confirmation; controlled selection
@@ -50,6 +50,8 @@ tasks:
   - tests/test_requirements_contract.py
   - tests/test_requirements_agent.py
   - docs/codex/evidence/sa_core.json
+  - planning/services/requirement_policy.py
+  - planning/services/requirement_validation.py
   forbidden_files:
   - formula_rag/**
   - app.py
@@ -66,8 +68,9 @@ tasks:
   test_command: .venv/Scripts/python.exe -X utf8 -B -m unittest discover -s tests -v
   retry_budget: 2
   assigned_agent: requirements_impl_astra
+  evidence: docs/codex/evidence/sa_validation.json
 - id: SA-GRAPH
-  status: BLOCKED_DEPENDENCIES
+  status: ACCEPTED
   dependencies:
   - SA-ENV
   - SA-CORE
@@ -80,6 +83,9 @@ tasks:
   - planning/demo.py
   - tests/test_requirements_graph.py
   - tests/test_requirements_demo.py
+  - planning/run_requirements.cmd
+  - planning/README.md
+  - planning/examples/*.json
   forbidden_files:
   - formula_rag/**
   - app.py
@@ -95,8 +101,9 @@ tasks:
   - normal/missing/conflict/model gap graph and CLI; bounded trace; no calculation
   test_command: .venv/Scripts/python.exe -X utf8 -B -m unittest discover -s tests -v
   retry_budget: 2
+  evidence: docs/codex/evidence/sa_validation.json
 - id: SA-REVIEW
-  status: BLOCKED_DEPENDENCIES
+  status: ACCEPTED
   dependencies:
   - SA-GRAPH
   phase: SINGLE_AGENT
@@ -119,8 +126,9 @@ tasks:
   - independent review no open P0/P1
   test_command: .venv/Scripts/python.exe -X utf8 -B -m unittest discover -s tests -v
   retry_budget: 2
+  evidence: docs/codex/evidence/single_agent_review_20260918.json
 - id: SA-RUN
-  status: BLOCKED_DEPENDENCIES
+  status: ACCEPTED
   dependencies:
   - SA-GRAPH
   phase: SINGLE_AGENT
@@ -149,8 +157,9 @@ tasks:
   - all regressions and honest real-model evidence
   test_command: .venv/Scripts/python.exe -X utf8 -B -m unittest discover -s tests -v
   retry_budget: 2
+  evidence: docs/codex/evidence/sa_validation.json
 - id: SA-HANDOFF
-  status: BLOCKED_DEPENDENCIES
+  status: ACCEPTED
   dependencies:
   - SA-REVIEW
   - SA-RUN
@@ -178,6 +187,7 @@ tasks:
   - recovery state matches tested delivery
   test_command: .venv/Scripts/python.exe -X utf8 -B -m unittest discover -s tests -v
   retry_budget: 2
+  evidence: docs/codex/evidence/sa_validation.json
 - id: SA-PUBLISH
   status: BLOCKED_EXTERNAL
   dependencies:
@@ -203,3 +213,5 @@ tasks:
   - explicit reviewed allowlist; remote SHA checked; blocked if unavailable
   test_command: .venv/Scripts/python.exe -X utf8 -B -m unittest discover -s tests -v
   retry_budget: 2
+active_owner: 01a0ae48-e7a0-7cf2-a15f-b1d248e46b3c
+acceptance_record: docs/codex/evidence/sa_validation.json

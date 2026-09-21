@@ -35,3 +35,8 @@ class ContractTests(unittest.TestCase):
     def test_stale_revision(self):
         with self.assertRaisesRegex(ValueError, 'STALE_REVISION'):
             self.module().validate_request(request(), expected_revision=1)
+
+    def test_json_parser_rejects_duplicate_keys_and_constants(self):
+        for raw in ['{"a":1,"a":2}', '{"a":NaN}', '{"a":Infinity}', '{"a":{"x":1,"x":2}}']:
+            with self.subTest(raw=raw), self.assertRaises(ValueError):
+                self.module().strict_json(raw)

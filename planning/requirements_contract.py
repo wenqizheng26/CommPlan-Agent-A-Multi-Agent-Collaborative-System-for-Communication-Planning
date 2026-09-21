@@ -14,6 +14,18 @@ REQUEST_FIELDS = 'schema_version task_id revision request_id raw_text manual_par
 REPORT_FIELDS = 'schema_version profile task_id revision request_id parameters_proposal conflicts missing_parameters candidate_models calculation_plan_proposal evidence_ids evidence_refs knowledge_snapshot questions assumptions conditions targets execution_status component_modes runtime_health diagnostics'
 
 
+def strict_json(text):
+    def pairs(items):
+        result = {}
+        for key, value in items:
+            require(key not in result, 'DUPLICATE_JSON_KEY')
+            result[key] = value
+        return result
+    def invalid(value):
+        raise ValueError('NONFINITE_JSON: ' + value)
+    return json.loads(text, object_pairs_hook=pairs, parse_constant=invalid)
+
+
 def require(ok, message):
     if not ok:
         raise ValueError(message)

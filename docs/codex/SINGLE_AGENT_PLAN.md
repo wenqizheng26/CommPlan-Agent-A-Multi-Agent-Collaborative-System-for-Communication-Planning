@@ -1,5 +1,11 @@
 # 首个需求与规划 Agent 实施计划
 
+## 2026-09-18 范围细化与交付索引
+
+用户授权“做到可初步运行成品”，按 docs/superpowers/specs/2026-09-18-first-requirements-agent-design.md 和对应 first-agent-runnable 计划完成。当前业务入口仅允许单程 fspl_ghz，其他公式仍保留在原 RAG 但不属于首个入口；超范围直接 NEEDS_MODEL。新增 requirement_policy.py / requirement_validation.py 共享准入与出口复核；无法构建合法报告时图返回 report=null + FAILED + 安全 trace。CLI 增加一键脚本、请求文件、交互输入和 JSON 输出。顶层 schema/profile 保持不变。
+
+143 tests PASS、真实 Qwen 与离线模式证据见 evidence/sa_validation.json；恢复与操作见 SINGLE_AGENT_HANDOFF.md。下文是原已批准切片方案；与上面首月范围细化冲突时，以 2026-09-18 设计及交接为准。完整工程和 Git 发布没有自动恢复。
+
 用户最新范围：先完成一个 Agent，子 Agent 继续阶段提交 GitHub。Main 依据既有 H0 和本次明确实现指令收敛为本切片；完整35任务保留，不自动扩展到其他业务角色。
 
 ## 目标与验收

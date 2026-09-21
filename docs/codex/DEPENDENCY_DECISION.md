@@ -37,3 +37,10 @@ All 101 existing tests passed, no errors/failures/skips, using unittest discover
 Source environment before/after hashes match for 47 files: distribution RECORD files, pyvenv.cfg, python.exe and .pth files. This proves the recorded install manifests/configuration/interpreter were unchanged; it is not a complete hash of every source environment file. No pip command targeted source. Evidence includes this precise scope.
 
 InMemorySaver validates same-process API behavior only. It does not satisfy cross-process persistence, atomic state/checkpoint commit, durable idempotency, production confirmation, or SQLite acceptance. These remain outside this slice; no such completion is claimed.
+
+
+## 2026-09-18 confirmed-fspl-loop-v1 增量
+
+为跨进程 interrupt 恢复，在当前隔离 .venv 增加 langgraph-checkpoint-sqlite==3.1.1、aiosqlite==0.22.1、sqlite-vec==0.1.9；最后一项为包依赖，本切片不使用向量索引。版本已写入 requirements.lock.txt，安装报告摘要与 wheel SHA256 见 evidence/planning_loop_dependencies.json。dry-run 后以 --no-deps --no-compile 安装，既有 LangGraph/checkpoint 版本不变，pip check 通过；未向源环境执行安装。
+
+使用官方 SqliteSaver 的受限 TransactionSaver 适配：schema 在业务事务前 setup，cursor 不独立提交；任务/事件/历史/checkpoint 在同一次事务结束后提交。真实子进程恢复和故障回滚已测试，替代前阶段的内存恢复限制；仍不承诺多用户或分布式生产能力。本阶段使用既有本地模型实测，无权重下载。

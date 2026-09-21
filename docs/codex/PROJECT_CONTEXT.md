@@ -1,5 +1,19 @@
 # 通信筹划项目持续接管上下文
 
+技能配置以当前 AGENTS.md 和 SKILL_SELECTION_20260921.md 为准：仅保留项目 `langgraph-workflow`，全局三个旧技能入口已归档。下方早期技能选型与数量是历史记录。
+
+## 最新核对：2026-09-21
+
+当前接管入口是 STATUS_REVIEW_20260921.md / NEXT_ACTION.md。持续补参与架构单视图已有实现，本轮 177 Python + 7 Node 回归及依赖检查通过；最新端到端验收尚待收尾。技能按项目 AGENTS.md 和 SKILL_SELECTION_20260921.md 使用。以下旧阶段记录保留历史意义。
+
+## 最新前端阶段：2026-09-18
+
+用户确认的 Visio 双视图和八模块工作台已落地，真实运行观察、来源联动及只读历史可用。当前接管请先读 FLOW_WORKBENCH_HANDOFF.md 和 NEXT_ACTION.md；先前确认计算阶段能力继续保留。
+
+## 最新状态：2026-09-18 确认计算闭环可运行交付
+
+当前已实现需求 Agent、持久化核对与确认、受控计算角色、8 项结果校验及本地网页。164 项 Python 全量通过；后续来源 Unicode 修复的 4 项 HTTP 与 1 项前端测试通过，真实 Qwen、离线降级、可见浏览器均验证。恢复入口以 CONFIRMED_LOOP_HANDOFF.md、NEXT_ACTION.md、evidence/planning_loop_validation.json 为准。首个 Agent CLI 保留。当前是 confirmed-fspl-loop-v1 本地自由空间切片，不是完整 GraphState/35 项多 Agent 工程。以下旧状态为历史审计快照。
+
 日期：2026-09-17。阶段：H0已由用户“执行”批准，进入P1基线与合同冻结；Contract仍DRAFT直到T003验收。
 
 ## 范围和事实来源
