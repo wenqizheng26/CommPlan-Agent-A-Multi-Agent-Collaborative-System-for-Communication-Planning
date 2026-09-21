@@ -1,119 +1,120 @@
-# 通信公式本地 RAG
+# CommPlan-Agent
 
-## 工程设计入口
+**A Multi-Agent Collaborative System for Communication Planning**
 
-最新需求见 [工程需求基线 R1](docs/requirements.md)，配套 [多 Agent + LangGraph 目标流程 v1.4](docs/diagrams/2026-09-15/通信筹划协同流程_v1.4.md)。已确定：自然语言自动填表、核对确认后计算、一个总控与三个专业 Agent、在用户确认范围内生成参数组合、并列比较方案并由用户选择。
+面向通信筹划的多 Agent 协作研究原型。当前已接通需求解析、参数确认、计算调用建议、确定性公式计算、结构化审查与受控调度，并提供可恢复的网页工作台。
 
-2026-09-15 已保存非多 Agent 旧版，完成 P1 适用性与结果解释修复。**LangGraph、多 Agent 和先解析后确认表单仍待 P4/P5 实现**。当前程序继续使用本地公式 RAG；P2 的公式基本式与噪声路线、P3 的显示精度尚未实施。备份入口见 [BACKUP.md](BACKUP.md)，P1 规则见 [P1 说明](docs/p1-applicability.md)。当前状态、历史证据与实施顺序见 [HANDOVER](HANDOVER.md)、[科学审查](docs/superpowers/specs/2026-09-14-scientific-review-design.md)和[需求基线](docs/requirements.md)。
+**当前版本（2026-09-21）仅支持明确声明自由空间假设后的单链路路径损耗。** 海面/散射传播、多模型计划、完整链路预算与候选优化尚未实现。
 
-## 现有程序
+## 当前工作流
 
-输入中文通信环境和已知参数，检索公式及出处，再由程序检查条件并计算。现有知识库包含自由空间损耗、最大多普勒频移、热噪声功率、热噪声谱密度、接收门限、接收电平和链路余量 7 条公式。
+需求输入 → 解析与补参 → 核对参数和来源 → 用户确认当前版本 → 计算 Agent 建议调用 → 确定性工具计算 → 硬校验与审查 → 受控主控决定发布、退回、重算或停止。
 
-[现有程序与目标流程](docs/system-flow.md) · [2026-09-14 界面修改记录](docs/2026-09-14-interface-refinement.md)
+| 部分 | 已实现的职责 |
+| --- | --- |
+| 需求 Agent | 提取参数、单位、适用条件与来源，识别缺项和冲突；支持确定性解析或本机 Qwen。 |
+| 计算 Agent | 读取确认快照，建议许可的工具、步骤及版本引用；参数和专业数值由程序约束，模型不直接生成计算结果。 |
+| 审查 Agent | 先进行 8 项硬检查，再基于已有事实给出通过、补参、不适用或重算建议；不能绕过硬校验。 |
+| 受控主控 | 使用程序策略 `bounded_policy` 调度，每版本最多计算两次；支持有限暂时故障重试与审查重算。尚不是自主 LLM 任务拆解。 |
+| 网页工作台 | 总体架构单视图、节点详情、参数来源、执行时间线、角色模式、审查结果和调度记录。 |
+| 状态与恢复 | 持续补参、编辑后旧确认与结果失效、SQLite 任务与 checkpoint 恢复、幂等处理、只读历史与 JSON 导出。 |
 
-## 启动
+选择“本机 Qwen”时，需求、计算建议与审查分别调用本地模型。服务不可用或输出不符合结构/引用约束时，系统明确标记确定性降级。审查降级表示程序检查通过，不表示完成了模型语义审查。
 
-在此电脑上双击 `启动.cmd`。首次加载模型约需几十秒，随后打开 http://127.0.0.1:18080 。模型和依赖已经保存在项目内，启动时不下载。
+专业数值始终由确定性公式工具产生。当前规划流程使用词项检索；不能将旧版公式 RAG 的检索能力或公式数量视为当前多 Agent 流程已支持的模型范围。
 
-PowerShell 也可执行：
+## 启动工作台
 
-```powershell
-Set-Location -LiteralPath 'E:\codex\项目\信号与AI\signal-formula-rag'
-& '.\.venv\Scripts\python.exe' -X utf8 launch.py
-```
+当前入口面向 Windows、本机单用户使用。仓库不包含 Python 虚拟环境、模型权重、模型运行时二进制或本地任务数据库。
 
-应用仅监听本机。模型服务端口为 18081，网页端口为 18080。重复启动会检查并复用本应用服务。若显卡设备发生变化，运行 `runtime\llama.cpp-b10950\llama-server.exe --list-devices` 核对 `runtime_config.json` 中的 device；CPU 备用入口是 `launch.py --cpu`。已运行的模型服务不会因再次启动自动切换设备。
+### 1. 准备本地环境
 
-## 输入示例
+使用 Python 3.12，在仓库根目录准备 `.venv`。依赖版本见 [requirements.lock.txt](requirements.lock.txt)，环境复用与迁移要求见 [依赖决策](docs/codex/DEPENDENCY_DECISION.md)。
 
-`按自由空间基准计算，频率4.5GHz，距离200米，求传输损耗。`
+现有开发环境复用了本机 ML 库和模型资产；相关文档中的机器路径是开发环境记录。新机器需要重建环境并配置本地资源，不能仅复制目录就直接运行。需要本地模型时，还应按 [runtime_config.json](runtime_config.json) 配置模型与运行时路径；启动器不会自动下载模型。
 
-程序结果为 `91.48485018878651 dB`，页面显示 `91.48485019 dB`，采用 ITU-R P.525-5 的舍入常数 92.4。返回 JSON 保留未按展示精度舍入的双精度值、公式版本、输入和来源。
+### 2. 启动网页
 
-`岸站到海上平台，频率4.5GHz，距离30公里，求传输损耗。`
-
-系统应要求明确传播模型条件。不会因为频率和距离齐全就把自由空间公式当成实际海上传播损耗。
-
-`温度290K，噪声带宽1MHz，求热噪声功率。`
-
-温度和噪声带宽都必须给出。比特率不会自动当作噪声带宽。
-
-描述可自由输入，但数值解析采用可核验的数量与单位绑定，首版支持常见中文参数名称、阿拉伯数字和 GHz/MHz/Hz、公里/米、W/dBm、dBi/dB 等单位。复杂复合条件、多链路、多候选值或未覆盖的措辞需要通过页面补充参数、选择计算目标或改写。页面会显示实际解析的参数及原文，便于核对。
-
-支持按行粘贴 `工作频率（GHz）4.5`、`发射信号电平（dBm）40` 这类“单位在前”的输入。在“计算”之后分行列出多个待求量，会分别计算。缺参数、单位不明或缺适用模型时，提示用户补充，不使用参考表中的默认值。
-
-完整链路示例见 `examples/complete_budget.txt`。它明确确认标准 290 K 噪声路线，并写出噪声谱密度 -174 dBm/Hz、Eb/N0 的 dB 单位、dBi 增益和损耗。算得路径损耗 91.48485019 dB、接收电平 -51.48485019 dBm、门限 -62 dBm、余量 10.51514981 dB。这些输入仅用于示例，不会预填到其他查询。
-
-计算目标和传播条件默认自动识别，手动覆盖收在“修正识别”；参数名称精简，悬停 ⓘ 查看定义。结果中的公式由本地 KaTeX 排版，点击“查看定义与来源”自动展开下方公式集合、定位并高亮；“返回结果”保留当前输入和结果。
-
-点击“保存结果 JSON”由本地服务把该次程序结果写入 `outputs/` 并显示绝对路径。浏览器不能提交新的数值或文件路径，保存内容来自服务端已有结果。应用重启或记录超过最近64条后，需要重新计算才能保存。
-
-## 数值如何避免模型改写
-
-1. BGE 与词项检索查找候选公式；Qwen 接收资料，返回公式 ID、目标/条件判断及用户原文证据。
-2. 程序核对计算目标、参数、单位、定义域和已登记的适用条件。模型建议不具有修改输入值、准入状态或计算结果的权限。
-3. 公式表达式用白名单 AST 求值，不执行模型生成代码。
-4. 页面直接渲染计算结果 JSON，模型生成文本不进入结果数值。不能明确识别目标时先让用户明确目标。
-
-程序算术正确不能证明物理模型对任意环境正确。知识库未支持的环境会要求补充模型或明确基准；不会自动给出可靠度、现场通信成功率或未经验证的传播损耗。
-
-## 新增公式
-
-复制 `examples/new_formula.json` 编写一个公式卡，包含唯一 ID、版本、表达式、输入输出单位、适用条件、来源和独立数值样例。
+在仓库根目录运行：
 
 ```powershell
-& '.\.venv\Scripts\python.exe' -X utf8 scripts/import_formula.py add examples/new_formula.json
+.\planning\run_planning.cmd
 ```
 
-无论导入文件写什么状态，导入后都是 `draft`。审核人核对物理条件、来源和样例后，执行下面的命令；命令本身会进一步检查结构与数值样例：
+也可以直接使用 Python：
 
 ```powershell
-& '.\.venv\Scripts\python.exe' -X utf8 scripts/import_formula.py approve vacuum_wavelength --reviewer '实际审核人姓名'
+.\.venv\Scripts\python.exe -B -X utf8 -m planning.web_server
 ```
 
-上述命令中的审核人应替换为实际审核者，不能把“测试通过”等同于物理审核。独立样例应来自标准、手册或人工复算，避免用待审核公式自身产生期望值。
+浏览器打开 **http://127.0.0.1:18082**。默认采用确定性解析，无需启动模型。
 
-下一次查询会检查知识库哈希并自动重建本地索引，无需重新训练模型；刷新网页可看到新增的计算目标和输入参数。新增参数初期可通过页面的规范单位输入框填写。新增复杂的条件规则或依赖链需要扩展程序并添加测试，单靠写 JSON 不会自动产生新的环境判断能力。
-
-## 原始 Excel
-
-原件未修改。副本位于 `knowledge/sources/链路预算-传输.xls`，审计在 `reports/workbook_audit.json`。按照用户要求，表格只用于开发复核：不进入运行时检索、不补参数、不出现在页面公式来源中，原表 API 与页面入口已移除。开发时仍可用下面的命令重新提取并独立复算 16 个公式：
+任务默认保存在 `outputs/planning.sqlite`。如需独立数据库或其他端口：
 
 ```powershell
-& '.\.venv\Scripts\python.exe' -X utf8 scripts/inspect_workbook.py
+.\planning\run_planning.cmd --port 18083 --db outputs/demo.sqlite
 ```
 
-表内 C11/D11 的多普勒损耗公式缺少物理适用依据，保留在原表复算中，未进入通用已审核公式。表名里的“可靠度”不表示原表已有可靠度计算。
+不要重复启动占用同一端口的服务。更多操作、CLI 示例与状态说明见 [工作台使用说明](planning/README.md)。
 
-## 验证
+### 3. 可选：连接本机 Qwen
 
-2026-09-14 的历史检查和浏览器核验见 `reports/final_checks.json`、`reports/acceptance.json`、`reports/browser_qa.json`。23 个案例为预设断言通过，包含完整计算、部分结果、追问和拒算；不能解释为 23 题全部完整算通。它们也不是新版多 Agent 的验收证据。这些历史报告只保留本机，未上传 GitHub；P1 无模型验证见 [阶段报告](reports/stages/p1-applicability.json)。最新状态见 `HANDOVER.md`。
+工作台连接本机 `127.0.0.1:18081` 模型服务。模型和运行时资源配置完成后，可从仓库根目录启动模型服务：
 
 ```powershell
-& '.\.venv\Scripts\python.exe' -X utf8 -m unittest discover -s tests -v
-& '.\.venv\Scripts\python.exe' -X utf8 scripts/runtime_smoke.py
-& '.\.venv\Scripts\python.exe' -X utf8 scripts/evaluate.py
+.\.venv\Scripts\python.exe -B -X utf8 launch.py --model-only
 ```
 
-最后两项需要本地模型服务已启动。`evaluate.py` 在 Python 审计钩子中禁止非回环网络连接和外部 DNS，并调用本地 BGE/Qwen，记录 `reports/acceptance.json`。这是应用层离线验证，不声称已进行物理拔网测试。
+然后在工作台选择“本机 Qwen”。工作台本身不会自动启动或关闭模型服务。
 
-`app.py --calculator-only` 是显式的轻量测试/故障排查模式，不使用向量模型或 LLM，不算完整 RAG。
+## 一个完整示例
 
-## 开源与依赖
+输入：
 
-应用源代码使用 MIT 许可；Qwen 模型 Apache-2.0，BGE/llama.cpp MIT。Python 依赖、版本及许可见 `THIRD_PARTY.md`、`requirements.lock.txt` 和 `reports/environment.json`。用户原始表与外部参考资料保留各自权利，不因放入项目而变成 MIT 内容。
+> 按自由空间基准计算，频率 2 GHz，距离 1 km，求路径损耗。
 
-本版本使用现有电脑和本地模型，没有软件订阅或 API 调用费用。当前 `.venv` 依赖此电脑的基础 Python 路径，不能宣称整个目录复制到另一台电脑就可直接运行。新电脑需先准备 Python 3.12、对应驱动和锁定依赖；模型可以离线拷贝，下载脚本 `scripts/setup_runtime.py` 只在明确准备资源时运行。`--offline` 仅核对现有文件。
+解析后核对参数、来源与自由空间假设，确认当前版本并计算，结果约为 **98.420600 dB**。
 
-## 文件和状态
+如果距离缺失，系统等待补参；如果随后把频率改为 3 GHz，旧确认与旧结果失效，重新确认后结果约为 **101.942425 dB**。历史版本保留用于查看，不作为当前版本的计算依据。
 
-- `docs/requirements.md`：当前工程需求与阶段验收基线。
-- `docs/diagrams/2026-09-15/通信筹划协同流程_v1.4.md`：当前目标图与可编辑图稿入口。
-- `docs/superpowers/specs/2026-09-14-scientific-review-design.md`：科学缺陷、来源与修复依据。
-- `docs/superpowers/plans/2026-09-14-01-applicability.md`：P1 已完成的实施计划与验收清单。
-- `formula_rag/`：解析、检索、模型接口、公式计算与校验。
-- `knowledge/formulas.json`：版本化知识库。
-- `reports/`：原表复算、模型运行、依赖清单及验收结果。
-- `runtime/*.log`：实际启动日志。
-- `HANDOVER.md`：本轮交接和尚未验证的边界。
+自由空间基准不能证明真实海面、散射、多径环境的传播损耗，也不能单独证明链路可用。
+
+## 已有验证与边界
+
+以下来自 2026-09-21 的实现验收记录，README 更新未重新执行测试：
+
+| 验证类型 | 已记录结果 |
+| --- | --- |
+| 自动测试 | 189 项 Python 测试、8 项 Node 测试通过；pip check 无依赖冲突。 |
+| 角色验收矩阵 | 12 个案例通过；工具故障和指定审查决策使用显式模拟。 |
+| 真实本地模型 | Qwen 的需求、计算建议和审查调用均完成，得到 2 GHz / 1 km 的基准结果。 |
+| 真实离线降级 | 模型服务停止后，确定性降级完成计算并明确标记运行状态。 |
+| 网页验收 | 已完成 Codex 内置浏览器闭环验收；目标 Chrome 验收仍待补。 |
+| 独立代码审查 | 尚未完成；产品内的审查 Agent 不等同于独立代码审查。 |
+
+详见 [角色增量交接](docs/codex/ROLE_EXTENSION_HANDOFF_20260921.md)、[验证汇总](docs/codex/evidence/role-extension-validation-20260921.json)、[真实模型证据](docs/codex/evidence/role-extension-live-20260921.json)与[验收矩阵](docs/codex/evidence/role-acceptance-matrix-20260921.json)。
+
+交接与证据中的提交、发布状态是生成时的历史记录；GitHub 发布版本以仓库提交记录为准。
+
+当前没有自主任务拆解、海面/散射计算、多模型多步骤筹划、候选优化、多用户权限或分布式执行，也没有完成单 Agent / 多 Agent 效果对照。下一步先补独立审查与目标浏览器验收，再为下一种传播模型确定适用条件、输入输出合同及独立数值基准。工程进度入口见 [NEXT_ACTION.md](docs/codex/NEXT_ACTION.md)。
+
+## 保留的公式 RAG 基线
+
+仓库同时保留旧版通信公式本地 RAG，包含 7 张基线公式卡、公式检索、参数抽取、确定性求值及公式导入流程。旧应用通过 `launch.py` 启动，网页端口为 `18080`；当前通信筹划工作台的入口为 `planning/run_planning.cmd`，端口为 `18082`。
+
+公式表达式由受限求值器执行。导入公式的草稿状态与审核状态分开管理；未经确认的公式不能直接作为正式数值依据。原始公式资料用于开发整理，不作为网页运行时必需输入，也不包含在本仓库的模型资源分发中。
+
+## 目录导航
+
+| 路径 | 内容 |
+| --- | --- |
+| [planning/](planning/) | 工作台、Agent 角色、LangGraph 工作流与任务服务 |
+| [formula_rag/](formula_rag/) | 复用的公式检索与确定性计算能力 |
+| [tests/](tests/) | 回归测试 |
+| [scripts/validate_role_slice.py](scripts/validate_role_slice.py) | 受控角色验收矩阵 |
+| [docs/codex/](docs/codex/) | 工程合同、阶段交接与验收证据 |
+| [launch.py](launch.py) | 旧公式 RAG 与本地模型服务启动器 |
+
+## 许可与本地资源
+
+项目代码使用 [MIT License](LICENSE)。本地模型、嵌入模型和推理运行时分别遵循各自许可证，使用或分发前请查看对应资源的许可说明。模型权重、运行时与虚拟环境不随本仓库分发。
