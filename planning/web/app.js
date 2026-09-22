@@ -1,5 +1,5 @@
 import {serviceText} from './model-status.mjs';
-import {nodes,statusText,nodeStates,renderFlow,relevantEvents,activityFresh,openRun} from './flow.mjs';
+import {nodes,statusText,nodeStates,renderFlow,relevantEvents,activityFresh,openRun,RELATION_DESCRIPTION} from './flow.mjs';
 import {renderDetails,el,labels,tabNames} from './details.mjs';
 import {renderConversation} from './conversation.mjs';
 import {reviewQuestion} from './roles.mjs';
@@ -64,7 +64,7 @@ function draw(){
  const s=shown(),ev=historical?[]:activity;
  renderFlow($('flow-canvas'),{view,state:s,events:ev,selected,onSelect:chooseNode});
 
- $('flow-caption').textContent='此图展示系统架构，各节点不一定在本次运行中调用。参考 Visio 第一页：蓝色为调度，紫色为能力调用，灰色虚线为状态关系。高亮与流动仅来自实际运行事件。';
+ $('flow-caption').textContent=RELATION_DESCRIPTION+' 静态架构关系不代表本次已执行；高亮仅来自运行事件，正式结果以保存状态为准。';
  $('status').textContent=historical?'历史只读':busy?'正在处理':s?(s.waiting_reason||labels[s.status]||s.status):'等待输入';
  $('task-meta').textContent=s?`任务 ${s.task_id} · 输入版本 ${s.revision} · ${activeContext?'处理中，尚未提交':`状态版本 ${s.state_version}`}`:'输入需求，沿流程核对参数、公式与依据。';
  const states=nodeStates(s,ev),running=Object.entries(states).find(([id,status])=>status==='running'&&!['requirements','rag','knowledge','compute_agent','model','llm'].includes(id));

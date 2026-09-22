@@ -82,7 +82,10 @@ export function nodeStates(state, events=[]){
 }
 
 const aliases={calculation:'compute_agent',validation:'validator_agent',review:'validator_agent',retrieval:'rag',interpretation:'llm'};
-// Only a real observed call animates an edge. Architecture relations alone do not.
+// Observed responsibility/activity relations are not literal graph predecessors.
+// Architecture relations alone never animate an edge.
+export const RELATION_SEMANTICS='observed_activity';
+export const RELATION_DESCRIPTION='连线表示观测到的运行活动与责任关系，不表示 LangGraph 的直接调用链。';
 export function edgeState(state,events,from,to){
  const relevant=relevantEvents(state,events), runs=new Map();
  for(const e of relevant)if(e.node==='command')runs.set(e.run_id,e.phase);
@@ -135,7 +138,7 @@ export function renderFlow(host,{view,state,events,selected,onSelect}){
   else {d=`M ${x1} ${y1} C ${x1} ${(y1+y2)/2}, ${x2} ${(y1+y2)/2}, ${x2} ${y2}`;}
   const phase=edgeState(state,events,from,to);
   const active=['running','completed','waiting','failed'].includes(phase);
-  const path=svgEl('path',{d,class:`flow-edge ${type} ${active?'traversed':''} ${phase==='running'?'moving':''} ${phase==='failed'?'failed':''}`,'data-edge':`${from}:${to}`,'marker-end':'url(#arrow)'});svg.append(path);
+  const path=svgEl('path',{d,class:`flow-edge ${type} ${active?'traversed':''} ${phase==='running'?'moving':''} ${phase==='failed'?'failed':''}`,'data-edge':`${from}:${to}`,'data-relation':RELATION_SEMANTICS,'aria-label':RELATION_DESCRIPTION,'marker-end':'url(#arrow)'});svg.append(path);
   if(label&&type!=='return')svg.append(svgEl('text',{x:(x1+x2)/2,y:(y1+y2)/2-7,class:'edge-label'},label));
  }
  for(const[id,x,y]of positions){

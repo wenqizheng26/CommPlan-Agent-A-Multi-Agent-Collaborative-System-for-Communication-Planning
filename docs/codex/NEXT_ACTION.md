@@ -1,3 +1,16 @@
+# Demo delivery 当前入口（2026-09-22）
+
+唯一实施规格：[V4](DEMO_HANDOFF_V4.md)。严格按 Stage 0 → 5，只交付当前 FSPL Demo；下方提到扩展传播模型的旧计划仅为历史，不是本轮授权。
+
+Stage 0 已保全当前本地候选并完成 Windows Python 217 / Node 16 / pip check。提交 d3e7f60，分支 codex/demo-delivery-final。首次 push 被 GitHub 拒绝：OAuth 缺 workflow scope，CI 不得宣称通过。
+
+无单位距离残留检测已经存在于当前源码，Stage 0 全量回归通过；历史“仍待修复”结论已过期。Stage 1 补齐四个 V4 拒绝例与合法共享单位候选回归。运行连线现在明确表示观测到的活动/责任关系，不声称 LangGraph 直接调用；fingerprint 纳入公式知识与启动资源配置，排除运行历史和日志。后端图、状态与数值执行不变。
+
+下一步：Stage 1 验证/提交，随后 Stage 2 产品化、Stage 3 项目内模型复制验证和交付工程。Chrome、干净安装、独立外部审查和正式 main release 均须实际验收。完整阶段记录见 DEMO_STAGE0.md 和后续阶段记录。
+
+---
+以下全部为历史记录；计数、缺陷状态、下一步与发布状态不代表当前候选。
+
 # 当前状态与下一步
 
 ## 2026-09-22 用户选择作为独立模型上下文
