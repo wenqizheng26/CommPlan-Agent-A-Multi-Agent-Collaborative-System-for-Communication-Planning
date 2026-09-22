@@ -1,3 +1,4 @@
+import {serviceText} from './model-status.mjs';
 import {nodes,statusText,nodeStates,renderFlow,relevantEvents,activityFresh,openRun} from './flow.mjs';
 import {renderDetails,el,labels,tabNames} from './details.mjs';
 import {renderConversation} from './conversation.mjs';
@@ -5,7 +6,19 @@ import {reviewQuestion} from './roles.mjs';
 import {renderQuestions} from './questions.mjs';
 const $=id=>document.getElementById(id);
 let current=null, historical=null, activeContext=null, activity=[], token='', dirty=false, busy=false, pendingCommand=null;
+let modelService=null, checkingModel=false;
 let view='architecture', selected='input', tab='overview', focusParameter=null, pollGeneration=0;
+async function checkModel(){
+ if(checkingModel)return;checkingModel=true;$('check-model').disabled=true;
+ $('model-service-status').textContent='正在检查本机 Qwen 服务…';
+ try{modelService=await api('/api/model-status');}
+ catch{modelService={status:'unknown',checked_at:new Date().toISOString()};}
+ finally{checkingModel=false;$('check-model').disabled=busy||!!historical;
+  $('model-service-status').textContent=serviceText(modelService);
+  $('model-service-time').textContent=`最近检查：${new Date(modelService.checked_at).toLocaleTimeString('zh-CN',{hour12:false})}。服务就绪不代表每次调用都会通过校验。`;
+  if(selected==='llm')drawDetails();
+ }
+}
 function shown(){return historical||activeContext||current;}
 function notice(text,error=false){$('notice').textContent=text;$('notice').hidden=!text;$('notice').classList.toggle('problem',error);}
 async function api(path,body){const r=await fetch(path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json','X-Planning-Token':token}:{},body:body?JSON.stringify(body):undefined});const data=await r.json();if(!r.ok){const err=new Error(data.error.message+' ['+data.error.code+']');err.status=r.status;throw err;}return data;}
@@ -31,7 +44,7 @@ function chooseTab(id){tab=id;drawDetails();}
 function chooseParameter(name){focusParameter=name;tab='parameters';selected='confirmation';draw();}
 function drawDetails(){
  const s=shown();$('detail-tabs').replaceChildren();for(const[id,label]of Object.entries(tabNames)){const b=el('button',label,id===tab?'selected':'');b.setAttribute('aria-pressed',String(id===tab));b.addEventListener('click',()=>chooseTab(id));$('detail-tabs').append(b);}
- renderDetails($('detail-content'),{state:s,events:historical?[]:activity,node:selected,tab,focusParameter,onTab:chooseTab,onParameter:chooseParameter,historical:!!historical});
+ renderDetails($('detail-content'),{state:s,events:historical?[]:activity,node:selected,tab,focusParameter,onTab:chooseTab,onParameter:chooseParameter,historical:!!historical,modelService});
 }
 function drawTimeline(){
  const s=shown();$('trace').replaceChildren();const ev=historical?[]:relevantEvents(s,activity);
@@ -79,7 +92,7 @@ async function submit(action,answers=null){
  const request=api('/api/commands',c);poll(c.task_id,generation);
  try{const data=await request;pendingCommand=null;acceptState(data.state);if(action==='supplement')$('supplement-message').value='';selected=data.state.status==='COMPLETED'?'publish':data.state.status==='AWAITING_CONFIRMATION'?'confirmation':data.state.status==='AWAITING_INPUT'?'requirements':data.state.status==='NEEDS_MODEL'?'requirements':'failure';tab=nodes[selected][2];notice(data.replayed?'已恢复已有操作回执；显示当前保存状态。':data.state.status==='COMPLETED'?'计算与校验完成，正式结果已保存。':'本版本已保存，请核对当前节点。');}
  catch(e){if(e.status&&e.status<500)pendingCommand=null;activeContext=null;notice(e.message,true);}
- finally{busy=false;const finalGeneration=++pollGeneration;await loadActivity(c.task_id,finalGeneration);draw();if(!pendingCommand&&current?.task_id===c.task_id){if(current.input_issues?.length)$('clarification-panel').scrollIntoView({block:'start'});else if(['AWAITING_CONFIRMATION','COMPLETED'].includes(current.status))$('detail-content').scrollIntoView({block:'start'});}}
+ finally{checkModel();busy=false;const finalGeneration=++pollGeneration;await loadActivity(c.task_id,finalGeneration);draw();if(!pendingCommand&&current?.task_id===c.task_id){if(current.input_issues?.length)$('clarification-panel').scrollIntoView({block:'start'});else if(['AWAITING_CONFIRMATION','COMPLETED'].includes(current.status))$('detail-content').scrollIntoView({block:'start'});}}
 }
 async function restore(id){
  if(busy||!id)return;
@@ -109,6 +122,7 @@ async function restore(id){
   selected=current.status==='COMPLETED'?'publish':current.status==='AWAITING_INPUT'?'requirements':current.status==='NEEDS_MODEL'?'requirements':'confirmation';tab=nodes[selected][2];notice('已恢复任务的保存状态。');
  }catch(e){activeContext=null;notice(e.message,true);}finally{busy=false;draw();}
 }
+$('check-model').addEventListener('click',checkModel);
 $('request-form').addEventListener('submit',e=>{e.preventDefault();submit(current?'edit':'create').catch(e=>notice(e.message,true));});
 $('request-form').addEventListener('input',()=>{dirty=!!current;$('accept').checked=false;syncButtons();});
 $('accept').addEventListener('change',syncButtons);$('confirm').addEventListener('click',()=>submit('confirm').catch(e=>notice(e.message,true)));$('cancel').addEventListener('click',()=>submit('cancel').catch(e=>notice(e.message,true)));
@@ -136,4 +150,5 @@ $('history').addEventListener('click',async()=>{
 });
 $('export').addEventListener('click',()=>{const s=shown();if(!s||busy)return;const blob=new Blob([JSON.stringify(s,null,2)],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob);const a=el('a');a.href=url;a.download=`planning-${s.task_id}-r${s.revision}-v${s.state_version}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
 draw();
+checkModel();
 (async()=>{try{token=(await api('/api/session')).token;const id=location.hash.slice(1)||localStorage.getItem('planning-task');if(id)await restore(id);}catch(e){notice('无法连接本地服务：'+e.message,true);}})();

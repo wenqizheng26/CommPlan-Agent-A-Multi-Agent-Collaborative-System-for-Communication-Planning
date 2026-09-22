@@ -1,3 +1,4 @@
+import {serviceText,callSummary,diagnosticMessages} from './model-status.mjs';
 import {formatDomain} from './values.mjs';
 import {sourceExcerpt} from './text.mjs';
 import {nodes,statusText,nodeStates} from './flow.mjs';
@@ -18,12 +19,13 @@ function formulaMath(){
  const math=m('math',null,m('mrow',null,m('msub',null,m('mi','L'),m('mtext','dB')),m('mo','='),m('mn','92.4'),m('mo','+'),term('f','GHz'),m('mo','+'),term('d','km')));
  math.setAttribute('display','block');math.setAttribute('aria-label','L dB 等于 92.4 加 20 log10(f/GHz) 加 20 log10(d/km)');return math;
 }
-export function renderDetails(host,{state,events=[],node='input',tab='overview',focusParameter=null,onTab,onParameter,historical=false}){
+export function renderDetails(host,{state,events=[],node='input',tab='overview',focusParameter=null,onTab,onParameter,historical=false,modelService=null}){
  host.replaceChildren();const [title,subtitle]=nodes[node]||nodes.input;
  const heading=el('div',undefined,'detail-heading');heading.append(el('span','节点详情','eyebrow'),el('h2',title),el('p',subtitle,'hint'));host.append(heading);
  if(historical)host.append(block('历史只读','正在查看保存时的版本，不能在此确认或修改。','warning'));
  const r=state?.report,model=state?.review?.model,plan=r?.calculation_plan_proposal;
  if(['orchestrator','explanation','validator_agent'].includes(node))host.append(block('接入范围',node==='orchestrator'?'按状态与审查意见调度；每版本最多计算两次。当前是受控程序策略，尚无自主任务拆解。':node==='explanation'?'报告正文由已验证数据生成；未启用自由生成的科学解释。':'先执行硬校验，再进行可选结构化审查。模型建议不能改数值或绕过硬校验。','scope-note'));
+ if(node==='llm'){host.append(block('模型服务 · 当前检查',serviceText(modelService)+(modelService?.checked_at?`\n检查时间：${new Date(modelService.checked_at).toLocaleString('zh-CN')}。`:'')+'\n此处是当前服务状态，与任务保存时的调用结果分别记录。'));if(state)host.append(block(historical?'此历史版本的调用结果':'本任务当前版本的调用结果',callSummary(state)));}
  if(!state){host.append(block('开始一条任务','在左侧输入自然语言需求，或填入完整示例。图中可点击查看各模块职责。'));return;}
  if(reviewQuestion(state))host.append(block('审查意见',reviewQuestion(state),'warning'));
  if(state.failure)host.append(block('当前阻断',[state.failure.message,state.failure.next_action],'warning'));
@@ -33,11 +35,11 @@ export function renderDetails(host,{state,events=[],node='input',tab='overview',
   if(state.routing_decisions?.length)host.append(jsonDetails('调度与重算记录',state.routing_decisions));
  }
  if(tab==='overview'){
-  const status=nodeStates(state,events)[node];host.append(block('本步骤状态',statusText[status]||status));
+  const status=nodeStates(state,events)[node];host.append(block(node==='llm'?'任务调用状态（非服务状态）':'本步骤状态',statusText[status]||status));
   host.append(block('当前任务描述',state.request?.raw_text||'等待输入'));
   if(state.failure)host.append(block('失败原因',[state.failure.message,state.failure.code,'下一步：'+state.failure.next_action],'warning'));
   if(r){host.append(block('运行方式',`需求解析：${r.component_modes.interpretation==='llm'?'本机 LLM':'确定性解析'}；检索：词项检索；${r.runtime_health==='degraded'?'已明确降级':'本地运行'}。`));
-   const ds=r.diagnostics.filter(x=>!['SOURCE_EXCERPT','MODEL_CALL','EXPLICIT_CARD_LOOKUP'].includes(x.code));if(ds.length)host.append(block('处理说明',ds.map(x=>x.message)));
+   const ds=diagnosticMessages(r.diagnostics);if(ds.length)host.append(block('处理说明',ds),jsonDetails('逐次诊断记录',r.diagnostics));
    host.append(button('查看参数与原文对应 →',()=>onTab('parameters')),button('查看计算计划 →',()=>onTab('plan')));
   }
   host.append(jsonDetails('本节点可追溯数据',node==='state'?state:{task_id:state.task_id,revision:state.revision,status:state.status,request:state.request,events:events.filter(e=>e.node===node&&e.revision===state.revision)}));

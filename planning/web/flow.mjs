@@ -24,7 +24,7 @@ export const nodes = {
  knowledge:['专业知识库','版本化公式卡与来源','evidence'],
  state:['共享状态／检查点','确认快照、历史与恢复','overview'],
 };
-export const statusText={idle:'未开始',running:'运行中',completed:'已完成',waiting:'等待处理',failed:'失败',skipped:'未调用',cancelled:'已取消',unavailable:'未接入',partial:'部分接入',interrupted:'已中断'};
+export const statusText={idle:'未开始',running:'运行中',completed:'已完成',waiting:'等待处理',failed:'失败',degraded:'调用已降级',skipped:'未调用',cancelled:'已取消',unavailable:'未接入',partial:'部分接入',interrupted:'已中断'};
 export function relevantEvents(state, events){return state ? events.filter(e=>e.task_id===state.task_id&&e.revision===state.revision):[];}
 export function activityFresh(previous,next){return !previous.length||(next.at(-1)?.seq||0)>=(previous.at(-1)?.seq||0);}
 export function openRun(events){const last=events.at(-1);if(!last)return null;const run=events.filter(e=>e.run_id===last.run_id);return run.some(e=>e.node==='command'&&['committed','replayed','rejected','interrupted'].includes(e.phase))?null:last;}
@@ -76,6 +76,8 @@ export function nodeStates(state, events=[]){
  if(!explicit.has('state')||state.status==='COMPLETED')s.state=state.state_version?'completed':'idle';
  if(!explicit.has('orchestrator')||state.status==='COMPLETED')s.orchestrator=state.state_version?'completed':'partial';
  if(['AWAITING_INPUT','NEEDS_MODEL'].includes(state.status))s.requirements='waiting';
+ const fallback=state.report?.runtime_health==='degraded'||state.calculation_role?.mode==='deterministic_fallback'||state.review_assessment?.role?.mode==='deterministic_fallback';
+ if(fallback&&s.llm!=='running')s.llm='degraded';
  return s;
 }
 
@@ -139,7 +141,7 @@ export function renderFlow(host,{view,state,events,selected,onSelect}){
  for(const[id,x,y]of positions){
   const [label,sub]=nodes[id],status=states[id];
   const g=svgEl('g',{transform:`translate(${x},${y})`,class:`flow-node ${status} ${selected===id?'selected':''}`,role:'button',tabindex:0,'aria-label':`${label}，${statusText[status]||status}`,'aria-pressed':String(selected===id),'data-node':id});
-  const visibleSub=status==='running'?'运行中 · 等待真实返回':status==='waiting'?'等待补充或核对 · 点击查看':sub;
+  const visibleSub=status==='running'?'运行中 · 等待真实返回':status==='waiting'?'等待补充或核对 · 点击查看':status==='degraded'?'部分调用已降级 · 点击查看':sub;
   g.append(svgEl('rect',{width:230,height:68,rx:10}),svgEl('circle',{cx:18,cy:22,r:4}),svgEl('text',{x:30,y:27,class:'node-title'},label),svgEl('text',{x:15,y:50,class:'node-sub'},visibleSub));
   const activate=()=>onSelect(id);g.addEventListener('click',activate);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();activate();}});svg.append(g);
  }

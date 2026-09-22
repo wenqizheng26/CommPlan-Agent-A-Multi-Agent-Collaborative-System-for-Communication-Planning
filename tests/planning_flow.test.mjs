@@ -41,5 +41,5 @@ test('review role and grounded model calls have truthful statuses',()=>{
  const done={...draft,status:'COMPLETED',calculation_role:{mode:'llm'},review_assessment:{role:{mode:'deterministic',proposal:{decision:'pass'}}}};
  assert.equal(nodeStates(done).llm,'completed');
  const fallback={...done,calculation_role:{mode:'deterministic_fallback'}};
- assert.equal(nodeStates(fallback).llm,'failed');
+ assert.equal(nodeStates(fallback).llm,'degraded');
 });

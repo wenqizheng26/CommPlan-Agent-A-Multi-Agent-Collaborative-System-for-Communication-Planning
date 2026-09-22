@@ -8,6 +8,7 @@ import sqlite3
 from urllib.parse import urlsplit
 from planning.requirements_contract import strict_json
 from planning.workflow.task_service import TaskService, identifier
+from planning.services.model_status import probe_model
 
 MESSAGES={
     'STALE_REVISION':'任务输入已更新。请刷新查看当前版本，再重新核对。',
@@ -41,6 +42,7 @@ def create_server(root, db_path=None, port=18082):
             '/text.mjs':('text.mjs','text/javascript'),'/flow.mjs':('flow.mjs','text/javascript'),
             '/details.mjs':('details.mjs','text/javascript'),'/conversation.mjs':('conversation.mjs','text/javascript'),
             '/roles.mjs':('roles.mjs','text/javascript'),
+            '/model-status.mjs':('model-status.mjs','text/javascript'),
             '/questions.mjs':('questions.mjs','text/javascript'),'/values.mjs':('values.mjs','text/javascript'),
             '/app.css':('app.css','text/css')}
 
@@ -81,6 +83,8 @@ def create_server(root, db_path=None, port=18082):
                 self.respond(200,(root/'planning/web'/name).read_text(encoding='utf-8'),kind)
             elif path=='/api/session':
                 self.respond(200,{'token':token,'profile':'confirmed-fspl-loop-v1'})
+            elif path=='/api/model-status':
+                self.respond(200,probe_model())
             elif path.startswith('/api/tasks/'):
                 parts=path.strip('/').split('/')
                 try:

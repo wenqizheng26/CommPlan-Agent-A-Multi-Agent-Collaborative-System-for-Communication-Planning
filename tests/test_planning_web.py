@@ -4,6 +4,7 @@ from pathlib import Path
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 from test_planning_loop import ROOT, command
@@ -85,6 +86,13 @@ class PlanningWebTests(unittest.TestCase):
         self.assertEqual(body['events'][-1]['phase'],'committed')
         self.assertEqual(self.call('/api/tasks/'+c['task_id']+'/activity',headers={'Origin':'https://evil.example'})[0],403)
         self.assertEqual(self.call('/api/tasks/bad!id/activity')[0],400)
+
+    def test_live_model_status_is_separate_and_origin_checked(self):
+        with patch('planning.web_server.probe_model', return_value={'status':'ready','checked_at':'now'}) as probe:
+            self.assertEqual(self.call('/api/model-status')[1]['status'],'ready')
+            self.assertEqual(self.call('/api/model-status',headers={'Origin':'https://evil.example'})[0],403)
+            probe.assert_called_once()
+        self.assertEqual(self.call('/model-status.mjs')[0],200)
 
 
 if __name__=='__main__':
