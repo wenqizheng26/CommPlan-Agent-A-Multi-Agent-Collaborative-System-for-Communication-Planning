@@ -53,6 +53,15 @@ class RequirementsAgent:
         observe(observer,'parse','completed',mode='deterministic')
         original = copy.deepcopy(parsed)
         diagnostics, questions = [], []
+        if request['target']:
+            label = '路径损耗' if request['target'] == ALLOWED_MODEL else request['target']
+            diagnostics.append(diagnostic('USER_TARGET_SELECTION', '计算目标来自用户选择：' + label + '。',
+                value=request['target'], source_ref=request['request_id'] + ':target'))
+        if request['condition']:
+            label = {'free_space':'理想自由空间模型','free_space_reference':'自由空间基准',
+                     'non_free_space':'实际非自由空间环境'}[request['condition']]
+            diagnostics.append(diagnostic('USER_CONDITION_SELECTION', '模型条件来自用户选择：' + label + '。',
+                value=request['condition'], source_ref=request['request_id'] + ':condition'))
         health, mode, failed = 'ready', 'deterministic', False
         card = next((c for c in self.cards if c['id'] == ALLOWED_MODEL), None)
         observe(observer,'retrieval','started')
@@ -77,10 +86,21 @@ class RequirementsAgent:
             observe(observer,'interpretation','started')
             observe(observer,'llm','started',caller='requirements',purpose='intent')
             for attempt in range(1, 4):
+                envelope, info = {}, {}
+                stage = 'model_response'
                 try:
-                    envelope = self.selector(request['raw_text'], copy.deepcopy(candidates))
+                    if isinstance(self.selector, LocalSelector):
+                        envelope = self.selector(request['raw_text'], copy.deepcopy(candidates),
+                            manual_target=request['target'], manual_condition=request['condition'])
+                    else:
+                        envelope = self.selector(request['raw_text'], copy.deepcopy(candidates))
+                    stage = 'structure'
                     model = model_proposal(envelope, [c['id'] for c in candidates])
+                    require(not request['target'] or not model['targets'], 'MODEL_SELECTED_TARGET_REPEATED')
+                    require(not request['condition'] or not model['conditions'], 'MODEL_SELECTED_CONDITION_REPEATED')
+                    stage = 'target_semantics'
                     validate_target_semantics(model)
+                    stage = 'source_grounding'
                     checked = copy.deepcopy(parsed)
                     info = merge_interpretation(checked, model, [c['id'] for c in candidates],
                                                manual_target=request['target'], manual_condition=request['condition'])
@@ -98,7 +118,10 @@ class RequirementsAgent:
                     break
                 except (ValueError, KeyError, TypeError) as exc:
                     diagnostics.append(diagnostic('MODEL_OUTPUT_INVALID', '模型结构或原文证据不合法。', attempt=attempt,
-                                                  exception=type(exc).__name__, next_action='采用确定性解析或重新提交。'))
+                        exception=type(exc).__name__, reason=str(exc)[:300], stage=stage,
+                        rejected=info.get('rejected', []),
+                        model_output=str(envelope.get('raw_output', ''))[:4000] if isinstance(envelope, dict) else '',
+                        next_action='查看逐次诊断记录；核对原文与用户选择，或采用确定性解析。'))
                     if attempt == 3:
                         health = 'degraded' if self.allow_fallback else 'unavailable'
                         failed = not self.allow_fallback
