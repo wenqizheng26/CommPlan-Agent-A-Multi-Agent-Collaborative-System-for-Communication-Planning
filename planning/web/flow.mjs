@@ -10,7 +10,7 @@ export const nodes = {
  calculation:['专业计算','受控调用登记公式','formula'],
  validation:['结果校验','程序执行 8 项检查','result'],
  publish:['结果与证据报告','经校验后发布','result'],
- supplement:['补问／修正参数','保留已知信息，重新规划','parameters'],
+ supplement:['需求确认与补充','多问题汇总 · 保存部分回答','parameters'],
  gap:['模型或依据缺口','说明缺口，停止计算','evidence'],
  failure:['异常处理','失败原因与下一步','overview'],
  explanation:['LLM 解释与审查','未接入 · 当前为程序报告','result'],
@@ -39,6 +39,7 @@ export function nodeStates(state, events=[]){
  }
  if(state.status==='AWAITING_CONFIRMATION')s.confirmation='waiting';
  if(state.status==='AWAITING_INPUT')s.supplement='waiting';
+ if(state.resolved_input_issues?.length&&!state.input_issues?.length)s.supplement='completed';
  if(state.status==='NEEDS_MODEL')s.gap='waiting';
  if(state.status==='FAILED')s.failure='failed';
  if(state.status==='CANCELLED')s.confirmation='cancelled';
@@ -102,16 +103,17 @@ const execution=[
 const architecture=[
  ['input',330,40],['orchestrator',330,145],
  ['requirements',40,270],['compute_agent',330,270],['validator_agent',620,270],
- ['confirmation',40,390],['model',330,390],['publish',620,390],
- ['llm',40,525],['rag',330,525],['knowledge',620,525],['state',330,650],
+ ['supplement',40,390],['model',330,390],['publish',620,390],
+ ['confirmation',40,490],
+ ['llm',40,610],['rag',330,610],['knowledge',620,610],['state',330,720],
 ];
 // mode: task / capability / state. Branch labels reflect actual decision meaning.
 const executionEdges=[['input','parse'],['parse','retrieval'],['retrieval','interpretation'],['interpretation','planning'],['planning','confirmation'],['confirmation','calculation'],['calculation','validation'],['validation','publish'],['planning','supplement','缺项/冲突'],['planning','gap','不支持'],['calculation','failure','失败'],['validation','failure','不通过'],['supplement','input','修正后重新提交','return']];
-const architectureEdges=[['input','orchestrator'],['orchestrator','requirements'],['orchestrator','compute_agent'],['orchestrator','validator_agent'],['requirements','confirmation'],['compute_agent','model'],['validator_agent','publish'],['requirements','llm','','capability'],['compute_agent','llm','','capability'],['validator_agent','llm','','capability'],['requirements','rag','','capability'],['validator_agent','rag','','capability'],['rag','knowledge','','capability'],['state','orchestrator','','state']];
+const architectureEdges=[['input','orchestrator'],['orchestrator','requirements'],['orchestrator','compute_agent'],['orchestrator','validator_agent'],['requirements','supplement'],['supplement','confirmation'],['supplement','requirements','','return'],['compute_agent','model'],['validator_agent','publish'],['requirements','llm','','capability'],['compute_agent','llm','','capability'],['validator_agent','llm','','capability'],['requirements','rag','','capability'],['validator_agent','rag','','capability'],['rag','knowledge','','capability'],['state','orchestrator','','state']];
 function svgEl(tag, attrs={},text){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);if(text)n.textContent=text;return n;}
 export function renderFlow(host,{view,state,events,selected,onSelect}){
  const arch=true, positions=architecture, edges=architectureEdges, states=nodeStates(state,events);
- const svg=svgEl('svg',{viewBox:`0 0 910 ${arch?770:590}`,role:'group','aria-label':arch?'总体协同架构':'任务执行流程'});
+ const svg=svgEl('svg',{viewBox:`0 0 910 ${arch?830:590}`,role:'group','aria-label':arch?'总体协同架构':'任务执行流程'});
  const defs=svgEl('defs');const marker=svgEl('marker',{id:'arrow',viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:5,markerHeight:5,orient:'auto-start-reverse'});marker.append(svgEl('path',{d:'M 0 0 L 10 5 L 0 10 z',fill:'context-stroke'}));defs.append(marker);svg.append(defs);
  if(!arch){['需求与规划','确认、计算与发布','分支与扩展'].forEach((t,i)=>svg.append(svgEl('text',{x:40+i*290,y:24,class:'lane-label'},t)));}
  const map=Object.fromEntries(positions.map(([id,x,y])=>[id,{x,y}]));
@@ -124,6 +126,7 @@ export function renderFlow(host,{view,state,events,selected,onSelect}){
    const sx=from==='requirements'?a.x:a.x+230;
    d=`M ${sx} ${a.y+34} H ${rail} V ${b.y-15} H ${b.x+115} V ${b.y}`;
   }
+  else if(arch&&from==='supplement'){d=`M ${a.x} ${a.y+34} H 8 V ${b.y+34} H ${b.x}`;}
   else if(type==='return'){d=`M ${a.x+230} ${a.y+34} H 882 V 42 H ${b.x+115} V ${b.y}`;}
   else if(a.x===b.x){if(a.y>b.y){y1=a.y;y2=b.y+68;}d=`M ${x1} ${y1} L ${x2} ${y2}`;}
   else if(a.y===b.y){x1=a.x+230;y1=a.y+34;x2=b.x;y2=b.y+34;d=`M ${x1} ${y1} H ${x2}`;}

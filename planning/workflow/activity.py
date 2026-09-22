@@ -45,7 +45,7 @@ class ActivityStore:
 
     def start(self, command):
         run = dict(run_id=str(uuid.uuid4()),task_id=command['task_id'],event_id=command['event_id'],
-                   revision=command['expected_revision']+(command['action'] in {'edit','supplement'}))
+                   revision=command['expected_revision']+(command['action'] in {'edit','supplement','answer'}))
         if self.available:
             with closing(sqlite3.connect(self.path, timeout=1)) as conn, conn:
                 conn.execute('INSERT INTO runs VALUES(?,?,?,?,?)',

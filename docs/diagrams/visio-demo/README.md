@@ -1,4 +1,12 @@
-# Visio 双页设计稿
+# Visio 流程图
+
+## 当前需求澄清与区间计算
+
+`clarification-workflow.vsdx` 为本次新增的原生可编辑 Visio；`clarification-workflow.png` 由 Microsoft Visio 实际导出。生成脚本为 `scripts/export_clarification_visio.ps1`，需要 Windows 与已安装的 Visio。
+
+新增流程表达需求澄清、部分回答回到需求评估、能力不足、确认、区间/候选计算及结果审查。旧双页目标图保持原样。
+
+## 历史双页设计稿
 
 本目录复用项目 2026-09-16 双页图稿的后续节点完整版。未修改原 Visio 图中的节点或连接。
 

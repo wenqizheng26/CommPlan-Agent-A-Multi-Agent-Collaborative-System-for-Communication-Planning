@@ -7,6 +7,7 @@ from formula_rag.retrieval import Retriever
 from formula_rag.model import LocalSelector
 from formula_rag.interpretation import merge_interpretation
 from formula_rag.applicability import scope_issues
+from planning.services.input_domains import numbers, scenarios
 from planning.requirements_contract import (PROFILE, VERSION, CONDITIONS, obj, require, strings,
     strict_json, validate_request, validate_report)
 from planning.services.requirement_parameters import collect_parameters, diagnostic
@@ -135,7 +136,7 @@ class RequirementsAgent:
         # No guess from a bare keyword or the top retrieval result.
         unsupported = outside_scope(request['raw_text'], original, targets, conditions)
         if not targets and not unsupported:
-            questions.append('请明确是否要求计算自由空间路径损耗。')
+            questions.append('请说明希望得到路径损耗、链路可用性判断，还是方案比较；当前仅支持自由空间路径损耗基准。')
         relevant = targets == [ALLOWED_MODEL] or unsupported
         parameters, conflicts, param_diagnostics = collect_parameters(request, original, REQUIRED if relevant else [])
         diagnostics.extend(param_diagnostics)
@@ -146,17 +147,17 @@ class RequirementsAgent:
         if conflicts:
             questions.append('请消除同一参数的来源冲突。')
             diagnostics.append(diagnostic('PARAMETER_CONFLICT', '同一参数存在不同数值。', fields=[c['parameter_name'] for c in conflicts]))
-        if any(d['code'] in {'INPUT_PARSE_ISSUE', 'SOURCE_AMBIGUOUS'} for d in diagnostics):
+        if any(d['code'] in {'INPUT_PARSE_ISSUE', 'SOURCE_AMBIGUOUS', 'PARAMETER_APPROXIMATE'} for d in diagnostics):
             questions.append('请核对未能明确解析的数值及其来源。')
         values = {p['canonical_name']: p['value'] for p in parameters if p['value'] is not None}
-        invalid = [k for k in REQUIRED if k in values and values[k] <= 0]
+        invalid = [k for k in REQUIRED if k in values and min(numbers(values[k])) <= 0]
         if invalid:
             questions.append('频率和距离必须大于零，请修正：' + '、'.join(invalid))
             diagnostics.append(diagnostic('INPUT_DOMAIN_INVALID', '必要参数超出定义域。', fields=invalid))
         if targets == [ALLOWED_MODEL] and 'free_space' not in conditions and not unsupported:
             questions.append('请明确采用自由空间模型或自由空间基准。')
             diagnostics.append(diagnostic('MISSING_CONDITION', '不能从视距、岸海或参数齐全推断自由空间条件。'))
-        scope = scope_issues(ALLOWED_MODEL, values, parsed) if targets == [ALLOWED_MODEL] and not invalid else []
+        scope = [issue for case in scenarios(values) for issue in scope_issues(ALLOWED_MODEL, case, parsed)] if targets == [ALLOWED_MODEL] and not invalid else []
         if scope:
             unsupported = True
             diagnostics.append(diagnostic('MODEL_NOT_APPLICABLE', scope[0]['message'], next_action='核对单位或另选适用模型。'))

@@ -8,6 +8,7 @@ from planning.services.confirmation import validate_snapshot
 from planning.agents.calculation import propose_calculation
 from planning.workflow.requirements_graph import stamp
 from planning.workflow.activity import observe
+from planning.services.domain_calculation import evaluate_domains, validate_domains, conclusion
 
 
 def execute(snapshot, review, cards, proposal, observer=None, attempt=1):
@@ -20,26 +21,33 @@ def execute(snapshot, review, cards, proposal, observer=None, attempt=1):
     parameters = {p['canonical_name']:p['value'] for p in report['parameters_proposal'] if p['value'] is not None}
     require(set(card['parameters']) <= set(parameters), 'MISSING_PARAMETERS')
     require(set(card['applicability']['requires']) <= set(report['conditions']), 'MISSING_CONDITIONS')
-    require(not scope_issues(card['id'], parameters, {'conditions':report['conditions']}), 'MODEL_NOT_APPLICABLE')
+    domain_mode=any(type(v) is dict for v in parameters.values())
     started = stamp()
     observe(observer,'model','started',caller='compute_agent',model_id=card['id'])
     try:
-        result = core.evaluate(card, parameters)
+        if domain_mode:
+            parameters={k:parameters[k] for k in card['parameters']}
+            outputs=evaluate_domains(card,parameters,report['conditions'])
+        else:
+            require(not scope_issues(card['id'], parameters, {'conditions':report['conditions']}), 'MODEL_NOT_APPLICABLE')
+            result=core.evaluate(card,parameters)
+            require(result['status']=='ok', 'CALCULATION_DOMAIN_ERROR')
+            value=result.get('value')
+            require(type(value) in (int,float) and math.isfinite(value), 'NONFINITE_RESULT')
+            require(result['unit']==card['output']['unit'], 'RESULT_UNIT_MISMATCH')
+            require(result['inputs']=={k:parameters[k] for k in card['parameters']}, 'RESULT_INPUT_MISMATCH')
+            require(not result_issues(card['id'],value), 'RESULT_NOT_APPLICABLE')
+            parameters=result['inputs']
+            outputs=[dict(name=card['output']['name'],value=value,unit=result['unit'])]
     except Exception:
         observe(observer,'model','failed',caller='compute_agent')
         raise
     observe(observer,'model','completed',caller='compute_agent',model_id=card['id'])
-    require(result['status']=='ok', 'CALCULATION_DOMAIN_ERROR')
-    value = result.get('value')
-    require(type(value) in (float,int) and math.isfinite(value), 'NONFINITE_RESULT')
-    require(result['unit']==card['output']['unit'], 'RESULT_UNIT_MISMATCH')
-    require(result['inputs']=={k:parameters[k] for k in card['parameters']}, 'RESULT_INPUT_MISMATCH')
-    require(not result_issues(card['id'], value), 'RESULT_NOT_APPLICABLE')
     output = dict(result_id=snapshot['snapshot_id']+':result'+('' if attempt==1 else f':attempt-{attempt}'), task_id=snapshot['task_id'],
                   revision=snapshot['revision'], snapshot_id=snapshot['snapshot_id'],
                   snapshot_hash=snapshot['content_hash'], plan_hash=report['calculation_plan_proposal']['plan_hash'],
                   model_id=card['id'], model_version=card['version'], formula=card['expression'],
-                  normalized_inputs=result['inputs'], outputs=[dict(name=card['output']['name'],value=value,unit=result['unit'])],
+                  normalized_inputs=parameters, outputs=outputs,
                   evidence_ids=copy.deepcopy(report['evidence_ids']), runtime_mode='deterministic',
                   tool_version='confirmed-fspl-v1/'+RULE_VERSION, started_at=started, finished_at=stamp())
     output['result_hash'] = digest(output)
@@ -54,8 +62,16 @@ def validate_result(result, snapshot):
     # Independent magnitude check against the dimensionless 4*pi*d*f/c ratio.
     # The registered P.525 card uses a rounded constant, ~0.048 dB below this
     # reference. This is a validator only; published values always use the card.
-    reference = 20*(math.log10(expected_inputs['frequency_ghz'])+math.log10(expected_inputs['distance_km'])
-                    +12+math.log10(4*math.pi/299792458))
+    domain_mode=any(type(v) is dict for v in expected_inputs.values())
+    if domain_mode:
+        numeric_ok,magnitude_ok=validate_domains(result['outputs'],expected_inputs,model)
+    else:
+        reference=20*(math.log10(expected_inputs['frequency_ghz'])+math.log10(expected_inputs['distance_km'])+12+math.log10(4*math.pi/299792458))
+        numeric_ok=(len(result['outputs'])==1 and result['outputs'][0]['unit']=='dB'
+            and result['outputs'][0]['name']==model['output']['name']
+            and type(result['outputs'][0]['value']) in (int,float)
+            and math.isfinite(result['outputs'][0]['value']) and result['outputs'][0]['value']>=0)
+        magnitude_ok=numeric_ok and abs(result['outputs'][0]['value']-reference)<=0.05
     checks = dict(
         result_integrity=result['result_hash']==digest({k:v for k,v in result.items() if k!='result_hash'}),
         snapshot_identity=result['snapshot_hash']==snapshot['content_hash'] and result['snapshot_id']==snapshot['snapshot_id']
@@ -65,11 +81,7 @@ def validate_result(result, snapshot):
         evidence_consistency=result['evidence_ids']==report['evidence_ids'],
         model_identity=result['model_id']==model['id']=='fspl_ghz' and result['model_version']==model['version']
             and result['formula']==model['expression'],
-        numeric_domain=len(result['outputs'])==1 and result['outputs'][0]['unit']=='dB'
-            and result['outputs'][0]['name']==model['output']['name']
-            and type(result['outputs'][0]['value']) in (int,float)
-            and math.isfinite(result['outputs'][0]['value']) and result['outputs'][0]['value']>=0,
-        fspl_magnitude=len(result['outputs'])==1 and abs(result['outputs'][0]['value']-reference)<=0.05)
+        numeric_domain=numeric_ok, fspl_magnitude=magnitude_ok)
     return [dict(validation_id=result['result_id']+':'+key, validator_id=key, severity='hard',
                  passed=bool(ok), target_hash=result['result_hash']) for key,ok in checks.items()]
 
@@ -84,8 +96,9 @@ def publish(result, snapshot, validations):
                 model_id=result['model_id'],model_version=result['model_version'],formula=result['formula'],
                 parameters=copy.deepcopy(report['parameters_proposal']),conditions=copy.deepcopy(report['conditions']),
                 validation_ids=[v['validation_id'] for v in validations],
-                conclusion=f"按已确认条件，自由空间单程路径损耗为 {result['outputs'][0]['value']:.6f} dB。",
+                conclusion=conclusion(result['outputs']),
                 limitations=list(dict.fromkeys(report['assumptions']+[FARFIELD_NOTE,
-                    '结果仅为自由空间基准，未估计真实海面反射、散射或遮挡，也不代表链路通信可行。'])),
+                    '结果仅为自由空间基准，未估计真实海面反射、散射或遮挡，也不代表链路通信可行。',
+                    '区间按输入上下界的组合计算，不包含概率或置信度；离散候选分别报告。'])),
                 evidence_refs=copy.deepcopy(report['evidence_refs']), component_modes=copy.deepcopy(report['component_modes']),
                 runtime_health=report['runtime_health'], generated_at=stamp())

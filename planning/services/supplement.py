@@ -11,6 +11,7 @@ from formula_rag.parsing import extract_request, NUMBER, UNITS
 from planning.requirements_contract import require, obj, strict_json
 from planning.services.requirement_parameters import collect_parameters
 from planning.workflow.activity import observe
+from planning.services.input_domains import numbers, extract_domains
 
 FIELDS = {'frequency_ghz': '频率', 'distance_km': '距离'}
 INPUT_KEYS = ('raw_text', 'manual_parameters', 'condition', 'target')
@@ -81,13 +82,30 @@ def merge_supplement(current, message, event_id, mode, selector=None, observer=N
         conversation['pending']=[p for p in pending if p['number']!=n]
         changes.append(dict(field='pending',before=f'第{n}条待澄清',after='用户撤回'))
     else:
+        domains, domain_errors=extract_domains(message)
+        residual=list(message)
+        for domain in domains:
+            a,b=domain['span'];residual[a:b]=' '*(b-a)
+        rest=re.sub(r'载波频率|频率|路径距离|距离|修改为|设置为|确定为|改为|改成|采用|使用|为|是|[\s=：:，,。;；]', '', ''.join(residual))
+        if domains and not domain_errors and not rest and len({d['field'] for d in domains})==len(domains):
+            from planning.services.clarification import replace_parameter
+            for domain in domains:
+                replace_parameter(request,current['report'],domain['field'],domain['excerpt'])
+                changes.append(dict(field=domain['field'],before=before['raw_text'],after=domain['value']))
+                conversation['field_sources'][domain['field']]=dict(turn_id=event_id,number=number,
+                    message=message,evidence=domain['excerpt'],value=domain['value'],unit=domain['unit'])
+            fields={d['field'] for d in domains}
+            conversation['pending']=[p for p in pending if p.get('field') not in fields]
+            conversation['turns'].append(dict(turn_id=event_id,number=number,kind='supplement',message=message,
+                before=before,after=copy.deepcopy(request),changes=changes,questions=[],mode='deterministic',diagnostics=[],applied=True))
+            return request,conversation
         parsed=extract_request(message)
         probe=dict(schema_version='1.0.0',task_id=current['task_id'],revision=current['revision']+1,
                    request_id=event_id,raw_text=message,manual_parameters={},condition=None,target=None)
         parameters, conflicts, ds=collect_parameters(probe,parsed,[])
         patches=[]
         for p in parameters:
-            if p['canonical_name'] in FIELDS and p['status']=='user_provided' and p['value']>0 and len(p['origins'])==1:
+            if p['canonical_name'] in FIELDS and p['status']=='user_provided' and min(numbers(p['value']))>0 and type(p['value']) is not dict and len(p['origins'])==1:
                 o=p['origins'][0]
                 if o['span'] is not None:
                     evidence=message[slice(*o['span'])]
@@ -163,7 +181,7 @@ def merge_supplement(current, message, event_id, mode, selector=None, observer=N
             residual=NUMERIC.sub('',message)
             residual=re.sub(r'频率|载波|距离|路径|也|可以|用|采用|或者|或|改为|确定为|[，,。\s]', '', residual)
             field=next(iter(fields)) if len(fields)==1 and not residual else None
-            question=f'第{number}条补充尚未合并。请明确本次采用的单个频率/距离，或输入“撤回第{number}条补充”。其他任务变更可直接编辑当前描述后保存。'
+            question=f'第{number}条补充尚未合并。请明确本次采用的频率/距离（支持区间或离散候选），或输入“撤回第{number}条补充”。其他任务变更可直接编辑当前描述后保存。'
             questions.append(question)
             conversation['pending'].append(dict(turn_id=event_id,number=number,field=field,question=question))
     conversation['turns'].append(dict(turn_id=event_id,number=number,kind='supplement',message=message,

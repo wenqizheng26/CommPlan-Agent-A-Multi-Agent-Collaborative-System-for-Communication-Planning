@@ -73,7 +73,7 @@ class RequirementsTests(unittest.TestCase):
                  ('按自由空间基准，频率2GHz，距离1e-12km，求路径损耗', 'NEEDS_MODEL'),
                  ('真实海面传播损耗，频率2GHz，距离1km', 'NEEDS_MODEL'),
                  ('频率2GHz，距离1km', 'AWAITING_INPUT'),
-                 ('按自由空间基准，频率2至3GHz，距离1km，求路径损耗', 'AWAITING_INPUT'),
+                 ('按自由空间基准，频率2至3GHz，距离1km，求路径损耗', 'AWAITING_CONFIRMATION'),
                  ('按自由空间基准，频率不是2GHz，距离1km，求路径损耗', 'AWAITING_INPUT')]
         for text, expected in cases:
             with self.subTest(text=text):
@@ -111,7 +111,6 @@ class RequirementsTests(unittest.TestCase):
 
     def test_alternatives_and_two_way_are_not_single_link_inputs(self):
         for text in ['按自由空间基准，频率2GHz，距离1km，求路径损耗，频率2GHz或者3GHz',
-                     '按自由空间基准，频率2GHz，距离1km或2km，求路径损耗',
                      '按自由空间基准，频率2GHz，距离1km，求双程路径损耗']:
             with self.subTest(text=text):
                 self.assertNotEqual(self.agent().run(request(text))['execution_status'],'AWAITING_CONFIRMATION')
@@ -126,10 +125,12 @@ class RequirementsTests(unittest.TestCase):
         r = self.agent(fake).run(request('按自由空间基准，频率2GHz，距离1km，求天线高度'))
         self.assertNotEqual(r['execution_status'],'AWAITING_CONFIRMATION')
 
-    def test_all_alternative_notations_block(self):
+    def test_explicit_domains_are_preserved_for_confirmation(self):
         for values in ['2GHz或3GHz','2GHz、3GHz','2GHz至3GHz','2GHz或者3GHz']:
             r=self.agent().run(request('按自由空间基准，距离1km，求路径损耗，频率'+values))
-            self.assertEqual(r['execution_status'],'AWAITING_INPUT')
+            self.assertEqual(r['execution_status'],'AWAITING_CONFIRMATION')
+            value=next(p['value'] for p in r['parameters_proposal'] if p['canonical_name']=='frequency_ghz')
+            self.assertEqual(value['kind'],'interval' if '至' in values else 'choices')
 
     def test_zero_similarity_cannot_supply_evidence(self):
         a=self.agent()

@@ -1,3 +1,4 @@
+import {formatDomain} from './values.mjs';
 import {sourceExcerpt} from './text.mjs';
 import {nodes,statusText,nodeStates} from './flow.mjs';
 import {roleModeNames,reviewDecisionNames,reviewQuestion} from './roles.mjs';
@@ -49,8 +50,8 @@ export function renderDetails(host,{state,events=[],node='input',tab='overview',
   raw.append(quote);host.append(raw);
   if(r.questions.length)host.append(block('需要处理',r.questions.map(q=>q.replaceAll('distance_km','路径距离（km）').replaceAll('frequency_ghz','载波频率（GHz）')),'warning'));
   const table=el('table');const tr=el('tr');['参数 / 符号','规范值','来源与原始值'].forEach(t=>tr.append(el('th',t)));const thead=el('thead');thead.append(tr);table.append(thead);const body=el('tbody');
-  for(const param of r.parameters_proposal){const row=el('tr',undefined,param.canonical_name===focusParameter?'highlight-row':'');const titleCell=el('td');titleCell.append(button(`${parameterNames[param.canonical_name]||param.canonical_name} · ${symbols[param.canonical_name]||''}`,()=>onParameter(param.canonical_name)));row.append(titleCell,el('td',param.value===null?(param.status==='conflicting'?'冲突':'缺失'):`${param.value} ${param.unit}`));const sources=el('td');
-   for(const o of param.origins){sources.append(el('strong',`${o.value} ${o.unit}`),el('small',o.kind==='user_text'?`当前描述：${o.span?sourceExcerpt(text,o.span):'未提供定位'}`:'用户手工填写'));}
+  for(const param of r.parameters_proposal){const row=el('tr',undefined,param.canonical_name===focusParameter?'highlight-row':'');const titleCell=el('td');titleCell.append(button(`${parameterNames[param.canonical_name]||param.canonical_name} · ${symbols[param.canonical_name]||''}`,()=>onParameter(param.canonical_name)));row.append(titleCell,el('td',param.value===null?(param.status==='conflicting'?'冲突':'缺失'):`${formatDomain(param.value)} ${param.unit}`));const sources=el('td');
+   for(const o of param.origins){sources.append(el('strong',`${formatDomain(o.value)} ${o.unit}`),el('small',o.kind==='user_text'?`当前描述：${o.span?sourceExcerpt(text,o.span):'未提供定位'}`:'用户手工填写'));}
    const provenance=state.conversation?.field_sources?.[param.canonical_name];if(provenance)sources.append(el('small',`来自第 ${provenance.number} 条补充：${provenance.message}`));
    if(!param.origins.length)sources.append(el('small','未知，需补充'));row.append(sources);body.append(row);
   }table.append(body);const wrap=el('div',undefined,'table-wrap');wrap.append(table);host.append(wrap);
@@ -73,9 +74,10 @@ export function renderDetails(host,{state,events=[],node='input',tab='overview',
   const math=el('div',undefined,'math-formula');
   if(model.id==='fspl_ghz'&&model.expression==='92.4 + 20*log10(frequency_ghz) + 20*log10(distance_km)')math.append(formulaMath());else math.append(el('code',model.expression));host.append(math);
   host.append(el('p','以 GHz 与 km 为单位取数值；对数的自变量为相应无量纲比值。','hint'));
-  for(const [name,spec]of Object.entries(model.parameters)){const param=r.parameters_proposal.find(p=>p.canonical_name===name);const b=block(`${symbols[name]||name} · ${spec.description}`,`单位 ${spec.unit}；${param?.value==null?'尚无唯一可用值':`当前值 ${param.value} ${param.unit}`}。`);b.classList.toggle('highlight-row',name===focusParameter);b.append(button('定位参数原文与来源',()=>onParameter(name)));host.append(b);}
+  for(const [name,spec]of Object.entries(model.parameters)){const param=r.parameters_proposal.find(p=>p.canonical_name===name);const b=block(`${symbols[name]||name} · ${spec.description}`,`单位 ${spec.unit}；${param?.value==null?'尚无唯一可用值':`当前值 ${formatDomain(param.value)} ${param.unit}`}。`);b.classList.toggle('highlight-row',name===focusParameter);b.append(button('定位参数原文与来源',()=>onParameter(name)));host.append(b);}
   const actual=state.result?.normalized_inputs;
-  if(actual){host.append(block('实际代入（已确认输入）',`92.4 + 20 × log₁₀(${actual.frequency_ghz}) + 20 × log₁₀(${actual.distance_km}) = ${state.result.outputs[0].value.toFixed(6)} dB`));}
+  if(actual&&state.result.outputs.length>1){host.append(block('实际代入（分候选执行）',state.final_report?.conclusion||'候选分别执行；完整输入与结果见任务 JSON。'));}
+  else if(actual){host.append(block('实际代入（已确认输入）',`92.4 + 20 × log₁₀(${formatDomain(actual.frequency_ghz)}) + 20 × log₁₀(${formatDomain(actual.distance_km)}) = ${formatDomain(state.result.outputs[0].value,6)} dB`));}
   else host.append(block('待执行','当前只展示登记公式和参数草稿，确认后由专业程序代入计算。'));
   host.append(block('模型假设',r.assumptions));host.append(button('定位公式来源与原式换算 →',()=>onTab('evidence')));host.append(jsonDetails('登记程序表达式',model.expression));return;
  }
@@ -94,7 +96,7 @@ export function renderDetails(host,{state,events=[],node='input',tab='overview',
  }
  if(tab==='result'){
   if(!state.final_report||state.status!=='COMPLETED'){host.append(block('尚无正式发布结果',state.failure?.message||'确认计算且结果校验通过后在此展示。'));return;}
-  const value=state.result.outputs[0];const metric=el('div',undefined,'metric');metric.append(el('strong',value.value.toFixed(6)),el('span',value.unit));host.append(el('p','自由空间单程路径损耗','eyebrow'),metric,el('p',state.final_report.conclusion));
+  for(const [i,value] of state.result.outputs.entries()){const metric=el('div',undefined,'metric');metric.append(el('strong',formatDomain(value.value,6)),el('span',value.unit));host.append(el('p',state.result.outputs.length>1?`候选 ${i+1} · 自由空间单程路径损耗`:'自由空间单程路径损耗','eyebrow'),metric);if(value.inputs)host.append(el('p',Object.entries(value.inputs).map(([k,v])=>`${parameterNames[k]||k} ${formatDomain(v)}`).join('；'),'hint'));}host.append(el('p',state.final_report.conclusion));
   const names={result_integrity:'结果完整性',snapshot_identity:'确认快照版本',input_consistency:'输入一致性',plan_identity:'执行计划',evidence_consistency:'引用依据',model_identity:'模型与公式版本',numeric_domain:'数值、名称与单位',fspl_magnitude:'独立数量级检查'};
   const checks=block('程序校验');for(const v of state.validations)checks.append(el('p',`${v.passed?'✓':'×'} ${names[v.validator_id]||v.validator_id}`,'check-result'));host.append(checks);
   host.append(block('结果含义与适用限制',state.final_report.limitations));host.append(el('p',state.final_report.review?'报告数值与正文来自已验证数据；结构化审查模式：'+(roleModeNames[state.final_report.review.mode]||state.final_report.review.mode)+'。':'此历史记录为确定性程序报告，未记录独立审查角色。','hint'));

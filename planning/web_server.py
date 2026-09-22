@@ -14,6 +14,11 @@ MESSAGES={
     'STALE_STATE_VERSION':'任务状态已变化。请刷新后操作，不能沿用旧确认。',
     'REVIEW_HASH_MISMATCH':'核对内容不匹配。请刷新并核对当前计划。',
     'KNOWLEDGE_CHANGED':'知识目录已变化。请重新提交需求，生成新计划后确认。',
+    'STALE_QUESTION':'问题已随任务版本变化，请刷新后回答。',
+    'ANSWER_PARAMETER_REQUIRED':'请为该参数填写大于零的单值、区间或候选，并包含正确单位。',
+    'ANSWER_STILL_AMBIGUOUS':'回答仍不明确，请填写单值、明确区间或离散候选及单位。',
+    'INVALID_ANSWER_CHOICE':'请选择当前问题提供的选项。',
+    'ANSWER_REQUIRES_EDIT':'请编辑当前任务描述以处理这项问题。',
     'NOT_CONFIRMABLE':'当前任务不能确认，请先解决缺项、冲突或模型缺口。',
     'TASK_NOT_FOUND':'未找到该任务，请检查任务编号或新建任务。',
     'IDEMPOTENCY_CONFLICT':'同一操作编号对应了不同内容，请刷新后重新操作。',
@@ -36,6 +41,7 @@ def create_server(root, db_path=None, port=18082):
             '/text.mjs':('text.mjs','text/javascript'),'/flow.mjs':('flow.mjs','text/javascript'),
             '/details.mjs':('details.mjs','text/javascript'),'/conversation.mjs':('conversation.mjs','text/javascript'),
             '/roles.mjs':('roles.mjs','text/javascript'),
+            '/questions.mjs':('questions.mjs','text/javascript'),'/values.mjs':('values.mjs','text/javascript'),
             '/app.css':('app.css','text/css')}
 
     class Handler(BaseHTTPRequestHandler):

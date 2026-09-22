@@ -13,6 +13,7 @@ from planning.workflow.task_store import TaskStore
 from planning.workflow.requirements_graph import stamp
 from planning.workflow.activity import ActivityStore, observe
 from planning.services.supplement import merge_supplement, conversation_of, edited_conversation
+from planning.services.clarification import apply_answers, attach_issues
 
 
 def identifier(value):
@@ -22,10 +23,12 @@ def identifier(value):
 def validate_command(command):
     require(type(command) is dict,'COMMAND_OBJECT_REQUIRED')
     action=command.get('action')
-    require(type(action) is str and action in {'create','edit','supplement','confirm','cancel'},'INVALID_ACTION')
+    require(type(action) is str and action in {'create','edit','supplement','answer','confirm','cancel'},'INVALID_ACTION')
     fields='action task_id event_id expected_revision expected_state_version'
     if action in {'create','edit'}:
         fields+=' input mode'
+    if action=='answer':
+        fields+=' answers mode'
     if action=='confirm':
         fields+=' review_hash'
     if action=='supplement':
@@ -43,6 +46,9 @@ def validate_command(command):
     if action=='supplement':
         require(type(command['message']) is str and 0<len(command['message'].strip())<=2000,'INVALID_SUPPLEMENT')
         require(command['mode'] in {'deterministic','llm'},'INVALID_MODE')
+    if action=='answer':
+        require(type(command['answers']) is dict and 0<len(command['answers'])<=20,'INVALID_ANSWERS')
+        require(command['mode'] in {'deterministic','llm'},'INVALID_MODE')
     digest(command)
     return copy.deepcopy(command)
 
@@ -55,7 +61,8 @@ class TaskService:
 
     def get(self, task_id):
         identifier(task_id)
-        return self.store.get(task_id)
+        state=self.store.get(task_id)
+        return attach_issues(state) if 'input_issues' not in state else state
 
     def history(self, task_id):
         identifier(task_id)
@@ -108,11 +115,13 @@ class TaskService:
                 require(current is not None,'TASK_NOT_FOUND')
                 require(c['expected_revision']==current['revision'],'STALE_REVISION')
                 require(c['expected_state_version']==current['state_version'],'STALE_STATE_VERSION')
-                rev=current['revision']+(1 if action in {'edit','supplement'} else 0)
+                rev=current['revision']+(1 if action in {'edit','supplement','answer'} else 0)
                 version=current['state_version']+1
-            mode=c['mode'] if action in {'create','edit','supplement'} else current['mode']
+            mode=c['mode'] if action in {'create','edit','supplement','answer'} else current['mode']
             conversation=conversation_of(current) if current else None
-            if action=='supplement':
+            if action=='answer':
+                next_input,conversation=apply_answers(current,c['answers'],event_id)
+            elif action=='supplement':
                 observe(observer,'requirements','started',caller='orchestrator',purpose='supplement')
                 next_input,conversation=merge_supplement(current,c['message'],event_id,mode,observer=observer)
             elif action in {'create','edit'}:
@@ -132,7 +141,7 @@ class TaskService:
             graph=build_planning_graph(agent,saver,cards,observer=observer,
                 pending_questions=[p['question'] for p in (conversation or {}).get('pending',[])])
             config={'configurable':{'thread_id':f'{task_id}:r{rev}'},'recursion_limit':24}
-            if action in {'create','edit','supplement'}:
+            if action in {'create','edit','supplement','answer'}:
                 request=dict(schema_version='1.0.0',task_id=task_id,revision=rev,request_id=event_id,**next_input)
                 initial=dict(request=request,report=None,review=None,confirmed_snapshot=None,result=None,
                              validations=[],final_report=None,status='RECEIVED',trace=[],failure=None,
@@ -162,6 +171,7 @@ class TaskService:
             state=dict(output,schema_version='1.0.0',profile='confirmed-fspl-loop-v1',task_id=task_id,
                        revision=rev,state_version=version,mode=mode,pending_interrupt=pending,updated_at=stamp(),
                        conversation=conversation)
+            attach_issues(state,current)
             ack=dict(task_id=task_id,event_id=event_id,revision=rev,state_version=version,status=state['status'])
             observe(observer,'state','started',caller='orchestrator',operation='save')
             self.store.save(conn,state,event_id,payload_hash,ack)

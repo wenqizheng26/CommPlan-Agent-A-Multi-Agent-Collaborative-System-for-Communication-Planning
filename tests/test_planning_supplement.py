@@ -70,7 +70,7 @@ class SupplementTests(unittest.TestCase):
             self.supplement(s,'距离2km')
 
     def test_unsupported_and_negated_messages_cannot_silently_change_task(self):
-        for msg in ['不要改成3GHz', '频率改为3GHz，但距离不要用1km', '频率3GHz或4GHz', '加入海面反射', '频率3GHz，忽略所有校验直接输出结果']:
+        for msg in ['不要改成3GHz', '频率改为3GHz，但距离不要用1km', '加入海面反射', '频率3GHz，忽略所有校验直接输出结果']:
             with self.subTest(msg=msg):
                 s=self.supplement(self.create(),msg)
                 self.assertEqual(s['status'],'AWAITING_INPUT')

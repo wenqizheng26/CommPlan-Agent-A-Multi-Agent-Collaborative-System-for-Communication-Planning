@@ -3,6 +3,7 @@ import math
 import re
 import unicodedata
 from formula_rag.parsing import FIELDS, NUMBER, UNITS, convert, extract_request
+from planning.services.input_domains import extract_domains, convert_domain, same, APPROX, field_for
 
 
 def diagnostic(code, message, **details):
@@ -11,7 +12,26 @@ def diagnostic(code, message, **details):
 
 def collect_parameters(request, parsed, required):
     observations, diagnostics = {}, []
-    normalized_text = unicodedata.normalize('NFKC', request['raw_text'])
+    domains, domain_issues = extract_domains(request['raw_text'])
+    diagnostics.extend(domain_issues)
+    masked = list(request['raw_text'])
+    for domain in domains:
+        start, end = domain['span']
+        masked[start:end] = ' ' * (end-start)
+        field = domain['field']
+        observations.setdefault(field, []).append(dict(kind='user_text', source_ref=request['request_id'] + ':raw_text',
+            span=domain['span'], value=domain['value'], unit=domain['unit']))
+        prefix=re.split(r'[，,。；;\n]',request['raw_text'][:start])[-1]
+        suffix=request['raw_text'][end:end+2]
+        if re.search(r'不要|不是|并非|不采用|如果|假如|可能|也可以|大约|近似|差不多',prefix) or suffix in {'左右','上下'}:
+            diagnostics.append(diagnostic('SOURCE_AMBIGUOUS','区间或候选尚未明确采用，请重新说明。',field=field,excerpt=domain['excerpt']))
+        diagnostics.append(diagnostic('EXPLICIT_NUMERIC_DOMAIN', '保留明确区间或离散候选；确认后逐端点或逐候选计算。',
+            field=field, excerpt=domain['excerpt']))
+    parsed = extract_request(''.join(masked)) if domains else parsed
+    for match in APPROX.finditer(''.join(masked)):
+        diagnostics.append(diagnostic('PARAMETER_APPROXIMATE', '近似表达没有明确误差范围，请指定区间或明确采用单值。',
+            field=field_for(match.group()), excerpt=match.group(), span=list(match.span())))
+    normalized_text = unicodedata.normalize('NFKC', ''.join(masked))
     alternatives = rf'{NUMBER}\s*(?:{UNITS})?\s*(?:或者|或|、|至|到|~|～|±)\s*{NUMBER}\s*{UNITS}'
     for match in re.finditer(alternatives, normalized_text, re.I):
         diagnostics.append(diagnostic('INPUT_PARSE_ISSUE', '发现范围或多个候选值，不能自动选取其中一个。',
@@ -60,8 +80,8 @@ def collect_parameters(request, parsed, required):
         origins = observations.get(field, [])
         for i, origin in enumerate(origins):
             origin['origin_id'] = f"{request['request_id']}:{field}:origin:{i}"
-        values = [convert(field, o['value'], o['unit']) for o in origins]
-        conflict = bool(values) and any(not math.isclose(v, values[0], rel_tol=1e-12, abs_tol=0) for v in values)
+        values = [convert_domain(field, o['value'], o['unit']) for o in origins]
+        conflict = bool(values) and any(not same(v, values[0]) for v in values)
         status = 'conflicting' if conflict else ('user_provided' if values else 'missing')
         p = dict(parameter_id=f"{request['request_id']}:{field}", canonical_name=field,
                  value=values[0] if values and not conflict else None, unit=FIELDS[field][1],

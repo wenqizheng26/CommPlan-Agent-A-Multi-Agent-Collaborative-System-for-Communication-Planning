@@ -3,6 +3,7 @@ import copy
 from formula_rag.parsing import extract_request
 from formula_rag.interpretation import merge_interpretation
 from formula_rag.applicability import scope_issues
+from planning.services.input_domains import numbers, scenarios
 from planning.requirements_contract import require, validate_report
 from planning.services.requirement_parameters import collect_parameters
 from planning.services.requirement_evidence import snapshot_for, evidence_for, plan_for
@@ -73,9 +74,9 @@ def check_report(report, request, cards):
     require(r['conditions']==sorted(conditions) and 'free_space' in conditions, 'CONDITION_MISMATCH')
     require(not outside_scope(request['raw_text'],parsed,target,conditions), 'UNSUPPORTED_SCOPE')
     require('non_free_space' not in conditions or 'free_space_reference' in conditions, 'MODEL_NOT_APPLICABLE')
-    require(not any(d['code'] in {'INPUT_PARSE_ISSUE','SOURCE_AMBIGUOUS'} for d in issues), 'INPUT_NOT_RESOLVED')
+    require(not any(d['code'] in {'INPUT_PARSE_ISSUE','SOURCE_AMBIGUOUS','PARAMETER_APPROXIMATE'} for d in issues), 'INPUT_NOT_RESOLVED')
     values = {p['canonical_name']:p['value'] for p in parameters if p['value'] is not None}
-    require(all(k in values and values[k]>0 for k in ('frequency_ghz','distance_km')), 'INPUT_DOMAIN_INVALID')
-    require(not scope_issues('fspl_ghz',values,parsed), 'MODEL_NOT_APPLICABLE')
+    require(all(k in values and min(numbers(values[k]))>0 for k in ('frequency_ghz','distance_km')), 'INPUT_DOMAIN_INVALID')
+    require(not any(scope_issues('fspl_ghz', case, parsed) for case in scenarios(values)), 'MODEL_NOT_APPLICABLE')
     require(by_id['fspl_ghz']['status']=='verified', 'MODEL_NOT_VERIFIED')
     return r

@@ -5,6 +5,7 @@ import json
 import math
 import re
 from formula_rag.parsing import FIELDS, convert
+from planning.services.input_domains import numbers, convert_domain
 
 VERSION = '1.0.0'
 PROFILE = 'requirements-slice-v1'
@@ -130,17 +131,17 @@ def validate_report(value, request):
         revision(p['created_revision']); require(p['created_revision'] == request['revision'], 'STALE_PARAMETER')
         require(p['status'] in {'user_provided', 'missing', 'conflicting'}, 'SLICE_PARAMETER_STATUS')
         if p['value'] is not None:
-            number(p['value'])
+            numbers(p['value'])
         require((p['value'] is None) == (p['status'] in {'missing', 'conflicting'}), 'PARAMETER_STATUS_VALUE')
         if p['original_value'] is not None:
-            number(p['original_value']); string(p['original_unit'])
+            numbers(p['original_value']); string(p['original_unit'])
         else:
             require(p['original_unit'] is None, 'ORIGINAL_UNIT_WITHOUT_VALUE')
         strings(p['evidence_ids']); require(set(p['evidence_ids']) <= set(value['evidence_ids']), 'UNKNOWN_EVIDENCE')
         require(type(p['origins']) is list, 'ORIGINS_LIST')
         for origin in p['origins']:
             obj(origin, 'origin_id kind source_ref span value unit')
-            string(origin['origin_id']); string(origin['source_ref']); string(origin['unit']); number(origin['value'])
+            string(origin['origin_id']); string(origin['source_ref']); string(origin['unit']); numbers(origin['value'])
             require(origin['kind'] in {'user_text', 'manual_form'}, 'ORIGIN_KIND')
             require(origin['origin_id'] not in origins, 'DUPLICATE_ORIGIN')
             origins[origin['origin_id']] = p['canonical_name']
