@@ -7,6 +7,7 @@ import copy
 import json
 import re
 import urllib.request
+from formula_rag.model_transport import chat, parse_output
 from formula_rag.parsing import extract_request, NUMBER, UNITS
 from planning.requirements_contract import require, obj, strict_json
 from planning.services.requirement_parameters import collect_parameters
@@ -59,12 +60,8 @@ class LocalSupplementSelector:
                 '候选、否定、范围、条件句或语义不明须clarify。fields只能逐字复制给出的候选field/evidence，'
                 '不得新增数值、改写原文、计算或跳过确认。输出规定JSON。'},
                 {'role':'user','content':json.dumps(dict(current=current_text,supplement=message,candidates=candidates),ensure_ascii=False)}])
-        request=urllib.request.Request('http://127.0.0.1:18081/v1/chat/completions',
-            json.dumps(payload,ensure_ascii=False).encode(), {'Content-Type':'application/json'})
-        opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
-        with opener.open(request,timeout=30) as response:
-            envelope=json.load(response)
-        return strict_json(envelope['choices'][0]['message']['content'])
+        _, content=chat(payload)
+        return parse_output(content)
 
 
 def merge_supplement(current, message, event_id, mode, selector=None, observer=None):
@@ -133,45 +130,22 @@ def merge_supplement(current, message, event_id, mode, selector=None, observer=N
                 diagnostics.append('本机模型不可用或建议未通过原话核验，使用明确规则合并：'+type(exc).__name__)
                 observe(observer,'llm','failed',caller='requirements',purpose='supplement',fallback=True)
         if safe:
-            # Rebuild offsets from the CURRENT description, never from a stale turn.
-            old_probe=dict(probe,**before)
-            old_parameters,_,_=collect_parameters(old_probe,extract_request(before['raw_text']),[])
-            old_by_field={p['canonical_name']:p for p in old_parameters}
-            replacements=[]
-            additions=[]
+            from planning.services.clarification import replace_parameter
             for p in patches:
-                field=p['field']
-                old=old_by_field.get(field)
-                origins=old['origins'] if old else []
-                spans=[]
-                for o in origins:
-                    if o['kind']=='user_text' and o['span'] is not None:
-                        start,end=o['span']
-                        matches=list(NUMERIC.finditer(before['raw_text'][start:end]))
-                        if len(matches)==1:
-                            m=matches[0];spans.append((start+m.start(),start+m.end()))
-                # Refuse to discard an old observation whose offset is ambiguous.
-                if any(o['kind']=='user_text' for o in origins) and len(spans)!=sum(o['kind']=='user_text' for o in origins):
-                    safe=False;break
-                for start,end in spans: replacements.append((start,end,p['token']))
-                if not spans: additions.append(FIELDS[field]+p['token'])
-                if field in request['manual_parameters']:
-                    request['manual_parameters'][field]={'value':p['value'],'unit':p['unit']}
-                changes.append(dict(field=field,before=[{'value':o['value'],'unit':o['unit']} for o in origins],
+                replace_parameter(request,current['report'],p['field'],p['token'])
+                changes.append(dict(field=p['field'],before=before['raw_text'],
                     after={'value':p['value'],'unit':p['unit']},evidence=p['evidence']))
-            if safe:
-                text=before['raw_text']
-                for start,end,value in sorted(set(replacements),reverse=True): text=text[:start]+value+text[end:]
-                additions.extend(x for x in clauses if CONDITION.fullmatch(x))
-                if additions: text=text.rstrip()+'\n'+'；'.join(additions)+'。'
-                request['raw_text']=text
-                require(len(text)<=12000,'MERGED_TEXT_TOO_LONG')
-                fields={p['field'] for p in patches}
-                conversation['pending']=[p for p in pending if p.get('field') not in fields]
-                for p in patches:
-                    conversation['field_sources'][p['field']]=dict(turn_id=event_id,number=number,
-                        message=message,evidence=p['evidence'],value=p['value'],unit=p['unit'])
-                if additions and not patches: changes.append(dict(field='condition',before=before['raw_text'],after=text))
+            additions=[x for x in clauses if CONDITION.fullmatch(x)]
+            if additions:
+                request['raw_text']=request['raw_text'].rstrip()+'\n'+'；'.join(additions)+'。'
+            require(len(request['raw_text'])<=12000,'MERGED_TEXT_TOO_LONG')
+            fields={p['field'] for p in patches}
+            conversation['pending']=[p for p in pending if p.get('field') not in fields]
+            for p in patches:
+                conversation['field_sources'][p['field']]=dict(turn_id=event_id,number=number,
+                    message=message,evidence=p['evidence'],value=p['value'],unit=p['unit'])
+            if additions and not patches:
+                changes.append(dict(field='condition',before=before['raw_text'],after=request['raw_text']))
         if not safe:
             request=before
             changes=[]

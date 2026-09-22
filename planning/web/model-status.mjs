@@ -5,11 +5,13 @@ export function serviceText(service){
 export function callSummary(state){
  const report=state?.report, diagnostics=report?.diagnostics||[];
  const invalid=diagnostics.filter(d=>d.code==='MODEL_OUTPUT_INVALID').length;
+ const rejected=diagnostics.find(d=>['MODEL_CONTEXT_LIMIT','MODEL_REQUEST_REJECTED','MODEL_TIME_BUDGET'].includes(d.code));
  const unavailable=diagnostics.some(d=>d.code==='MODEL_UNAVAILABLE');
  const mode=report?.component_modes?.interpretation;
  const rows=[];
  if(!report)rows.push('需求解析：尚无已保存的调用结果。');
  else if(mode==='llm')rows.push('需求解析：模型调用通过校验。');
+ else if(rejected)rows.push(`需求解析：${rejected.message}；${report.runtime_health==='degraded'?'已改用确定性规则。':'未降级。'}`);
  else if(invalid||unavailable)rows.push(`需求解析：${invalid?`${invalid} 次模型输出未通过校验`:'模型请求未成功返回'}；${report.runtime_health==='degraded'?'已改用确定性规则。':'未降级，请处理后重试。'}`);
  else rows.push('需求解析：使用确定性规则，未采用模型输出。');
  for(const [label,role] of [['计算建议',state?.calculation_role],['结构化审查',state?.review_assessment?.role]]){

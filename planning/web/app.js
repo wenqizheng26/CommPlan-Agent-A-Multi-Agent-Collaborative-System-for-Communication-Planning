@@ -21,7 +21,7 @@ async function checkModel(){
 }
 function shown(){return historical||activeContext||current;}
 function notice(text,error=false){$('notice').textContent=text;$('notice').hidden=!text;$('notice').classList.toggle('problem',error);}
-async function api(path,body){const r=await fetch(path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json','X-Planning-Token':token}:{},body:body?JSON.stringify(body):undefined});const data=await r.json();if(!r.ok){const err=new Error(data.error.message+' ['+data.error.code+']');err.status=r.status;throw err;}return data;}
+async function api(path,body){const r=await fetch(path,{signal:AbortSignal.timeout(path==='/api/commands'?125000:10000),method:body?'POST':'GET',headers:body?{'Content-Type':'application/json','X-Planning-Token':token}:{},body:body?JSON.stringify(body):undefined});const data=await r.json();if(!r.ok){const err=new Error(data.error.message+' ['+data.error.code+']');err.status=r.status;throw err;}return data;}
 function syncButtons(){
  document.querySelectorAll('#request-form input,#request-form textarea,#request-form select,#request-form button').forEach(n=>n.disabled=busy||!!historical);
  for(const id of ['supplement-message','supplement-submit'])$(id).disabled=busy||!!historical||!current||dirty;
@@ -29,8 +29,10 @@ function syncButtons(){
  const can=current?.status==='AWAITING_CONFIRMATION'&&!historical;
  $('confirm').disabled=busy||dirty||!can||!$('accept').checked;
  $('accept').disabled=busy||dirty||!can;
+ $('stop-operation').hidden=!busy;
+ $('stop-operation').disabled=!busy;
  $('cancel').disabled=busy||!!historical||!current||['COMPLETED','CANCELLED'].includes(current.status);
- for(const id of ['new','restore','refresh','history'])$(id).disabled=busy||(id==='history'&&!current)||(id==='refresh'&&!current);
+ for(const id of ['new','restore','refresh','history','recent-tasks','refresh-tasks'])$(id).disabled=busy||(id==='history'&&!current)||(id==='refresh'&&!current);
  $('export').disabled=busy||!shown();
  $('actions').hidden=!current||!!historical||!!activeContext;
  $('dirty-hint').textContent=dirty?'输入已修改。图和详情仍是上次保存的版本；请提交后重新核对确认。':can?'确认只对当前版本有效；修改后需重新确认。':'';
@@ -62,7 +64,7 @@ function draw(){
  const s=shown(),ev=historical?[]:activity;
  renderFlow($('flow-canvas'),{view,state:s,events:ev,selected,onSelect:chooseNode});
 
- $('flow-caption').textContent='参考 Visio 第一页：蓝色为调度，紫色为能力调用，灰色虚线为状态关系。高亮与流动仅来自实际运行事件。';
+ $('flow-caption').textContent='此图展示系统架构，各节点不一定在本次运行中调用。参考 Visio 第一页：蓝色为调度，紫色为能力调用，灰色虚线为状态关系。高亮与流动仅来自实际运行事件。';
  $('status').textContent=historical?'历史只读':busy?'正在处理':s?(s.waiting_reason||labels[s.status]||s.status):'等待输入';
  $('task-meta').textContent=s?`任务 ${s.task_id} · 输入版本 ${s.revision} · ${activeContext?'处理中，尚未提交':`状态版本 ${s.state_version}`}`:'输入需求，沿流程核对参数、公式与依据。';
  const states=nodeStates(s,ev),running=Object.entries(states).find(([id,status])=>status==='running'&&!['requirements','rag','knowledge','compute_agent','model','llm'].includes(id));
@@ -92,7 +94,7 @@ async function submit(action,answers=null){
  const request=api('/api/commands',c);poll(c.task_id,generation);
  try{const data=await request;pendingCommand=null;acceptState(data.state);if(action==='supplement')$('supplement-message').value='';selected=data.state.status==='COMPLETED'?'publish':data.state.status==='AWAITING_CONFIRMATION'?'confirmation':data.state.status==='AWAITING_INPUT'?'requirements':data.state.status==='NEEDS_MODEL'?'requirements':'failure';tab=nodes[selected][2];notice(data.replayed?'已恢复已有操作回执；显示当前保存状态。':data.state.status==='COMPLETED'?'计算与校验完成，正式结果已保存。':'本版本已保存，请核对当前节点。');}
  catch(e){if(e.status&&e.status<500)pendingCommand=null;activeContext=null;notice(e.message,true);}
- finally{checkModel();busy=false;const finalGeneration=++pollGeneration;await loadActivity(c.task_id,finalGeneration);draw();if(!pendingCommand&&current?.task_id===c.task_id){if(current.input_issues?.length)$('clarification-panel').scrollIntoView({block:'start'});else if(['AWAITING_CONFIRMATION','COMPLETED'].includes(current.status))$('detail-content').scrollIntoView({block:'start'});}}
+ finally{checkModel();recentTasks();busy=false;const finalGeneration=++pollGeneration;await loadActivity(c.task_id,finalGeneration);draw();if(!pendingCommand&&current?.task_id===c.task_id){if(current.input_issues?.length)$('clarification-panel').scrollIntoView({block:'start'});else if(['AWAITING_CONFIRMATION','COMPLETED'].includes(current.status))$('detail-content').scrollIntoView({block:'start'});}}
 }
 async function restore(id){
  if(busy||!id)return;
@@ -107,9 +109,11 @@ async function restore(id){
   let running=openRun(activity);
   if(!saved&&!running)throw new Error('未找到已保存任务；该次操作可能未提交。');
   if(running){
+   const restoreDeadline=Date.now()+125000;
    if(!saved||running.revision!==saved.revision)activeContext={task_id:id,revision:running.revision,state_version:0,status:'RUNNING',request:{raw_text:'正在恢复运行观察，原文以提交后的记录为准。',manual_parameters:{}},report:null,trace:[]};
    notice('检测到仍在执行的操作，正在恢复实时观察。');draw();
    while(running&&generation===pollGeneration){
+    if(Date.now()>restoreDeadline)throw new Error('运行观察超过两分钟，请刷新保存状态；该提示不表示后端已停止。');
     await new Promise(resolve=>setTimeout(resolve,500));
     const fresh=await api('/api/tasks/'+encodeURIComponent(id)+'/activity');
     if(generation!==pollGeneration)return;
@@ -122,6 +126,17 @@ async function restore(id){
   selected=current.status==='COMPLETED'?'publish':current.status==='AWAITING_INPUT'?'requirements':current.status==='NEEDS_MODEL'?'requirements':'confirmation';tab=nodes[selected][2];notice('已恢复任务的保存状态。');
  }catch(e){activeContext=null;notice(e.message,true);}finally{busy=false;draw();}
 }
+async function recentTasks(){
+ try{const data=await api('/api/tasks');const select=$('recent-tasks');select.replaceChildren();const blank=el('option','选择最近任务（最多 50 项）');blank.value='';select.append(blank);for(const task of data.tasks){const option=el('option',`${labels[task.status]||task.status} · ${task.description||'未填写描述'} · ${task.task_id.slice(0,8)}`);option.value=task.task_id;select.append(option);}}catch(e){notice('任务列表加载失败：'+e.message,true);}
+}
+$('recent-tasks').addEventListener('change',()=>restore($('recent-tasks').value));
+$('refresh-tasks').addEventListener('click',recentTasks);
+$('stop-operation').addEventListener('click',async()=>{
+ const run=pendingCommand||openRun(activity);
+ if(!run){notice('尚未取得本次操作编号，请稍后重试。');return;}
+ $('stop-operation').disabled=true;
+ try{const response=await api('/api/cancel-operation',{task_id:run.task_id,event_id:run.event_id});notice(response.message);}catch(e){notice(e.message,true);}finally{$('stop-operation').disabled=!busy;}
+});
 $('check-model').addEventListener('click',checkModel);
 $('request-form').addEventListener('submit',e=>{e.preventDefault();submit(current?'edit':'create').catch(e=>notice(e.message,true));});
 $('request-form').addEventListener('input',()=>{dirty=!!current;$('accept').checked=false;syncButtons();});
@@ -151,4 +166,4 @@ $('history').addEventListener('click',async()=>{
 $('export').addEventListener('click',()=>{const s=shown();if(!s||busy)return;const blob=new Blob([JSON.stringify(s,null,2)],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob);const a=el('a');a.href=url;a.download=`planning-${s.task_id}-r${s.revision}-v${s.state_version}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
 draw();
 checkModel();
-(async()=>{try{token=(await api('/api/session')).token;const id=location.hash.slice(1)||localStorage.getItem('planning-task');if(id)await restore(id);}catch(e){notice('无法连接本地服务：'+e.message,true);}})();
+(async()=>{try{token=(await api('/api/session')).token;await recentTasks();const id=location.hash.slice(1)||localStorage.getItem('planning-task');if(id)await restore(id);}catch(e){notice('无法连接本地服务：'+e.message,true);}})();

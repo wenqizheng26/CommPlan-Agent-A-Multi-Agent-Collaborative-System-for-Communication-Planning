@@ -5,6 +5,7 @@ from formula_rag.catalog import load_catalog
 from formula_rag.parsing import extract_request
 from formula_rag.retrieval import Retriever
 from formula_rag.model import LocalSelector
+from formula_rag.model_transport import ModelResponseError, check_cancelled
 from formula_rag.interpretation import merge_interpretation
 from formula_rag.applicability import scope_issues
 from planning.services.input_domains import numbers, scenarios
@@ -85,13 +86,15 @@ class RequirementsAgent:
         if self.selector and candidates and not known_unsupported:
             observe(observer,'interpretation','started')
             observe(observer,'llm','started',caller='requirements',purpose='intent')
+            correction=None
             for attempt in range(1, 4):
+                check_cancelled()
                 envelope, info = {}, {}
                 stage = 'model_response'
                 try:
                     if isinstance(self.selector, LocalSelector):
                         envelope = self.selector(request['raw_text'], copy.deepcopy(candidates),
-                            manual_target=request['target'], manual_condition=request['condition'])
+                            manual_target=request['target'], manual_condition=request['condition'], correction=correction)
                     else:
                         envelope = self.selector(request['raw_text'], copy.deepcopy(candidates))
                     stage = 'structure'
@@ -110,13 +113,23 @@ class RequirementsAgent:
                     diagnostics.append(diagnostic('MODEL_CALL', '意图建议经原文核验。', attempt=attempt,
                         model=envelope.get('model'), usage=envelope.get('usage', {}), accepted=info['accepted']))
                     break
+                except ModelResponseError as exc:
+                    correction={'stage':stage,'reason':str(exc)[:300]}
+                    diagnostics.append(diagnostic(exc.code,str(exc),attempt=attempt,stage=stage,
+                        reason=str(exc),model_output=exc.raw_output,
+                        next_action='缩短描述或检查模型服务返回的具体错误；可继续使用确定性解析。'))
+                    if not exc.retryable or attempt==3:
+                        health = 'degraded' if self.allow_fallback else 'unavailable'
+                        failed = not self.allow_fallback
+                        break
                 except (OSError, TimeoutError) as exc:
                     diagnostics.append(diagnostic('MODEL_UNAVAILABLE', '本地模型未响应，已停止本次模型调用。',
                         attempt=attempt, exception=type(exc).__name__, next_action='启动模型服务或使用确定性模式。'))
                     health = 'degraded' if self.allow_fallback else 'unavailable'
                     failed = not self.allow_fallback
                     break
-                except (ValueError, KeyError, TypeError) as exc:
+                except (ValueError, KeyError, TypeError, IndexError) as exc:
+                    correction={'stage':stage,'reason':str(exc)[:300],'rejected':info.get('rejected',[])}
                     diagnostics.append(diagnostic('MODEL_OUTPUT_INVALID', '模型结构或原文证据不合法。', attempt=attempt,
                         exception=type(exc).__name__, reason=str(exc)[:300], stage=stage,
                         rejected=info.get('rejected', []),
@@ -153,8 +166,8 @@ class RequirementsAgent:
             if manual == 'free_space_reference':
                 conditions.add('free_space')
         if conflicting_intent:
-            diagnostics.append(diagnostic('INTENT_CONFLICT', '手工目标或条件与原文不一致。', next_action='请统一原文与手工选择。'))
-            questions.append('请统一原文与手工输入的目标、传播条件。')
+            diagnostics.append(diagnostic('INTENT_CONFLICT', '原文存在否定或互相冲突的目标、模型条件，或与用户选择不一致。', next_action='请统一原文与手工选择。'))
+            questions.append('请统一原文中的目标、传播条件及用户选择，明确本次采用的内容。')
 
         # No guess from a bare keyword or the top retrieval result.
         unsupported = outside_scope(request['raw_text'], original, targets, conditions)

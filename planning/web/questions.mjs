@@ -1,13 +1,16 @@
 import {el,parameterNames} from './details.mjs';
 import {formatDomain} from './values.mjs';
 
-const drafts=new Map();
+import {draftStore} from './drafts.mjs';
+let storage;try{storage=globalThis.localStorage;}catch{}
+const drafts=draftStore(storage);
 export function openQuestions(state){return (state?.input_issues||[]).filter(q=>q.status==='open');}
 export function questionTitle(state){const n=openQuestions(state).length;return `需求确认与补充 · ${n?`还有 ${n} 项待完成`:'当前无待完成项'}`;}
 export function renderQuestions(host,state,{disabled=false,onSubmit,onEdit}={}){
  const questions=openQuestions(state);host.replaceChildren();host.hidden=!questions.length;
+ if(!disabled&&state?.task_id&&state.status!=='RUNNING')drafts.retain(state.task_id,state.revision,questions.map(q=>q.id));
  if(!questions.length)return;
- host.append(el('h2',questionTitle(state)),el('p',`${state.waiting_reason||'等待补充'}。可只回答已确定的项目，其余问题会保留；回答后仍需确认本版本才能计算。`,'hint'));
+ host.append(el('h2',questionTitle(state)),el('p',`${state.waiting_reason||'等待补充'}。可只回答已确定的项目，其余问题会保留；未提交的回答保留在本机浏览器；回答后仍需确认本版本才能计算。`,'hint'));
  const form=el('form');const inputs=[];
  for(const [index,q] of questions.entries()){
   const card=el('fieldset',undefined,'question-card');card.append(el('legend',`${index+1}. ${q.title}`),el('p',q.detail,'hint'));

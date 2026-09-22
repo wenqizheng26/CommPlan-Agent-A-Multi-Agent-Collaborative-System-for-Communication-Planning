@@ -27,7 +27,7 @@ export const nodes = {
 export const statusText={idle:'未开始',running:'运行中',completed:'已完成',waiting:'等待处理',failed:'失败',degraded:'调用已降级',skipped:'未调用',cancelled:'已取消',unavailable:'未接入',partial:'部分接入',interrupted:'已中断'};
 export function relevantEvents(state, events){return state ? events.filter(e=>e.task_id===state.task_id&&e.revision===state.revision):[];}
 export function activityFresh(previous,next){return !previous.length||(next.at(-1)?.seq||0)>=(previous.at(-1)?.seq||0);}
-export function openRun(events){const last=events.at(-1);if(!last)return null;const run=events.filter(e=>e.run_id===last.run_id);return run.some(e=>e.node==='command'&&['committed','replayed','rejected','interrupted'].includes(e.phase))?null:last;}
+export function openRun(events){const last=events.at(-1);if(!last)return null;const run=events.filter(e=>e.run_id===last.run_id);return run.some(e=>e.node==='command'&&['committed','replayed','rejected','cancelled','interrupted'].includes(e.phase))?null:last;}
 export function nodeStates(state, events=[]){
  const s=Object.fromEntries(Object.keys(nodes).map(n=>[n,'idle']));
  s.explanation='unavailable';s.orchestrator=s.validator_agent='partial';
@@ -48,8 +48,8 @@ export function nodeStates(state, events=[]){
  const last=relevant.at(-1);
  if(last&&state.status!=='COMPLETED'){
   const run=relevant.filter(e=>e.run_id===last.run_id);
-  const terminal=run.findLast(e=>e.node==='command'&&['rejected','interrupted','committed','replayed'].includes(e.phase));
-  if(['rejected','interrupted'].includes(terminal?.phase)){
+  const terminal=run.findLast(e=>e.node==='command'&&['rejected','cancelled','interrupted','committed','replayed'].includes(e.phase));
+  if(['rejected','cancelled','interrupted'].includes(terminal?.phase)){
    if(state.status!=='COMPLETED')s.failure=terminal.phase==='rejected'?'failed':'interrupted';
   }else if(terminal?.phase!=='replayed'){
    for(const e of run)if(e.node in s&&e.node!=='explanation'){
@@ -88,7 +88,7 @@ export function edgeState(state,events,from,to){
  for(const e of relevant)if(e.node==='command')runs.set(e.run_id,e.phase);
  const calls=relevant.filter(e=>{
   const terminal=runs.get(e.run_id);
-  if(['rejected','interrupted','replayed'].includes(terminal))return false;
+  if(['rejected','cancelled','interrupted','replayed'].includes(terminal))return false;
   if(state.status==='COMPLETED'&&terminal!=='committed')return false;
   const a=aliases[e.details?.caller]||e.details?.caller,b=aliases[e.node]||e.node;
   return (a===from&&b===to)||(from==='state'&&to==='orchestrator'&&a==='orchestrator'&&b==='state');

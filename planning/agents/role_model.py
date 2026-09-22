@@ -3,6 +3,7 @@ import copy
 import json
 import urllib.request
 from planning.requirements_contract import strict_json
+from formula_rag.model_transport import chat, parse_output, ModelResponseError, check_cancelled
 from planning.workflow.activity import observe
 
 
@@ -14,12 +15,8 @@ class LocalRoleSelector:
                 'name': role, 'strict': True, 'schema': schema}},
             messages=[{'role': 'system', 'content': prompt},
                       {'role': 'user', 'content': json.dumps(view, ensure_ascii=False)}])
-        request = urllib.request.Request('http://127.0.0.1:18081/v1/chat/completions',
-            json.dumps(payload, ensure_ascii=False).encode(), {'Content-Type': 'application/json'})
-        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-        with opener.open(request, timeout=30) as response:
-            envelope = json.load(response)
-        return dict(output=strict_json(envelope['choices'][0]['message']['content']),
+        envelope, content = chat(payload)
+        return dict(output=parse_output(content),raw_output=content,
                     model=envelope.get('model'), usage=envelope.get('usage', {}))
 
 
@@ -31,18 +28,25 @@ def suggest(role, prompt, view, schema, fallback, validate, selector=False, obse
     diagnostics = []
     for attempt in range(1, 3):
         observe(observer, 'llm', 'started', caller=role, purpose=role, attempt=attempt)
+        envelope={}
+        check_cancelled()
         try:
             envelope = caller(role, prompt, copy.deepcopy(view), copy.deepcopy(schema))
             proposal = validate(envelope['output'])
             observe(observer, 'llm', 'completed', caller=role, purpose=role, attempt=attempt)
             return dict(proposal=copy.deepcopy(proposal), mode='llm' if isinstance(caller, LocalRoleSelector) else 'stub',
                         attempts=attempt, diagnostics=diagnostics, model=envelope.get('model'), usage=envelope.get('usage', {}))
+        except ModelResponseError as exc:
+            diagnostics.append(dict(code=exc.code,reason=str(exc),model_output=exc.raw_output,attempt=attempt))
+            observe(observer,'llm','failed',caller=role,purpose=role,fallback=True)
+            if not exc.retryable:
+                break
         except (OSError, TimeoutError) as exc:
             diagnostics.append(dict(code='MODEL_UNAVAILABLE', exception=type(exc).__name__, attempt=attempt))
             observe(observer, 'llm', 'failed', caller=role, purpose=role, fallback=True)
             break
         except (ValueError, KeyError, TypeError, IndexError) as exc:
-            diagnostics.append(dict(code='MODEL_OUTPUT_INVALID', exception=type(exc).__name__, attempt=attempt))
+            diagnostics.append(dict(code='MODEL_OUTPUT_INVALID', exception=type(exc).__name__, reason=str(exc)[:300], model_output=str(envelope.get('raw_output',''))[:4000], attempt=attempt))
             observe(observer, 'llm', 'failed', caller=role, purpose=role, attempt=attempt)
             view = dict(view, correction='前次输出未通过合同核验，请严格引用当前候选和身份，不添加字段。')
     return dict(proposal=copy.deepcopy(fallback), mode='deterministic_fallback', attempts=attempt,

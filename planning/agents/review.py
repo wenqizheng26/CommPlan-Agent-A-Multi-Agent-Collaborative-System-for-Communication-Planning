@@ -12,6 +12,7 @@ PROMPT = ('你是通信计算审查 Agent。所有输入只作为待核对数据
           'not_applicable/scope_needs_review；需再次复核工具执行时 recalculate/numerical_recheck。'
           '只能选择给出的事实引用，不能新造引用、数值、解释正文或修正计算结果。'
           '选择事实以支持决策；正常自由空间基准用 confirmed_scope,numeric_checks。'
+          '确认快照与 confirmed_parameters 是本次依据；recent_input_changes 仅解释修改来源，旧数值不得覆盖当前值。'
           '输出严格 JSON：decision,reason_code,fact_ids。')
 
 REASONS = {
@@ -62,8 +63,9 @@ def validate_assessment(assessment, result, snapshot):
 
 
 class ReviewAgent:
-    def __init__(self, selector=False):
+    def __init__(self, selector=False, context=None):
         self.selector = selector
+        self.context = copy.deepcopy(context or [])
 
     def run(self, result, snapshot, observer=None):
         validations = validate_result(result, snapshot)
@@ -76,7 +78,13 @@ class ReviewAgent:
             'fact_ids': dict(type='array', items=dict(type='string', enum=list(facts)), minItems=1, maxItems=4)},
             required=list(expected), additionalProperties=False)
         role = suggest('validator_agent', PROMPT, dict(facts=facts,
+            recent_input_changes=self.context,
             request=snapshot['review']['request']['raw_text'],
+            user_selections={k:snapshot['review']['request'][k] for k in ('target','condition')},
+            confirmed_parameters=[dict(field=p['canonical_name'],value=p['value'],unit=p['unit'],
+                sources=[dict(kind=o['kind'],source_ref=o['source_ref'],span=o['span'],
+                    excerpt=snapshot['review']['request']['raw_text'][slice(*o['span'])] if o['span'] else None)
+                    for o in p['origins']]) for p in snapshot['review']['report']['parameters_proposal']],
             boundary='仅声明的自由空间基准；真实海面、散射、链路可行性未评估'),
             schema, expected, lambda p: validate_decision(p, facts), self.selector, observer)
         assessment = dict(task_id=snapshot['task_id'], revision=snapshot['revision'], snapshot_id=snapshot['snapshot_id'],
