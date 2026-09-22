@@ -1,3 +1,4 @@
+import {taskProgress} from './progress.mjs';
 import {serviceText} from './model-status.mjs';
 import {nodes,statusText,nodeStates,renderFlow,relevantEvents,activityFresh,openRun,RELATION_DESCRIPTION} from './flow.mjs';
 import {renderDetails,el,labels,tabNames} from './details.mjs';
@@ -66,7 +67,10 @@ function draw(){
 
  $('flow-caption').textContent=RELATION_DESCRIPTION+' 静态架构关系不代表本次已执行；高亮仅来自运行事件，正式结果以保存状态为准。';
  $('status').textContent=historical?'历史只读':busy?'正在处理':s?(s.waiting_reason||labels[s.status]||s.status):'等待输入';
- $('task-meta').textContent=s?`任务 ${s.task_id} · 输入版本 ${s.revision} · ${activeContext?'处理中，尚未提交':`状态版本 ${s.state_version}`}`:'输入需求，沿流程核对参数、公式与依据。';
+ $('task-meta').textContent=s?`输入版本 ${s.revision} · ${activeContext?'处理中，尚未提交':`状态版本 ${s.state_version}`}`:'输入需求，核对参数后生成自由空间路径损耗结果。';
+ const progress=taskProgress(s,ev,{dirty,historical:!!historical});
+ $('current-action').textContent=progress.action;
+ $('task-progress').replaceChildren(...progress.steps.map(step=>{const row=el('li',undefined,step.status);row.append(el('span',({completed:'✓',running:'●',waiting:'◐',failed:'!',cancelled:'—',idle:'○'})[step.status]||'○','progress-symbol'),el('span',step.label),el('span',({completed:'已完成',running:'处理中',waiting:'待处理',failed:'已阻断',cancelled:'已停止',idle:'未开始'})[step.status]||'未开始','progress-state'));if(['running','waiting'].includes(step.status))row.setAttribute('aria-current','step');return row;}));
  const states=nodeStates(s,ev),running=Object.entries(states).find(([id,status])=>status==='running'&&!['requirements','rag','knowledge','compute_agent','model','llm'].includes(id));
  const latest=relevantEvents(s,ev).at(-1);
  $('live-status').textContent=running?`正在运行：${nodes[running[0]][0]} · 等待后端返回`:
@@ -139,16 +143,27 @@ $('stop-operation').addEventListener('click',async()=>{
 });
 $('check-model').addEventListener('click',checkModel);
 $('request-form').addEventListener('submit',e=>{e.preventDefault();submit(current?'edit':'create').catch(e=>notice(e.message,true));});
-$('request-form').addEventListener('input',()=>{dirty=!!current;$('accept').checked=false;syncButtons();});
+$('request-form').addEventListener('input',()=>{dirty=!!current;$('accept').checked=false;draw();});
 $('accept').addEventListener('change',syncButtons);$('confirm').addEventListener('click',()=>submit('confirm').catch(e=>notice(e.message,true)));$('cancel').addEventListener('click',()=>submit('cancel').catch(e=>notice(e.message,true)));
 $('refresh').addEventListener('click',()=>restore(current?.task_id));$('restore').addEventListener('click',()=>restore($('task-id').value.trim()));
-$('example').addEventListener('click',()=>{$('raw-text').value='按自由空间基准计算，频率2GHz，距离1km，求路径损耗。';$('raw-text').dispatchEvent(new Event('input',{bubbles:true}));});
-$('vague-example').addEventListener('click',()=>{$('raw-text').value='我想让两艘船之间通信稳定一些，帮我规划一下。';$('raw-text').dispatchEvent(new Event('input',{bubbles:true}));});
-$('range-example').addEventListener('click',()=>{$('raw-text').value='按自由空间基准计算，频率2±0.1GHz，距离1km，求路径损耗。';$('raw-text').dispatchEvent(new Event('input',{bubbles:true}));});
-$('missing-example').addEventListener('click',()=>{$('raw-text').value='按自由空间基准计算，频率2GHz，求路径损耗。';$('raw-text').dispatchEvent(new Event('input',{bubbles:true}));});
+function populateExample(text,conflict=false){
+ $('raw-text').value=text;
+ for(const id of ['frequency','distance','condition','target'])$(id).value='';
+ $('frequency-unit').value='GHz';$('distance-unit').value='km';
+ if(conflict)$('frequency').value='3';
+ $('manual-details').open=conflict;
+ $('raw-text').dispatchEvent(new Event('input',{bubbles:true}));
+ notice(conflict?'已填入示例：原文频率 2 GHz 与手工频率 3 GHz 冲突。点击开始筹划后核对修正。':'示例已填入；核对后点击开始筹划。');
+}
+$('example').addEventListener('click',()=>populateExample('按自由空间基准计算，频率2GHz，距离1km，求路径损耗。'));
+$('vague-example').addEventListener('click',()=>populateExample('我想让两艘船之间通信稳定一些，帮我规划一下。'));
+$('range-example').addEventListener('click',()=>populateExample('按自由空间基准计算，频率2±0.1GHz，距离1km，求路径损耗。'));
+$('missing-example').addEventListener('click',()=>populateExample('按自由空间基准计算，频率2GHz，求路径损耗。'));
+$('choices-example').addEventListener('click',()=>populateExample('按自由空间基准计算，频率2GHz或3GHz，距离1km，求路径损耗。'));
+$('conflict-example').addEventListener('click',()=>populateExample('按自由空间基准计算，频率2GHz，距离1km，求路径损耗。',true));
 $('new').addEventListener('click',()=>{current=historical=activeContext=null;activity=[];dirty=false;pendingCommand=null;pollGeneration++;selected='input';tab='overview';focusParameter=null;localStorage.removeItem('planning-task');history.replaceState(null,'',location.pathname);$('request-form').reset();$('supplement-form').reset();$('task-id').value='';$('submit').textContent='开始筹划';$('history-list').replaceChildren();notice('新任务已准备好；原任务仍保存在本地。');draw();});
 $('supplement-form').addEventListener('submit',e=>{e.preventDefault();submit('supplement').catch(e=>notice(e.message,true));});
-$('expand-detail').addEventListener('click',()=>{const expanded=$('workspace').classList.toggle('detail-wide');$('expand-detail').textContent=expanded?'返回流程画布':'展开详情';});
+$('expand-detail').addEventListener('click',()=>{const expanded=$('workspace').classList.toggle('detail-wide');$('expand-detail').textContent=expanded?'恢复布局':'展开结果详情';});
 $('return-current').addEventListener('click',()=>{historical=null;if(current)fillInput(current);draw();});
 $('history').addEventListener('click',async()=>{
  if(!current||busy)return;

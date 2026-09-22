@@ -48,6 +48,7 @@ def create_server(root, db_path=None, port=18082):
             '/roles.mjs':('roles.mjs','text/javascript'),
             '/model-status.mjs':('model-status.mjs','text/javascript'),
             '/drafts.mjs':('drafts.mjs','text/javascript'),
+            '/progress.mjs':('progress.mjs','text/javascript'),
             '/questions.mjs':('questions.mjs','text/javascript'),'/values.mjs':('values.mjs','text/javascript'),
             '/app.css':('app.css','text/css')}
 

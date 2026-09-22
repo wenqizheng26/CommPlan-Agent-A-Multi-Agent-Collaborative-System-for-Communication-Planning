@@ -76,6 +76,7 @@ class PlanningWebTests(unittest.TestCase):
         self.assertIn('通信筹划',html)
         self.assertEqual(self.call('/app.js')[0],200)
         self.assertEqual(self.call('/text.mjs')[0],200)
+        self.assertEqual(self.call('/progress.mjs')[0],200)
 
     def test_activity_endpoint_does_not_require_committed_task(self):
         self.assertEqual(self.call('/api/tasks/future-task/activity')[1]['events'],[])

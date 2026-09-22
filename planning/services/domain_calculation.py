@@ -57,8 +57,8 @@ def conclusion(outputs):
     parts=[]
     for index, output in enumerate(outputs,1):
         v=output['value']
-        text=(f"{v['lower']:.6f}–{v['upper']:.6f} dB（输入范围对应的计算范围，非置信区间）" if type(v) is dict
-              else f'{v:.6f} dB')
+        text=(f"{v['lower']:.2f}–{v['upper']:.2f} dB（输入范围对应的计算范围，非置信区间）" if type(v) is dict
+              else f'{v:.2f} dB')
         prefix=(f"候选 {index}：" if len(outputs)>1 else '')
         parts.append(prefix+text)
     return '按已确认自由空间条件，'+'；'.join(parts)+'。'
