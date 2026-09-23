@@ -102,20 +102,20 @@ export function edgeState(state,events,from,to){
 
 // Page 1 of the two-page Visio: one orchestrator, three peer agents with their
 // artifacts, shared state below and shared capabilities on the right.
-// Shapes follow Visio: manual input, predefined process, document, database.
+// Roles and artifacts are plain cards; shared capabilities form one tinted family.
 const architecture=[
- ['input',215,6,190,38,'input','pill'],
- ['orchestrator',160,80,300,56,'agent','box'],
- ['requirements',12,176,188,62,'agent','box'],
- ['compute_agent',216,176,188,62,'agent','box'],
- ['validator_agent',420,176,188,62,'agent','box'],
- ['confirmation',12,300,188,58,'confirm','manual'],
- ['model',216,300,188,58,'model','predefined'],
- ['publish',420,300,188,58,'report','document'],
- ['state',12,396,596,58,'state','database'],
- ['llm',640,80,184,64,'llm','box'],
- ['rag',640,300,184,58,'rag','predefined'],
- ['knowledge',640,392,184,62,'knowledge','database'],
+ ['input',215,6,190,38,'input'],
+ ['orchestrator',160,80,300,56,'role'],
+ ['requirements',12,176,188,62,'role'],
+ ['compute_agent',216,176,188,62,'role'],
+ ['validator_agent',420,176,188,62,'role'],
+ ['confirmation',12,300,188,58,'role'],
+ ['model',216,300,188,58,'cap'],
+ ['publish',420,300,188,58,'role'],
+ ['state',12,396,596,58,'role'],
+ ['llm',640,80,184,64,'cap'],
+ ['rag',640,300,184,58,'cap'],
+ ['knowledge',640,392,184,62,'cap'],
 ];
 // [from,to,type,path,label,labelX,labelY,both]; from/to follow activity caller/node aliases.
 const architectureEdges=[
@@ -140,19 +140,10 @@ const architectureEdges=[
 const nodeText={validator_agent:'解释未接入',rag:'词项检索'};
 const integration={orchestrator:'部分接入',llm:'可选'};
 const titles={input:'用户输入通信需求'};
-const centeredNodes=new Set(['input','state','model','publish','knowledge','rag']);
 function box(x,y,w,h,r){return `M${x+r} ${y}H${x+w-r}Q${x+w} ${y} ${x+w} ${y+r}V${y+h-r}Q${x+w} ${y+h} ${x+w-r} ${y+h}H${x+r}Q${x} ${y+h} ${x} ${y+h-r}V${y+r}Q${x} ${y} ${x+r} ${y}Z`;}
-function shapePaths(shape,w,h){
- if(shape==='pill')return [box(0,0,w,h,h/2)];
- if(shape==='manual')return [`M0 12L${w} 0V${h}H0Z`];
- if(shape==='predefined')return [box(0,0,w,h,4),`M10 0V${h}M${w-10} 0V${h}`];
- if(shape==='document')return [`M0 0H${w}V${h-8}Q${w*.75} ${h-20} ${w/2} ${h-8}T0 ${h-8}Z`];
- if(shape==='database'){const ry=8;return [`M0 ${ry}V${h-ry}A${w/2} ${ry} 0 0 0 ${w} ${h-ry}V${ry}A${w/2} ${ry} 0 0 0 0 ${ry}Z`,`M0 ${ry}A${w/2} ${ry} 0 0 0 ${w} ${ry}`];}
- return [box(0,0,w,h,6)];
-}
 function svgEl(tag, attrs={},text){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);if(text)n.textContent=text;return n;}
 function marker(id){const m=svgEl('marker',{id,viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:5,markerHeight:5,orient:'auto-start-reverse'});m.append(svgEl('path',{d:'M 0 0 L 10 5 L 0 10 z',fill:'context-stroke'}));return m;}
-function chip(text,x,y,w){return [svgEl('path',{d:box(x,y,w,18,4),class:'integration-chip'}),svgEl('text',{x:x+w/2,y:y+13,'text-anchor':'middle',class:'integration-text'},text)];}
+function chip(text,x,y,w){return [svgEl('path',{d:box(x,y,w,18,9),class:'integration-chip'}),svgEl('text',{x:x+w/2,y:y+13,'text-anchor':'middle',class:'integration-text'},text)];}
 export function renderFlow(host,{view,state,events,selected,onSelect}){
  const states=nodeStates(state,events);
  // Page 1 has no separate follow-up node: the user check loop carries it.
@@ -160,8 +151,8 @@ export function renderFlow(host,{view,state,events,selected,onSelect}){
  if(awaitingSupplement)states.confirmation='waiting';
  const svg=svgEl('svg',{viewBox:'0 0 840 494',role:'group','aria-label':'总体协同架构'});
  const defs=svgEl('defs');defs.append(marker('arrow'));svg.append(defs);
- svg.append(svgEl('path',{d:box(4,56,616,410,8),class:'flow-lane'}),svgEl('text',{x:14,y:72,class:'lane-label'},'LangGraph 编排与状态'));
- svg.append(svgEl('path',{d:box(628,56,208,410,8),class:'flow-lane'}),svgEl('text',{x:638,y:72,class:'lane-label'},'共享能力'));
+ svg.append(svgEl('path',{d:box(4,56,616,410,16),class:'flow-lane'}),svgEl('text',{x:14,y:72,class:'lane-label'},'LangGraph 编排与状态'));
+ svg.append(svgEl('path',{d:box(628,56,208,410,16),class:'flow-lane'}),svgEl('text',{x:638,y:72,class:'lane-label'},'共享能力'));
  for(const[from,to,type,d,label,lx,ly,both]of architectureEdges){
   const phase=edgeState(state,events,from,to);
   const active=['running','completed','waiting','failed'].includes(phase);
@@ -174,19 +165,17 @@ export function renderFlow(host,{view,state,events,selected,onSelect}){
  const note=svgEl('g',{class:'flow-note'});
  note.append(svgEl('text',{x:732,y:212,'text-anchor':'middle',class:'note-title'},'知识增强过程'),...chip('部分接入 · 仅公式卡',662,224,140));
  svg.append(note);
- for(const[id,x,y,w,h,kind,shape]of architecture){
+ for(const[id,x,y,w,h,kind]of architecture){
   const status=states[id],label=titles[id]||nodes[id][0];
   const g=svgEl('g',{transform:`translate(${x},${y})`,class:`flow-node kind-${kind} ${status} ${selected===id?'selected':''}`,role:'button',tabindex:0,'aria-label':`${label}，${statusText[status]||status}`,'aria-pressed':String(selected===id),'data-node':id});
-  const [outline,...details]=shapePaths(shape,w,h);
-  g.append(svgEl('path',{d:outline,class:'shape'}));
-  for(const d of details)g.append(svgEl('path',{d,class:'shape-detail'}));
+  g.append(svgEl('path',{d:box(0,0,w,h,id==='input'?h/2:12),class:'shape'}));
   const sub=status==='running'?'运行中 · 等待返回':status==='waiting'?(awaitingSupplement&&id==='confirmation'?'等待补充 · 见右侧问题':'等待用户处理'):status==='degraded'?'部分调用已降级':nodeText[id]||'';
-  const centered=centeredNodes.has(id),anchor=centered?'middle':'start';
-  const top=['manual','database'].includes(shape)?30:24;
-  const titleY=sub?top:h/2+(shape==='manual'?9:5);
-  if(!centered)g.append(svgEl('circle',{cx:16,cy:titleY-5,r:4}));
-  g.append(svgEl('text',{x:centered?w/2:28,y:titleY,'text-anchor':anchor,class:'node-title'},label));
-  if(sub)g.append(svgEl('text',{x:centered?w/2:14,y:top+20,'text-anchor':anchor,class:'node-sub'},sub));
+  if(id==='input')g.append(svgEl('text',{x:w/2,y:h/2+5,'text-anchor':'middle',class:'node-title'},label));
+  else{
+   const titleY=sub?h/2-3:h/2+5;
+   g.append(svgEl('circle',{cx:18,cy:titleY-5,r:4}),svgEl('text',{x:30,y:titleY,class:'node-title'},label));
+   if(sub)g.append(svgEl('text',{x:30,y:titleY+19,class:'node-sub'},sub));
+  }
   if(integration[id]){const cw=integration[id].length*11+14;g.append(...chip(integration[id],w-cw-8,8,cw));}
   const activate=()=>onSelect(id);g.addEventListener('click',activate);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();activate();}});svg.append(g);
  }
