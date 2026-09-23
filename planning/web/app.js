@@ -166,6 +166,10 @@ $('conflict-example').addEventListener('click',()=>populateExample('按自由空
 $('new').addEventListener('click',()=>{current=historical=activeContext=null;activity=[];dirty=false;pendingCommand=null;pollGeneration++;selected='input';tab='overview';focusParameter=null;localStorage.removeItem('planning-task');history.replaceState(null,'',location.pathname);$('request-form').reset();$('supplement-form').reset();$('task-id').value='';$('submit').textContent='开始筹划';$('history-list').replaceChildren();notice('新任务已准备好；原任务仍保存在本地。');draw();});
 $('supplement-form').addEventListener('submit',e=>{e.preventDefault();submit('supplement').catch(e=>notice(e.message,true));});
 $('expand-detail').addEventListener('click',()=>{const expanded=$('workspace').classList.toggle('detail-wide');$('expand-detail').textContent=expanded?'恢复布局':'展开结果详情';});
+const canvasPanel=document.querySelector('.canvas-panel');
+function setFlowExpanded(expanded){canvasPanel.classList.toggle('flow-expanded',expanded);$('expand-flow').textContent=expanded?'恢复工作台':'放大流程图';$('expand-flow').setAttribute('aria-expanded',String(expanded));}
+$('expand-flow').addEventListener('click',()=>setFlowExpanded(!canvasPanel.classList.contains('flow-expanded')));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&canvasPanel.classList.contains('flow-expanded')){setFlowExpanded(false);$('expand-flow').focus();}});
 $('return-current').addEventListener('click',()=>{historical=null;if(current)fillInput(current);draw();});
 $('history').addEventListener('click',async()=>{
  if(!current||busy)return;

@@ -7,13 +7,17 @@ const drafts=draftStore(storage);
 export function openQuestions(state){return (state?.input_issues||[]).filter(q=>q.status==='open');}
 export function questionTitle(state){const n=openQuestions(state).length;return `需求确认与补充 · ${n?`还有 ${n} 项待完成`:'当前无待完成项'}`;}
 export function renderQuestions(host,state,{disabled=false,onSubmit,onEdit}={}){
- const questions=openQuestions(state);host.replaceChildren();host.hidden=!questions.length;
+ const questions=openQuestions(state);host.replaceChildren();host.hidden=!questions.length;host.classList.toggle('multi-question',questions.length>1);
  if(!disabled&&state?.task_id&&state.status!=='RUNNING')drafts.retain(state.task_id,state.revision,questions.map(q=>q.id));
  if(!questions.length)return;
  host.append(el('h2',questionTitle(state)),el('p',`${state.waiting_reason||'等待补充'}。可只回答已确定的项目，其余问题会保留；未提交的回答保留在本机浏览器；回答后仍需确认本版本才能计算。`,'hint'));
- const form=el('form');const inputs=[];
+ const form=el('form');const inputs=[],cards=[],tabs=[];
+ const nav=questions.length>1?el('div',undefined,'question-nav'):null;
+ if(nav){nav.setAttribute('role','tablist');nav.setAttribute('aria-label','待确认项目');form.append(nav);}
  for(const [index,q] of questions.entries()){
-  const card=el('fieldset',undefined,'question-card');card.append(el('legend',`${index+1}. ${q.title}`),el('p',q.detail,'hint'));
+  const card=el('fieldset',undefined,'question-card');card.id=`question-card-${index}`;card.hidden=index!==0;cards.push(card);
+  card.append(el('legend',`${index+1}. ${q.title}`),el('p',q.detail,'hint'));
+  if(nav){const tab=el('button',`${index+1}. ${q.title}`,'secondary');tab.type='button';tab.setAttribute('role','tab');tab.setAttribute('aria-controls',card.id);tab.setAttribute('aria-selected',String(index===0));tab.addEventListener('click',()=>{cards.forEach((item,i)=>item.hidden=i!==index);tabs.forEach((item,i)=>item.setAttribute('aria-selected',String(i===index)));});tabs.push(tab);nav.append(tab);}
   if(q.excerpt&&!q.excerpt.startsWith('issue-')&&q.kind!=='pending')card.append(el('blockquote','原文 / 来源：'+q.excerpt));
   const key=state.task_id+':'+state.revision+':'+q.id;
   if(q.field==='task'){
