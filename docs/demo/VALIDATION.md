@@ -17,7 +17,7 @@ Target: FSPL-stage Planning Workbench, Windows / Python 3.12. This is a living r
 | Stage 4 Windows release extraction | PowerShell `Expand-Archive` preserved `启动.cmd` and `start.cmd`; extracted package HTTP smoke passed create, confirm, restart recovery. | PASS local |
 | Target Chrome | Latest UI candidate at `http://127.0.0.1:18088`; user to confirm V4 §29 seven flows on the post-redesign candidate | BLOCKED_EXTERNAL_CHROME_VALIDATION |
 | Independent final code review | Separate reviewer needed on `9ee7939..HEAD`; implementation agent and test agents do not count | BLOCKED_EXTERNAL_REVIEW |
-| GitHub branch/CI | Previous [run 35820319930](https://github.com/wenqizheng26/CommPlan-Agent-A-Multi-Agent-Collaborative-System-for-Communication-Planning/actions/runs/35820319930) at `5c43630`: `planning-minimal` and `legacy-full` PASS. Post-redesign and C3 candidate `03c985f` is not yet pushed/verified by remote CI. | PENDING current candidate |
+| GitHub branch/CI | Branch `codex/demo-delivery-final` pushed to `commplan` at `ce685d46522b6c1224bd8cd9f75e27878425be2f`. [Run 35830153906](https://github.com/wenqizheng26/CommPlan-Agent-A-Multi-Agent-Collaborative-System-for-Communication-Planning/actions/runs/35830153906) completed successfully: `planning-minimal` PASS and `legacy-full` PASS. This run includes the visual redesign and C3 archive commit. | PASS current candidate |
 | PR, accepted main, main-derived artifact, tag | after previous gates | PENDING |
 
 The model files and llama runtime stay in ignored `models/signal-formula-qwen3/` for local use. This source release never contains model weights, runtime binaries, venv, DB, logs or PIDs. `BUILD_INFO.json` records the source commit and whether the build tree was dirty.
