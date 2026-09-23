@@ -45,9 +45,9 @@ def failed(state, node, exc):
                 trace=trace(state,node,'FAILED'))
 
 
-def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(), calculation_agent=None, review_agent=None):
+def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(), calculation_agent=None, review_agent=None, review_context=None):
     calculation_agent = calculation_agent or CalculationAgent(None if getattr(agent, 'selector', None) else False)
-    review_agent = review_agent or ReviewAgent(None if getattr(agent, 'selector', None) else False)
+    review_agent = review_agent or ReviewAgent(None if getattr(agent, 'selector', None) else False,context=review_context)
     def propose(state):
         observe(observer,'requirements','started',caller='orchestrator')
         output = run_requirements(state['request'],agent,expected_revision=state['request']['revision'])

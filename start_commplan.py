@@ -12,6 +12,7 @@ import urllib.request
 import webbrowser
 
 from launch import model_command
+from planning.build_info import build_fingerprint
 
 ROOT = Path(__file__).resolve().parent
 MODEL_URL = 'http://127.0.0.1:18081'
@@ -47,7 +48,8 @@ def model_ready():
 def asset_root(explicit=None):
     configured = explicit or os.environ.get('COMMPLAN_ASSET_ROOT')
     candidates = [Path(configured)] if configured else [
-        ROOT, ROOT.parent / 'signal-formula-rag',
+        ROOT / 'models' / 'signal-formula-qwen3', ROOT,
+        ROOT.parent / 'signal-formula-rag',
         ROOT.parent.parent / 'signal-formula-rag',
     ]
     for root in candidates:
@@ -127,6 +129,8 @@ def main(argv=None):
         return isinstance(data, dict) and data.get('profile') == 'confirmed-fspl-loop-v1'
 
     existing = workbench_ready()
+    if existing and read_json(address+'/api/session').get('build') != build_fingerprint(ROOT):
+        raise RuntimeError('该端口运行的是旧版工作台。请停止旧工作台进程后重新启动，或用 --port 选择空闲端口；模型服务可继续复用。')
     if not existing and listening(args.port):
         raise RuntimeError(f'{args.port} 端口已被其他服务占用，请使用 --port 指定其他端口。')
     if existing and args.db is not None:

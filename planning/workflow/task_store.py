@@ -68,6 +68,13 @@ class TaskStore:
         require(state is not None, 'TASK_NOT_FOUND')
         return state
 
+    def recent(self, limit=50):
+        with closing(sqlite3.connect(self.path)) as conn:
+            rows=conn.execute("SELECT task_id,json_extract(state,'$.status'),json_extract(state,'$.revision'),"
+                "json_extract(state,'$.updated_at'),substr(json_extract(state,'$.request.raw_text'),1,100) "
+                "FROM tasks ORDER BY json_extract(state,'$.updated_at') DESC,task_id LIMIT ?",(limit,)).fetchall()
+        return [dict(task_id=i,status=s,revision=r,updated_at=t,description=d) for i,s,r,t,d in rows]
+
     def history(self, task_id):
         with closing(sqlite3.connect(self.path)) as conn:
             rows = conn.execute('SELECT state_version,revision,state FROM history WHERE task_id=? ORDER BY state_version', (task_id,)).fetchall()

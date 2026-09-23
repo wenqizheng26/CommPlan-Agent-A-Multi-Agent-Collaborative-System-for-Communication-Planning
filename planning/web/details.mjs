@@ -21,7 +21,7 @@ function formulaMath(){
 }
 export function renderDetails(host,{state,events=[],node='input',tab='overview',focusParameter=null,onTab,onParameter,historical=false,modelService=null}){
  host.replaceChildren();const [title,subtitle]=nodes[node]||nodes.input;
- const heading=el('div',undefined,'detail-heading');heading.append(el('span','节点详情','eyebrow'),el('h2',title),el('p',subtitle,'hint'));host.append(heading);
+ const heading=el('div',undefined,'detail-heading');heading.append(el('span',tab==='result'?'计算结果':'任务核对','eyebrow'),el('h2',title),el('p',subtitle,'hint'));host.append(heading);
  if(historical)host.append(block('历史只读','正在查看保存时的版本，不能在此确认或修改。','warning'));
  const r=state?.report,model=state?.review?.model,plan=r?.calculation_plan_proposal;
  if(['orchestrator','explanation','validator_agent'].includes(node))host.append(block('接入范围',node==='orchestrator'?'按状态与审查意见调度；每版本最多计算两次。当前是受控程序策略，尚无自主任务拆解。':node==='explanation'?'报告正文由已验证数据生成；未启用自由生成的科学解释。':'先执行硬校验，再进行可选结构化审查。模型建议不能改数值或绕过硬校验。','scope-note'));
@@ -29,11 +29,14 @@ export function renderDetails(host,{state,events=[],node='input',tab='overview',
  if(!state){host.append(block('开始一条任务','在左侧输入自然语言需求，或填入完整示例。图中可点击查看各模块职责。'));return;}
  if(reviewQuestion(state))host.append(block('审查意见',reviewQuestion(state),'warning'));
  if(state.failure)host.append(block('当前阻断',[state.failure.message,state.failure.next_action],'warning'));
- if(['compute_agent','validator_agent','orchestrator','publish','review'].includes(node)){
-  if(state.calculation_role)host.append(block('计算角色',`${roleModeNames[state.calculation_role.mode]||state.calculation_role.mode}；已执行 ${state.calculation_attempts||1} 次计算（上限 2 次）。`));
-  if(state.review_assessment){const a=state.review_assessment;host.append(block('审查角色',`${roleModeNames[a.role.mode]||a.role.mode} · ${reviewDecisionNames[a.role.proposal.decision]}。审查绑定当前结果版本。`),jsonDetails('审查依据与角色记录',a));}
-  if(state.routing_decisions?.length)host.append(jsonDetails('调度与重算记录',state.routing_decisions));
- }
+ const roles=()=>{
+  const section=el('details');section.append(el('summary','计算、审查与调度记录'));
+  if(state.calculation_role)section.append(block('计算角色',`${roleModeNames[state.calculation_role.mode]||state.calculation_role.mode}；已执行 ${state.calculation_attempts||1} 次计算（上限 2 次）。`));
+  if(state.review_assessment){const a=state.review_assessment;section.append(block('审查角色',`${roleModeNames[a.role.mode]||a.role.mode} · ${reviewDecisionNames[a.role.proposal.decision]}。审查绑定当前结果版本。`),jsonDetails('审查依据与角色记录',a));}
+  if(state.routing_decisions?.length)section.append(jsonDetails('调度与重算记录',state.routing_decisions));
+  return section;
+ };
+ if(tab!=='result'&&['compute_agent','validator_agent','orchestrator','review'].includes(node))host.append(roles());
  if(tab==='overview'){
   const status=nodeStates(state,events)[node];host.append(block(node==='llm'?'任务调用状态（非服务状态）':'本步骤状态',statusText[status]||status));
   host.append(block('当前任务描述',state.request?.raw_text||'等待输入'));
@@ -79,7 +82,7 @@ export function renderDetails(host,{state,events=[],node='input',tab='overview',
   for(const [name,spec]of Object.entries(model.parameters)){const param=r.parameters_proposal.find(p=>p.canonical_name===name);const b=block(`${symbols[name]||name} · ${spec.description}`,`单位 ${spec.unit}；${param?.value==null?'尚无唯一可用值':`当前值 ${formatDomain(param.value)} ${param.unit}`}。`);b.classList.toggle('highlight-row',name===focusParameter);b.append(button('定位参数原文与来源',()=>onParameter(name)));host.append(b);}
   const actual=state.result?.normalized_inputs;
   if(actual&&state.result.outputs.length>1){host.append(block('实际代入（分候选执行）',state.final_report?.conclusion||'候选分别执行；完整输入与结果见任务 JSON。'));}
-  else if(actual){host.append(block('实际代入（已确认输入）',`92.4 + 20 × log₁₀(${formatDomain(actual.frequency_ghz)}) + 20 × log₁₀(${formatDomain(actual.distance_km)}) = ${formatDomain(state.result.outputs[0].value,6)} dB`));}
+  else if(actual){host.append(block('实际代入（已确认输入）',`92.4 + 20 × log₁₀(${formatDomain(actual.frequency_ghz)}) + 20 × log₁₀(${formatDomain(actual.distance_km)}) = ${formatDomain(state.result.outputs[0].value,2)} dB`));}
   else host.append(block('待执行','当前只展示登记公式和参数草稿，确认后由专业程序代入计算。'));
   host.append(block('模型假设',r.assumptions));host.append(button('定位公式来源与原式换算 →',()=>onTab('evidence')));host.append(jsonDetails('登记程序表达式',model.expression));return;
  }
@@ -98,10 +101,10 @@ export function renderDetails(host,{state,events=[],node='input',tab='overview',
  }
  if(tab==='result'){
   if(!state.final_report||state.status!=='COMPLETED'){host.append(block('尚无正式发布结果',state.failure?.message||'确认计算且结果校验通过后在此展示。'));return;}
-  for(const [i,value] of state.result.outputs.entries()){const metric=el('div',undefined,'metric');metric.append(el('strong',formatDomain(value.value,6)),el('span',value.unit));host.append(el('p',state.result.outputs.length>1?`候选 ${i+1} · 自由空间单程路径损耗`:'自由空间单程路径损耗','eyebrow'),metric);if(value.inputs)host.append(el('p',Object.entries(value.inputs).map(([k,v])=>`${parameterNames[k]||k} ${formatDomain(v)}`).join('；'),'hint'));}host.append(el('p',state.final_report.conclusion));
+  for(const [i,value] of state.result.outputs.entries()){const metric=el('div',undefined,'metric');metric.append(el('strong',formatDomain(value.value,2)),el('span',value.unit));host.append(el('p',state.result.outputs.length>1?`候选 ${i+1} · 自由空间单程路径损耗`:'自由空间单程路径损耗','eyebrow'),metric);if(value.inputs)host.append(el('p',Object.entries(value.inputs).map(([k,v])=>`${parameterNames[k]||k} ${formatDomain(v)} ${{frequency_ghz:'GHz',distance_km:'km'}[k]||''}`).join('；'),'hint'));}host.append(el('p',state.final_report.conclusion));
   const names={result_integrity:'结果完整性',snapshot_identity:'确认快照版本',input_consistency:'输入一致性',plan_identity:'执行计划',evidence_consistency:'引用依据',model_identity:'模型与公式版本',numeric_domain:'数值、名称与单位',fspl_magnitude:'独立数量级检查'};
   const checks=block('程序校验');for(const v of state.validations)checks.append(el('p',`${v.passed?'✓':'×'} ${names[v.validator_id]||v.validator_id}`,'check-result'));host.append(checks);
-  host.append(block('结果含义与适用限制',state.final_report.limitations));host.append(el('p',state.final_report.review?'报告数值与正文来自已验证数据；结构化审查模式：'+(roleModeNames[state.final_report.review.mode]||state.final_report.review.mode)+'。':'此历史记录为确定性程序报告，未记录独立审查角色。','hint'));
+  host.append(block('结果含义与适用限制',state.final_report.limitations),roles());host.append(el('p',state.final_report.review?'报告数值与正文来自已验证数据；结构化审查模式：'+(roleModeNames[state.final_report.review.mode]||state.final_report.review.mode)+'。':'此历史记录为确定性程序报告，未记录独立审查角色。','hint'));
   host.append(button('追溯公式与实际代入 →',()=>onTab('formula')),button('追溯参数原文 →',()=>onTab('parameters')),button('查看来源证据 →',()=>onTab('evidence')));return;
  }
 }

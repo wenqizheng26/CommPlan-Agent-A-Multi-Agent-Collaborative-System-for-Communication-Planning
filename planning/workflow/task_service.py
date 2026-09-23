@@ -2,6 +2,9 @@
 import copy
 from pathlib import Path
 import re
+import threading
+import time
+from formula_rag.model_transport import operation_deadline, operation_cancel, check_cancelled
 from langgraph.types import Command
 from formula_rag.catalog import load_catalog
 from planning.agents.requirements import RequirementsAgent
@@ -58,6 +61,8 @@ class TaskService:
         self.root=Path(root)
         self.store=TaskStore(db_path)
         self.activity=ActivityStore(db_path)
+        self._running=[]
+        self._running_lock=threading.Lock()
 
     def get(self, task_id):
         identifier(task_id)
@@ -68,7 +73,33 @@ class TaskService:
         identifier(task_id)
         return self.store.history(task_id)
 
+    def cancel_operation(self, task_id, event_id):
+        identifier(task_id); identifier(event_id)
+        with self._running_lock:
+            matches=[r for r in self._running if r['task_id']==task_id and r['event_id']==event_id]
+            accepted=False
+            for run in matches:
+                if not run['committing']:
+                    run['cancel'].set(); accepted=True
+            return dict(accepted=accepted, message=('已请求停止本次操作；等待当前调用返回后回滚，保留此前已保存版本。'
+                if accepted else '该次操作已结束或进入提交阶段，请刷新核对保存状态。'))
+
     def apply(self, command):
+        c=validate_command(command)
+        running=dict(task_id=c['task_id'],event_id=c['event_id'],cancel=threading.Event(),committing=False)
+        with self._running_lock:
+            self._running.append(running)
+        deadline_token=operation_deadline.set(time.monotonic()+90)
+        cancel_token=operation_cancel.set(running['cancel'])
+        try:
+            return self._apply_observed(c,running)
+        finally:
+            operation_deadline.reset(deadline_token)
+            operation_cancel.reset(cancel_token)
+            with self._running_lock:
+                self._running.remove(running)
+
+    def _apply_observed(self, command, running):
         c=validate_command(command)
         run=None
         try:
@@ -77,10 +108,10 @@ class TaskService:
             pass
         observer=lambda node, phase, details: self.activity.append(run,node,phase,details)
         try:
-            result=self._apply(c,observer)
+            result=self._apply(c,observer,running)
         except BaseException as exc:
             try:
-                self.activity.finish(run,'rejected',error=type(exc).__name__)
+                self.activity.finish(run,'cancelled' if str(exc)=='OPERATION_CANCELLED' else 'rejected',error=str(exc)[:200])
             except Exception:
                 pass
             raise
@@ -94,7 +125,7 @@ class TaskService:
             pass
         return result
 
-    def _apply(self, c, observer):
+    def _apply(self, c, observer, running=None):
         task_id, event_id, action=c['task_id'],c['event_id'],c['action']
         payload_hash=digest(c)
         observe(observer,'orchestrator','started',caller='input',mode='bounded_policy')
@@ -139,7 +170,10 @@ class TaskService:
                 agent.observer=observer
                 observe(observer,'knowledge','completed',caller='rag',operation='load_catalog')
             graph=build_planning_graph(agent,saver,cards,observer=observer,
-                pending_questions=[p['question'] for p in (conversation or {}).get('pending',[])])
+                pending_questions=[p['question'] for p in (conversation or {}).get('pending',[])],
+                review_context=[dict(turn_id=t['turn_id'],kind=t['kind'],message=t.get('message','')[:300],
+                    before=t.get('before',{}).get('raw_text','')[:300],after=t.get('after',{}).get('raw_text','')[:300])
+                    for t in (conversation or {}).get('turns',[])[-3:]])
             config={'configurable':{'thread_id':f'{task_id}:r{rev}'},'recursion_limit':24}
             if action in {'create','edit','supplement','answer'}:
                 request=dict(schema_version='1.0.0',task_id=task_id,revision=rev,request_id=event_id,**next_input)
@@ -174,5 +208,9 @@ class TaskService:
             attach_issues(state,current)
             ack=dict(task_id=task_id,event_id=event_id,revision=rev,state_version=version,status=state['status'])
             observe(observer,'state','started',caller='orchestrator',operation='save')
+            with self._running_lock:
+                check_cancelled()
+                if running is not None:
+                    running['committing']=True
             self.store.save(conn,state,event_id,payload_hash,ack)
             return dict(state=state,acknowledgement=ack,replayed=False)

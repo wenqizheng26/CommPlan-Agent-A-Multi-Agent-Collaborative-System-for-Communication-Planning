@@ -101,16 +101,50 @@ def replace_parameter(request, report, field, answer):
     residual=answer[:spans[0][0]]+answer[spans[0][1]:]
     residual=re.sub(r'载波频率|频率|路径距离|距离|采用|确定为|按|单值|计算|为|[\s=：:，,。;；]', '',residual)
     require(not residual,'ANSWER_STILL_AMBIGUOUS')
-    old=next((p for p in report.get('parameters_proposal',[]) if p['canonical_name']==field),None)
+    # Re-collect against the current text: earlier answers may have shifted offsets.
+    current_probe=dict(probe, **request)
+    old_parameters, _, current_diagnostics=collect_parameters(current_probe,extract_request(request['raw_text']),[])
+    old=next((p for p in old_parameters if p['canonical_name']==field),None)
     remove=[o['span'] for o in old['origins'] if o['kind']=='user_text' and o['span']] if old else []
-    for d in report.get('diagnostics',[]):
+    text=request['raw_text']
+    labels = (r'载波频率|工作频率|频率|载频' if field=='frequency_ghz'
+              else r'路径距离|通信距离|链路距离|距离|相距')
+    # Consume the whole old numeric expression, including approximation/negation
+    # and incomplete units. Never rewrite unrelated prose in that clause.
+    fragment=re.compile(rf'(?:{labels})(?:\s|为|是|不是|不为|不确定|未知|大约|大概|约|近似|差不多|改为|采用|[:：=])*'
+                        r'[-+0-9.eE\s±/~～–—至到或、]*(?:GHz|MHz|kHz|Hz|吉赫兹|兆赫兹|千赫兹|赫兹|km|千米|公里|m|米)?'
+                        r'(?:\s*(?:或者|或|、)\s*[-+0-9.eE]+\s*(?:GHz|MHz|kHz|Hz|km|m|千米|米|公里)?)*'
+                        r'(?:左右|上下)?',re.I)
+    for m in fragment.finditer(text):
+        if re.search(r'\d',m.group()):
+            remove.append(list(m.span()))
+    for d in current_diagnostics:
         if d['code']=='PARAMETER_APPROXIMATE' and d['details'].get('field')==field:
             remove.append(d['details']['span'])
-    text=list(request['raw_text'])
-    for start,end in remove:
-        text[start:end]=' '*(end-start)
-    request['raw_text']=''.join(text).rstrip()+'\n'+NAMES[field]+answer.strip()+'。'
-    request['manual_parameters'].pop(field,None)
+    merged=[]
+    for start,end in sorted(remove):
+        if merged and start <= merged[-1][1]:
+            merged[-1][1]=max(end,merged[-1][1])
+        else:
+            merged.append([start,end])
+    numeric=answer[slice(*spans[0])].strip()
+    replacement=NAMES[field]+numeric
+    if merged:
+        for i,(start,end) in reversed(list(enumerate(merged))):
+            text=text[:start]+(replacement if i==0 else '')+text[end:]
+    else:
+        text=text.rstrip()+'\n'+replacement+'。'
+    request['raw_text']=text
+    if field in request['manual_parameters'] and type(param['value']) is not dict:
+        request['manual_parameters'][field]={'value':param['value'],'unit':param['unit']}
+    else:
+        request['manual_parameters'].pop(field,None)
+    # The replacement must survive parsing with exactly the user's chosen value.
+    check, conflicts, _=collect_parameters(dict(probe,**request),extract_request(text),[])
+    actual=next((p for p in check if p['canonical_name']==field),None)
+    require(actual is not None and actual['value']==param['value'] and not any(c['parameter_name']==field for c in conflicts),
+            'ANSWER_REPLACEMENT_CONFLICT')
+
 
 
 def apply_answers(current,answers,event_id):

@@ -3,6 +3,7 @@ import ipaddress
 import json
 import urllib.request
 from urllib.parse import urlparse
+from formula_rag.model_transport import chat, parse_output
 
 
 class LocalSelector:
@@ -12,7 +13,7 @@ class LocalSelector:
             raise ValueError('模型服务必须使用本机回环地址')
         self.url = url
 
-    def __call__(self, text, cards, *, manual_target=None, manual_condition=None):
+    def __call__(self, text, cards, *, manual_target=None, manual_condition=None, correction=None):
         context = [{'id': c['id'], 'title': c['title'], 'description': c.get('description', ''),
                     'required_conditions': c.get('applicability', {}).get('requires', [])} for c in cards]
         evidence_item = lambda identifiers: {'type': 'object', 'properties': {
@@ -45,12 +46,10 @@ class LocalSelector:
                 '仅从原文识别尚未选择的项目，不得覆盖用户选择或编造引用。')
             payload['messages'][-1]['content'] += '\n\n用户选择（独立来源，非原文）：\n' + json.dumps(
                 {'target': manual_target, 'condition': manual_condition}, ensure_ascii=False)
-        request = urllib.request.Request(self.url, json.dumps(payload, ensure_ascii=False).encode('utf-8'), {'Content-Type': 'application/json'})
-        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-        with opener.open(request, timeout=120) as response:
-            envelope = json.load(response)
-        content = envelope['choices'][0]['message']['content']
-        selected = json.loads(content)
+        if correction:
+            payload['messages'][-1]['content'] += '\n上一次输出的程序校验反馈（请据此修正，仍须遵守原文引用规则）：'+json.dumps(correction,ensure_ascii=False)
+        envelope, content = chat(payload, self.url)
+        selected = parse_output(content)
         if not isinstance(selected, dict) or not isinstance(selected.get('selected_ids'), list):
             raise ValueError('本地模型没有返回规定的公式标识列表')
         return {'selected_ids': selected['selected_ids'], 'targets': selected.get('targets', []),

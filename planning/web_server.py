@@ -9,8 +9,11 @@ from urllib.parse import urlsplit
 from planning.requirements_contract import strict_json
 from planning.workflow.task_service import TaskService, identifier
 from planning.services.model_status import probe_model
+from planning.build_info import build_fingerprint
 
 MESSAGES={
+    'OPERATION_CANCELLED':'本次操作已停止并回滚；此前保存的版本保持有效。',
+    'ANSWER_REPLACEMENT_CONFLICT':'替换后仍有冲突，请编辑当前描述，统一该参数。',
     'STALE_REVISION':'任务输入已更新。请刷新查看当前版本，再重新核对。',
     'STALE_STATE_VERSION':'任务状态已变化。请刷新后操作，不能沿用旧确认。',
     'REVIEW_HASH_MISMATCH':'核对内容不匹配。请刷新并核对当前计划。',
@@ -38,11 +41,14 @@ def create_server(root, db_path=None, port=18082):
     except sqlite3.Error:
         pass
     token=secrets.token_urlsafe(32)
+    build=build_fingerprint(root)
     assets={'/':('index.html','text/html'),'/app.js':('app.js','text/javascript'),
             '/text.mjs':('text.mjs','text/javascript'),'/flow.mjs':('flow.mjs','text/javascript'),
             '/details.mjs':('details.mjs','text/javascript'),'/conversation.mjs':('conversation.mjs','text/javascript'),
             '/roles.mjs':('roles.mjs','text/javascript'),
             '/model-status.mjs':('model-status.mjs','text/javascript'),
+            '/drafts.mjs':('drafts.mjs','text/javascript'),
+            '/progress.mjs':('progress.mjs','text/javascript'),
             '/questions.mjs':('questions.mjs','text/javascript'),'/values.mjs':('values.mjs','text/javascript'),
             '/app.css':('app.css','text/css')}
 
@@ -82,7 +88,9 @@ def create_server(root, db_path=None, port=18082):
                 name,kind=assets[path]
                 self.respond(200,(root/'planning/web'/name).read_text(encoding='utf-8'),kind)
             elif path=='/api/session':
-                self.respond(200,{'token':token,'profile':'confirmed-fspl-loop-v1'})
+                self.respond(200,{'token':token,'profile':'confirmed-fspl-loop-v1','build':build})
+            elif path=='/api/tasks':
+                self.respond(200,{'tasks':service.store.recent()})
             elif path=='/api/model-status':
                 self.respond(200,probe_model())
             elif path.startswith('/api/tasks/'):
@@ -107,16 +115,29 @@ def create_server(root, db_path=None, port=18082):
         def do_POST(self):
             if not self.allowed(write=True):
                 return
-            if self.path!='/api/commands':
+            if self.path not in {'/api/commands','/api/cancel-operation'}:
                 self.error(404,'NOT_FOUND'); return
             if self.headers.get_content_type()!='application/json':
                 self.error(400,'JSON_REQUIRED'); return
             try:
                 size=int(self.headers.get('Content-Length','0'))
                 if not 0<size<=65536:
+                    # Drain a bounded local request body before closing so Windows
+                    # does not reset the socket before the 413 can be delivered.
+                    if 0<size<=1024*1024:
+                        self.connection.settimeout(2)
+                        try:
+                            self.rfile.read(size)
+                        except (OSError,TimeoutError):
+                            pass
                     self.error(413,'REQUEST_SIZE'); return
                 payload=strict_json(self.rfile.read(size).decode('utf-8'))
-                result=service.apply(payload)
+                if self.path=='/api/cancel-operation':
+                    if type(payload) is not dict or set(payload)!={'task_id','event_id'}:
+                        raise ValueError('INVALID_REQUEST')
+                    result=service.cancel_operation(payload['task_id'],payload['event_id'])
+                else:
+                    result=service.apply(payload)
                 self.respond(200,result)
             except (ValueError,TypeError,KeyError,OverflowError) as exc:
                 code=str(exc) if isinstance(exc,ValueError) and not isinstance(exc,UnicodeError) else 'INVALID_REQUEST'

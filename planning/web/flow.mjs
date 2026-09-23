@@ -27,7 +27,7 @@ export const nodes = {
 export const statusText={idle:'未开始',running:'运行中',completed:'已完成',waiting:'等待处理',failed:'失败',degraded:'调用已降级',skipped:'未调用',cancelled:'已取消',unavailable:'未接入',partial:'部分接入',interrupted:'已中断'};
 export function relevantEvents(state, events){return state ? events.filter(e=>e.task_id===state.task_id&&e.revision===state.revision):[];}
 export function activityFresh(previous,next){return !previous.length||(next.at(-1)?.seq||0)>=(previous.at(-1)?.seq||0);}
-export function openRun(events){const last=events.at(-1);if(!last)return null;const run=events.filter(e=>e.run_id===last.run_id);return run.some(e=>e.node==='command'&&['committed','replayed','rejected','interrupted'].includes(e.phase))?null:last;}
+export function openRun(events){const last=events.at(-1);if(!last)return null;const run=events.filter(e=>e.run_id===last.run_id);return run.some(e=>e.node==='command'&&['committed','replayed','rejected','cancelled','interrupted'].includes(e.phase))?null:last;}
 export function nodeStates(state, events=[]){
  const s=Object.fromEntries(Object.keys(nodes).map(n=>[n,'idle']));
  s.explanation='unavailable';s.orchestrator=s.validator_agent='partial';
@@ -48,8 +48,8 @@ export function nodeStates(state, events=[]){
  const last=relevant.at(-1);
  if(last&&state.status!=='COMPLETED'){
   const run=relevant.filter(e=>e.run_id===last.run_id);
-  const terminal=run.findLast(e=>e.node==='command'&&['rejected','interrupted','committed','replayed'].includes(e.phase));
-  if(['rejected','interrupted'].includes(terminal?.phase)){
+  const terminal=run.findLast(e=>e.node==='command'&&['rejected','cancelled','interrupted','committed','replayed'].includes(e.phase));
+  if(['rejected','cancelled','interrupted'].includes(terminal?.phase)){
    if(state.status!=='COMPLETED')s.failure=terminal.phase==='rejected'?'failed':'interrupted';
   }else if(terminal?.phase!=='replayed'){
    for(const e of run)if(e.node in s&&e.node!=='explanation'){
@@ -82,13 +82,16 @@ export function nodeStates(state, events=[]){
 }
 
 const aliases={calculation:'compute_agent',validation:'validator_agent',review:'validator_agent',retrieval:'rag',interpretation:'llm'};
-// Only a real observed call animates an edge. Architecture relations alone do not.
+// Observed responsibility/activity relations are not literal graph predecessors.
+// Architecture relations alone never animate an edge.
+export const RELATION_SEMANTICS='observed_activity';
+export const RELATION_DESCRIPTION='连线表示观测到的运行活动与责任关系，不表示 LangGraph 的直接调用链。';
 export function edgeState(state,events,from,to){
  const relevant=relevantEvents(state,events), runs=new Map();
  for(const e of relevant)if(e.node==='command')runs.set(e.run_id,e.phase);
  const calls=relevant.filter(e=>{
   const terminal=runs.get(e.run_id);
-  if(['rejected','interrupted','replayed'].includes(terminal))return false;
+  if(['rejected','cancelled','interrupted','replayed'].includes(terminal))return false;
   if(state.status==='COMPLETED'&&terminal!=='committed')return false;
   const a=aliases[e.details?.caller]||e.details?.caller,b=aliases[e.node]||e.node;
   return (a===from&&b===to)||(from==='state'&&to==='orchestrator'&&a==='orchestrator'&&b==='state');
@@ -97,53 +100,85 @@ export function edgeState(state,events,from,to){
  return phase==='started'?'running':phase||'idle';
 }
 
-const execution=[
- ['input',40,48],['parse',40,148],['retrieval',40,248],['interpretation',40,348],['planning',40,448],
- ['confirmation',330,448],['calculation',330,348],['validation',330,248],['publish',330,148],
- ['supplement',620,448],['gap',620,348],['failure',620,248],['explanation',620,148],
-];
+// Page 1 of the two-page Visio: one orchestrator, three peer agents with their
+// artifacts, shared state below and shared capabilities on the right.
+// Roles and artifacts are plain cards; shared capabilities form one tinted family.
 const architecture=[
- ['input',330,40],['orchestrator',330,145],
- ['requirements',40,270],['compute_agent',330,270],['validator_agent',620,270],
- ['supplement',40,390],['model',330,390],['publish',620,390],
- ['confirmation',40,490],
- ['llm',40,610],['rag',330,610],['knowledge',620,610],['state',330,720],
+ ['input',215,6,190,38,'input'],
+ ['orchestrator',160,80,300,56,'role'],
+ ['requirements',12,176,188,62,'role'],
+ ['compute_agent',216,176,188,62,'role'],
+ ['validator_agent',420,176,188,62,'role'],
+ ['confirmation',12,300,188,58,'role'],
+ ['model',216,300,188,58,'cap'],
+ ['publish',420,300,188,58,'role'],
+ ['state',12,396,596,58,'role'],
+ ['llm',640,80,184,64,'cap'],
+ ['rag',640,300,184,58,'cap'],
+ ['knowledge',640,392,184,62,'cap'],
 ];
-// mode: task / capability / state. Branch labels reflect actual decision meaning.
-const executionEdges=[['input','parse'],['parse','retrieval'],['retrieval','interpretation'],['interpretation','planning'],['planning','confirmation'],['confirmation','calculation'],['calculation','validation'],['validation','publish'],['planning','supplement','缺项/冲突'],['planning','gap','不支持'],['calculation','failure','失败'],['validation','failure','不通过'],['supplement','input','修正后重新提交','return']];
-const architectureEdges=[['input','orchestrator'],['orchestrator','requirements'],['orchestrator','compute_agent'],['orchestrator','validator_agent'],['requirements','supplement'],['supplement','confirmation'],['supplement','requirements','','return'],['compute_agent','model'],['validator_agent','publish'],['requirements','llm','','capability'],['compute_agent','llm','','capability'],['validator_agent','llm','','capability'],['requirements','rag','','capability'],['validator_agent','rag','','capability'],['rag','knowledge','','capability'],['state','orchestrator','','state']];
+// [from,to,type,path,label,labelX,labelY,both]; from/to follow activity caller/node aliases.
+const architectureEdges=[
+ ['input','orchestrator','task','M310 44V80'],
+ ['orchestrator','requirements','task','M250 136V150H106V176','',0,0,true],
+ ['orchestrator','compute_agent','task','M310 136V176','',0,0,true],
+ ['orchestrator','validator_agent','task','M370 136V150H514V176','',0,0,true],
+ ['requirements','confirmation','task','M106 238V300','用户核对',114,285,true],
+ ['confirmation','compute_agent','gate','M200 350H208V226H216'],
+ ['validator_agent','publish','task','M514 238V300'],
+ ['compute_agent','model','capability','M310 238V300','参数 / 损耗',318,285,true],
+ ['requirements','llm','capability','M176 176V164H612V112H640'],
+ ['validator_agent','llm','capability','M590 176V164H612V112H640'],
+ ['compute_agent','llm','optional','M380 176V164H612V112H640','工具建议 · 可选',520,159],
+ ['orchestrator','llm','unavailable','M460 100H640','未接入',530,94],
+ ['requirements','rag','capability','M176 238V262H616V329H640'],
+ ['validator_agent','rag','capability','M590 238V262H616V329H640'],
+ ['rag','knowledge','capability','M732 358V392','',0,0,true],
+ ['state','orchestrator','state','M12 425H6V108H160','',0,0,true],
+];
+// Static descriptions live in the detail panel; the diagram keeps only integration caveats.
+const nodeText={validator_agent:'解释未接入',rag:'词项检索'};
+const integration={orchestrator:'部分接入',llm:'可选'};
+const titles={input:'用户输入通信需求'};
+function box(x,y,w,h,r){return `M${x+r} ${y}H${x+w-r}Q${x+w} ${y} ${x+w} ${y+r}V${y+h-r}Q${x+w} ${y+h} ${x+w-r} ${y+h}H${x+r}Q${x} ${y+h} ${x} ${y+h-r}V${y+r}Q${x} ${y} ${x+r} ${y}Z`;}
 function svgEl(tag, attrs={},text){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);if(text)n.textContent=text;return n;}
+function marker(id){const m=svgEl('marker',{id,viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:5,markerHeight:5,orient:'auto-start-reverse'});m.append(svgEl('path',{d:'M 0 0 L 10 5 L 0 10 z',fill:'context-stroke'}));return m;}
+function chip(text,x,y,w){return [svgEl('path',{d:box(x,y,w,18,9),class:'integration-chip'}),svgEl('text',{x:x+w/2,y:y+13,'text-anchor':'middle',class:'integration-text'},text)];}
 export function renderFlow(host,{view,state,events,selected,onSelect}){
- const arch=true, positions=architecture, edges=architectureEdges, states=nodeStates(state,events);
- const svg=svgEl('svg',{viewBox:`0 0 910 ${arch?830:590}`,role:'group','aria-label':arch?'总体协同架构':'任务执行流程'});
- const defs=svgEl('defs');const marker=svgEl('marker',{id:'arrow',viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:5,markerHeight:5,orient:'auto-start-reverse'});marker.append(svgEl('path',{d:'M 0 0 L 10 5 L 0 10 z',fill:'context-stroke'}));defs.append(marker);svg.append(defs);
- if(!arch){['需求与规划','确认、计算与发布','分支与扩展'].forEach((t,i)=>svg.append(svgEl('text',{x:40+i*290,y:24,class:'lane-label'},t)));}
- const map=Object.fromEntries(positions.map(([id,x,y])=>[id,{x,y}]));
- for(const[from,to,label='',type='task']of edges){
-  const a=map[from],b=map[to];if(!a||!b)continue;
-  let x1=a.x+115,y1=a.y+68,x2=b.x+115,y2=b.y,d;
-  if(type==='state'){d=`M ${a.x+230} ${a.y+34} H 895 V ${b.y+34} H ${b.x+230}`;}
-  else if(arch&&type==='capability'&&from!=='rag'){
-   const rail=from==='requirements'?20:890;
-   const sx=from==='requirements'?a.x:a.x+230;
-   d=`M ${sx} ${a.y+34} H ${rail} V ${b.y-15} H ${b.x+115} V ${b.y}`;
-  }
-  else if(arch&&from==='supplement'){d=`M ${a.x} ${a.y+34} H 8 V ${b.y+34} H ${b.x}`;}
-  else if(type==='return'){d=`M ${a.x+230} ${a.y+34} H 882 V 42 H ${b.x+115} V ${b.y}`;}
-  else if(a.x===b.x){if(a.y>b.y){y1=a.y;y2=b.y+68;}d=`M ${x1} ${y1} L ${x2} ${y2}`;}
-  else if(a.y===b.y){x1=a.x+230;y1=a.y+34;x2=b.x;y2=b.y+34;d=`M ${x1} ${y1} H ${x2}`;}
-  else {d=`M ${x1} ${y1} C ${x1} ${(y1+y2)/2}, ${x2} ${(y1+y2)/2}, ${x2} ${y2}`;}
+ const states=nodeStates(state,events);
+ // Page 1 has no separate follow-up node: the user check loop carries it.
+ const awaitingSupplement=states.supplement==='waiting'&&states.confirmation!=='waiting';
+ if(awaitingSupplement)states.confirmation='waiting';
+ const svg=svgEl('svg',{viewBox:'0 0 840 494',role:'group','aria-label':'总体协同架构'});
+ const defs=svgEl('defs');defs.append(marker('arrow'));svg.append(defs);
+ svg.append(svgEl('path',{d:box(4,56,616,410,16),class:'flow-lane'}),svgEl('text',{x:14,y:72,class:'lane-label'},'LangGraph 编排与状态'));
+ svg.append(svgEl('path',{d:box(628,56,208,410,16),class:'flow-lane'}),svgEl('text',{x:638,y:72,class:'lane-label'},'共享能力'));
+ for(const[from,to,type,d,label,lx,ly,both]of architectureEdges){
   const phase=edgeState(state,events,from,to);
   const active=['running','completed','waiting','failed'].includes(phase);
-  const path=svgEl('path',{d,class:`flow-edge ${type} ${active?'traversed':''} ${phase==='running'?'moving':''} ${phase==='failed'?'failed':''}`,'data-edge':`${from}:${to}`,'marker-end':'url(#arrow)'});svg.append(path);
-  if(label&&type!=='return')svg.append(svgEl('text',{x:(x1+x2)/2,y:(y1+y2)/2-7,class:'edge-label'},label));
+  const attrs={d,class:`flow-edge ${type} ${active?'traversed':''} ${phase==='running'?'moving':''} ${phase==='failed'?'failed':''}`,'data-edge':`${from}:${to}`,'data-relation':RELATION_SEMANTICS,'aria-label':RELATION_DESCRIPTION,'marker-end':'url(#arrow)'};
+  if(both)attrs['marker-start']='url(#arrow)';
+  svg.append(svgEl('path',attrs));
+  if(label)svg.append(svgEl('text',{x:lx,y:ly,class:`edge-label ${type}`},label));
  }
- for(const[id,x,y]of positions){
-  const [label,sub]=nodes[id],status=states[id];
-  const g=svgEl('g',{transform:`translate(${x},${y})`,class:`flow-node ${status} ${selected===id?'selected':''}`,role:'button',tabindex:0,'aria-label':`${label}，${statusText[status]||status}`,'aria-pressed':String(selected===id),'data-node':id});
-  const visibleSub=status==='running'?'运行中 · 等待真实返回':status==='waiting'?'等待补充或核对 · 点击查看':status==='degraded'?'部分调用已降级 · 点击查看':sub;
-  g.append(svgEl('rect',{width:230,height:68,rx:10}),svgEl('circle',{cx:18,cy:22,r:4}),svgEl('text',{x:30,y:27,class:'node-title'},label),svgEl('text',{x:15,y:50,class:'node-sub'},visibleSub));
+ // Visio's knowledge-enhancement step; only lexical formula-card retrieval is wired today.
+ const note=svgEl('g',{class:'flow-note'});
+ note.append(svgEl('text',{x:732,y:212,'text-anchor':'middle',class:'note-title'},'知识增强过程'),...chip('部分接入 · 仅公式卡',662,224,140));
+ svg.append(note);
+ for(const[id,x,y,w,h,kind]of architecture){
+  const status=states[id],label=titles[id]||nodes[id][0];
+  const g=svgEl('g',{transform:`translate(${x},${y})`,class:`flow-node kind-${kind} ${status} ${selected===id?'selected':''}`,role:'button',tabindex:0,'aria-label':`${label}，${statusText[status]||status}`,'aria-pressed':String(selected===id),'data-node':id});
+  g.append(svgEl('path',{d:box(0,0,w,h,id==='input'?h/2:12),class:'shape'}));
+  const sub=status==='running'?'运行中 · 等待返回':status==='waiting'?(awaitingSupplement&&id==='confirmation'?'等待补充 · 见右侧问题':'等待用户处理'):status==='degraded'?'部分调用已降级':nodeText[id]||'';
+  if(id==='input')g.append(svgEl('text',{x:w/2,y:h/2+5,'text-anchor':'middle',class:'node-title'},label));
+  else{
+   const titleY=sub?h/2-3:h/2+5;
+   g.append(svgEl('circle',{cx:18,cy:titleY-5,r:4}),svgEl('text',{x:30,y:titleY,class:'node-title'},label));
+   if(sub)g.append(svgEl('text',{x:30,y:titleY+19,class:'node-sub'},sub));
+  }
+  if(integration[id]){const cw=integration[id].length*11+14;g.append(...chip(integration[id],w-cw-8,8,cw));}
   const activate=()=>onSelect(id);g.addEventListener('click',activate);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();activate();}});svg.append(g);
  }
+ svg.append(svgEl('text',{x:10,y:486,class:'flow-footnote'},'三个专业 Agent 平级；确认后计算。连线按运行活动高亮，不表示直接调用链。'));
  host.replaceChildren(svg);
 }

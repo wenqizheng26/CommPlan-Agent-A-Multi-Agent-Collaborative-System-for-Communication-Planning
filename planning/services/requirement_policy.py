@@ -13,6 +13,13 @@ def validate_target_semantics(model):
 
 def intent_conflict(request, parsed):
     target, condition = request['target'], request['condition']
+    for clause in re.split(r'[，,。；;\n]', request['raw_text']):
+        if re.search(r'(?:不要|不用|不必|无需|不)(?:再|进行)?(?:计算|求出|求|算)(?:.*?)(?:路径损耗|传播损耗|传输损耗)', clause):
+            # An explicitly excluded task cannot be reinstated by a dropdown or
+            # an affirmative clause elsewhere in the same request.
+            return True
+        if re.search(r'(?:不采用|不用|不要用|不使用|不按|非|不是)(?:.*?自由空间)', clause):
+            return True
     return bool((target and parsed['target_origin'] == 'explicit_text' and set(parsed['targets']) != {target})
                 or (condition == 'non_free_space' and 'free_space' in parsed['conditions'])
                 or (condition in {'free_space','free_space_reference'} and 'non_free_space' in parsed['conditions']))

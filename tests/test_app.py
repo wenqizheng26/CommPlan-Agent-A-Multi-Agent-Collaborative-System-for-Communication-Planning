@@ -132,7 +132,9 @@ class AppTests(unittest.TestCase):
                 saved = post('/api/save-result', {'result_id':result['result_id']})
                 stored = json.loads(Path(saved['path']).read_text(encoding='utf-8'))
                 self.assertAlmostEqual(stored['calculations'][0]['value'],91.48485018878651)
-                self.assertTrue(Path(saved['path']).is_relative_to(Path(tmp)))
+                # The server returns a resolved path; Windows runners may give
+                # TemporaryDirectory an alias that is lexically different.
+                self.assertTrue(Path(saved['path']).is_relative_to(Path(tmp).resolve()))
                 with self.assertRaises(urllib.error.HTTPError):
                     post('/api/save-result',{'result_id':result['result_id'],'path':'../../wrong.json','value':999})
                 with self.assertRaises(urllib.error.HTTPError):

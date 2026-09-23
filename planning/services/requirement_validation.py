@@ -1,5 +1,6 @@
 """Deterministic trust-boundary checks against source input and loaded catalog."""
 import copy
+import re
 from formula_rag.parsing import extract_request
 from formula_rag.interpretation import merge_interpretation
 from formula_rag.applicability import scope_issues
@@ -8,6 +9,30 @@ from planning.requirements_contract import require, validate_report
 from planning.services.requirement_parameters import collect_parameters
 from planning.services.requirement_evidence import snapshot_for, evidence_for, plan_for
 from planning.services.requirement_policy import validate_target_semantics, intent_conflict, outside_scope
+
+
+def check_source_labels(parameters, text):
+    """Independent binding guard: never infer the physical quantity from its unit.
+
+    Recollection checks report consistency; this guard separately checks explicit
+    physical labels at every trusted source. It does not claim open-ended semantic
+    understanding or independently verify the original scientific literature.
+    """
+    labels={'frequency_ghz':r'载波频率|工作频率|频率|载频',
+            'distance_km':r'路径距离|通信距离|链路距离|距离|相距',
+            'other':r'带宽|高度|海拔|波长|半径|宽度'}
+    for p in parameters:
+        field=p['canonical_name']
+        if field not in {'frequency_ghz','distance_km'}:continue
+        for origin in p['origins']:
+            if origin['kind']!='user_text' or origin['span'] is None:continue
+            start,end=origin['span']
+            require(0<=start<end<=len(text),'SOURCE_SPAN_INVALID')
+            clause_start=max([0]+[m.end() for m in re.finditer(r'[，,。；;\n]',text[:start])])
+            fragment=text[clause_start:end]
+            occurrences=[(m.start(),kind) for kind,pattern in labels.items() for m in re.finditer(pattern,fragment)]
+            if occurrences:
+                require(max(occurrences)[1]==field,'SOURCE_LABEL_MISMATCH')
 
 
 def check_report(report, request, cards):
@@ -46,6 +71,7 @@ def check_report(report, request, cards):
         require(r['assumptions']==expected['assumptions'], 'ASSUMPTIONS_MISMATCH')
     if r['execution_status'] != 'AWAITING_CONFIRMATION':
         return r
+    check_source_labels(parameters,request['raw_text'])
     require(r['runtime_health'] != 'unavailable', 'UNAVAILABLE_CONFIRMATION')
     require(not intent_conflict(request, parsed), 'INTENT_CONFLICT')
     # Re-ground model evidence; neither report status nor its condition list is trusted.

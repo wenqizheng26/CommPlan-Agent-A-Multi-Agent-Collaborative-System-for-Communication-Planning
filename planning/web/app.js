@@ -1,3 +1,4 @@
+import {taskProgress} from './progress.mjs';
 import {serviceText} from './model-status.mjs';
 import {nodes,statusText,nodeStates,renderFlow,relevantEvents,activityFresh,openRun} from './flow.mjs';
 import {renderDetails,el,labels,tabNames} from './details.mjs';
@@ -5,6 +6,8 @@ import {renderConversation} from './conversation.mjs';
 import {reviewQuestion} from './roles.mjs';
 import {renderQuestions} from './questions.mjs';
 const $=id=>document.getElementById(id);
+const scrollOnSmallScreen=(id,block='start')=>{if(window.matchMedia('(max-width: 899px)').matches)$(id).scrollIntoView({block});};
+const resetCockpitPanes=()=>{if(window.matchMedia('(min-width: 900px)').matches)for(const selector of ['.input-panel','.detail-panel'])document.querySelector(selector).scrollTop=0;};
 let current=null, historical=null, activeContext=null, activity=[], token='', dirty=false, busy=false, pendingCommand=null;
 let modelService=null, checkingModel=false;
 let view='architecture', selected='input', tab='overview', focusParameter=null, pollGeneration=0;
@@ -20,8 +23,13 @@ async function checkModel(){
  }
 }
 function shown(){return historical||activeContext||current;}
-function notice(text,error=false){$('notice').textContent=text;$('notice').hidden=!text;$('notice').classList.toggle('problem',error);}
-async function api(path,body){const r=await fetch(path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json','X-Planning-Token':token}:{},body:body?JSON.stringify(body):undefined});const data=await r.json();if(!r.ok){const err=new Error(data.error.message+' ['+data.error.code+']');err.status=r.status;throw err;}return data;}
+let noticeTimer;
+function notice(text,error=false){
+ clearTimeout(noticeTimer);
+ const message=$('notice');message.textContent=text;message.hidden=!text;message.classList.toggle('problem',error);
+ if(text&&!error)noticeTimer=setTimeout(()=>{if(message.textContent===text)message.hidden=true;},5000);
+}
+async function api(path,body){const r=await fetch(path,{signal:AbortSignal.timeout(path==='/api/commands'?125000:10000),method:body?'POST':'GET',headers:body?{'Content-Type':'application/json','X-Planning-Token':token}:{},body:body?JSON.stringify(body):undefined});const data=await r.json();if(!r.ok){const err=new Error(data.error.message+' ['+data.error.code+']');err.status=r.status;throw err;}return data;}
 function syncButtons(){
  document.querySelectorAll('#request-form input,#request-form textarea,#request-form select,#request-form button').forEach(n=>n.disabled=busy||!!historical);
  for(const id of ['supplement-message','supplement-submit'])$(id).disabled=busy||!!historical||!current||dirty;
@@ -29,17 +37,19 @@ function syncButtons(){
  const can=current?.status==='AWAITING_CONFIRMATION'&&!historical;
  $('confirm').disabled=busy||dirty||!can||!$('accept').checked;
  $('accept').disabled=busy||dirty||!can;
+ $('stop-operation').hidden=!busy;
+ $('stop-operation').disabled=!busy;
  $('cancel').disabled=busy||!!historical||!current||['COMPLETED','CANCELLED'].includes(current.status);
- for(const id of ['new','restore','refresh','history'])$(id).disabled=busy||(id==='history'&&!current)||(id==='refresh'&&!current);
+ for(const id of ['new','restore','refresh','history','recent-tasks','refresh-tasks'])$(id).disabled=busy||(id==='history'&&!current)||(id==='refresh'&&!current);
  $('export').disabled=busy||!shown();
- $('actions').hidden=!current||!!historical||!!activeContext;
- $('dirty-hint').textContent=dirty?'输入已修改。图和详情仍是上次保存的版本；请提交后重新核对确认。':can?'确认只对当前版本有效；修改后需重新确认。':'';
+ $('actions').hidden=!current||!!historical||!!activeContext||['COMPLETED','CANCELLED'].includes(current.status);
+ $('dirty-hint').textContent=dirty?'输入已修改；请先保存，再核对并确认。':can?'修改输入后需要重新确认。':'';
  $('history-banner').hidden=!historical;
- if(historical)$('history-label').textContent=`历史只读 · 输入版本 ${historical.revision} / 状态版本 ${historical.state_version}，当前操作已禁用。`;
+ if(historical)$('history-label').textContent=`正在查看历史记录（输入版本 ${historical.revision}）；返回当前任务后可继续操作。`;
 }
 function readInput(){const p={};for(const[id,name]of [['frequency','frequency_ghz'],['distance','distance_km']])if($(id).value!==''){const value=Number($(id).value);if(!Number.isFinite(value))throw new Error('手工参数必须是有限数值。');p[name]={value,unit:$(id+'-unit').value};}return {raw_text:$('raw-text').value,manual_parameters:p,condition:$('condition').value||null,target:$('target').value||null};}
 function fillInput(s){$('raw-text').value=s.request.raw_text;$('mode').value=s.mode;$('condition').value=s.request.condition||'';$('target').value=s.request.target||'';for(const[id,name]of [['frequency','frequency_ghz'],['distance','distance_km']]){const p=s.request.manual_parameters[name];$(id).value=p?p.value:'';if(p)$(id+'-unit').value=p.unit;}$('manual-details').open=Object.keys(s.request.manual_parameters).length>0||!!s.request.condition||!!s.request.target;}
-function chooseNode(id){if(id==='supplement')$('clarification-panel').scrollIntoView({block:'center'});selected=id;tab=nodes[id]?.[2]||'overview';draw();}
+function chooseNode(id){if(id==='supplement')scrollOnSmallScreen('clarification-panel','center');selected=id;tab=nodes[id]?.[2]||'overview';draw();}
 function chooseTab(id){tab=id;drawDetails();}
 function chooseParameter(name){focusParameter=name;tab='parameters';selected='confirmation';draw();}
 function drawDetails(){
@@ -62,9 +72,13 @@ function draw(){
  const s=shown(),ev=historical?[]:activity;
  renderFlow($('flow-canvas'),{view,state:s,events:ev,selected,onSelect:chooseNode});
 
- $('flow-caption').textContent='参考 Visio 第一页：蓝色为调度，紫色为能力调用，灰色虚线为状态关系。高亮与流动仅来自实际运行事件。';
+ $('flow-caption').textContent='连线按运行活动高亮，不表示直接调用链；正式结果以保存状态为准。';
  $('status').textContent=historical?'历史只读':busy?'正在处理':s?(s.waiting_reason||labels[s.status]||s.status):'等待输入';
- $('task-meta').textContent=s?`任务 ${s.task_id} · 输入版本 ${s.revision} · ${activeContext?'处理中，尚未提交':`状态版本 ${s.state_version}`}`:'输入需求，沿流程核对参数、公式与依据。';
+ const taskDescription=activeContext?'正在处理输入':s?.request?.raw_text?.trim()||'未开始';
+ $('task-meta').textContent=taskDescription;$('task-meta').title=taskDescription;
+ const progress=taskProgress(s,ev,{dirty,historical:!!historical});
+ $('current-action').textContent=progress.action;
+ $('task-progress').replaceChildren(...progress.steps.map(step=>{const row=el('li',undefined,step.status);row.append(el('span',({completed:'✓',running:'●',waiting:'◐',failed:'!',cancelled:'—',idle:'○'})[step.status]||'○','progress-symbol'),el('span',step.label),el('span',({completed:'已完成',running:'处理中',waiting:'待处理',failed:'已阻断',cancelled:'已停止',idle:'未开始'})[step.status]||'未开始','progress-state'));if(['running','waiting'].includes(step.status))row.setAttribute('aria-current','step');return row;}));
  const states=nodeStates(s,ev),running=Object.entries(states).find(([id,status])=>status==='running'&&!['requirements','rag','knowledge','compute_agent','model','llm'].includes(id));
  const latest=relevantEvents(s,ev).at(-1);
  $('live-status').textContent=running?`正在运行：${nodes[running[0]][0]} · 等待后端返回`:
@@ -72,7 +86,7 @@ function draw(){
  drawDetails();drawTimeline();
  const questions=s?.input_issues?.length?[]:[...(s?.report?.questions||[]),reviewQuestion(s)].filter(Boolean);$('supplement-questions').replaceChildren(...questions.map(q=>el('p',q.replaceAll('distance_km','路径距离（km）').replaceAll('frequency_ghz','载波频率（GHz）'),'supplement-question')));
  renderConversation($('conversation-log'),s);
- renderQuestions($('clarification-panel'),s,{disabled:busy||dirty||!!historical,onSubmit:answers=>submit('answer',answers).catch(e=>notice(e.message,true)),onEdit:()=>{$('raw-text').scrollIntoView({block:'center'});$('raw-text').focus();}});syncButtons();
+ renderQuestions($('clarification-panel'),s,{disabled:busy||dirty||!!historical,onSubmit:answers=>submit('answer',answers).catch(e=>notice(e.message,true)),onEdit:()=>{scrollOnSmallScreen('raw-text','center');$('raw-text').focus();}});syncButtons();
 }
 function acceptState(s){$('history-list').replaceChildren();if(current?.task_id!==s.task_id)activity=[];current=s;historical=null;activeContext=null;dirty=false;$('accept').checked=false;fillInput(s);$('task-id').value=s.task_id;localStorage.setItem('planning-task',s.task_id);history.replaceState(null,'','#'+s.task_id);$('submit').textContent='保存修改并重新解析';}
 async function loadActivity(id,generation){try{const data=await api('/api/tasks/'+encodeURIComponent(id)+'/activity');if(generation!==pollGeneration||shown()?.task_id!==id)return;if(!activityFresh(activity,data.events))return;activity=data.events;draw();if(!data.available)$('live-status').textContent='运行观察不可用；任务完成后将显示保存状态。';}catch{if(generation===pollGeneration)$('live-status').textContent='运行观察暂不可用，请等待命令结果或刷新保存状态。';}}
@@ -92,7 +106,7 @@ async function submit(action,answers=null){
  const request=api('/api/commands',c);poll(c.task_id,generation);
  try{const data=await request;pendingCommand=null;acceptState(data.state);if(action==='supplement')$('supplement-message').value='';selected=data.state.status==='COMPLETED'?'publish':data.state.status==='AWAITING_CONFIRMATION'?'confirmation':data.state.status==='AWAITING_INPUT'?'requirements':data.state.status==='NEEDS_MODEL'?'requirements':'failure';tab=nodes[selected][2];notice(data.replayed?'已恢复已有操作回执；显示当前保存状态。':data.state.status==='COMPLETED'?'计算与校验完成，正式结果已保存。':'本版本已保存，请核对当前节点。');}
  catch(e){if(e.status&&e.status<500)pendingCommand=null;activeContext=null;notice(e.message,true);}
- finally{checkModel();busy=false;const finalGeneration=++pollGeneration;await loadActivity(c.task_id,finalGeneration);draw();if(!pendingCommand&&current?.task_id===c.task_id){if(current.input_issues?.length)$('clarification-panel').scrollIntoView({block:'start'});else if(['AWAITING_CONFIRMATION','COMPLETED'].includes(current.status))$('detail-content').scrollIntoView({block:'start'});}}
+ finally{checkModel();recentTasks();busy=false;const finalGeneration=++pollGeneration;await loadActivity(c.task_id,finalGeneration);draw();resetCockpitPanes();if(!pendingCommand&&current?.task_id===c.task_id){if(current.input_issues?.length)scrollOnSmallScreen('clarification-panel');else if(['AWAITING_CONFIRMATION','COMPLETED'].includes(current.status))scrollOnSmallScreen('detail-content');}}
 }
 async function restore(id){
  if(busy||!id)return;
@@ -107,9 +121,11 @@ async function restore(id){
   let running=openRun(activity);
   if(!saved&&!running)throw new Error('未找到已保存任务；该次操作可能未提交。');
   if(running){
+   const restoreDeadline=Date.now()+125000;
    if(!saved||running.revision!==saved.revision)activeContext={task_id:id,revision:running.revision,state_version:0,status:'RUNNING',request:{raw_text:'正在恢复运行观察，原文以提交后的记录为准。',manual_parameters:{}},report:null,trace:[]};
    notice('检测到仍在执行的操作，正在恢复实时观察。');draw();
    while(running&&generation===pollGeneration){
+    if(Date.now()>restoreDeadline)throw new Error('运行观察超过两分钟，请刷新保存状态；该提示不表示后端已停止。');
     await new Promise(resolve=>setTimeout(resolve,500));
     const fresh=await api('/api/tasks/'+encodeURIComponent(id)+'/activity');
     if(generation!==pollGeneration)return;
@@ -122,18 +138,44 @@ async function restore(id){
   selected=current.status==='COMPLETED'?'publish':current.status==='AWAITING_INPUT'?'requirements':current.status==='NEEDS_MODEL'?'requirements':'confirmation';tab=nodes[selected][2];notice('已恢复任务的保存状态。');
  }catch(e){activeContext=null;notice(e.message,true);}finally{busy=false;draw();}
 }
+async function recentTasks(){
+ try{const data=await api('/api/tasks');const select=$('recent-tasks');select.replaceChildren();const blank=el('option','选择最近任务（最多 50 项）');blank.value='';select.append(blank);for(const task of data.tasks){const option=el('option',`${labels[task.status]||task.status} · ${task.description||'未填写描述'} · ${task.task_id.slice(0,8)}`);option.value=task.task_id;select.append(option);}}catch(e){notice('任务列表加载失败：'+e.message,true);}
+}
+$('recent-tasks').addEventListener('change',()=>restore($('recent-tasks').value));
+$('refresh-tasks').addEventListener('click',recentTasks);
+$('stop-operation').addEventListener('click',async()=>{
+ const run=pendingCommand||openRun(activity);
+ if(!run){notice('尚未取得本次操作编号，请稍后重试。');return;}
+ $('stop-operation').disabled=true;
+ try{const response=await api('/api/cancel-operation',{task_id:run.task_id,event_id:run.event_id});notice(response.message);}catch(e){notice(e.message,true);}finally{$('stop-operation').disabled=!busy;}
+});
 $('check-model').addEventListener('click',checkModel);
 $('request-form').addEventListener('submit',e=>{e.preventDefault();submit(current?'edit':'create').catch(e=>notice(e.message,true));});
-$('request-form').addEventListener('input',()=>{dirty=!!current;$('accept').checked=false;syncButtons();});
+$('request-form').addEventListener('input',()=>{dirty=!!current;$('accept').checked=false;draw();});
 $('accept').addEventListener('change',syncButtons);$('confirm').addEventListener('click',()=>submit('confirm').catch(e=>notice(e.message,true)));$('cancel').addEventListener('click',()=>submit('cancel').catch(e=>notice(e.message,true)));
 $('refresh').addEventListener('click',()=>restore(current?.task_id));$('restore').addEventListener('click',()=>restore($('task-id').value.trim()));
-$('example').addEventListener('click',()=>{$('raw-text').value='按自由空间基准计算，频率2GHz，距离1km，求路径损耗。';$('raw-text').dispatchEvent(new Event('input',{bubbles:true}));});
-$('vague-example').addEventListener('click',()=>{$('raw-text').value='我想让两艘船之间通信稳定一些，帮我规划一下。';$('raw-text').dispatchEvent(new Event('input',{bubbles:true}));});
-$('range-example').addEventListener('click',()=>{$('raw-text').value='按自由空间基准计算，频率2±0.1GHz，距离1km，求路径损耗。';$('raw-text').dispatchEvent(new Event('input',{bubbles:true}));});
-$('missing-example').addEventListener('click',()=>{$('raw-text').value='按自由空间基准计算，频率2GHz，求路径损耗。';$('raw-text').dispatchEvent(new Event('input',{bubbles:true}));});
+function populateExample(text,conflict=false){
+ $('raw-text').value=text;
+ for(const id of ['frequency','distance','condition','target'])$(id).value='';
+ $('frequency-unit').value='GHz';$('distance-unit').value='km';
+ if(conflict)$('frequency').value='3';
+ $('manual-details').open=conflict;
+ $('raw-text').dispatchEvent(new Event('input',{bubbles:true}));
+ notice(conflict?'已填入示例：原文频率 2 GHz 与手工频率 3 GHz 冲突。点击开始筹划后核对修正。':'示例已填入；核对后点击开始筹划。');
+}
+$('example').addEventListener('click',()=>populateExample('按自由空间基准计算，频率2GHz，距离1km，求路径损耗。'));
+$('vague-example').addEventListener('click',()=>populateExample('我想让两艘船之间通信稳定一些，帮我规划一下。'));
+$('range-example').addEventListener('click',()=>populateExample('按自由空间基准计算，频率2±0.1GHz，距离1km，求路径损耗。'));
+$('missing-example').addEventListener('click',()=>populateExample('按自由空间基准计算，频率2GHz，求路径损耗。'));
+$('choices-example').addEventListener('click',()=>populateExample('按自由空间基准计算，频率2GHz或3GHz，距离1km，求路径损耗。'));
+$('conflict-example').addEventListener('click',()=>populateExample('按自由空间基准计算，频率2GHz，距离1km，求路径损耗。',true));
 $('new').addEventListener('click',()=>{current=historical=activeContext=null;activity=[];dirty=false;pendingCommand=null;pollGeneration++;selected='input';tab='overview';focusParameter=null;localStorage.removeItem('planning-task');history.replaceState(null,'',location.pathname);$('request-form').reset();$('supplement-form').reset();$('task-id').value='';$('submit').textContent='开始筹划';$('history-list').replaceChildren();notice('新任务已准备好；原任务仍保存在本地。');draw();});
 $('supplement-form').addEventListener('submit',e=>{e.preventDefault();submit('supplement').catch(e=>notice(e.message,true));});
-$('expand-detail').addEventListener('click',()=>{const expanded=$('workspace').classList.toggle('detail-wide');$('expand-detail').textContent=expanded?'返回流程画布':'展开详情';});
+$('expand-detail').addEventListener('click',()=>{const expanded=$('workspace').classList.toggle('detail-wide');$('expand-detail').textContent=expanded?'恢复布局':'展开详情';});
+const canvasPanel=document.querySelector('.canvas-panel');
+function setFlowExpanded(expanded){canvasPanel.classList.toggle('flow-expanded',expanded);$('expand-flow').textContent=expanded?'恢复工作台':'放大流程图';$('expand-flow').setAttribute('aria-expanded',String(expanded));}
+$('expand-flow').addEventListener('click',()=>setFlowExpanded(!canvasPanel.classList.contains('flow-expanded')));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&canvasPanel.classList.contains('flow-expanded')){setFlowExpanded(false);$('expand-flow').focus();}});
 $('return-current').addEventListener('click',()=>{historical=null;if(current)fillInput(current);draw();});
 $('history').addEventListener('click',async()=>{
  if(!current||busy)return;
@@ -143,7 +185,7 @@ $('history').addEventListener('click',async()=>{
   if(generation!==pollGeneration||current?.task_id!==taskId)return;
   $('history-list').replaceChildren();
   for(const item of data.history){
-   const row=el('div',undefined,'history-entry');row.append(el('span',`输入版本 ${item.revision} / 状态版本 ${item.state_version} · ${labels[item.state.status]||item.state.status}`));const b=el('button','只读查看','secondary');
+   const row=el('div',undefined,'history-entry');row.append(el('span',`输入版本 ${item.revision} · 保存序号 ${item.state_version} · ${labels[item.state.status]||item.state.status}`));const b=el('button','只读查看','secondary');
    b.addEventListener('click',()=>{if(busy||generation!==pollGeneration||current?.task_id!==taskId)return;historical=item.state;fillInput(historical);$('accept').checked=false;selected=historical.status==='COMPLETED'?'publish':'confirmation';tab=nodes[selected][2];draw();});row.append(b);$('history-list').append(row);
   }
  }catch(e){if(generation===pollGeneration)notice(e.message,true);}
@@ -151,4 +193,4 @@ $('history').addEventListener('click',async()=>{
 $('export').addEventListener('click',()=>{const s=shown();if(!s||busy)return;const blob=new Blob([JSON.stringify(s,null,2)],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob);const a=el('a');a.href=url;a.download=`planning-${s.task_id}-r${s.revision}-v${s.state_version}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
 draw();
 checkModel();
-(async()=>{try{token=(await api('/api/session')).token;const id=location.hash.slice(1)||localStorage.getItem('planning-task');if(id)await restore(id);}catch(e){notice('无法连接本地服务：'+e.message,true);}})();
+(async()=>{try{token=(await api('/api/session')).token;await recentTasks();const id=location.hash.slice(1)||localStorage.getItem('planning-task');if(id)await restore(id);}catch(e){notice('无法连接本地服务：'+e.message,true);}})();

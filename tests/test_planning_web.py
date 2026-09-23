@@ -76,6 +76,7 @@ class PlanningWebTests(unittest.TestCase):
         self.assertIn('通信筹划',html)
         self.assertEqual(self.call('/app.js')[0],200)
         self.assertEqual(self.call('/text.mjs')[0],200)
+        self.assertEqual(self.call('/progress.mjs')[0],200)
 
     def test_activity_endpoint_does_not_require_committed_task(self):
         self.assertEqual(self.call('/api/tasks/future-task/activity')[1]['events'],[])
@@ -93,6 +94,17 @@ class PlanningWebTests(unittest.TestCase):
             self.assertEqual(self.call('/api/model-status',headers={'Origin':'https://evil.example'})[0],403)
             probe.assert_called_once()
         self.assertEqual(self.call('/model-status.mjs')[0],200)
+
+    def test_task_list_build_identity_and_cancel_endpoint(self):
+        from planning.build_info import build_fingerprint
+        self.assertEqual(self.call('/api/session')[1]['build'],build_fingerprint(ROOT))
+        saved=self.call('/api/commands',command())[1]['state']
+        rows=self.call('/api/tasks')[1]['tasks']
+        self.assertEqual(rows[0]['task_id'],saved['task_id'])
+        self.assertNotIn('report',rows[0])
+        body=dict(task_id=saved['task_id'],event_id='already-finished')
+        self.assertFalse(self.call('/api/cancel-operation',body)[1]['accepted'])
+        self.assertEqual(self.call('/api/cancel-operation',body,headers={'X-Planning-Token':'bad'})[0],403)
 
 
 if __name__=='__main__':

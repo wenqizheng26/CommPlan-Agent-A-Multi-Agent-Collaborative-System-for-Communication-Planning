@@ -1,52 +1,22 @@
-# 当前状态与下一步
+# Demo delivery 当前入口（2026-09-23）
 
-## 2026-09-22 用户选择作为独立模型上下文
+唯一实施规格：[V4](DEMO_HANDOFF_V4.md)。当前仅交付 FSPL-stage Planning Workbench；后端主体、确定性数值与确认/恢复合同维持冻结。权威验收状态见 [VALIDATION](../demo/VALIDATION.md)。
 
-用户在页面或澄清问题中选择的目标、模型条件，现在通过独立字段传给本机需求模型，不拼接进原文。已选择字段的模型提议数组由 JSON Schema 限制为空，程序继续采用用户选择，并记录 `USER_TARGET_SELECTION` / `USER_CONDITION_SELECTION` 及对应 request 字段来源。未选择字段仍要求逐字原文证据；原文与选择冲突仍由程序拦截。
+## 已完成：C3 历史归档
 
-模型输出拒绝记录新增校验阶段、具体原因、拒绝项和最多 4000 字符的原始模型输出（仅在调用已返回原始输出时可用）。历史记录缺失的信息不补造。完整 Python 回归 207 项通过；真实 Qwen 使用截图任务原文与已选目标，一次调用通过；全部使用手工选择/参数且原文为空的对照也一次通过。证据见 [user-selection-live-20260922.json](evidence/user-selection-live-20260922.json)。正式网页服务已更新，原任务未被重算或修改；旧的无单位距离表达残留仍待修复。
+- 历史受跟踪文件先复制并逐文件验哈希，再从仓库移除；旧解压目录和闲置验收数据库移到仓库外 `_archive/2026-09-23-commplan/`。保留 4 份当前文档引用的证据、运行中的数据库和 `outputs/releases/`。
+- 仓库外 `MANIFEST.md` 记录 139 个条目的原路径、大小与来源提交；保留 Markdown 的相对链接检查为 0 个失效链接。原本就不存在的 2 个历史报告链接已标明失效。
+- 单独提交 `03c985f8757651ef3f6fb3ca54d947ead18c9585`；归档后 Python 233 OK（1 symlink 权限 skip）、Node 27 PASS，工作树干净。旧版 Formula RAG、CI legacy-full、父目录 `.workareas` 与 `signal-formula-rag` 不属本次归档范围。
 
-## 2026-09-22 模型服务与调用状态分离
+## C2：视觉改版后的 Stage 4 候选
 
-新增只读 `/api/model-status`，检查固定本机端口的健康状态及目标模型标识；页面展示检查时间并支持手动刷新。该状态不写入任务或历史快照。共享 LLM 的降级调用用“调用已降级”展示，详情分列需求、计算建议、审查结果；重复诊断聚合展示次数并保留原始记录。连接失败只表示无法连接，不推断进程未启动。
+- 基于干净提交 `03c985f` 运行 Python 233 OK（1 skip）、Node 27 PASS、`pip check` PASS。`--require-clean` source ZIP 的 SHA-256 为 `64CA21C1DAE6FF21B51CF7A05333D878CBC76AEFD7D1F97DC6D89CF3AE66942C`；验证器解压、指纹和 HTTP 创建/确认/重启恢复 smoke PASS。另在新目录解压该 ZIP，以已验证的 Python 3.12 设置 `COMMPLAN_PYTHON` 后执行 `setup_planning.cmd`、`pip check` 和解压目录自带 venv 的 HTTP smoke，均 PASS。
+- 独立数据库上的在线 Qwen 与真实离线降级均完成完整 FSPL 示例，确定性原值均为 98.42059991327963 dB。模型从项目内资源重启，`/health` 与 `/v1/models` 正常。内置浏览器所见流程高亮与结果一致；离线 LLM 明示“调用已降级”。
+- 1430×804 CSS 视口（对应当前 2560×1440 Windows 显示）浅色三栏同屏，无整页或流程内滚动，控制台无 warning/error。系统深色实测尚未完成；内置浏览器不能代替目标 Chrome 验收。
+- `commplan/codex/demo-delivery-final` 已推送到 `ce685d4`；[CI run 35830153906](https://github.com/wenqizheng26/CommPlan-Agent-A-Multi-Agent-Collaborative-System-for-Communication-Planning/actions/runs/35830153906) 的 `planning-minimal` 与 `legacy-full` 均 PASS。系统深色实测仍待完成，C2 未据此宣称全部 PASS。
 
-验证：9 项后端测试、12 项前端测试通过；JS 语法与 diff 检查通过。正式工作台已重启，复用原 Qwen 进程。内置浏览器在既有任务中同时确认“服务已就绪”、需求解析三次校验失败后降级、后续计算与审查调用成功，控制台无 warning/error。此轮未改变参数替换逻辑，也未补录旧模型调用中缺失的详细错误原因；旧的无单位距离表达残留仍待修复。
+## Stage 4 外部门禁与 Stage 5
 
-## 当前入口：2026-09-21 需求澄清与区间计算
-
-用户确认“需求确认与补充”的名称、集中多问题/部分回答、明确区间输出范围与离散候选分别计算。实现与验证见 [CLARIFICATION_HANDOFF_20260921.md](CLARIFICATION_HANDOFF_20260921.md)。底层沿用 AWAITING_INPUT，新增结构化问题、等待原因与 answer 命令；问题与回答继续随任务事务和版本保存。
-
-当前支持频率/距离的区间与离散候选，不代表自主多模型规划或任意语义需求访谈。下方旧交接为历史状态，本节优先。
-
-
-## 当前入口：2026-09-21 计算与审查角色增量
-
-用户已授权按“补参阶段收尾 → 计算 Agent → 审查 Agent → 主控”推进。本轮完成受控初版，先读 [最新交接](ROLE_EXTENSION_HANDOFF_20260921.md) 与 [范围和实施合同](ROLE_EXTENSION_20260921.md)。189 项 Python、8 项 Node、pip check 通过；真实 Qwen 三个专业角色调用与真实离线降级均有证据。主控为 bounded_policy，支持审查退回、一次重算、暂时故障重试与预算终止，不是自主 LLM 总控。
-
-补参和新增角色的内置浏览器验收已进行。Chrome 工具不可用，独立审查因子代理额度限制未执行，这两项仍待补；不要把本地自审或系统的审查 Agent 当作独立代码审查。海面/散射、多模型计划、候选优化与单/多 Agent 对照实验未完成。现有未提交修改均保留，本轮没有 Git 提交、推送或合并。
-
-下一步先补独立代码审查与目标 Chrome 验收，再围绕已确认场景定义下一种专业模型的合同与独立数值基准，并开展角色增量的对照评估；不直接扩大传播模型范围。以下均为历史交接，不覆盖本节。
-
-技能最新调整：用户批准 B，项目三项技能已合并为 `langgraph-workflow`；三个全局旧技能入口归档。外层和本仓库 AGENTS.md 均保留并精简，恢复位置见 [当前技能安排](SKILL_SELECTION_20260921.md)。本地模型 Agent 的 skills 留待下一轮；以下业务进度不变。
-
-## 最新核对：2026-09-21
-
-先读 [当前进度核对](STATUS_REVIEW_20260921.md) 与 [项目技能安排](SKILL_SELECTION_20260921.md)。持续补参与总体架构单视图已经有实现，取代下方历史双视图描述；本轮 177 项 Python、7 项 Node 和 pip check 通过。最新浏览器、真实模型与独立审查证据尚待补齐，下一步优先收尾该阶段，再整理首月研究验收材料。没有修改业务源码或发布 Git。
-
-以下是先前阶段的历史交接，不能代替最新源码的完整验收。
-
-## 最新：Visio 流程工作台已验收
-
-用户确认的八模块及双视图已实现。当前权威交接为 FLOW_WORKBENCH_HANDOFF.md；证据为 evidence/flow_workbench_validation.json。169 项 Python 与 7 项 Node 测试通过，浏览器完成参数/公式/来源/确认/历史/JSON链路验收。真实观察不替代主任务提交，未接入角色明确标注。当前本地网页服务保留供试用。
-
-以下为前一确认计算阶段记录。
-
-2026-09-18：用户继续授权的“共享状态 → 参数确认 → 受控计算 → 校验 → 页面”已完成本地自由空间单链路切片。profile 为 `confirmed-fspl-loop-v1`，不是完整 CONTRACTS/35 项工程完成声明。
-
-入口：`planning/run_planning.cmd` → <http://127.0.0.1:18082>。默认无需模型。权威交接：`CONFIRMED_LOOP_HANDOFF.md`；技能选择：`SKILL_SELECTION_20260918.md`；验收：`evidence/planning_loop_validation.json`。首个 Agent 的 CLI 和其历史交接仍保留。
-
-全量 Python 164 项通过；随后来源 emoji 修复的前端 1 项和 HTTP 4 项通过，浏览器实际确认得到 98.420600 dB。真实 Qwen 和模型离线降级均完成确认计算闭环。SQLite 原子提交、重启恢复、进程中断回滚、幂等和过期请求均有测试。
-
-下一工程阶段可从新的传播模型及其适用性、输入/输出契约和独立数值基准开始，再接入更多业务 Agent；当前不得把自由空间结果当作实际海面损耗或链路可用性。完整 GraphState 合同、分布式执行、多用户权限和全部 35 项验收仍未完成。
-
-当前工作台可试用；验证时启动的模型进程已停止。没有提交、推送或合并 Git；已有发布任务和用户修改保持独立。既往 STOPPED_BY_USER 已在用户明确继续的本轮切片内被覆盖，不构成自动展开全部工程的授权。
+- 目标 Chrome 七项流程按 V4 §29，由用户在最新候选 `http://127.0.0.1:18088` 手动验收；不能以 Node 或内置浏览器替代。
+- 实施团队外的独立 Reviewer 审查 `9ee7939..HEAD`，重点见 VALIDATION；本代理自审、测试和运行时 Review Agent 不计入。
+- 上述门禁通过并更新统一验收记录后，才进入 Stage 5：PR、合并 `main`、从已接受的 `main` 重建/验收 ZIP、打 tag。此时之前不执行 C4 旧应用与旧工作区清理，不声明 `CommPlan-Agent Demo Release Ready`。

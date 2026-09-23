@@ -15,6 +15,9 @@ def collect_parameters(request, parsed, required):
     domains, domain_issues = extract_domains(request['raw_text'])
     diagnostics.extend(domain_issues)
     masked = list(request['raw_text'])
+    for issue in domain_issues:
+        start, end = issue['details']['span']
+        masked[start:end] = ' ' * (end-start)
     for domain in domains:
         start, end = domain['span']
         masked[start:end] = ' ' * (end-start)
@@ -23,11 +26,11 @@ def collect_parameters(request, parsed, required):
             span=domain['span'], value=domain['value'], unit=domain['unit']))
         prefix=re.split(r'[，,。；;\n]',request['raw_text'][:start])[-1]
         suffix=request['raw_text'][end:end+2]
-        if re.search(r'不要|不是|并非|不采用|如果|假如|可能|也可以|大约|近似|差不多',prefix) or suffix in {'左右','上下'}:
-            diagnostics.append(diagnostic('SOURCE_AMBIGUOUS','区间或候选尚未明确采用，请重新说明。',field=field,excerpt=domain['excerpt']))
+        if re.search(r'不要|不是|并非|不采用|如果|假如|可能|也可以|大约|大概|约|近似|差不多',prefix) or suffix in {'左右','上下'}:
+            diagnostics.append(diagnostic('SOURCE_AMBIGUOUS','区间或候选尚未明确采用，请重新说明。',field=field,excerpt=domain['excerpt'],span=domain['span']))
         diagnostics.append(diagnostic('EXPLICIT_NUMERIC_DOMAIN', '保留明确区间或离散候选；确认后逐端点或逐候选计算。',
             field=field, excerpt=domain['excerpt']))
-    parsed = extract_request(''.join(masked)) if domains else parsed
+    parsed = extract_request(''.join(masked)) if domains or domain_issues else parsed
     for match in APPROX.finditer(''.join(masked)):
         diagnostics.append(diagnostic('PARAMETER_APPROXIMATE', '近似表达没有明确误差范围，请指定区间或明确采用单值。',
             field=field_for(match.group()), excerpt=match.group(), span=list(match.span())))
@@ -72,6 +75,26 @@ def collect_parameters(request, parsed, required):
             observations.setdefault(field, []).append(dict(kind='user_text', source_ref=request['request_id'] + ':raw_text',
                 span=span, value=original, unit=unit))
             diagnostics.append(diagnostic('SOURCE_EXCERPT', '用户原文来源', field=field, excerpt=excerpt, span=span))
+    # Every explicitly labelled numeric fragment must be accounted for. A second
+    # unitless/negative expression cannot silently disappear behind a valid value.
+    labels = r'载波频率|工作频率|频率|载频|路径距离|通信距离|链路距离|距离|相距'
+    for match in re.finditer(rf'(?:{labels})(?:(?!(?:{labels})|[，,。；;\n]).)*', request['raw_text']):
+        fragment = match.group()
+        if not re.search(r'\d', fragment):
+            continue
+        field = 'frequency_ghz' if re.match(r'载波频率|工作频率|频率|载频', fragment) else 'distance_km'
+        local = [o for o in observations.get(field, []) if o['span'] and
+                 match.start() <= o['span'][0] < match.end()]
+        residue = list(fragment)
+        for origin in local:
+            a, b = origin['span']
+            residue[max(0,a-match.start()):min(len(fragment),b-match.start())] = ' ' * (min(match.end(),b)-max(match.start(),a))
+        # A later labelled parameter in the same clause is handled independently.
+        remainder = re.split(r'(?:载波频率|工作频率|频率|载频|路径距离|通信距离|链路距离|距离|相距)', ''.join(residue), maxsplit=2)
+        unexplained = remainder[1] if len(remainder)>1 else ''.join(residue)
+        if re.search(r'\d', unexplained):
+            diagnostics.append(diagnostic('INPUT_PARSE_ISSUE', '该参数包含尚未明确采用或缺少单位的数值，请重新填写完整表达。',
+                                          field=field, excerpt=fragment, span=list(match.span())))
     for field, item in request['manual_parameters'].items():
         observations.setdefault(field, []).append(dict(kind='manual_form', source_ref=request['request_id'] + ':manual_parameters/' + field,
             span=None, value=item['value'], unit=item['unit']))
