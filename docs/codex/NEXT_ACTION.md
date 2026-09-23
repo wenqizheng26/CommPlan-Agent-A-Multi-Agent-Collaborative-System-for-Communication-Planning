@@ -1,5 +1,21 @@
 # Demo delivery 当前入口（2026-09-23）
 
+## Codex 任务 C2：流程图改版后的 Stage 4 重新验证
+
+> **目标**：2a83419 改了发布包内的前端源码，按 V4 “任何修复重启受影响验证”，在新 HEAD 上重跑本地门禁、重建正式源码包、推送并取得 CI 结果。
+> **范围**：只运行命令和更新 `docs/codex/NEXT_ACTION.md`、`docs/codex/DEMO_STAGE3.md`（或 Stage 4 记录）、`docs/demo/VALIDATION.md`；`outputs/releases/` 被忽略。
+> **禁止**：改 `planning/`、`tests/` 或其他源码；PR、合并、打 tag；把本地或内置浏览器结果写成目标 Chrome 通过或独立审查通过；`reset`/`clean`/`stash`。
+> **起点**：分支 `codex/demo-delivery-final`，HEAD 为 2a83419 或其后仅含文档的提交，`git status` 干净。
+> **步骤与验证命令**（Windows，仓库根目录）：
+> 1. `.venv\Scripts\python.exe -B -X utf8 -m unittest discover -s tests -p "test_*.py"`、`node --test tests/planning_*.test.mjs`、`.venv\Scripts\python.exe -m pip check`，记录实际计数（改版后 Node 应为 27）。
+> 2. `.venv\Scripts\python.exe -B -X utf8 scripts\build_planning_release.py --require-clean`，再 `.venv\Scripts\python.exe -B -X utf8 scripts\validate_planning_release.py <ZIP>`（不加 `--no-smoke`）。
+> 3. 模型在线与离线降级各跑一次完整示例，确认流程图高亮与结果一致。
+> 4. 文档提交后 `git push commplan codex/demo-delivery-final`，记录 CI run 号与两个 job 结果。
+> 5. VALIDATION 中 Stage 4 各行改为新 SHA、ZIP SHA-256 与 CI run；删除本节 C2，把结果写进下方状态段。
+> **完成标准**：三项回归通过；`--require-clean` ZIP 验证通过；CI 两个 job 通过；文档与 HEAD 一致。任一失败即停止并记录原始输出，不改源码。
+
+讲解：流程图按用户指定的 `项目流程图_2026-09-16/双页版/通信筹划多智能体协同流程_双页节点完整版.vsdx` 第 1 页重排。用户逐项批准的偏离有四处：补问并入“参数核对与确认”；确认→计算保留门控虚线；总控↔LLM 照画但标“未接入”；计算 Agent→LLM 画细虚线“工具建议 · 可选”（数值仍只来自登记 FSPL，Qwen 输出被 schema 限定为唯一许可调用）。第 2 页不做成视图，V4 §13 仍然有效。静态副标题按用户要求删除，只保留运行状态和“解释未接入”“词项检索”两处接入程度标注。运行高亮仍只来自 activity，`nodeStates`/`edgeState` 未改。目标 Chrome 七项流程须在 C2 完成后的新候选上由用户进行。
+
 ## 当前关口：Stage 4 外部验收
 
 主工程已从 `.workareas` 迁至父目录的 `CommPlan-Agent/` 独立 Git 仓库；旧 worktree 与外部模型源保留作回滚。当前在 `codex/demo-delivery-final`，发布目标只使用 `commplan` remote。Stage 3 已推送。三栏 UI 源码为 `b62aaef`；Stage 4 修正 Windows CI 路径断言的测试提交为 `5c43630`，没有改变发布包内的业务源码。该提交的干净 source ZIP 已通过解压 smoke；哈希和边界见 [VALIDATION](../demo/VALIDATION.md)。
