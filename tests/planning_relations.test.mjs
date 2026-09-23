@@ -44,22 +44,43 @@ test('rendered relation carries truthful accessible semantics',()=>{
  }
 });
 
-test('visible task spine passes through user confirmation before calculation',()=>{
+function renderNodes(renderState,events=[]){
  const previous=globalThis.document;
  const created=[];
  globalThis.document={createElementNS:(_ns,tag)=>{
-  const node={tag,attrs:{},children:[],setAttribute(k,v){this.attrs[k]=v;},append(...nodes){this.children.push(...nodes);},addEventListener(){}};
+  const node={tag,attrs:{},children:[],textContent:'',setAttribute(k,v){this.attrs[k]=v;},append(...nodes){this.children.push(...nodes);},addEventListener(){}};
   created.push(node);return node;
  }};
- try{
-  renderFlow({replaceChildren(){}},{state,events:[],selected:null,onSelect(){}});
-  const edges=new Set(created.filter(n=>n.attrs['data-edge']).map(n=>n.attrs['data-edge']));
-  for(const edge of ['requirements:confirmation','confirmation:compute_agent','compute_agent:validator_agent','validator_agent:publish'])assert.ok(edges.has(edge),edge);
-  assert.equal(edges.has('supplement:confirmation'),false);
-  assert.ok(edges.has('supplement:requirements'));
-  assert.equal(created.find(n=>n.tag==='svg').attrs.viewBox,'0 0 650 470');
- }finally{
+ try{renderFlow({replaceChildren(){}},{state:renderState,events,selected:null,onSelect(){}});}
+ finally{
   if(previous===undefined)delete globalThis.document;
   else globalThis.document=previous;
  }
+ return created;
+}
+
+test('Visio page 1: peer agents dispatched by the orchestrator, confirmation gates calculation',()=>{
+ const created=renderNodes(state);
+ const edges=new Map(created.filter(n=>n.attrs['data-edge']).map(n=>[n.attrs['data-edge'],n.attrs.class]));
+ for(const agent of ['requirements','compute_agent','validator_agent'])assert.match(edges.get('orchestrator:'+agent),/task/);
+ for(const edge of ['requirements:confirmation','validator_agent:publish'])assert.match(edges.get(edge),/task/);
+ assert.match(edges.get('confirmation:compute_agent'),/gate/);
+ assert.match(edges.get('compute_agent:model'),/capability/);
+ // Peers are not chained, and no separate follow-up node exists on page 1.
+ assert.equal(edges.has('compute_agent:validator_agent'),false);
+ assert.equal(created.some(n=>n.attrs['data-node']==='supplement'),false);
+ assert.equal(created.find(n=>n.tag==='svg').attrs.viewBox,'0 0 840 494');
+});
+
+test('unwired and optional capabilities are drawn as such',()=>{
+ const edges=new Map(renderNodes(state).filter(n=>n.attrs['data-edge']).map(n=>[n.attrs['data-edge'],n.attrs.class]));
+ assert.match(edges.get('orchestrator:llm'),/unavailable/);
+ assert.match(edges.get('compute_agent:llm'),/optional/);
+});
+
+test('awaiting supplement is shown on the confirmation node',()=>{
+ const created=renderNodes({...state,status:'AWAITING_INPUT'});
+ const node=created.find(n=>n.attrs['data-node']==='confirmation');
+ assert.match(node.attrs.class,/waiting/);
+ assert.ok(node.children.some(c=>c.textContent==='等待补充 · 见右侧问题'));
 });

@@ -307,3 +307,58 @@ header{gap:18px}
   header .task-tools{margin-left:auto}
   .progress-panel #notice:not([hidden]),.progress-panel #history-banner:not([hidden]){position:static;max-width:none;margin:6px 0;padding:8px 10px;box-shadow:none}
 }
+
+/* Visio page 1: node colour by kind, line colour by relation, stroke by runtime status. */
+.flow-lane{fill:#0f1c26;fill-opacity:.55;stroke:#2b4252;stroke-width:1}
+.lane-label{fill:#8fa9b5;font-size:12.5px}
+.flow-edge{fill:none;opacity:1}
+.flow-edge.task{stroke:#6fb0e0;stroke-width:1.8;stroke-dasharray:none;opacity:.95}
+.flow-edge.gate{stroke:#6fb0e0;stroke-width:1.4;stroke-dasharray:2 3;opacity:.9}
+.flow-edge.capability{stroke:#a58be0;stroke-width:1.6;stroke-dasharray:none;opacity:.85}
+.flow-edge.optional{stroke:#a58be0;stroke-width:1.2;stroke-dasharray:5 4;opacity:.75}
+.flow-edge.state{stroke:#7d8f99;stroke-width:1.4;stroke-dasharray:5 4;opacity:.9}
+.flow-edge.unavailable{stroke:#5d6f7a;stroke-width:1.2;stroke-dasharray:3 4;opacity:.8}
+.flow-edge.traversed{stroke-width:2.6;opacity:1}
+.flow-edge.task.traversed,.flow-edge.gate.traversed{stroke:#a5dcfb}
+.flow-edge.capability.traversed,.flow-edge.optional.traversed{stroke:#cdb8fb}
+.flow-edge.state.traversed{stroke:#b9c9d1}
+.flow-edge.moving{stroke-dasharray:7 5}
+.flow-edge.failed{stroke:#eb9285}
+.edge-label{font-size:12px;paint-order:stroke;stroke:#111f2b;stroke-width:4px;stroke-linejoin:round}
+.edge-label.task,.edge-label.gate{fill:#9cc9ea}
+.edge-label.capability,.edge-label.optional{fill:#c3b0ef}
+.edge-label.unavailable{fill:#8a9ca6}
+.flow-note .note-title{fill:#c9b3f2;font-size:14px;font-weight:650}
+.flow-note .note-line{fill:#b7c8d0;font-size:12px}
+.integration-chip{fill:#3a3322;stroke:#8d7344;stroke-width:.8}
+.integration-text{fill:#f0cf8a;font-size:11px;font-weight:600}
+.flow-footnote{fill:#9fb4be;font-size:12.5px}
+.flow-node{cursor:pointer}
+.flow-node .shape{stroke-width:1.6}
+.flow-node .shape-detail{fill:none;stroke-width:1.2}
+.flow-node.kind-input .shape{fill:#1b3a35;stroke:#81dcca}
+.flow-node.kind-agent .shape{fill:#1a3040;stroke:#6aa6c8}
+.flow-node.kind-confirm .shape{fill:#1b3328;stroke:#79c79a}
+.flow-node.kind-model .shape{fill:#352a19;stroke:#e0a85a}.flow-node.kind-model .shape-detail{stroke:#e0a85a}
+.flow-node.kind-report .shape{fill:#1a2f3f;stroke:#6aa6c8}
+.flow-node.kind-state .shape{fill:#1d2a34;stroke:#7d8f99}.flow-node.kind-state .shape-detail{stroke:#7d8f99}
+.flow-node.kind-llm .shape{fill:#272241;stroke:#a58be0}
+.flow-node.kind-rag .shape,.flow-node.kind-knowledge .shape{fill:#16332d;stroke:#6fcfa8}
+.flow-node.kind-rag .shape-detail,.flow-node.kind-knowledge .shape-detail{stroke:#6fcfa8}
+.flow-node .node-title{fill:#e9f2f5;font-size:17px;font-weight:650}
+.flow-node .node-sub{fill:#b3c6ce;font-size:13.5px}
+.flow-node.completed .shape{stroke:#8ce9ca;stroke-width:2.2}
+.flow-node.running .shape{stroke:#8fd8ff;stroke-width:2.8}
+.flow-node.waiting .shape,.flow-node.degraded .shape{stroke:#e6be75;stroke-width:2.6}
+.flow-node.waiting .node-sub:first-of-type,.flow-node.degraded .node-sub:first-of-type{fill:#f0d291}
+.flow-node.failed .shape,.flow-node.interrupted .shape{stroke:#eb9285;stroke-width:2.6}
+.flow-node.selected .shape,.flow-node:focus .shape{stroke:#f5d894;stroke-width:3}
+.flow-node:focus{outline:none}
+.flow-legend .legend-line{display:inline-block;width:22px;height:0;border-top:2px solid #6fb0e0;vertical-align:middle;margin-right:6px}
+.flow-legend .legend-line.capability{border-top-color:#a58be0}
+.flow-legend .legend-line.state{border-top:2px dashed #7d8f99}
+.flow-legend .legend-line.unavailable{border-top:2px dotted #5d6f7a}
+.flow-legend .legend-sep{width:1px;height:14px;background:#304655;align-self:center}
+@media(min-width:1350px){
+  .workspace{grid-template-columns:minmax(290px,.8fr) minmax(600px,1.65fr) minmax(360px,.95fr)}
+}

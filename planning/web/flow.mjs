@@ -100,69 +100,96 @@ export function edgeState(state,events,from,to){
  return phase==='started'?'running':phase||'idle';
 }
 
-// One compact, readable architecture view. The solid spine is the guarded task
-// order; the other relations show responsibility and optional support.
+// Page 1 of the two-page Visio: one orchestrator, three peer agents with their
+// artifacts, shared state below and shared capabilities on the right.
+// Shapes follow Visio: manual input, predefined process, document, database.
 const architecture=[
- ['input',230,5],['orchestrator',230,85],
- ['rag',10,165],['requirements',230,165],['llm',450,165],
- ['knowledge',10,245],['confirmation',230,245],['supplement',450,245],
- ['state',10,325],['compute_agent',230,325],['model',450,325],
- ['validator_agent',230,405],['publish',450,405],
+ ['input',215,6,190,38,'input','pill'],
+ ['orchestrator',160,80,300,56,'agent','box'],
+ ['requirements',12,176,188,62,'agent','box'],
+ ['compute_agent',216,176,188,62,'agent','box'],
+ ['validator_agent',420,176,188,62,'agent','box'],
+ ['confirmation',12,300,188,58,'confirm','manual'],
+ ['model',216,300,188,58,'model','predefined'],
+ ['publish',420,300,188,58,'report','document'],
+ ['state',12,396,596,58,'state','database'],
+ ['llm',640,80,184,64,'llm','box'],
+ ['rag',640,300,184,58,'rag','predefined'],
+ ['knowledge',640,392,184,62,'knowledge','database'],
 ];
+// [from,to,type,path,label,labelX,labelY,both]; from/to follow activity caller/node aliases.
 const architectureEdges=[
- ['input','orchestrator'],['orchestrator','requirements'],
- ['requirements','confirmation'],['confirmation','compute_agent'],
- ['compute_agent','validator_agent'],['validator_agent','publish'],
- ['orchestrator','compute_agent','','ownership'],['orchestrator','validator_agent','','ownership'],
- ['requirements','supplement','','branch'],['supplement','requirements','','return'],
- ['requirements','rag','','capability'],['rag','knowledge','','capability'],
- ['requirements','llm','','capability'],['compute_agent','llm','','capability'],
- ['validator_agent','llm','','capability'],['validator_agent','rag','','capability'],
- ['compute_agent','model','','capability'],['state','orchestrator','','state'],
+ ['input','orchestrator','task','M310 44V80'],
+ ['orchestrator','requirements','task','M250 136V150H106V176','',0,0,true],
+ ['orchestrator','compute_agent','task','M310 136V176','',0,0,true],
+ ['orchestrator','validator_agent','task','M370 136V150H514V176','',0,0,true],
+ ['requirements','confirmation','task','M106 238V300','用户核对',114,285,true],
+ ['confirmation','compute_agent','gate','M200 350H208V226H216'],
+ ['validator_agent','publish','task','M514 238V300'],
+ ['compute_agent','model','capability','M310 238V300','参数 / 损耗',318,285,true],
+ ['requirements','llm','capability','M176 176V164H612V112H640'],
+ ['validator_agent','llm','capability','M590 176V164H612V112H640'],
+ ['compute_agent','llm','optional','M380 176V164H612V112H640','工具建议 · 可选',520,159],
+ ['orchestrator','llm','unavailable','M460 100H640','未接入',530,94],
+ ['requirements','rag','capability','M176 238V262H616V329H640'],
+ ['validator_agent','rag','capability','M590 238V262H616V329H640'],
+ ['rag','knowledge','capability','M732 358V392','',0,0,true],
+ ['state','orchestrator','state','M12 425H6V108H160','',0,0,true],
 ];
-const nodeWidth=190,nodeHeight=58;
-const flowSubtitles={
- input:'原文与补充条件',orchestrator:'受控调度 · 重算有上限',
- requirements:'规则解析 · 参数与计划',rag:'当前为词项检索',llm:'可选 · 可明确降级',
- knowledge:'公式卡与来源',confirmation:'核对参数与假设',supplement:'缺项／冲突补充',
- state:'快照、历史与恢复',compute_agent:'受控调用登记公式',model:'确定性 FSPL',
- validator_agent:'硬校验 · 可选审查',publish:'结果、限制与依据',
-};
-function edgePath(from,to,map){
- const a=map[from],b=map[to],center=p=>p.x+nodeWidth/2,middle=p=>p.y+nodeHeight/2;
- const key=`${from}:${to}`;
- if(key==='state:orchestrator')return `M ${a.x} ${middle(a)} H 4 V ${middle(b)} H ${b.x}`;
- if(key==='orchestrator:compute_agent')return `M ${a.x+nodeWidth} ${middle(a)} H 435 V ${middle(b)} H ${b.x+nodeWidth}`;
- if(key==='orchestrator:validator_agent')return `M ${a.x} ${middle(a)} H 215 V ${middle(b)} H ${b.x}`;
- if(key==='requirements:supplement')return `M ${a.x+nodeWidth} ${middle(a)+13} H 440 V ${middle(b)} H ${b.x}`;
- if(key==='supplement:requirements')return `M ${a.x+nodeWidth} ${middle(a)} H 646 V 154 H ${b.x+nodeWidth+12} V ${middle(b)} H ${b.x+nodeWidth}`;
- if(key==='compute_agent:llm')return `M ${a.x+nodeWidth} ${middle(a)-9} H 441 V ${middle(b)+9} H ${b.x}`;
- if(key==='validator_agent:llm')return `M ${a.x+nodeWidth} ${middle(a)} H 445 V ${middle(b)-9} H ${b.x}`;
- if(key==='validator_agent:rag')return `M ${a.x} ${middle(a)+9} H 205 V 154 H ${b.x+nodeWidth+10} V ${middle(b)+9} H ${b.x+nodeWidth}`;
- if(a.x===b.x)return a.y<b.y?`M ${center(a)} ${a.y+nodeHeight} V ${b.y}`:`M ${center(a)} ${a.y} V ${b.y+nodeHeight}`;
- if(a.y===b.y)return a.x<b.x?`M ${a.x+nodeWidth} ${middle(a)} H ${b.x}`:`M ${a.x} ${middle(a)} H ${b.x+nodeWidth}`;
- return `M ${center(a)} ${a.y+nodeHeight} V ${b.y-8} H ${center(b)} V ${b.y}`;
+// Static descriptions live in the detail panel; the diagram keeps only integration caveats.
+const nodeText={validator_agent:'解释未接入',rag:'词项检索'};
+const integration={orchestrator:'部分接入',llm:'可选'};
+const titles={input:'用户输入通信需求'};
+const centeredNodes=new Set(['input','state','model','publish','knowledge','rag']);
+function box(x,y,w,h,r){return `M${x+r} ${y}H${x+w-r}Q${x+w} ${y} ${x+w} ${y+r}V${y+h-r}Q${x+w} ${y+h} ${x+w-r} ${y+h}H${x+r}Q${x} ${y+h} ${x} ${y+h-r}V${y+r}Q${x} ${y} ${x+r} ${y}Z`;}
+function shapePaths(shape,w,h){
+ if(shape==='pill')return [box(0,0,w,h,h/2)];
+ if(shape==='manual')return [`M0 12L${w} 0V${h}H0Z`];
+ if(shape==='predefined')return [box(0,0,w,h,4),`M10 0V${h}M${w-10} 0V${h}`];
+ if(shape==='document')return [`M0 0H${w}V${h-8}Q${w*.75} ${h-20} ${w/2} ${h-8}T0 ${h-8}Z`];
+ if(shape==='database'){const ry=8;return [`M0 ${ry}V${h-ry}A${w/2} ${ry} 0 0 0 ${w} ${h-ry}V${ry}A${w/2} ${ry} 0 0 0 0 ${ry}Z`,`M0 ${ry}A${w/2} ${ry} 0 0 0 ${w} ${ry}`];}
+ return [box(0,0,w,h,6)];
 }
 function svgEl(tag, attrs={},text){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);if(text)n.textContent=text;return n;}
+function marker(id){const m=svgEl('marker',{id,viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:5,markerHeight:5,orient:'auto-start-reverse'});m.append(svgEl('path',{d:'M 0 0 L 10 5 L 0 10 z',fill:'context-stroke'}));return m;}
+function chip(text,x,y,w){return [svgEl('path',{d:box(x,y,w,18,4),class:'integration-chip'}),svgEl('text',{x:x+w/2,y:y+13,'text-anchor':'middle',class:'integration-text'},text)];}
 export function renderFlow(host,{view,state,events,selected,onSelect}){
- const positions=architecture, edges=architectureEdges, states=nodeStates(state,events);
- const svg=svgEl('svg',{viewBox:'0 0 650 470',role:'group','aria-label':'总体协同架构'});
- const defs=svgEl('defs');const marker=svgEl('marker',{id:'arrow',viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:5,markerHeight:5,orient:'auto-start-reverse'});marker.append(svgEl('path',{d:'M 0 0 L 10 5 L 0 10 z',fill:'context-stroke'}));defs.append(marker);svg.append(defs);
- const map=Object.fromEntries(positions.map(([id,x,y])=>[id,{x,y}]));
- for(const[from,to,label='',type='task']of edges){
-  const a=map[from],b=map[to];if(!a||!b)continue;
-  const d=edgePath(from,to,map);
+ const states=nodeStates(state,events);
+ // Page 1 has no separate follow-up node: the user check loop carries it.
+ const awaitingSupplement=states.supplement==='waiting'&&states.confirmation!=='waiting';
+ if(awaitingSupplement)states.confirmation='waiting';
+ const svg=svgEl('svg',{viewBox:'0 0 840 494',role:'group','aria-label':'总体协同架构'});
+ const defs=svgEl('defs');defs.append(marker('arrow'));svg.append(defs);
+ svg.append(svgEl('path',{d:box(4,56,616,410,8),class:'flow-lane'}),svgEl('text',{x:14,y:72,class:'lane-label'},'LangGraph 编排与状态'));
+ svg.append(svgEl('path',{d:box(628,56,208,410,8),class:'flow-lane'}),svgEl('text',{x:638,y:72,class:'lane-label'},'共享能力'));
+ for(const[from,to,type,d,label,lx,ly,both]of architectureEdges){
   const phase=edgeState(state,events,from,to);
   const active=['running','completed','waiting','failed'].includes(phase);
-  const path=svgEl('path',{d,class:`flow-edge ${type} ${active?'traversed':''} ${phase==='running'?'moving':''} ${phase==='failed'?'failed':''}`,'data-edge':`${from}:${to}`,'data-relation':RELATION_SEMANTICS,'aria-label':RELATION_DESCRIPTION,'marker-end':'url(#arrow)'});svg.append(path);
-  if(label&&type!=='return')svg.append(svgEl('text',{x:(a.x+b.x+nodeWidth)/2,y:(a.y+b.y+nodeHeight)/2-7,class:'edge-label'},label));
+  const attrs={d,class:`flow-edge ${type} ${active?'traversed':''} ${phase==='running'?'moving':''} ${phase==='failed'?'failed':''}`,'data-edge':`${from}:${to}`,'data-relation':RELATION_SEMANTICS,'aria-label':RELATION_DESCRIPTION,'marker-end':'url(#arrow)'};
+  if(both)attrs['marker-start']='url(#arrow)';
+  svg.append(svgEl('path',attrs));
+  if(label)svg.append(svgEl('text',{x:lx,y:ly,class:`edge-label ${type}`},label));
  }
- for(const[id,x,y]of positions){
-  const [label,sub]=nodes[id],status=states[id];
-  const g=svgEl('g',{transform:`translate(${x},${y})`,class:`flow-node ${status} ${selected===id?'selected':''}`,role:'button',tabindex:0,'aria-label':`${label}，${statusText[status]||status}`,'aria-pressed':String(selected===id),'data-node':id});
-  const visibleSub=status==='running'?'运行中 · 等待返回':status==='waiting'?'等待用户处理':status==='degraded'?'部分调用已降级':flowSubtitles[id]||sub;
-  g.append(svgEl('rect',{width:nodeWidth,height:nodeHeight,rx:6}),svgEl('circle',{cx:16,cy:20,r:3.5}),svgEl('text',{x:27,y:24,class:'node-title'},label),svgEl('text',{x:14,y:44,class:'node-sub'},visibleSub));
+ // Visio's knowledge-enhancement step; only lexical formula-card retrieval is wired today.
+ const note=svgEl('g',{class:'flow-note'});
+ note.append(svgEl('text',{x:732,y:212,'text-anchor':'middle',class:'note-title'},'知识增强过程'),...chip('部分接入 · 仅公式卡',662,224,140));
+ svg.append(note);
+ for(const[id,x,y,w,h,kind,shape]of architecture){
+  const status=states[id],label=titles[id]||nodes[id][0];
+  const g=svgEl('g',{transform:`translate(${x},${y})`,class:`flow-node kind-${kind} ${status} ${selected===id?'selected':''}`,role:'button',tabindex:0,'aria-label':`${label}，${statusText[status]||status}`,'aria-pressed':String(selected===id),'data-node':id});
+  const [outline,...details]=shapePaths(shape,w,h);
+  g.append(svgEl('path',{d:outline,class:'shape'}));
+  for(const d of details)g.append(svgEl('path',{d,class:'shape-detail'}));
+  const sub=status==='running'?'运行中 · 等待返回':status==='waiting'?(awaitingSupplement&&id==='confirmation'?'等待补充 · 见右侧问题':'等待用户处理'):status==='degraded'?'部分调用已降级':nodeText[id]||'';
+  const centered=centeredNodes.has(id),anchor=centered?'middle':'start';
+  const top=['manual','database'].includes(shape)?30:24;
+  const titleY=sub?top:h/2+(shape==='manual'?9:5);
+  if(!centered)g.append(svgEl('circle',{cx:16,cy:titleY-5,r:4}));
+  g.append(svgEl('text',{x:centered?w/2:28,y:titleY,'text-anchor':anchor,class:'node-title'},label));
+  if(sub)g.append(svgEl('text',{x:centered?w/2:14,y:top+20,'text-anchor':anchor,class:'node-sub'},sub));
+  if(integration[id]){const cw=integration[id].length*11+14;g.append(...chip(integration[id],w-cw-8,8,cw));}
   const activate=()=>onSelect(id);g.addEventListener('click',activate);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();activate();}});svg.append(g);
  }
+ svg.append(svgEl('text',{x:10,y:486,class:'flow-footnote'},'三个专业 Agent 平级；确认后计算。连线按运行活动高亮，不表示直接调用链。'));
  host.replaceChildren(svg);
 }
