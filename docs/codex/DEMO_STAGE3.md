@@ -18,9 +18,13 @@
 
 ## Stage 3 验证
 
-- `.venv\Scripts\python.exe -B -X utf8 -m unittest discover -s tests -p 'test_*.py'`：233 OK，1 symlink 创建权限 skip。
-- `node --test tests/planning_*.test.mjs`：24 PASS。
+- 新仓库 `.venv` 在按 CI `legacy-full` 合同补齐依赖后运行全量 Python：233 OK，1 symlink 创建权限 skip。首次用最小 Planning 环境运行全量测试因按合同不安装 Torch 而在 `test_existing_ml_imports` 报 1 项环境错误；最小 Planning 安装和解压 smoke 单独验证，不依赖 Torch。
+- `node --test tests/planning_*.test.mjs`：25 PASS；`node --check planning/web/app.js` 与 `git diff --check`：PASS。
 - `.venv\Scripts\python.exe -m pip check`：PASS。
 - 源码包预提交候选：builder / validator / 解压 HTTP smoke PASS。全新解压后 `setup_planning.cmd`、`pip check` 和 HTTP smoke PASS；网络沙箱内首次 pip 下载被拒绝，获准的同目录重试成功。
 
-预提交 ZIP 的 `source_dirty=true`，不充当正式发布包。提交后须以 `--require-clean` 重建并再次验证；目标 Chrome、独立最终审查、远端 CI、PR/main/tag 属 Stage 4/5 门禁。浏览器中的默认展开架构图已目视核对，但它不能代替目标 Chrome 验收。
+最新 UI 源码提交 `b62aaef` 后以 `--require-clean` 重建 source ZIP；`source_dirty=false`，76 文件，验证器解压、指纹检查与 HTTP 创建/确认/重启恢复 smoke PASS。ZIP SHA-256 及完整提交号见 [VALIDATION](../demo/VALIDATION.md)。
+
+Stage 3 源码阶段提交：`b03c1c6`、`4bf24a7`、`e255b8d`、`9eb3868`、`b62aaef`；中间的 `4d6df0c` 为交接记录提交。
+
+工程目录现为父目录 `CommPlan-Agent/` 独立仓库，旧 `.workareas` worktree 与外部模型资源保留回滚。2560×1440 物理屏幕对应 1430×804 CSS viewport；内置浏览器实际检查整页无滚动，输入、流程、结果及缺参补充框同屏，右上角无固定提示遮挡，流程无需内滚动。目标 Chrome、独立最终审查、远端 CI、PR/main/tag 仍待 Stage 4/5；内置浏览器不替代目标 Chrome 验收。

@@ -1,24 +1,14 @@
 # Demo delivery 当前入口（2026-09-23）
 
-## Codex 任务 C1：Stage 3 收尾——状态同步与正式源码包重建
+## 当前关口：Stage 3 推送，随后 Stage 4 验收
 
-> **目标**：让验收表、本入口与最新提交一致，并在干净提交上生成、验证正式源码 ZIP。
-> **范围**：仅 `docs/codex/NEXT_ACTION.md`、`docs/codex/DEMO_STAGE3.md`、`docs/demo/VALIDATION.md` 与 `outputs/releases/`（被忽略）。
-> **禁止**：改业务源码、测试或 UI；push、PR、合并、打 tag；把本地结果写成 Chrome、独立审查或远端 CI 通过；`reset`/`clean`/`stash` 丢弃任何修改。
-> **起点**：分支 `codex/demo-delivery-final`，HEAD 为 9eb3868 或其后仅含文档的提交；`git status` 必须干净。
-> **步骤与验证命令**（Windows，仓库根目录）：
-> 1. `.venv\Scripts\python.exe -B -X utf8 -m unittest discover -s tests -p "test_*.py"`，`node --test tests/planning_*.test.mjs`，`.venv\Scripts\python.exe -m pip check`，记录实际计数。
-> 2. `.venv\Scripts\python.exe -B -X utf8 scripts\build_planning_release.py --require-clean`，记下输出路径。
-> 3. `.venv\Scripts\python.exe -B -X utf8 scripts\validate_planning_release.py <上一步 ZIP>`（不加 `--no-smoke`）。
-> 4. 在 VALIDATION 中把 “Source release ZIP” 更新为该提交 SHA、ZIP SHA-256、`source_dirty=false` 与 smoke 结果；Stage 3 行补上 b03c1c6、4bf24a7、e255b8d、9eb3868。
-> 5. 删除本节 C1，把结果写进下方状态段；文档修改单独提交，提交信息以 `docs:` 开头。
-> **完成标准**：三项回归通过且计数写入；`--require-clean` 的 ZIP 通过验证；文档提交后 `git status` 干净。任一失败即停止，记录原始输出，不自行修复源码。
+主工程已从 `.workareas` 迁至父目录的 `CommPlan-Agent/` 独立 Git 仓库；旧 worktree 与外部模型源保留作回滚。当前在 `codex/demo-delivery-final`，发布目标只使用 `commplan` remote。Stage 3 的最新 UI 候选 `b62aaef` 把当前任务放进页眉、移除多余页眉标签与固定遮挡提示，并将流程图收进同屏三栏。该提交的干净 source ZIP 已通过解压 smoke；哈希和边界见 [VALIDATION](../demo/VALIDATION.md)。
 
-讲解：b03c1c6 之后又有三处 UI 提交，先前预提交 ZIP 为 `source_dirty=true`，不能作为正式包。C1 是纯机械的重跑与记录，不涉及设计判断，适合 Codex 单独完成。9eb3868 为深色主题定稿：历史条目恢复按输入版本/保存序号区分，流程说明恢复“正式结果以保存状态为准”；宽屏隐藏页脚，所以把自由空间范围边界移到任务副标题。
+Stage 3 还需将本记录提交并推送。推送前确认 GitHub 凭据确实有修改工作流文件所需的 `workflow` scope；2026-09-23 的 `gh auth status` 仍仅列出 `gist`、`read:org`、`repo`。不要向旧 `origin` 仓库推送。推送成功后才进入 Stage 4；目标 Chrome 由用户手动确认，独立最终审查由实施团队外的 Reviewer 完成。当前内置浏览器的 2560×1440 预览不能写成目标 Chrome 或独立审查通过。
 
 ## 当前状态（2026-09-23）
 
-- 最新提交 9eb3868；Python 233 OK（1 skip，UI 定稿前全量；定稿后 planning 相关 60 项 OK）、Node 24 PASS。
+- 最新源码提交 b62aaef；完整测试环境对新仓库源码运行 Python 233 OK（1 symlink 权限 skip），Node 25 PASS，最小 Planning 环境 pip check PASS。
 - 发布目标已定为 CommPlan-Agent 仓库，本地 remote 名为 `commplan`（`origin` 仍为 signal-formula-rag，不用于发布）。远端 main 为 9ee7939，是本分支祖先，可快进。
 - 推送阻塞：当前 GitHub 凭据缺 `workflow` scope，需用户补授权后执行 `git push commplan codex/demo-delivery-final`。
 - 目标 Chrome 验收：用户手动。独立最终代码审查：用户另找人工审查者，审查范围 `9ee7939..HEAD`，关注点见 VALIDATION 末段。
@@ -29,9 +19,9 @@ Stage 0 已保全当前本地候选并完成 Windows Python 217 / Node 16 / pip 
 
 无单位距离残留检测已经存在于当前源码，Stage 0 全量回归通过；历史“仍待修复”结论已过期。Stage 1 补齐四个 V4 拒绝例与合法共享单位候选回归。运行连线现在明确表示观测到的活动/责任关系，不声称 LangGraph 直接调用；fingerprint 纳入公式知识与启动资源配置，排除运行历史和日志。后端图、状态与数值执行不变。
 
-Stage 1 已完成：3ac8819；Stage 2 已完成：8aabb57。Stage 3 的本地实施与回归已完成：模型/llama 从真实外部 asset root 先复制进被 Git 忽略的项目内目录并逐文件验哈希；实际内部 llama 服务 `/health`、`/v1/models`、工作台识别及三角色 Qwen 流程通过；Windows Python 3.12 全新解压安装、pip check、HTTP 创建/确认/重启恢复 smoke 通过；全量 Python 233 OK（1 symlink 权限 skip）、Node 24 PASS。流程图在浏览器中默认展开，仍位于任务和结果之后。
+Stage 1 已完成：3ac8819；Stage 2 已完成：8aabb57。Stage 3 的本地实施与回归已完成：模型/llama 从真实外部 asset root 先复制进被 Git 忽略的项目内目录并逐文件验哈希；实际内部 llama 服务 `/health`、`/v1/models`、工作台识别及三角色 Qwen 流程通过；Windows Python 3.12 全新解压安装、pip check、HTTP 创建/确认/重启恢复 smoke 通过。新三栏 UI 在内置浏览器中验证：整页无滚动，输入、流程、结果和补充回答同屏；流程图无内滚动，提示不覆盖右上角。
 
-下一步（已被本文件顶部状态取代）：Stage 3 记录/提交/干净源码 ZIP 重建与验证、推送。然后 Stage 4 在该候选上做最终 Windows/浏览器/故障路径验收；目标 Chrome 由用户手动确认，独立最终代码审查需由实施团队之外的 Reviewer 完成。当前 Git push 仍被所用 OAuth 凭据缺少 workflow scope 拒绝，不能将本地通过写成远端 CI 通过。Stage 5 的 PR、合并、main 重建与 tag 均未执行。权威状态表见 [VALIDATION](../demo/VALIDATION.md)。完整阶段记录见 DEMO_STAGE0.md 与 DEMO_STAGE3.md 等。
+下一步：完成 Stage 3 文档提交与 `commplan` 推送，再按 V4 做 Stage 4 的最终 Windows、浏览器、故障路径、解压启动与独立审查。当前 GitHub 凭据仍缺 `workflow` scope，远端 CI 未运行。Stage 5 的 PR、合并、main 重建与 tag 均未执行。权威状态表见 [VALIDATION](../demo/VALIDATION.md)。完整阶段记录见 DEMO_STAGE0.md 与 DEMO_STAGE3.md 等。
 
 ---
 以下全部为历史记录；计数、缺陷状态、下一步与发布状态不代表当前候选。
