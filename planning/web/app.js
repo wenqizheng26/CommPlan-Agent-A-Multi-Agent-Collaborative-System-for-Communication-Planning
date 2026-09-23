@@ -6,6 +6,8 @@ import {renderConversation} from './conversation.mjs';
 import {reviewQuestion} from './roles.mjs';
 import {renderQuestions} from './questions.mjs';
 const $=id=>document.getElementById(id);
+const scrollOnSmallScreen=(id,block='start')=>{if(window.matchMedia('(max-width: 899px)').matches)$(id).scrollIntoView({block});};
+const resetCockpitPanes=()=>{if(window.matchMedia('(min-width: 900px)').matches)for(const selector of ['.input-panel','.detail-panel'])document.querySelector(selector).scrollTop=0;};
 let current=null, historical=null, activeContext=null, activity=[], token='', dirty=false, busy=false, pendingCommand=null;
 let modelService=null, checkingModel=false;
 let view='architecture', selected='input', tab='overview', focusParameter=null, pollGeneration=0;
@@ -35,14 +37,14 @@ function syncButtons(){
  $('cancel').disabled=busy||!!historical||!current||['COMPLETED','CANCELLED'].includes(current.status);
  for(const id of ['new','restore','refresh','history','recent-tasks','refresh-tasks'])$(id).disabled=busy||(id==='history'&&!current)||(id==='refresh'&&!current);
  $('export').disabled=busy||!shown();
- $('actions').hidden=!current||!!historical||!!activeContext;
+ $('actions').hidden=!current||!!historical||!!activeContext||['COMPLETED','CANCELLED'].includes(current.status);
  $('dirty-hint').textContent=dirty?'输入已修改。图和详情仍是上次保存的版本；请提交后重新核对确认。':can?'确认只对当前版本有效；修改后需重新确认。':'';
  $('history-banner').hidden=!historical;
  if(historical)$('history-label').textContent=`历史只读 · 输入版本 ${historical.revision} / 状态版本 ${historical.state_version}，当前操作已禁用。`;
 }
 function readInput(){const p={};for(const[id,name]of [['frequency','frequency_ghz'],['distance','distance_km']])if($(id).value!==''){const value=Number($(id).value);if(!Number.isFinite(value))throw new Error('手工参数必须是有限数值。');p[name]={value,unit:$(id+'-unit').value};}return {raw_text:$('raw-text').value,manual_parameters:p,condition:$('condition').value||null,target:$('target').value||null};}
 function fillInput(s){$('raw-text').value=s.request.raw_text;$('mode').value=s.mode;$('condition').value=s.request.condition||'';$('target').value=s.request.target||'';for(const[id,name]of [['frequency','frequency_ghz'],['distance','distance_km']]){const p=s.request.manual_parameters[name];$(id).value=p?p.value:'';if(p)$(id+'-unit').value=p.unit;}$('manual-details').open=Object.keys(s.request.manual_parameters).length>0||!!s.request.condition||!!s.request.target;}
-function chooseNode(id){if(id==='supplement')$('clarification-panel').scrollIntoView({block:'center'});selected=id;tab=nodes[id]?.[2]||'overview';draw();}
+function chooseNode(id){if(id==='supplement')scrollOnSmallScreen('clarification-panel','center');selected=id;tab=nodes[id]?.[2]||'overview';draw();}
 function chooseTab(id){tab=id;drawDetails();}
 function chooseParameter(name){focusParameter=name;tab='parameters';selected='confirmation';draw();}
 function drawDetails(){
@@ -78,7 +80,7 @@ function draw(){
  drawDetails();drawTimeline();
  const questions=s?.input_issues?.length?[]:[...(s?.report?.questions||[]),reviewQuestion(s)].filter(Boolean);$('supplement-questions').replaceChildren(...questions.map(q=>el('p',q.replaceAll('distance_km','路径距离（km）').replaceAll('frequency_ghz','载波频率（GHz）'),'supplement-question')));
  renderConversation($('conversation-log'),s);
- renderQuestions($('clarification-panel'),s,{disabled:busy||dirty||!!historical,onSubmit:answers=>submit('answer',answers).catch(e=>notice(e.message,true)),onEdit:()=>{$('raw-text').scrollIntoView({block:'center'});$('raw-text').focus();}});syncButtons();
+ renderQuestions($('clarification-panel'),s,{disabled:busy||dirty||!!historical,onSubmit:answers=>submit('answer',answers).catch(e=>notice(e.message,true)),onEdit:()=>{scrollOnSmallScreen('raw-text','center');$('raw-text').focus();}});syncButtons();
 }
 function acceptState(s){$('history-list').replaceChildren();if(current?.task_id!==s.task_id)activity=[];current=s;historical=null;activeContext=null;dirty=false;$('accept').checked=false;fillInput(s);$('task-id').value=s.task_id;localStorage.setItem('planning-task',s.task_id);history.replaceState(null,'','#'+s.task_id);$('submit').textContent='保存修改并重新解析';}
 async function loadActivity(id,generation){try{const data=await api('/api/tasks/'+encodeURIComponent(id)+'/activity');if(generation!==pollGeneration||shown()?.task_id!==id)return;if(!activityFresh(activity,data.events))return;activity=data.events;draw();if(!data.available)$('live-status').textContent='运行观察不可用；任务完成后将显示保存状态。';}catch{if(generation===pollGeneration)$('live-status').textContent='运行观察暂不可用，请等待命令结果或刷新保存状态。';}}
@@ -98,7 +100,7 @@ async function submit(action,answers=null){
  const request=api('/api/commands',c);poll(c.task_id,generation);
  try{const data=await request;pendingCommand=null;acceptState(data.state);if(action==='supplement')$('supplement-message').value='';selected=data.state.status==='COMPLETED'?'publish':data.state.status==='AWAITING_CONFIRMATION'?'confirmation':data.state.status==='AWAITING_INPUT'?'requirements':data.state.status==='NEEDS_MODEL'?'requirements':'failure';tab=nodes[selected][2];notice(data.replayed?'已恢复已有操作回执；显示当前保存状态。':data.state.status==='COMPLETED'?'计算与校验完成，正式结果已保存。':'本版本已保存，请核对当前节点。');}
  catch(e){if(e.status&&e.status<500)pendingCommand=null;activeContext=null;notice(e.message,true);}
- finally{checkModel();recentTasks();busy=false;const finalGeneration=++pollGeneration;await loadActivity(c.task_id,finalGeneration);draw();if(!pendingCommand&&current?.task_id===c.task_id){if(current.input_issues?.length)$('clarification-panel').scrollIntoView({block:'start'});else if(['AWAITING_CONFIRMATION','COMPLETED'].includes(current.status))$('detail-content').scrollIntoView({block:'start'});}}
+ finally{checkModel();recentTasks();busy=false;const finalGeneration=++pollGeneration;await loadActivity(c.task_id,finalGeneration);draw();resetCockpitPanes();if(!pendingCommand&&current?.task_id===c.task_id){if(current.input_issues?.length)scrollOnSmallScreen('clarification-panel');else if(['AWAITING_CONFIRMATION','COMPLETED'].includes(current.status))scrollOnSmallScreen('detail-content');}}
 }
 async function restore(id){
  if(busy||!id)return;
