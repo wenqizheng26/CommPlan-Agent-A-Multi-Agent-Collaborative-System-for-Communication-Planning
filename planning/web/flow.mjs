@@ -100,52 +100,68 @@ export function edgeState(state,events,from,to){
  return phase==='started'?'running':phase||'idle';
 }
 
-const execution=[
- ['input',40,48],['parse',40,148],['retrieval',40,248],['interpretation',40,348],['planning',40,448],
- ['confirmation',330,448],['calculation',330,348],['validation',330,248],['publish',330,148],
- ['supplement',620,448],['gap',620,348],['failure',620,248],['explanation',620,148],
-];
+// One compact, readable architecture view. The solid spine is the guarded task
+// order; the other relations show responsibility and optional support.
 const architecture=[
- ['input',330,40],['orchestrator',330,145],
- ['requirements',40,270],['compute_agent',330,270],['validator_agent',620,270],
- ['supplement',40,390],['model',330,390],['publish',620,390],
- ['confirmation',40,490],
- ['llm',40,610],['rag',330,610],['knowledge',620,610],['state',330,720],
+ ['input',230,5],['orchestrator',230,85],
+ ['rag',10,165],['requirements',230,165],['llm',450,165],
+ ['knowledge',10,245],['confirmation',230,245],['supplement',450,245],
+ ['state',10,325],['compute_agent',230,325],['model',450,325],
+ ['validator_agent',230,405],['publish',450,405],
 ];
-// mode: task / capability / state. Branch labels reflect actual decision meaning.
-const executionEdges=[['input','parse'],['parse','retrieval'],['retrieval','interpretation'],['interpretation','planning'],['planning','confirmation'],['confirmation','calculation'],['calculation','validation'],['validation','publish'],['planning','supplement','缺项/冲突'],['planning','gap','不支持'],['calculation','failure','失败'],['validation','failure','不通过'],['supplement','input','修正后重新提交','return']];
-const architectureEdges=[['input','orchestrator'],['orchestrator','requirements'],['orchestrator','compute_agent'],['orchestrator','validator_agent'],['requirements','supplement'],['supplement','confirmation'],['supplement','requirements','','return'],['compute_agent','model'],['validator_agent','publish'],['requirements','llm','','capability'],['compute_agent','llm','','capability'],['validator_agent','llm','','capability'],['requirements','rag','','capability'],['validator_agent','rag','','capability'],['rag','knowledge','','capability'],['state','orchestrator','','state']];
+const architectureEdges=[
+ ['input','orchestrator'],['orchestrator','requirements'],
+ ['requirements','confirmation'],['confirmation','compute_agent'],
+ ['compute_agent','validator_agent'],['validator_agent','publish'],
+ ['orchestrator','compute_agent','','ownership'],['orchestrator','validator_agent','','ownership'],
+ ['requirements','supplement','','branch'],['supplement','requirements','','return'],
+ ['requirements','rag','','capability'],['rag','knowledge','','capability'],
+ ['requirements','llm','','capability'],['compute_agent','llm','','capability'],
+ ['validator_agent','llm','','capability'],['validator_agent','rag','','capability'],
+ ['compute_agent','model','','capability'],['state','orchestrator','','state'],
+];
+const nodeWidth=190,nodeHeight=58;
+const flowSubtitles={
+ input:'原文与补充条件',orchestrator:'受控调度 · 重算有上限',
+ requirements:'规则解析 · 参数与计划',rag:'当前为词项检索',llm:'可选 · 可明确降级',
+ knowledge:'公式卡与来源',confirmation:'核对参数与假设',supplement:'缺项／冲突补充',
+ state:'快照、历史与恢复',compute_agent:'受控调用登记公式',model:'确定性 FSPL',
+ validator_agent:'硬校验 · 可选审查',publish:'结果、限制与依据',
+};
+function edgePath(from,to,map){
+ const a=map[from],b=map[to],center=p=>p.x+nodeWidth/2,middle=p=>p.y+nodeHeight/2;
+ const key=`${from}:${to}`;
+ if(key==='state:orchestrator')return `M ${a.x} ${middle(a)} H 4 V ${middle(b)} H ${b.x}`;
+ if(key==='orchestrator:compute_agent')return `M ${a.x+nodeWidth} ${middle(a)} H 435 V ${middle(b)} H ${b.x+nodeWidth}`;
+ if(key==='orchestrator:validator_agent')return `M ${a.x} ${middle(a)} H 215 V ${middle(b)} H ${b.x}`;
+ if(key==='requirements:supplement')return `M ${a.x+nodeWidth} ${middle(a)+13} H 440 V ${middle(b)} H ${b.x}`;
+ if(key==='supplement:requirements')return `M ${a.x+nodeWidth} ${middle(a)} H 646 V 154 H ${b.x+nodeWidth+12} V ${middle(b)} H ${b.x+nodeWidth}`;
+ if(key==='compute_agent:llm')return `M ${a.x+nodeWidth} ${middle(a)-9} H 441 V ${middle(b)+9} H ${b.x}`;
+ if(key==='validator_agent:llm')return `M ${a.x+nodeWidth} ${middle(a)} H 445 V ${middle(b)-9} H ${b.x}`;
+ if(key==='validator_agent:rag')return `M ${a.x} ${middle(a)+9} H 205 V 154 H ${b.x+nodeWidth+10} V ${middle(b)+9} H ${b.x+nodeWidth}`;
+ if(a.x===b.x)return a.y<b.y?`M ${center(a)} ${a.y+nodeHeight} V ${b.y}`:`M ${center(a)} ${a.y} V ${b.y+nodeHeight}`;
+ if(a.y===b.y)return a.x<b.x?`M ${a.x+nodeWidth} ${middle(a)} H ${b.x}`:`M ${a.x} ${middle(a)} H ${b.x+nodeWidth}`;
+ return `M ${center(a)} ${a.y+nodeHeight} V ${b.y-8} H ${center(b)} V ${b.y}`;
+}
 function svgEl(tag, attrs={},text){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);if(text)n.textContent=text;return n;}
 export function renderFlow(host,{view,state,events,selected,onSelect}){
- const arch=true, positions=architecture, edges=architectureEdges, states=nodeStates(state,events);
- const svg=svgEl('svg',{viewBox:`0 0 910 ${arch?830:590}`,role:'group','aria-label':arch?'总体协同架构':'任务执行流程'});
+ const positions=architecture, edges=architectureEdges, states=nodeStates(state,events);
+ const svg=svgEl('svg',{viewBox:'0 0 650 470',role:'group','aria-label':'总体协同架构'});
  const defs=svgEl('defs');const marker=svgEl('marker',{id:'arrow',viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:5,markerHeight:5,orient:'auto-start-reverse'});marker.append(svgEl('path',{d:'M 0 0 L 10 5 L 0 10 z',fill:'context-stroke'}));defs.append(marker);svg.append(defs);
- if(!arch){['需求与规划','确认、计算与发布','分支与扩展'].forEach((t,i)=>svg.append(svgEl('text',{x:40+i*290,y:24,class:'lane-label'},t)));}
  const map=Object.fromEntries(positions.map(([id,x,y])=>[id,{x,y}]));
  for(const[from,to,label='',type='task']of edges){
   const a=map[from],b=map[to];if(!a||!b)continue;
-  let x1=a.x+115,y1=a.y+68,x2=b.x+115,y2=b.y,d;
-  if(type==='state'){d=`M ${a.x+230} ${a.y+34} H 895 V ${b.y+34} H ${b.x+230}`;}
-  else if(arch&&type==='capability'&&from!=='rag'){
-   const rail=from==='requirements'?20:890;
-   const sx=from==='requirements'?a.x:a.x+230;
-   d=`M ${sx} ${a.y+34} H ${rail} V ${b.y-15} H ${b.x+115} V ${b.y}`;
-  }
-  else if(arch&&from==='supplement'){d=`M ${a.x} ${a.y+34} H 8 V ${b.y+34} H ${b.x}`;}
-  else if(type==='return'){d=`M ${a.x+230} ${a.y+34} H 882 V 42 H ${b.x+115} V ${b.y}`;}
-  else if(a.x===b.x){if(a.y>b.y){y1=a.y;y2=b.y+68;}d=`M ${x1} ${y1} L ${x2} ${y2}`;}
-  else if(a.y===b.y){x1=a.x+230;y1=a.y+34;x2=b.x;y2=b.y+34;d=`M ${x1} ${y1} H ${x2}`;}
-  else {d=`M ${x1} ${y1} C ${x1} ${(y1+y2)/2}, ${x2} ${(y1+y2)/2}, ${x2} ${y2}`;}
+  const d=edgePath(from,to,map);
   const phase=edgeState(state,events,from,to);
   const active=['running','completed','waiting','failed'].includes(phase);
   const path=svgEl('path',{d,class:`flow-edge ${type} ${active?'traversed':''} ${phase==='running'?'moving':''} ${phase==='failed'?'failed':''}`,'data-edge':`${from}:${to}`,'data-relation':RELATION_SEMANTICS,'aria-label':RELATION_DESCRIPTION,'marker-end':'url(#arrow)'});svg.append(path);
-  if(label&&type!=='return')svg.append(svgEl('text',{x:(x1+x2)/2,y:(y1+y2)/2-7,class:'edge-label'},label));
+  if(label&&type!=='return')svg.append(svgEl('text',{x:(a.x+b.x+nodeWidth)/2,y:(a.y+b.y+nodeHeight)/2-7,class:'edge-label'},label));
  }
  for(const[id,x,y]of positions){
   const [label,sub]=nodes[id],status=states[id];
   const g=svgEl('g',{transform:`translate(${x},${y})`,class:`flow-node ${status} ${selected===id?'selected':''}`,role:'button',tabindex:0,'aria-label':`${label}，${statusText[status]||status}`,'aria-pressed':String(selected===id),'data-node':id});
-  const visibleSub=status==='running'?'运行中 · 等待真实返回':status==='waiting'?'等待补充或核对 · 点击查看':status==='degraded'?'部分调用已降级 · 点击查看':sub;
-  g.append(svgEl('rect',{width:230,height:68,rx:10}),svgEl('circle',{cx:18,cy:22,r:4}),svgEl('text',{x:30,y:27,class:'node-title'},label),svgEl('text',{x:15,y:50,class:'node-sub'},visibleSub));
+  const visibleSub=status==='running'?'运行中 · 等待返回':status==='waiting'?'等待用户处理':status==='degraded'?'部分调用已降级':flowSubtitles[id]||sub;
+  g.append(svgEl('rect',{width:nodeWidth,height:nodeHeight,rx:6}),svgEl('circle',{cx:16,cy:20,r:3.5}),svgEl('text',{x:27,y:24,class:'node-title'},label),svgEl('text',{x:14,y:44,class:'node-sub'},visibleSub));
   const activate=()=>onSelect(id);g.addEventListener('click',activate);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();activate();}});svg.append(g);
  }
  host.replaceChildren(svg);

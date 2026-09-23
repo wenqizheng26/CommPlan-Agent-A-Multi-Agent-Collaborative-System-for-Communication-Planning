@@ -43,3 +43,23 @@ test('rendered relation carries truthful accessible semantics',()=>{
   else globalThis.document=previous;
  }
 });
+
+test('visible task spine passes through user confirmation before calculation',()=>{
+ const previous=globalThis.document;
+ const created=[];
+ globalThis.document={createElementNS:(_ns,tag)=>{
+  const node={tag,attrs:{},children:[],setAttribute(k,v){this.attrs[k]=v;},append(...nodes){this.children.push(...nodes);},addEventListener(){}};
+  created.push(node);return node;
+ }};
+ try{
+  renderFlow({replaceChildren(){}},{state,events:[],selected:null,onSelect(){}});
+  const edges=new Set(created.filter(n=>n.attrs['data-edge']).map(n=>n.attrs['data-edge']));
+  for(const edge of ['requirements:confirmation','confirmation:compute_agent','compute_agent:validator_agent','validator_agent:publish'])assert.ok(edges.has(edge),edge);
+  assert.equal(edges.has('supplement:confirmation'),false);
+  assert.ok(edges.has('supplement:requirements'));
+  assert.equal(created.find(n=>n.tag==='svg').attrs.viewBox,'0 0 650 470');
+ }finally{
+  if(previous===undefined)delete globalThis.document;
+  else globalThis.document=previous;
+ }
+});

@@ -23,7 +23,12 @@ async function checkModel(){
  }
 }
 function shown(){return historical||activeContext||current;}
-function notice(text,error=false){$('notice').textContent=text;$('notice').hidden=!text;$('notice').classList.toggle('problem',error);}
+let noticeTimer;
+function notice(text,error=false){
+ clearTimeout(noticeTimer);
+ const message=$('notice');message.textContent=text;message.hidden=!text;message.classList.toggle('problem',error);
+ if(text&&!error)noticeTimer=setTimeout(()=>{if(message.textContent===text)message.hidden=true;},5000);
+}
 async function api(path,body){const r=await fetch(path,{signal:AbortSignal.timeout(path==='/api/commands'?125000:10000),method:body?'POST':'GET',headers:body?{'Content-Type':'application/json','X-Planning-Token':token}:{},body:body?JSON.stringify(body):undefined});const data=await r.json();if(!r.ok){const err=new Error(data.error.message+' ['+data.error.code+']');err.status=r.status;throw err;}return data;}
 function syncButtons(){
  document.querySelectorAll('#request-form input,#request-form textarea,#request-form select,#request-form button').forEach(n=>n.disabled=busy||!!historical);
@@ -69,7 +74,8 @@ function draw(){
 
  $('flow-caption').textContent='连线按运行活动高亮，不表示直接调用链；正式结果以保存状态为准。';
  $('status').textContent=historical?'历史只读':busy?'正在处理':s?(s.waiting_reason||labels[s.status]||s.status):'等待输入';
- $('task-meta').textContent=activeContext?'正在处理输入':'自由空间单程路径损耗 · 未含海面、散射与链路预算';
+ const taskDescription=activeContext?'正在处理输入':s?.request?.raw_text?.trim()||'未开始';
+ $('task-meta').textContent=taskDescription;$('task-meta').title=taskDescription;
  const progress=taskProgress(s,ev,{dirty,historical:!!historical});
  $('current-action').textContent=progress.action;
  $('task-progress').replaceChildren(...progress.steps.map(step=>{const row=el('li',undefined,step.status);row.append(el('span',({completed:'✓',running:'●',waiting:'◐',failed:'!',cancelled:'—',idle:'○'})[step.status]||'○','progress-symbol'),el('span',step.label),el('span',({completed:'已完成',running:'处理中',waiting:'待处理',failed:'已阻断',cancelled:'已停止',idle:'未开始'})[step.status]||'未开始','progress-state'));if(['running','waiting'].includes(step.status))row.setAttribute('aria-current','step');return row;}));

@@ -21,8 +21,7 @@
   main{height:calc(100dvh - 52px);max-width:none;padding:10px 14px;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto minmax(0,1.2fr) minmax(0,1fr) auto;gap:8px;overflow:hidden}
   .task-bar{grid-row:1;margin:0;min-height:44px}.eyebrow{display:none}.task-bar h1{font-size:18px;margin:0 0 2px}.task-bar #task-meta{font-size:12px}.task-tools{max-width:none;flex-wrap:nowrap}
   .progress-panel{grid-row:2;margin:0;padding:7px 10px}.task-progress{gap:6px}.task-progress li{padding:5px 7px;gap:4px;font-size:12px;flex-wrap:nowrap}.progress-symbol{font-size:13px}.progress-state{flex-basis:auto;padding-left:0;font-size:11px;margin-left:auto}.current-action{font-size:13px;margin:5px 0 0}.progress-panel #live-status{display:none}
-  #notice:not([hidden]){position:fixed;right:16px;top:58px;z-index:20;max-width:min(480px,45vw);box-shadow:0 4px 18px #18333230;margin:0}
-  #history-banner:not([hidden]){position:fixed;right:16px;top:58px;z-index:19;max-width:min(550px,50vw);margin:0}
+  .progress-panel #notice:not([hidden]),.progress-panel #history-banner:not([hidden]){position:static;max-width:none;box-shadow:none;margin:4px 0 0;padding:0;background:none;border:0;border-radius:0;line-height:1.3}
   #clarification-panel{grid-row:3;margin:0;padding:8px 12px;max-height:200px;overflow:auto}
   #clarification-panel h2{margin:0;font-size:14px}#clarification-panel>.hint{margin:3px 0;font-size:12px;line-height:1.3}
   #clarification-panel form{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px;align-items:start}
@@ -175,7 +174,7 @@ mark{background:#715b2f;color:#fff1bd}
 .flow-node rect{fill:#1a3040;stroke:#5b8197;stroke-width:1.5}
 .flow-node circle{fill:#7896a5}
 .flow-node .node-title{fill:#e7f0f4;font-family:"Segoe UI Variable","Microsoft YaHei UI","Microsoft YaHei",sans-serif;font-size:15px;font-weight:650}
-.flow-node .node-sub{fill:#aec3cc;font-size:13px;font-weight:400}
+.flow-node .node-sub{fill:#aec3cc;font-size:13.5px;font-weight:400}
 .flow-node.completed rect{fill:#1c3e40;stroke:#6ac7b8}
 .flow-node.completed circle{fill:#8ce9ca}
 .flow-node.running rect{fill:#1c3d56;stroke:#6cc6ef;stroke-width:2.3}
@@ -200,13 +199,12 @@ footer{color:#91a8b2}
   html,body{height:100%;overflow:hidden}
   header{height:60px;padding:0 24px}
   .brand{font-size:18px}.brand-icon{font-size:26px}.brand-sub{font-size:10px;letter-spacing:1.3px}
-  main{height:calc(100dvh - 60px);max-width:none;padding:12px 18px;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:48px 67px minmax(0,1fr) 30px;gap:10px;overflow:hidden}
-  .task-bar{grid-row:1;min-height:0;margin:0}.task-bar h1{font-size:17px;margin:0 0 2px}.task-bar #task-meta{font-size:12px}
+  main{height:calc(100dvh - 60px);max-width:none;padding:12px 18px;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:67px minmax(0,1fr) 30px;gap:10px;overflow:hidden}
   .task-tools{max-width:none;flex-wrap:nowrap}.task-tools button{padding:7px 10px}
-  .progress-panel{grid-row:2;margin:0;padding:7px 12px;background:#13222e}
+  .progress-panel{grid-row:1;margin:0;padding:7px 12px;background:#13222e}
   .task-progress{gap:7px}.task-progress li{font-size:13px;padding:5px 8px;white-space:nowrap}
   .progress-state{font-size:11px}.current-action{font-size:12px;margin:4px 0 0}
-  .workspace{grid-row:3;grid-column:1;display:grid;grid-template-columns:minmax(310px,.92fr) minmax(520px,1.4fr) minmax(390px,1.05fr);gap:10px;min-height:0;height:100%;align-items:stretch}
+  .workspace{grid-row:2;grid-column:1;display:grid;grid-template-columns:minmax(310px,.92fr) minmax(520px,1.4fr) minmax(390px,1.05fr);gap:10px;min-height:0;height:100%;align-items:stretch}
   .workspace>.panel{grid-row:auto;grid-column:auto;min-width:0;min-height:0;height:100%;margin:0;padding:16px 18px}
   .input-panel{grid-column:1!important;overflow:auto}
   .canvas-panel{grid-column:2!important;overflow:hidden!important}
@@ -244,7 +242,7 @@ footer{color:#91a8b2}
   #clarification-panel input,#clarification-panel select{padding:9px;font-size:14px}
   #clarification-panel form>.primary{justify-self:stretch;padding:9px;font-size:14px}
   #clarification-panel .known-inputs{margin-top:9px;padding:9px 12px}
-  .timeline-panel{grid-row:4;grid-column:1;max-height:30px;margin:0;padding:3px 12px;overflow:visible}
+  .timeline-panel{grid-row:3;grid-column:1;max-height:30px;margin:0;padding:3px 12px;overflow:visible}
   .timeline-panel>details>summary{font-size:12px;padding:0}
   .timeline-panel:has(details[open]){z-index:10;max-height:min(55vh,680px);overflow:auto;align-self:end;box-shadow:0 -12px 34px #070f17aa}
   footer{display:none}
@@ -280,4 +278,32 @@ footer{color:#91a8b2}
   .canvas-panel .flow-canvas{flex:1;min-height:0;overflow:hidden}
   .canvas-panel .flow-canvas svg{min-width:0;width:100%;height:100%}
   #clarification-panel{margin:0 0 14px}
+}
+
+.flow-node .node-title{font-size:16px}
+.flow-edge.task{stroke:#83aebc;stroke-width:1.8}
+.flow-edge.ownership,.flow-edge.capability,.flow-edge.state,.flow-edge.return,.flow-edge.branch{stroke:#608092;stroke-dasharray:4 4;opacity:.6}
+.flow-edge.traversed{stroke:#88e2cb;stroke-width:2.3;stroke-dasharray:none;opacity:1}
+.flow-edge.moving{stroke:#80c9f4;stroke-dasharray:7 5;opacity:1}
+
+/* Keep the task context in the header and messages inside the progress strip. */
+header{gap:18px}
+.header-task{display:flex;align-items:baseline;gap:10px;flex:1;min-width:0}
+.header-task h1{font-size:12px;line-height:1.3;white-space:nowrap;margin:0;color:#91a8b2;font-weight:600}
+.header-task #task-meta{min-width:0;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;overflow-wrap:normal;font-size:13px;line-height:1.3;color:#e4f1f2}
+.progress-panel:has(#notice:not([hidden])) #current-action,.progress-panel:has(#history-banner:not([hidden])) #current-action{display:none}
+.progress-panel #notice:not([hidden]){color:#b9eee0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.progress-panel #notice.problem:not([hidden]){color:#ffd4b6}
+.progress-panel #history-banner:not([hidden]){gap:12px;white-space:nowrap;overflow:hidden}
+.progress-panel #history-banner button{padding:2px 8px;white-space:nowrap}
+.canvas-panel #flow-caption{display:none}
+@media(min-width:1350px){
+  header .task-tools{flex-shrink:0}
+  header .task-tools button{white-space:nowrap}
+}
+@media(max-width:899px){
+  header{height:auto;min-height:76px;flex-wrap:wrap;gap:6px 12px;padding:10px 18px}
+  .header-task{order:3;flex-basis:100%}
+  header .task-tools{margin-left:auto}
+  .progress-panel #notice:not([hidden]),.progress-panel #history-banner:not([hidden]){position:static;max-width:none;margin:6px 0;padding:8px 10px;box-shadow:none}
 }
