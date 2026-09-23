@@ -1,6 +1,6 @@
 # 通信筹划工程工作约定
 
-接管或查询进度时参考 `docs/codex/NEXT_ACTION.md`；验收证据位于 `docs/codex/evidence/`。旧交接与 WBS 是阶段记录，不能单独证明当前完成状态。
+接管或查询进度时参考 `docs/codex/NEXT_ACTION.md`；验收证据位于 `docs/codex/evidence/`。历史阶段记录已移到仓库外 `_archive/2026-09-23-commplan/`，Git 历史可查。
 
 修改图状态、确认或持久化恢复时，按需使用 `.agents/skills/langgraph-workflow/SKILL.md`。其他任务按需要选用技能，不预设固定的设计、计划、测试或审查技能链。
 
