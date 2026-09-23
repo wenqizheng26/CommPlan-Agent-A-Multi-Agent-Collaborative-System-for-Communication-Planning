@@ -48,7 +48,8 @@ def model_ready():
 def asset_root(explicit=None):
     configured = explicit or os.environ.get('COMMPLAN_ASSET_ROOT')
     candidates = [Path(configured)] if configured else [
-        ROOT, ROOT.parent / 'signal-formula-rag',
+        ROOT / 'models' / 'signal-formula-qwen3', ROOT,
+        ROOT.parent / 'signal-formula-rag',
         ROOT.parent.parent / 'signal-formula-rag',
     ]
     for root in candidates:

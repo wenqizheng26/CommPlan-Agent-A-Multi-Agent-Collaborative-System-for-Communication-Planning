@@ -1,4 +1,4 @@
-# Demo delivery 当前入口（2026-09-22）
+# Demo delivery 当前入口（2026-09-23）
 
 唯一实施规格：[V4](DEMO_HANDOFF_V4.md)。严格按 Stage 0 → 5，只交付当前 FSPL Demo；下方提到扩展传播模型的旧计划仅为历史，不是本轮授权。
 
@@ -6,7 +6,9 @@ Stage 0 已保全当前本地候选并完成 Windows Python 217 / Node 16 / pip 
 
 无单位距离残留检测已经存在于当前源码，Stage 0 全量回归通过；历史“仍待修复”结论已过期。Stage 1 补齐四个 V4 拒绝例与合法共享单位候选回归。运行连线现在明确表示观测到的活动/责任关系，不声称 LangGraph 直接调用；fingerprint 纳入公式知识与启动资源配置，排除运行历史和日志。后端图、状态与数值执行不变。
 
-下一步：Stage 1 验证/提交，随后 Stage 2 产品化、Stage 3 项目内模型复制验证和交付工程。Chrome、干净安装、独立外部审查和正式 main release 均须实际验收。完整阶段记录见 DEMO_STAGE0.md 和后续阶段记录。
+Stage 1 已完成：3ac8819；Stage 2 已完成：8aabb57。Stage 3 的本地实施与回归已完成：模型/llama 从真实外部 asset root 先复制进被 Git 忽略的项目内目录并逐文件验哈希；实际内部 llama 服务 `/health`、`/v1/models`、工作台识别及三角色 Qwen 流程通过；Windows Python 3.12 全新解压安装、pip check、HTTP 创建/确认/重启恢复 smoke 通过；全量 Python 233 OK（1 symlink 权限 skip）、Node 24 PASS。流程图在浏览器中默认展开，仍位于任务和结果之后。
+
+下一步：Stage 3 记录/提交/干净源码 ZIP 重建与验证、推送。然后 Stage 4 在该候选上做最终 Windows/浏览器/故障路径验收；目标 Chrome 由用户手动确认，独立最终代码审查需由实施团队之外的 Reviewer 完成。当前 Git push 仍被所用 OAuth 凭据缺少 workflow scope 拒绝，不能将本地通过写成远端 CI 通过。Stage 5 的 PR、合并、main 重建与 tag 均未执行。权威状态表见 [VALIDATION](../demo/VALIDATION.md)。完整阶段记录见 DEMO_STAGE0.md 与 DEMO_STAGE3.md 等。
 
 ---
 以下全部为历史记录；计数、缺陷状态、下一步与发布状态不代表当前候选。
