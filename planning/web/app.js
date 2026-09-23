@@ -1,6 +1,6 @@
 import {taskProgress} from './progress.mjs';
 import {serviceText} from './model-status.mjs';
-import {nodes,statusText,nodeStates,renderFlow,relevantEvents,activityFresh,openRun,RELATION_DESCRIPTION} from './flow.mjs';
+import {nodes,statusText,nodeStates,renderFlow,relevantEvents,activityFresh,openRun} from './flow.mjs';
 import {renderDetails,el,labels,tabNames} from './details.mjs';
 import {renderConversation} from './conversation.mjs';
 import {reviewQuestion} from './roles.mjs';
@@ -38,9 +38,9 @@ function syncButtons(){
  for(const id of ['new','restore','refresh','history','recent-tasks','refresh-tasks'])$(id).disabled=busy||(id==='history'&&!current)||(id==='refresh'&&!current);
  $('export').disabled=busy||!shown();
  $('actions').hidden=!current||!!historical||!!activeContext||['COMPLETED','CANCELLED'].includes(current.status);
- $('dirty-hint').textContent=dirty?'输入已修改。图和详情仍是上次保存的版本；请提交后重新核对确认。':can?'确认只对当前版本有效；修改后需重新确认。':'';
+ $('dirty-hint').textContent=dirty?'输入已修改；请先保存，再核对并确认。':can?'修改输入后需要重新确认。':'';
  $('history-banner').hidden=!historical;
- if(historical)$('history-label').textContent=`历史只读 · 输入版本 ${historical.revision} / 状态版本 ${historical.state_version}，当前操作已禁用。`;
+ if(historical)$('history-label').textContent=`正在查看历史记录（输入版本 ${historical.revision}）；返回当前任务后可继续操作。`;
 }
 function readInput(){const p={};for(const[id,name]of [['frequency','frequency_ghz'],['distance','distance_km']])if($(id).value!==''){const value=Number($(id).value);if(!Number.isFinite(value))throw new Error('手工参数必须是有限数值。');p[name]={value,unit:$(id+'-unit').value};}return {raw_text:$('raw-text').value,manual_parameters:p,condition:$('condition').value||null,target:$('target').value||null};}
 function fillInput(s){$('raw-text').value=s.request.raw_text;$('mode').value=s.mode;$('condition').value=s.request.condition||'';$('target').value=s.request.target||'';for(const[id,name]of [['frequency','frequency_ghz'],['distance','distance_km']]){const p=s.request.manual_parameters[name];$(id).value=p?p.value:'';if(p)$(id+'-unit').value=p.unit;}$('manual-details').open=Object.keys(s.request.manual_parameters).length>0||!!s.request.condition||!!s.request.target;}
@@ -67,9 +67,9 @@ function draw(){
  const s=shown(),ev=historical?[]:activity;
  renderFlow($('flow-canvas'),{view,state:s,events:ev,selected,onSelect:chooseNode});
 
- $('flow-caption').textContent=RELATION_DESCRIPTION+' 静态架构关系不代表本次已执行；高亮仅来自运行事件，正式结果以保存状态为准。';
+ $('flow-caption').textContent='连线按运行活动高亮，不表示直接调用链；正式结果以保存状态为准。';
  $('status').textContent=historical?'历史只读':busy?'正在处理':s?(s.waiting_reason||labels[s.status]||s.status):'等待输入';
- $('task-meta').textContent=s?`输入版本 ${s.revision} · ${activeContext?'处理中，尚未提交':`状态版本 ${s.state_version}`}`:'输入需求，核对参数后生成自由空间路径损耗结果。';
+ $('task-meta').textContent=activeContext?'正在处理输入':'自由空间单程路径损耗 · 未含海面、散射与链路预算';
  const progress=taskProgress(s,ev,{dirty,historical:!!historical});
  $('current-action').textContent=progress.action;
  $('task-progress').replaceChildren(...progress.steps.map(step=>{const row=el('li',undefined,step.status);row.append(el('span',({completed:'✓',running:'●',waiting:'◐',failed:'!',cancelled:'—',idle:'○'})[step.status]||'○','progress-symbol'),el('span',step.label),el('span',({completed:'已完成',running:'处理中',waiting:'待处理',failed:'已阻断',cancelled:'已停止',idle:'未开始'})[step.status]||'未开始','progress-state'));if(['running','waiting'].includes(step.status))row.setAttribute('aria-current','step');return row;}));
@@ -165,7 +165,7 @@ $('choices-example').addEventListener('click',()=>populateExample('按自由空�
 $('conflict-example').addEventListener('click',()=>populateExample('按自由空间基准计算，频率2GHz，距离1km，求路径损耗。',true));
 $('new').addEventListener('click',()=>{current=historical=activeContext=null;activity=[];dirty=false;pendingCommand=null;pollGeneration++;selected='input';tab='overview';focusParameter=null;localStorage.removeItem('planning-task');history.replaceState(null,'',location.pathname);$('request-form').reset();$('supplement-form').reset();$('task-id').value='';$('submit').textContent='开始筹划';$('history-list').replaceChildren();notice('新任务已准备好；原任务仍保存在本地。');draw();});
 $('supplement-form').addEventListener('submit',e=>{e.preventDefault();submit('supplement').catch(e=>notice(e.message,true));});
-$('expand-detail').addEventListener('click',()=>{const expanded=$('workspace').classList.toggle('detail-wide');$('expand-detail').textContent=expanded?'恢复布局':'展开结果详情';});
+$('expand-detail').addEventListener('click',()=>{const expanded=$('workspace').classList.toggle('detail-wide');$('expand-detail').textContent=expanded?'恢复布局':'展开详情';});
 const canvasPanel=document.querySelector('.canvas-panel');
 function setFlowExpanded(expanded){canvasPanel.classList.toggle('flow-expanded',expanded);$('expand-flow').textContent=expanded?'恢复工作台':'放大流程图';$('expand-flow').setAttribute('aria-expanded',String(expanded));}
 $('expand-flow').addEventListener('click',()=>setFlowExpanded(!canvasPanel.classList.contains('flow-expanded')));
@@ -179,7 +179,7 @@ $('history').addEventListener('click',async()=>{
   if(generation!==pollGeneration||current?.task_id!==taskId)return;
   $('history-list').replaceChildren();
   for(const item of data.history){
-   const row=el('div',undefined,'history-entry');row.append(el('span',`输入版本 ${item.revision} / 状态版本 ${item.state_version} · ${labels[item.state.status]||item.state.status}`));const b=el('button','只读查看','secondary');
+   const row=el('div',undefined,'history-entry');row.append(el('span',`输入版本 ${item.revision} · 保存序号 ${item.state_version} · ${labels[item.state.status]||item.state.status}`));const b=el('button','只读查看','secondary');
    b.addEventListener('click',()=>{if(busy||generation!==pollGeneration||current?.task_id!==taskId)return;historical=item.state;fillInput(historical);$('accept').checked=false;selected=historical.status==='COMPLETED'?'publish':'confirmation';tab=nodes[selected][2];draw();});row.append(b);$('history-list').append(row);
   }
  }catch(e){if(generation===pollGeneration)notice(e.message,true);}
