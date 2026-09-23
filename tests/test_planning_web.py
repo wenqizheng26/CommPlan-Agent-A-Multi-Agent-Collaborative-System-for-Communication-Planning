@@ -106,6 +106,35 @@ class PlanningWebTests(unittest.TestCase):
         self.assertFalse(self.call('/api/cancel-operation',body)[1]['accepted'])
         self.assertEqual(self.call('/api/cancel-operation',body,headers={'X-Planning-Token':'bad'})[0],403)
 
+    def test_models_settings_and_metrics_endpoints(self):
+        with patch('planning.web_server.probe_registry', return_value={'qwen3-4b-q4': 'unreachable'}):
+            code, models = self.call('/api/models')
+        self.assertEqual(code, 200)
+        self.assertEqual(models['defaults']['chat'], 'qwen3-4b-q4')
+        self.assertIn('bge-small-zh-v1.5', models['embeddings'])
+        self.assertEqual(models['corpus']['size'], 7)
+        self.assertNotIn('weights', json.dumps(models))
+
+        code, current = self.call('/api/settings')
+        self.assertEqual((code, current['version']), (200, 0))
+        s = current['settings']
+        s['retrieval'].update(top_k=5, top_n=2)
+        # Writes need the session token like every other command.
+        self.assertEqual(self.call('/api/settings', dict(settings=s, expected_version=0),
+                                   headers={'X-Planning-Token': 'wrong'})[0], 403)
+        code, saved = self.call('/api/settings', dict(settings=s, expected_version=0))
+        self.assertEqual((code, saved['version']), (200, 1))
+        code, stale = self.call('/api/settings', dict(settings=s, expected_version=0))
+        self.assertEqual((code, stale['error']['code']), (409, 'STALE_SETTINGS'))
+        s['retrieval']['top_n'] = 9
+        self.assertEqual(self.call('/api/settings', dict(settings=s, expected_version=1))[0], 400)
+
+        self.assertEqual(self.call('/api/commands', command(), headers={'Origin': self.base})[0], 200)
+        code, metrics = self.call('/api/metrics')
+        self.assertEqual(code, 200)
+        self.assertGreaterEqual(metrics['runs'], 1)
+        self.assertIn('parse', {m['key'] for m in metrics['modules']})
+
 
 if __name__=='__main__':
     unittest.main()
