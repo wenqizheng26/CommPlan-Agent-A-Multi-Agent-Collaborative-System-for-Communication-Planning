@@ -1,6 +1,6 @@
 # CommPlan-Agent Planning Workbench
 
-**当前 Demo：在用户明确采用自由空间假设后，计算单链路单程路径损耗（FSPL）。** 输入、缺项与冲突处理、参数确认、确定性计算、硬校验、结构化审查和任务恢复已连成可操作工作流。结果只代表自由空间基准，不能证明实际海面链路可用。总体架构流程图在工作台页面下方直接展示；图上高亮表示观测到的活动与责任关系，不逐条声称 LangGraph 直接调用。
+**当前 Demo：在用户明确采用自由空间假设后，计算单链路单程路径损耗（FSPL）。** 输入、缺项与冲突处理、参数确认、确定性计算、硬校验、结构化审查和任务恢复已连成可操作工作流。结果只代表自由空间基准，不能证明实际海面链路可用。总体架构流程图与输入、结果并列展示；图上高亮表示观测到的活动与责任关系，不逐条声称 LangGraph 直接调用。
 
 仓库还保留早期 Formula RAG 应用（`app.py`、`launch.py`、`web/`），它是当前工作台使用的公式与检索基础。**本 Demo 主入口是 `start.cmd` / `启动.cmd` → `start_commplan.py` → Planning Workbench（127.0.0.1:18082）。** 早期应用不是本包的默认入口。
 
@@ -39,5 +39,17 @@ start.cmd --without-model
 ## 当前验证状态
 
 权威验收状态见 [VALIDATION.md](docs/demo/VALIDATION.md)。阶段源码测试、内置浏览器验收、目标 Chrome、干净安装、独立审查及 GitHub CI 分别记录；只有真实执行后才标 PASS。演示视频尚未发布，录制说明见 [RECORDING.md](docs/demo/RECORDING.md)。
+
+当前候选（2026-09-23）：
+
+```text
+commit: 5c4363083c89dedb1a3b925bc2f6ec4236f82103
+Python: .venv\Scripts\python.exe -B -X utf8 -m unittest discover -s tests -p "test_*.py" → 233 OK（1 symlink 权限 skip）
+Node: node --test tests/planning_*.test.mjs → 25 PASS
+Target Chrome: BLOCKED_EXTERNAL_CHROME_VALIDATION（等待用户手动验收）
+Independent review: BLOCKED_EXTERNAL_REVIEW（等待实施团队外 Reviewer）
+Release smoke test: PASS（干净源码 ZIP，解压后 HTTP 创建、确认、重启恢复）
+GitHub CI: PASS（planning-minimal / legacy-full，run 35820319930）
+```
 
 项目代码采用 [MIT 许可证](LICENSE)。现有公式资料只按链接和简短说明引用；模型和本地运行库各遵循其上游许可。安装依赖由 `requirements-planning.txt` 固定，source Demo 不再分发第三方模型或 Python 包。

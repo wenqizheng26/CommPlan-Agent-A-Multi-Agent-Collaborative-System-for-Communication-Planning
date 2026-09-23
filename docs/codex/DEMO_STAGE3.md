@@ -23,7 +23,7 @@
 - `.venv\Scripts\python.exe -m pip check`：PASS。
 - 源码包预提交候选：builder / validator / 解压 HTTP smoke PASS。全新解压后 `setup_planning.cmd`、`pip check` 和 HTTP smoke PASS；网络沙箱内首次 pip 下载被拒绝，获准的同目录重试成功。
 
-最新 UI 源码提交 `b62aaef` 后以 `--require-clean` 重建 source ZIP；`source_dirty=false`，76 文件，验证器解压、指纹检查与 HTTP 创建/确认/重启恢复 smoke PASS。ZIP SHA-256 及完整提交号见 [VALIDATION](../demo/VALIDATION.md)。
+UI 源码提交 `b62aaef` 后以 `--require-clean` 重建 source ZIP；`source_dirty=false`，76 文件，验证器解压、指纹检查与 HTTP 创建/确认/重启恢复 smoke PASS。Stage 4 又从测试修正后的干净提交 `5c43630` 重建同名 ZIP；当前 ZIP SHA-256 及完整提交号见 [VALIDATION](../demo/VALIDATION.md)。
 
 Stage 3 源码阶段提交：`b03c1c6`、`4bf24a7`、`e255b8d`、`9eb3868`、`b62aaef`；中间的 `4d6df0c` 为交接记录提交。
 
