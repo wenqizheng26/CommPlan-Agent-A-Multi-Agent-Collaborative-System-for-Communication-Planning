@@ -20,22 +20,23 @@ def check_cancelled():
         raise ValueError('OPERATION_CANCELLED')
 
 
-def chat(payload, url='http://127.0.0.1:18081/v1/chat/completions'):
+def chat(payload, url='http://127.0.0.1:18081/v1/chat/completions', *, timeout=30, context=4096):
     check_cancelled()
     deadline=operation_deadline.get()
-    remaining=deadline-time.monotonic() if deadline else 30
+    remaining=deadline-time.monotonic() if deadline else timeout
     if remaining<=0:
         raise ModelResponseError('MODEL_TIME_BUDGET', '本次操作的模型调用时间预算已用尽。')
     # Conservative character estimate, not an exact tokenizer claim. Leave room
-    # for template/schema and output in the configured 4096-token local model.
+    # for template/schema and output within the model's configured context.
     content=''.join(m['content'] for m in payload['messages'])
     estimate=sum(1.5 if ord(c)>127 else 0.34 for c in content)+payload.get('max_tokens',700)+500
-    if estimate>4096:
-        raise ModelResponseError('MODEL_CONTEXT_LIMIT', '输入和输出预算可能超过本机 4096 token 上下文，请缩短当前描述。')
+    if estimate>context:
+        raise ModelResponseError('MODEL_CONTEXT_LIMIT', f'输入和输出预算可能超过本机 {context} token 上下文，请缩短当前描述。')
     request=urllib.request.Request(url,json.dumps(payload,ensure_ascii=False).encode(),{'Content-Type':'application/json'})
     opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    started=time.perf_counter()
     try:
-        with opener.open(request,timeout=min(30,max(0.1,remaining))) as response:
+        with opener.open(request,timeout=min(timeout,max(0.1,remaining))) as response:
             raw=response.read(1024*1024).decode('utf-8')
     except urllib.error.HTTPError as exc:
         body=exc.read(8000).decode('utf-8',errors='replace')
@@ -50,6 +51,7 @@ def chat(payload, url='http://127.0.0.1:18081/v1/chat/completions'):
             raise ValueError('empty content')
     except (ValueError,KeyError,TypeError,IndexError) as exc:
         raise ModelResponseError('MODEL_OUTPUT_INVALID','模型返回的响应缺少有效 choices/message/content。',raw,True) from exc
+    envelope['latency_ms']=round((time.perf_counter()-started)*1000)
     return envelope,content
 
 

@@ -7,6 +7,7 @@ from planning.services.confirmation import review_for, validate_snapshot
 from planning.services import calculation
 from planning.agents.calculation import CalculationAgent
 from planning.agents.review import ReviewAgent, validate_assessment, REASONS
+from planning.agents.role_model import LocalRoleSelector
 from planning.agents.orchestrator import decide, MAX_CALCULATIONS
 from planning.workflow.requirements_graph import run_requirements, stamp
 from planning.workflow.activity import observe
@@ -45,9 +46,17 @@ def failed(state, node, exc):
                 trace=trace(state,node,'FAILED'))
 
 
-def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(), calculation_agent=None, review_agent=None, review_context=None):
-    calculation_agent = calculation_agent or CalculationAgent(None if getattr(agent, 'selector', None) else False)
-    review_agent = review_agent or ReviewAgent(None if getattr(agent, 'selector', None) else False,context=review_context)
+def role_selector(agent, bindings, role):
+    # False: deterministic. None: default local model. A bound selector: the model this command chose.
+    if not getattr(agent, 'selector', None):
+        return False
+    return LocalRoleSelector(bindings[role]) if bindings else None
+
+
+def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(), calculation_agent=None, review_agent=None,
+                         review_context=None, bindings=None):
+    calculation_agent = calculation_agent or CalculationAgent(role_selector(agent, bindings, 'compute_agent'))
+    review_agent = review_agent or ReviewAgent(role_selector(agent, bindings, 'validator_agent'), context=review_context)
     def propose(state):
         observe(observer,'requirements','started',caller='orchestrator')
         output = run_requirements(state['request'],agent,expected_revision=state['request']['revision'])

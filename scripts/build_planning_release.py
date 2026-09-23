@@ -19,7 +19,7 @@ ROOT_FILES = {
     "LICENSE", "README.md", "THIRD_PARTY.md", "requirements-planning.txt",
     "runtime_config.json", "setup_planning.cmd", "启动.cmd", "start.cmd",
     "start_commplan.py", "stop_commplan.py", "停止服务.cmd", "launch.py",
-    "knowledge/formulas.json", "planning/README.md", VALIDATION_RECORD,
+    "knowledge/formulas.json", "config/models.json", "planning/README.md", VALIDATION_RECORD,
     "docs/demo/RECORDING.md", "scripts/planning_smoke.py",
     "planning/run_planning.cmd",
 }
@@ -32,6 +32,8 @@ planning/__init__.py planning/agents/__init__.py planning/agents/calculation.py
 planning/agents/orchestrator.py planning/agents/requirements.py planning/agents/review.py
 planning/agents/role_model.py planning/build_info.py planning/demo.py
 planning/examples/complete.json planning/examples/conflict.json planning/examples/missing.json
+planning/providers/__init__.py planning/providers/registry.py planning/providers/settings.py
+planning/retrieval/__init__.py planning/retrieval/service.py
 planning/requirements_contract.py planning/services/__init__.py
 planning/services/calculation.py planning/services/clarification.py
 planning/services/confirmation.py planning/services/domain_calculation.py

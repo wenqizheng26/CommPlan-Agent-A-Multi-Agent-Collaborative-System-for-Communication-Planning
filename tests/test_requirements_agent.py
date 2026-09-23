@@ -9,6 +9,17 @@ from test_requirements_contract import request
 ROOT = Path(__file__).resolve().parents[1]
 
 
+
+def retrieved(hits):
+    """A retrieval result with the given (id, lexical score) hits, all sent to the model."""
+    from planning.retrieval import RetrievalResult
+    rows=[dict(id=i,source_type='formula_card',title=i,excerpt='',source={},
+               scores=dict(lexical=score,dense=None,fused=None,rerank=None),rank=r) for r,(i,score) in enumerate(hits,1)]
+    return RetrievalResult(hits=rows,used=[h['id'] for h in rows],mode_requested='lexical',mode_used='lexical',
+                           degraded=False,embedding_model_id=None,reranker_id=None,latency_ms=dict(total=0),
+                           corpus=dict(size=len(rows),version='test'),top_k=8,top_n=8)
+
+
 class RequirementsTests(unittest.TestCase):
     def agent(self, selector=False, **kwargs):
         try:
@@ -134,7 +145,7 @@ class RequirementsTests(unittest.TestCase):
 
     def test_zero_similarity_cannot_supply_evidence(self):
         a=self.agent()
-        with patch.object(a.retriever,'search',return_value=[{'id':'fspl_ghz','rank':1,'lexical_similarity':0}]):
+        with patch.object(a.retrieval,'search',return_value=retrieved([('fspl_ghz',0)])):
             self.assertEqual(a.run(request())['execution_status'],'NEEDS_MODEL')
 
     def test_direct_lookup_manual_units_and_missing_fields(self):
@@ -168,7 +179,7 @@ class RequirementsTests(unittest.TestCase):
 
     def test_empty_evidence_and_unknown_target(self):
         a = self.agent()
-        with patch.object(a.retriever, 'search', return_value=[]):
+        with patch.object(a.retrieval, 'search', return_value=retrieved([])):
             self.assertEqual(a.run(request())['execution_status'], 'NEEDS_MODEL')
         q = request(); q['target'] = 'unknown_model'
         self.assertEqual(a.run(q)['execution_status'], 'NEEDS_MODEL')
