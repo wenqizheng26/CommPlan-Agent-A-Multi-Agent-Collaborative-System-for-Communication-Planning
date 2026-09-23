@@ -43,7 +43,7 @@ planning/services/requirement_policy.py planning/services/requirement_validation
 planning/services/supplement.py planning/web_server.py planning/web/app.css
 planning/web/app.js planning/web/conversation.mjs planning/web/details.mjs
 planning/web/drafts.mjs planning/web/flow.mjs planning/web/index.html
-planning/web/model-status.mjs planning/web/progress.mjs planning/web/questions.mjs
+planning/web/model-status.mjs planning/web/progress.mjs planning/web/settings.mjs planning/web/timing.mjs planning/web/questions.mjs
 planning/web/roles.mjs planning/web/text.mjs planning/web/values.mjs
 planning/workflow/__init__.py planning/workflow/activity.py
 planning/workflow/planning_graph.py planning/workflow/requirements_graph.py

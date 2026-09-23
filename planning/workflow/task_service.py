@@ -217,8 +217,11 @@ class TaskService:
                 agent=None
             else:
                 b=bindings['requirements'] if bindings else None
-                agent=RequirementsAgent(self.root,selector=False if mode=='deterministic' else (
-                    LocalSelector(b.url,model=b.alias,temperature=b.temperature,timeout=b.timeout_s,context=b.context) if b else None),
+                selector=False if mode=='deterministic' else (
+                    LocalSelector(b.url,model=b.alias,temperature=b.temperature,timeout=b.timeout_s,context=b.context) if b else None)
+                if b:
+                    selector.model_id=b.model_id  # registry identity for observation; the service sees only the alias
+                agent=RequirementsAgent(self.root,selector=selector,
                     retrieval=self.retrieval_for(retrieval['embedding'] if retrieval['mode']!='lexical' else None),
                     retrieval_params=dict(mode=retrieval['mode'],top_k=retrieval['top_k'],top_n=retrieval['top_n']))
             if agent is not None:

@@ -19,7 +19,7 @@ def failure_reason(exc):
 
 
 def call_details(binding, envelope=None):
-    details = dict(model_id=binding.model_id) if binding else {}
+    details = dict(model_id=binding.model_id, timeout_s=binding.timeout_s) if binding else {}
     if envelope:
         details.update(latency_ms=envelope.get('latency_ms'), usage=envelope.get('usage') or {})
     return details

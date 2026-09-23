@@ -93,7 +93,8 @@ class RequirementsAgent:
             [request['target']] if request['target'] else parsed['targets'], prelim_conditions)
         if self.selector and candidates and not known_unsupported:
             observe(observer,'interpretation','started')
-            observe(observer,'llm','started',caller='requirements',purpose='intent')
+            observe(observer,'llm','started',caller='requirements',purpose='intent',
+                    **({'timeout_s':self.selector.timeout} if isinstance(self.selector, LocalSelector) else {}))
             correction=None
             for attempt in range(1, 4):
                 check_cancelled()
@@ -153,8 +154,16 @@ class RequirementsAgent:
         observe(observer,'interpretation','completed' if mode in {'llm','stub'} else 'skipped',
                 mode=mode,health=health)
         if self.selector and candidates and not known_unsupported:
-            observe(observer,'llm','completed' if mode in {'llm','stub'} else 'failed',
-                    caller='requirements',purpose='intent',mode=mode,health=health)
+            called = mode in {'llm','stub'}
+            last = next((d['code'] for d in reversed(diagnostics) if d['code'].startswith('MODEL_')), None)
+            reason = {'MODEL_UNAVAILABLE':'offline','MODEL_TIME_BUDGET':'timeout','MODEL_REQUEST_REJECTED':'rejected',
+                      'MODEL_CONTEXT_LIMIT':'rejected'}.get(last,'structure')
+            observe(observer,'llm','completed' if called else 'failed',
+                    caller='requirements',purpose='intent',mode=mode,health=health,
+                    **({} if called else {'reason':reason}),
+                    **({'model_id':self.selector.model_id} if getattr(self.selector,'model_id',None) else {}),
+                    **({'latency_ms':envelope.get('latency_ms'),'usage':envelope.get('usage') or {}}
+                       if called and isinstance(envelope, dict) else {}))
         observe(observer,'planning','started')
 
         targets = parsed['targets'] if parsed['target_origin'] in {'explicit_text', 'manual'} else []
