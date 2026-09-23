@@ -1,6 +1,6 @@
 # 模型与检索：设计规格
 
-状态：设计定稿，未实施。纳入 v0.1.0-demo，实施后按 V4 重跑 Stage 2–4 门禁。
+状态：后端与页面已实施于分支 `claude/model-retrieval`（见第 12 节），待 Codex 完成评测集、真实模型联调与全量复验（见 `docs/codex/NEXT_ACTION.md`）。纳入 v0.1.0-demo，按 V4 重跑 Stage 2–4 门禁。
 决策来源：用户 2026-09-23 确认——纳入本次发布；仅本机模型；全局默认 + 逐次记录；RAG 实现由其他人按本文接口完成。
 本文取代 V4 §1.2 与 §32 中“不做新 RAG 栈”的限制，仅限本文范围；runtime Skills、LoRA、远程模型仍不在范围内。
 
@@ -216,3 +216,27 @@ class RetrievalResult:
 ## 11. 发布门禁增补
 
 在 V4 §29 七项流程之外，增加：切换生成模型并完成任务；模型加载中与加载失败的降级；按角色覆盖生效且记录正确；检索三种模式与 top-k/top-n 边界；向量模型缺失降级；已确认任务在改设置后不失效且提示旧设置；耗时显示与性能视图；一份评测报告。
+
+## 12. 实施记录（2026-09-23）
+
+| 规格 | 实施 | 理由 |
+| --- | --- | --- |
+| 注册表 `config/models.json` | 已实现，校验回环地址、项目内相对路径、唯一 id 与严格结构化能力；纳入 build fingerprint 与发布清单 | — |
+| 包名 | 代码位于 `planning/providers/` | 发布包安全检查拒绝任何一级名为 `models` 的路径，改名比放宽门禁安全 |
+| 第二个生成模型 | 未加入；注册表提供同一 Qwen 的两个参数档案（标准 30 s / 快速失败 12 s） | 用户决定先搭框架；档案可验证切换与按角色绑定，且对应“失败要等满 30 s”的实测问题 |
+| 检索默认方式 | 默认词项；混合与向量为可选 | 最小安装没有 torch，向量冷启动约 48 s；默认混合会让每次运行都报降级 |
+| `max_tokens` | 不开放设置，保留各角色固定预算（需求 600、补问 400、角色 700） | 统一覆盖可能突破 4096 上下文 |
+| 第 6 节页面内加载模型 | 暂缓；面板只显示状态 | 只有一个权重文件时无法验证，且由服务端启动进程需单独安全审查 |
+| 报告合同 `component_modes.retrieval` | 保持 `lexical_fallback` | 候选公式的准入门槛仍是词项证据；实际检索方式记录在任务状态 `retrieval` |
+| 逐次记录 | 任务状态 `run_settings.requirements` / `run_settings.calculation` 与 `retrieval` | 不改冻结的报告合同；设置变化不改写已保存任务 |
+| 失败原因 | `offline / timeout / structure / rejected`；用户取消不再被当作输出不合格重试 | 旧记录显示为“未记录原因” |
+
+实测补充：真实 bge 模型在本机跑通检索合同 7 项；预热在文件缓存为热时约 7.8 s，完全冷启动（首次读盘并生成索引缓存）约 48 s。本机模型离线时，每次调用约 2.1 s 才失败，来自 Windows 对已关闭本机端口的连接重试，而非模型耗时。历史数据中“失败 p50 约 2.1 s”即此原因。后续可在每次命令开头探测一次服务，已知离线则各角色直接降级。
+
+## 13. RAG 对接说明（给实现检索的同事）
+
+1. 实现 `planning/retrieval/service.py` 中的 `RetrievalService` 协议：`search(query, *, top_k, top_n, mode, filters=None) -> RetrievalResult` 与 `describe()`。结果字段、排序与降级规则见第 4 节。
+2. 参考实现是同文件的 `DefaultRetrievalService`：词项打分、后台预热的向量、RRF 融合与未就绪降级都在其中，可以直接扩展（例如文档切块、重排器）。
+3. 合同测试：设置环境变量 `RETRIEVAL_FACTORY=包.模块:工厂函数`，工厂接收 `(root, cards)` 返回已可用向量能力的服务，然后运行 `python -B -X utf8 -m unittest tests.test_retrieval_contract`。全部通过才能接入。
+4. 接入点：`TaskService.retrieval_for()` 按向量模型 id 持有长期实例；需求 Agent 只使用 `used`（前 top-n）且词项分大于 0 的公式卡作为候选。文档切块（`source_type='document_chunk'`）目前只用于展示与模型上下文，不参与公式准入。
+5. 不做：联网、在检索中返回数值、改变确认与计算流程。
