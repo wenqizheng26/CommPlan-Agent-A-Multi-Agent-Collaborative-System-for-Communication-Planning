@@ -1,5 +1,32 @@
 # CommPlan-Agent 当前交接（2026-09-24）
 
+## M1 下一阶段（分支 `claude/calc-plans`，不影响正在审查的 v0.1.0 候选）
+
+验收点见 [ACCEPTANCE_M1](../design/ACCEPTANCE_M1.md)，设计见 [CALCULATION_PLANS](../design/CALCULATION_PLANS.md)。第 1 周的通用计算链已提交在 9a69535。v0.1.0 发布之前，不要把该分支合入 `codex/model-eval-integration` 或 `main`。
+
+### Codex 任务 C7：计算链的评测与真实模型回归
+
+> **目标**：在真实 Qwen 下确认，扩展计算链之后，FSPL 的表现没有退化，链路预算请求也能走通。
+> **范围**：在 `claude/calc-plans` 上新增评测用例、证据和测试；不改 `planning/` 业务代码。发现问题时记录原始输出，交给 Claude 判断，不要自行修改业务逻辑。
+> **步骤**：
+> 1. 在 `tests/eval/requirements_cases.jsonl` 中增加 6 条用例，同步更新 `tests/test_eval_models.py` 中的条数断言：
+>    - 完整链路余量；
+>    - 完整接收功率；
+>    - 缺少预算参数；
+>    - 余量与热噪声同时请求（期望 NEEDS_MODEL）；
+>    - 多步计划中出现区间（期望 PLAN_DOMAIN_UNSUPPORTED）；
+>    - 馈线损耗为负。
+>
+>    期望值以 `tests/test_calculation_plans.py` 的行为为准。
+> 2. 用 `scripts/eval_models.py` 跑确定性基线和两个 Qwen 档案，与 C6 的结果逐条对比。重点检查原有 FSPL 用例：纯 FSPL 请求送入模型的候选多了 `received_power` 卡，需要确认目标识别没有变化。
+> 3. 在主工作区启动本机 Qwen，用本分支服务（模型模式）完成页面上的“链路预算”示例，记录任务 id、截图，以及每一步的数值。
+> 4. 回归：Python、Node、`pip check` 全部通过。结果写入 `docs/codex/evidence/`，并在本节末尾补一行状态。
+> **完成标准**：新增用例的确定性基线全部通过；FSPL 用例与 C6 相比，退化项逐条列出（没有退化也要写明）；真实模型场景有证据；未完成的项目如实标为待办。
+
+讲解：计算链由程序按公式卡的输出名和输入名反向拼接，模型在这一步只参与目标识别。数值仍然只来自登记公式，每一步都有独立复算。单步 FSPL 的执行、结果形状和数值保持 v0.1.0 原样。
+
+---
+
 唯一实施规格：[V4](DEMO_HANDOFF_V4.md)。当前交付范围仍是 FSPL-stage Planning Workbench；后端确认、checkpoint、revision 与确定性数值合同保持冻结。验收证据见 [VALIDATION](../demo/VALIDATION.md) 和 [C5/C6 记录](evidence/2026-09-24-C5-C6.md)。
 
 ## 当前候选
