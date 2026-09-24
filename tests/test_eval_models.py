@@ -50,12 +50,22 @@ class EvaluationTests(unittest.TestCase):
         self.assertIsNone(percentile([], 95))
 
     def test_offline_model_is_unscored(self):
-        with patch('eval_models.model_available', return_value=False):
+        with patch.object(Registry, 'installed', return_value=True), \
+             patch('eval_models.model_available', return_value=False):
             result = evaluate(ROOT, load_cases(DEFAULT_CASES)[:2], 'qwen3-4b-q4', Registry(ROOT))
         self.assertEqual(result['availability'], 'offline')
         self.assertEqual(result['summary']['scored'], 0)
         self.assertEqual(result['summary']['structured'], {'passed': 0, 'attempted': 0})
         self.assertTrue(all(row['checks'] is None for row in result['cases']))
+
+    def test_uninstalled_model_is_unscored(self):
+        with patch.object(Registry, 'installed', return_value=False), \
+             patch('eval_models.model_available') as probe:
+            result = evaluate(ROOT, load_cases(DEFAULT_CASES)[:2], 'qwen3-4b-q4', Registry(ROOT))
+        self.assertEqual(result['availability'], 'not_installed')
+        self.assertEqual(result['summary']['scored'], 0)
+        self.assertTrue(all(row['checks'] is None for row in result['cases']))
+        probe.assert_not_called()
 
     def test_duplicate_case_id_rejected(self):
         line = DEFAULT_CASES.read_text(encoding='utf-8').splitlines()[0]
