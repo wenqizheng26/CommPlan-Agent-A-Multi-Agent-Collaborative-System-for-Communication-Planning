@@ -9,7 +9,7 @@
 > **目标**：在真实 Qwen 下确认，扩展计算链之后，FSPL 的表现没有退化，链路预算请求也能走通。
 > **范围**：在 `claude/calc-plans` 上新增评测用例、证据和测试；不改 `planning/` 业务代码。发现问题时记录原始输出，交给 Claude 判断，不要自行修改业务逻辑。
 > **环境**：
-> - 该分支已检出在工作区 `E:\codex\项目\信号与AI\.workareas\commplan-calc-plans`，所有命令都在这个目录运行；不要在主工作区切换到这个分支。
+> - 该分支已检出在工作区 `E:/codex/项目/信号与AI/CommPlan-Agent-M1`（与主工作区 `CommPlan-Agent` 并列；可用 `git worktree list` 核对），所有命令都在这个目录运行；不要在主工作区切换到这个分支。
 > - Python 使用主工作区的 `CommPlan-Agent\.venv`。
 > - 本工作区没有被 git 忽略的 `models/`，否则评测会把 Qwen 记为 `not_installed`。先在 cmd 中执行 `mklink /J models E:\codex\项目\信号与AI\CommPlan-Agent\models` 建立目录联接（该路径已被忽略，不会进入提交或源码包），完成后可以删除。
 > - Qwen 服务仍从主工作区启动。
