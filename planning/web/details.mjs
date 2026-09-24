@@ -5,8 +5,38 @@ import {nodes,statusText,nodeStates} from './flow.mjs';
 import {roleModeNames,reviewDecisionNames,reviewQuestion} from './roles.mjs';
 import {provenance,settingsDrift,RETRIEVAL} from './settings.mjs';
 import {fmt} from './timing.mjs';
-export const parameterNames={frequency_ghz:'载波频率',distance_km:'路径距离'};
-export const symbols={frequency_ghz:'f',distance_km:'d'};
+export const parameterNames={frequency_ghz:'载波频率',distance_km:'路径距离',tx_power_dbm:'发射功率',tx_gain_dbi:'发射天线增益',rx_gain_dbi:'接收天线增益',
+ tx_loss_db:'发射馈线损耗',rx_loss_db:'接收馈线损耗',path_loss_db:'路径损耗',extra_loss_db:'额外损耗',rx_power_dbm:'接收信号电平',rx_threshold_dbm:'接收门限',reserve_db:'预留余量',link_margin_db:'链路余量'};
+export const symbols={frequency_ghz:'f',distance_km:'d',tx_power_dbm:'Pt',tx_gain_dbi:'Gt',rx_gain_dbi:'Gr',tx_loss_db:'Lt',rx_loss_db:'Lr',path_loss_db:'L',extra_loss_db:'La',rx_power_dbm:'Pr',rx_threshold_dbm:'Pth',reserve_db:'M₀'};
+export const toolNames={fspl_ghz:'自由空间路径损耗',received_power:'接收信号电平',link_margin:'链路余量'};
+// Internal parameter ids never reach the reader; distance/frequency keep their unit hint.
+export function humanize(q){return q.replaceAll('distance_km','路径距离（km）').replaceAll('frequency_ghz','载波频率（GHz）').replace(/[a-z]+(?:_[a-z0-9]+)+/g,n=>parameterNames[n]||n);}
+// One row per plan step: every input names its source (parameter value, missing, or an earlier step).
+export function planSteps(plan,report,result){
+ const order=Object.fromEntries(plan.steps.map((s,i)=>[s.step_id,i+1]));
+ const params=Object.fromEntries(report.parameters_proposal.map(p=>[p.parameter_id,p]));
+ const done=Object.fromEntries((result?.steps||[]).map(s=>[s.step_id,s]));
+ return plan.steps.map((step,i)=>({n:i+1,title:toolNames[step.tool_id]||step.tool_id,unit:step.expected_unit,
+  value:done[step.step_id]?.output.value??(plan.steps.length===1&&result?result.outputs[0].value:null),
+  inputs:Object.entries(step.inputs).map(([name,b])=>{
+   if(b.kind==='step')return {name,label:parameterNames[name]||name,source:`步骤 ${order[b.ref]} 的结果`,kind:'step'};
+   const p=params[b.ref];
+   if(!p||p.value===null)return {name,label:parameterNames[name]||name,source:p?.status==='conflicting'?'来源冲突，待确认':'缺失，待补充',kind:'missing'};
+   return {name,label:parameterNames[name]||name,source:`${formatDomain(p.value)} ${p.unit} · ${p.origins.some(o=>o.kind==='manual_form')?'手工填写':'原文'}`,kind:'parameter'};
+  })}));
+}
+function stepsBlock(plan,report,result){
+ const sec=el('section',undefined,'detail-block'),list=el('ol',undefined,'plan-steps');
+ for(const s of planSteps(plan,report,result)){
+  const li=el('li',undefined,'plan-step'),head=el('div',undefined,'plan-step-head');
+  head.append(el('strong',`${s.n}. ${s.title}`),el('span',s.value==null?`输出 ${s.unit}`:`${formatDomain(s.value,2)} ${s.unit}`,'plan-step-out'+(s.value==null?'':' done')));
+  const ins=el('ul',undefined,'plan-inputs');
+  for(const x of s.inputs){const row=el('li',undefined,x.kind);row.append(el('span',x.label),el('span',x.source));ins.append(row);}
+  li.append(head,ins);list.append(li);
+ }
+ sec.append(el('h3',`计算步骤 · 共 ${plan.steps.length} 步`),list,el('p','每一步都用登记公式计算，输入只来自已确认的参数或上一步的结果；执行后逐步独立复算。','hint'));
+ return sec;
+}
 export const labels={AWAITING_CONFIRMATION:'等待核对确认',AWAITING_INPUT:'需要补充或修正',NEEDS_MODEL:'模型或依据不足',FAILED:'处理失败',COMPLETED:'已完成',CANCELLED:'已取消',RUNNING:'正在处理'};
 export const tabNames={overview:'概览',parameters:'参数',plan:'计划',formula:'公式',evidence:'依据',result:'结果'};
 export function el(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
@@ -66,7 +96,7 @@ export function renderDetails(host,{state,events=[],node='input',tab='overview',
   const raw=block('当前描述定位');const quote=el('p',undefined,'source-quote');const p=r.parameters_proposal.find(p=>p.canonical_name===focusParameter);const origin=p?.origins.find(o=>o.kind==='user_text'&&o.span);const text=state.request.raw_text;
   if(origin){const chars=Array.from(text);quote.append(document.createTextNode(chars.slice(0,origin.span[0]).join('')),el('mark',sourceExcerpt(text,origin.span)),document.createTextNode(chars.slice(origin.span[1]).join('')));}else quote.textContent=text;
   raw.append(quote);host.append(raw);
-  if(r.questions.length)host.append(block('需要处理',r.questions.map(q=>q.replaceAll('distance_km','路径距离（km）').replaceAll('frequency_ghz','载波频率（GHz）')),'warning'));
+  if(r.questions.length)host.append(block('需要处理',r.questions.map(humanize),'warning'));
   const table=el('table');const tr=el('tr');['参数 / 符号','规范值','来源与原始值'].forEach(t=>tr.append(el('th',t)));const thead=el('thead');thead.append(tr);table.append(thead);const body=el('tbody');
   for(const param of r.parameters_proposal){const row=el('tr',undefined,param.canonical_name===focusParameter?'highlight-row':'');const titleCell=el('td');titleCell.append(button(`${parameterNames[param.canonical_name]||param.canonical_name} · ${symbols[param.canonical_name]||''}`,()=>onParameter(param.canonical_name)));row.append(titleCell,el('td',param.value===null?(param.status==='conflicting'?'冲突':'缺失'):`${formatDomain(param.value)} ${param.unit}`));const sources=el('td');
    for(const o of param.origins){sources.append(el('strong',`${formatDomain(o.value)} ${o.unit}`),el('small',o.kind==='user_text'?`当前描述：${o.span?sourceExcerpt(text,o.span):'未提供定位'}`:'用户手工填写'));}
@@ -78,12 +108,12 @@ export function renderDetails(host,{state,events=[],node='input',tab='overview',
  }
  if(tab==='plan'){
   host.append(block('计算目标',plan?.objective||'尚未形成可执行计划'));
-  if(!plan){host.append(block('当前阻断',r.questions.length?r.questions:['模型或依据不足，不能进入计算。'],'warning'));return;}
-  host.append(block('登记模型',`${model?.title||plan.selected_model.join('、')} · v${model?.version||'未知'}`));
+  if(!plan){host.append(block('当前阻断',r.questions.length?r.questions.map(humanize):['模型或依据不足，不能进入计算。'],'warning'));return;}
+  host.append(stepsBlock(plan,r,state.result));
+  host.append(block('登记模型',plan.steps.length>1?plan.selected_model.map(id=>toolNames[id]||id).join(' → '):`${model?.title||plan.selected_model.join('、')} · v${model?.version||'未知'}`));
   host.append(block('模型选择依据',model?.description||'无可用模型说明'));
   host.append(block('用户声明条件',r.conditions.map(c=>({free_space:'采用自由空间模型',free_space_reference:'只求自由空间基准',non_free_space:'实际非自由空间环境'})[c]||c)));
   host.append(block('关键假设与边界',r.assumptions));
-  for(const [i,step]of plan.steps.entries())host.append(block(`步骤 ${i+1} · ${step.tool_id}`,`输入：${Object.keys(step.inputs).map(n=>parameterNames[n]||n).join('、')}；预期输出单位：${step.expected_unit}。执行后进行独立结果校验。`));
   host.append(button('核对公式与参数绑定 →',()=>onTab('formula')),button('查看模型依据 →',()=>onTab('evidence')));host.append(jsonDetails('详细计划与绑定',plan));return;
  }
  if(tab==='formula'){
@@ -92,9 +122,11 @@ export function renderDetails(host,{state,events=[],node='input',tab='overview',
   const math=el('div',undefined,'math-formula');
   if(model.id==='fspl_ghz'&&model.expression==='92.4 + 20*log10(frequency_ghz) + 20*log10(distance_km)')math.append(formulaMath());else math.append(el('code',model.expression));host.append(math);
   host.append(el('p','以 GHz 与 km 为单位取数值；对数的自变量为相应无量纲比值。','hint'));
-  for(const [name,spec]of Object.entries(model.parameters)){const param=r.parameters_proposal.find(p=>p.canonical_name===name);const b=block(`${symbols[name]||name} · ${spec.description}`,`单位 ${spec.unit}；${param?.value==null?'尚无唯一可用值':`当前值 ${formatDomain(param.value)} ${param.unit}`}。`);b.classList.toggle('highlight-row',name===focusParameter);b.append(button('定位参数原文与来源',()=>onParameter(name)));host.append(b);}
+  const last=plan.steps[plan.steps.length-1];
+  for(const [name,spec]of Object.entries(model.parameters)){const param=r.parameters_proposal.find(p=>p.canonical_name===name);const fromStep=last.inputs[name]?.kind==='step';const b=block(`${symbols[name]||name} · ${spec.description}`,`单位 ${spec.unit}；${fromStep?'由上一步计算得出':param?.value==null?'尚无唯一可用值':`当前值 ${formatDomain(param.value)} ${param.unit}`}。`);b.classList.toggle('highlight-row',name===focusParameter);b.append(button('定位参数原文与来源',()=>onParameter(name)));host.append(b);}
   const actual=state.result?.normalized_inputs;
-  if(actual&&state.result.outputs.length>1){host.append(block('实际代入（分候选执行）',state.final_report?.conclusion||'候选分别执行；完整输入与结果见任务 JSON。'));}
+  if(actual&&state.result.steps){host.append(block('实际代入（逐步）',state.result.steps.map((s,i)=>`${i+1}. ${toolNames[s.tool_id]||s.tool_id}：${Object.entries(s.inputs).map(([k,v])=>`${symbols[k]||k} ${formatDomain(v,2)}`).join('，')} → ${formatDomain(s.output.value,2)} ${s.output.unit}`)));}
+  else if(actual&&state.result.outputs.length>1){host.append(block('实际代入（分候选执行）',state.final_report?.conclusion||'候选分别执行；完整输入与结果见任务 JSON。'));}
   else if(actual){host.append(block('实际代入（已确认输入）',`92.4 + 20 × log₁₀(${formatDomain(actual.frequency_ghz)}) + 20 × log₁₀(${formatDomain(actual.distance_km)}) = ${formatDomain(state.result.outputs[0].value,2)} dB`));}
   else host.append(block('待执行','当前只展示登记公式和参数草稿，确认后由专业程序代入计算。'));
   host.append(block('模型假设',r.assumptions));host.append(button('定位公式来源与原式换算 →',()=>onTab('evidence')));host.append(jsonDetails('登记程序表达式',model.expression));return;
@@ -117,8 +149,9 @@ export function renderDetails(host,{state,events=[],node='input',tab='overview',
   if(!state.final_report||state.status!=='COMPLETED'){host.append(block('尚无正式发布结果',state.failure?.message||'确认计算且结果校验通过后在此展示。'));return;}
   const drift=historical?[]:settingsDrift(state,settings);
   if(drift.length){const b=block('当前默认设置已改变',`${drift.join('；')}。这个结果按生成时的配置保存，不会自动重算；数值只取决于已确认的参数。`,'warning');if(onReparse)b.append(button('按新设置重新解析',onReparse,'secondary compact'));host.append(b);}
-  for(const [i,value] of state.result.outputs.entries()){const metric=el('div',undefined,'metric');metric.append(el('strong',formatDomain(value.value,2)),el('span',value.unit));host.append(el('p',state.result.outputs.length>1?`候选 ${i+1} · 自由空间单程路径损耗`:'自由空间单程路径损耗','eyebrow'),metric);if(value.inputs)host.append(el('p',Object.entries(value.inputs).map(([k,v])=>`${parameterNames[k]||k} ${formatDomain(v)} ${{frequency_ghz:'GHz',distance_km:'km'}[k]||''}`).join('；'),'hint'));}host.append(el('p',state.final_report.conclusion));
-  const names={result_integrity:'结果完整性',snapshot_identity:'确认快照版本',input_consistency:'输入一致性',plan_identity:'执行计划',evidence_consistency:'引用依据',model_identity:'模型与公式版本',numeric_domain:'数值、名称与单位',fspl_magnitude:'独立数量级检查'};
+  for(const [i,value] of state.result.outputs.entries()){const metric=el('div',undefined,'metric');metric.append(el('strong',formatDomain(value.value,2)),el('span',value.unit));host.append(el('p',state.result.steps?toolNames[state.result.model_id]||state.result.model_id:state.result.outputs.length>1?`候选 ${i+1} · 自由空间单程路径损耗`:'自由空间单程路径损耗','eyebrow'),metric);if(value.inputs)host.append(el('p',Object.entries(value.inputs).map(([k,v])=>`${parameterNames[k]||k} ${formatDomain(v)} ${{frequency_ghz:'GHz',distance_km:'km'}[k]||''}`).join('；'),'hint'));}host.append(el('p',state.final_report.conclusion));
+  if(state.result.steps)host.append(stepsBlock(state.review.report.calculation_plan_proposal,state.review.report,state.result));
+  const names={step_chain:'逐步代入链',independent_magnitude:'逐步独立复算',result_integrity:'结果完整性',snapshot_identity:'确认快照版本',input_consistency:'输入一致性',plan_identity:'执行计划',evidence_consistency:'引用依据',model_identity:'模型与公式版本',numeric_domain:'数值、名称与单位',fspl_magnitude:'独立数量级检查'};
   const checks=block('程序校验');for(const v of state.validations)checks.append(el('p',`${v.passed?'✓':'×'} ${names[v.validator_id]||v.validator_id}`,'check-result'));host.append(checks);
   const made=provenance(state,models);if(made.length){const b=el('section',undefined,'detail-block provenance');b.append(el('h3','生成配置'));const grid=el('dl');for(const [k,v] of made)grid.append(el('dt',k),el('dd',v));b.append(grid);host.append(b);}
   host.append(block('结果含义与适用限制',state.final_report.limitations),roles());host.append(el('p',state.final_report.review?'报告数值与正文来自已验证数据；结构化审查模式：'+(roleModeNames[state.final_report.review.mode]||state.final_report.review.mode)+'。':'此历史记录为确定性程序报告，未记录独立审查角色。','hint'));

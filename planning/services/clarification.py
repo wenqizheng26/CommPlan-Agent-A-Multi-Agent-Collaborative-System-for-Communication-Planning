@@ -4,7 +4,7 @@ import re
 from planning.requirements_contract import digest, require
 from planning.services.requirement_parameters import collect_parameters
 from planning.services.input_domains import numbers, APPROX, format_value
-from formula_rag.parsing import extract_request
+from formula_rag.parsing import extract_request, FIELDS
 from planning.services.supplement import input_of, conversation_of
 
 NAMES={'frequency_ghz':'载波频率','distance_km':'路径距离'}
@@ -22,7 +22,7 @@ def issues_for(state):
         issues.append(dict(id=key,kind=kind,field=field,title=title,detail=detail,excerpt=excerpt,
                            choices=list(choices),status='open',blocking=True,source='requirements'))
     if state['status']=='NEEDS_MODEL':
-        add('capability','task','需求明确，但当前模型不支持','当前只支持自由空间路径损耗。可编辑任务重新定义目标；系统不会擅自替换你的需求。')
+        add('capability','task','需求明确，但当前模型不支持','当前支持自由空间条件下的路径损耗、接收信号电平与链路余量。可编辑任务重新定义目标；系统不会擅自替换你的需求。')
         return issues
     diagnostics=report.get('diagnostics',[])
     if any(d['code']=='INTENT_CONFLICT' for d in diagnostics):
@@ -30,7 +30,8 @@ def issues_for(state):
         return issues
     if not report.get('targets'):
         add('clarification','goal','你希望得到什么结果？','先明确目标，再判断能力与所需参数；选择不代表当前系统支持。',
-            choices=[dict(value='fspl_ghz',label='路径损耗'),dict(value='link_feasibility',label='判断能否通信'),dict(value='scheme_comparison',label='比较方案')])
+            choices=[dict(value='fspl_ghz',label='路径损耗'),dict(value='received_power',label='接收信号电平'),dict(value='link_margin',label='链路余量'),
+                     dict(value='link_feasibility',label='判断能否通信'),dict(value='scheme_comparison',label='比较方案')])
         return issues
     if any(d['code']=='MISSING_CONDITION' for d in diagnostics):
         add('clarification','condition','是否明确只做自由空间基准？','自由空间基准不代表实际海面或遮挡环境。',
@@ -49,6 +50,14 @@ def issues_for(state):
             add('missing',field,'请补充'+NAMES[field],'可输入单值、区间或离散候选，必须包含单位。')
         elif min(numbers(p['value']))<=0:
             add('invalid',field,NAMES[field]+'必须大于零','区间的所有端点与候选都必须大于零。')
+    # Link-budget inputs are answered by editing or supplementing the text, one list per state.
+    budget=[f for f,p in params.items() if f not in NAMES and f in FIELDS and p['status'] in {'missing','conflicting'}]
+    if budget:
+        add('missing','task','请补充计算所需参数','尚缺或冲突：'+'、'.join(f'{FIELDS[f][0]}（{FIELDS[f][1]}）' for f in budget)
+            +'。请编辑当前任务或在“补充与修改”中写明，例如“发射功率 30 dBm”。')
+    for d in diagnostics:
+        if d['code'] in {'PLAN_DOMAIN_UNSUPPORTED','PLAN_TARGETS_SPLIT'} or (d['code']=='INPUT_DOMAIN_INVALID' and d['details'].get('fields') and not set(d['details']['fields'])&set(NAMES)):
+            add('clarification','task','计算计划需要调整',d['message'])
     for d in diagnostics:
         if d['code'] in {'SOURCE_AMBIGUOUS','INPUT_PARSE_ISSUE'}:
             field=d['details'].get('field')

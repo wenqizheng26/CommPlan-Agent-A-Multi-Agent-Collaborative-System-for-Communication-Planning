@@ -206,6 +206,7 @@ function populateExample(text,conflict=false){
  notice(conflict?'已填入示例：原文频率 2 GHz 与手工频率 3 GHz 冲突。点击开始筹划后核对修正。':'示例已填入；核对后点击开始筹划。');
 }
 $('example').addEventListener('click',()=>populateExample('按自由空间基准计算，频率2GHz，距离1km，求路径损耗。'));
+$('budget-example').addEventListener('click',()=>populateExample('按自由空间基准计算链路余量：频率2GHz，距离10km，发射功率30dBm，发射天线增益10dBi，接收天线增益10dBi，发射馈线损耗2dB，接收馈线损耗2dB，额外损耗0dB，接收灵敏度-100dBm，预留余量10dB。'));
 $('vague-example').addEventListener('click',()=>populateExample('我想让两艘船之间通信稳定一些，帮我规划一下。'));
 $('range-example').addEventListener('click',()=>populateExample('按自由空间基准计算，频率2±0.1GHz，距离1km，求路径损耗。'));
 $('missing-example').addEventListener('click',()=>populateExample('按自由空间基准计算，频率2GHz，求路径损耗。'));

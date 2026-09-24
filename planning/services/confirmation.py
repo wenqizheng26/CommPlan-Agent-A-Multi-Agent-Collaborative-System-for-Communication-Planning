@@ -6,9 +6,12 @@ from planning.workflow.requirements_graph import stamp
 
 
 def review_for(request, report, cards):
+    # The reviewed model is the plan's final card; single-step FSPL reviews stay byte-identical.
+    plan = report.get('calculation_plan_proposal') if report else None
+    final = plan['steps'][-1]['tool_id'] if plan else 'fspl_ghz'
     review = dict(schema_version='1.0.0', profile='confirmed-fspl-loop-v1',
                   request=copy.deepcopy(request), report=copy.deepcopy(report),
-                  model=copy.deepcopy(next((c for c in cards if c['id']=='fspl_ghz'),None)))
+                  model=copy.deepcopy(next((c for c in cards if c['id']==final),None)))
     review['review_hash'] = digest(review)
     return review
 

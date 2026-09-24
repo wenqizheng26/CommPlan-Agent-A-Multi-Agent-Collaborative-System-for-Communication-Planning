@@ -368,3 +368,16 @@ td.num,span.num{text-align:right;font-variant-numeric:tabular-nums}
 .metrics-bar{position:absolute;left:0;top:0;height:8px;min-width:3px;border-radius:4px}
 .num.alert{color:var(--bad);font-weight:600}
 @media(max-width:899px){.sheet{top:auto;left:8px;right:8px;bottom:8px;width:auto;max-height:85vh}.waterfall-row,.metrics-row{grid-template-columns:120px minmax(0,1fr) 64px}.metrics-row span:nth-child(n+4){display:none}}
+
+/* Calculation plan: one card per step, each input names its source. */
+.plan-steps{list-style:none;margin:8px 0 6px;padding:0;display:grid;gap:8px;counter-reset:none}
+.plan-step{background:var(--surface);border-radius:var(--radius-sm);padding:10px 12px;box-shadow:inset 0 0 0 1px var(--hairline)}
+.plan-step-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.plan-step-head strong{font-size:14px;font-weight:600;color:var(--text)}
+.plan-step-out{font-size:13px;color:var(--text-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.plan-step-out.done{color:var(--text);font-weight:600}
+.detail-block ul.plan-inputs{list-style:none;padding:0;margin:6px 0 0;display:grid;gap:2px}
+.plan-inputs li{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--text-2)}
+.plan-inputs li span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.plan-inputs li.step span:last-child{color:var(--accent)}
+.plan-inputs li.missing span:last-child{color:var(--warn)}

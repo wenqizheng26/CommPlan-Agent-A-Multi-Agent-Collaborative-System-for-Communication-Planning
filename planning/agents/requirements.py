@@ -12,12 +12,14 @@ from planning.services.input_domains import numbers, scenarios
 from planning.requirements_contract import (PROFILE, VERSION, CONDITIONS, obj, require, strings,
     strict_json, validate_request, validate_report)
 from planning.services.requirement_parameters import collect_parameters, diagnostic
-from planning.services.requirement_evidence import snapshot_for, evidence_for, plan_for
+from planning.services.requirement_evidence import snapshot_for, evidence_for
 from planning.services.requirement_policy import validate_target_semantics, intent_conflict, outside_scope
+from planning.services.plans import SUPPORTED, chain, final_target, plan_for, requires_free_space, bound_issues
 from planning.workflow.activity import observe
 
 ALLOWED_MODEL = 'fspl_ghz'
 REQUIRED = ['frequency_ghz', 'distance_km']
+TARGET_LABELS = {'fspl_ghz': '路径损耗', 'received_power': '接收信号电平', 'link_margin': '链路余量'}
 
 
 def model_proposal(envelope, candidate_ids):
@@ -59,7 +61,7 @@ class RequirementsAgent:
         original = copy.deepcopy(parsed)
         diagnostics, questions = [], []
         if request['target']:
-            label = '路径损耗' if request['target'] == ALLOWED_MODEL else request['target']
+            label = TARGET_LABELS.get(request['target'], request['target'])
             diagnostics.append(diagnostic('USER_TARGET_SELECTION', '计算目标来自用户选择：' + label + '。',
                 value=request['target'], source_ref=request['request_id'] + ':target'))
         if request['condition']:
@@ -68,7 +70,7 @@ class RequirementsAgent:
             diagnostics.append(diagnostic('USER_CONDITION_SELECTION', '模型条件来自用户选择：' + label + '。',
                 value=request['condition'], source_ref=request['request_id'] + ':condition'))
         health, mode, failed = 'ready', 'deterministic', False
-        card = next((c for c in self.cards if c['id'] == ALLOWED_MODEL), None)
+        by_id = {c['id']: c for c in self.cards}
         observe(observer,'retrieval','started')
         observe(observer,'rag','started',caller='requirements')
         observe(observer,'knowledge','started',caller='rag',operation='search_cards')
@@ -82,10 +84,11 @@ class RequirementsAgent:
         # evidence from the request text: vector similarity alone never admits a formula.
         usable = {h['id']: h['rank'] for h in found.hits if h['id'] in found.used and h['scores']['lexical'] > 0}
         # A manual target is a direct lookup, not a semantic retrieval claim.
-        if request['target'] == ALLOWED_MODEL and card:
-            usable[ALLOWED_MODEL] = 1
+        if request['target'] in SUPPORTED and request['target'] in by_id:
+            usable[request['target']] = 1
             diagnostics.append(diagnostic('EXPLICIT_CARD_LOOKUP', '按用户显式目标查找登记卡。'))
-        candidates = [card] if card and ALLOWED_MODEL in usable else []
+        # Only plan-capable cards with this request's own evidence are offered as targets.
+        candidates = sorted((by_id[i] for i in usable if i in SUPPORTED and i in by_id), key=lambda c: (usable[c['id']], c['id']))
         prelim_conditions = set(parsed['conditions'])
         if request['condition']:
             prelim_conditions.add(request['condition'])
@@ -190,9 +193,17 @@ class RequirementsAgent:
         # No guess from a bare keyword or the top retrieval result.
         unsupported = outside_scope(request['raw_text'], original, targets, conditions)
         if not targets and not unsupported:
-            questions.append('请说明希望得到路径损耗、链路可用性判断，还是方案比较；当前仅支持自由空间路径损耗基准。')
-        relevant = targets == [ALLOWED_MODEL] or unsupported
-        parameters, conflicts, param_diagnostics = collect_parameters(request, original, REQUIRED if relevant else [])
+            questions.append('请说明希望得到路径损耗、接收信号电平还是链路余量；当前支持自由空间条件下的单链路预算。')
+        final = None if unsupported else final_target(targets, self.cards)
+        order, leaves = [], []
+        if targets and not unsupported and final is None:
+            questions.append('多个计算目标不在同一条计算链上，请只保留一个目标。')
+            diagnostics.append(diagnostic('PLAN_TARGETS_SPLIT', '请求的目标不能由一条计算链同时给出。', targets=targets))
+        if final:
+            observed, _, _ = collect_parameters(request, original, [])
+            order, leaves = chain(final, self.cards, {p['canonical_name'] for p in observed})
+        required = leaves if final else (REQUIRED if unsupported else [])
+        parameters, conflicts, param_diagnostics = collect_parameters(request, original, required)
         diagnostics.extend(param_diagnostics)
         missing = [p['canonical_name'] for p in parameters if p['status'] == 'missing']
         if missing:
@@ -208,31 +219,49 @@ class RequirementsAgent:
         if invalid:
             questions.append('频率和距离必须大于零，请修正：' + '、'.join(invalid))
             diagnostics.append(diagnostic('INPUT_DOMAIN_INVALID', '必要参数超出定义域。', fields=invalid))
-        if targets == [ALLOWED_MODEL] and 'free_space' not in conditions and not unsupported:
+        bounded = [k for k in bound_issues(order, self.cards, values) if k not in REQUIRED]
+        if bounded:
+            questions.append('请修正超出公式定义域的参数：' + '、'.join(bounded))
+            diagnostics.append(diagnostic('INPUT_DOMAIN_INVALID', '参数超出登记公式的定义域。', fields=bounded))
+        if order and order != [ALLOWED_MODEL] and any(type(values.get(k)) is dict for k in leaves):
+            questions.append('多步计算暂只支持确定的单值输入，请从区间或候选中明确采用一个值。')
+            diagnostics.append(diagnostic('PLAN_DOMAIN_UNSUPPORTED', '区间与候选目前只用于单步路径损耗。'))
+        if final and requires_free_space(order, self.cards) and 'free_space' not in conditions and not unsupported:
             questions.append('请明确采用自由空间模型或自由空间基准。')
             diagnostics.append(diagnostic('MISSING_CONDITION', '不能从视距、岸海或参数齐全推断自由空间条件。'))
-        scope = [issue for case in scenarios(values) for issue in scope_issues(ALLOWED_MODEL, case, parsed)] if targets == [ALLOWED_MODEL] and not invalid else []
+        fspl_values = {k: values[k] for k in REQUIRED if k in values}
+        scope = [issue for case in scenarios(fspl_values) for issue in scope_issues(ALLOWED_MODEL, case, parsed)] if ALLOWED_MODEL in order and not invalid else []
         if scope:
             unsupported = True
             diagnostics.append(diagnostic('MODEL_NOT_APPLICABLE', scope[0]['message'], next_action='核对单位或另选适用模型。'))
         snapshot = snapshot_for(self.cards)
-        refs = evidence_for(candidates, snapshot, usable)
+        ranks = dict(usable)
+        available = bool(final and final in usable and all(by_id[i]['status'] == 'verified' for i in order))
+        if available:
+            # The target needs this request's own evidence; upstream cards are admitted by the chain.
+            added = [i for i in order if i not in ranks]
+            for i in added:
+                ranks[i] = max(ranks.values()) + 1
+            if added:
+                diagnostics.append(diagnostic('PLAN_DEPENDENCY', '按计算依赖加入上游登记公式：' + '、'.join(by_id[i]['title'] for i in added) + '。', cards=added))
+            candidates = [by_id[i] for i in order]
+        refs = evidence_for(candidates, snapshot, ranks)
         evidence_ids = [e['evidence_id'] for e in refs]
-        available = bool(card and refs and card['status'] == 'verified')
+        available = available and bool(refs)
         if unsupported:
-            diagnostics.append(diagnostic('UNSUPPORTED_SCOPE', '当前入口仅支持自由空间单链路损耗基准，不能替代实际海面、散射或链路预算。',
+            diagnostics.append(diagnostic('UNSUPPORTED_SCOPE', '当前入口支持自由空间条件下的路径损耗、接收电平与链路余量，不能替代实际海面、散射等传播模型。',
                                           next_action='明确改为自由空间基准，或等待对应模型接入。'))
-        elif targets and not available:
+        elif final and not available:
             diagnostics.append(diagnostic('EVIDENCE_UNAVAILABLE', '没有可用的已登记模型证据。', next_action='检查知识目录与目标。'))
-        plan = plan_for(request, card, parameters, evidence_ids) if available and targets == [ALLOWED_MODEL] and not unsupported else None
-        status = ('FAILED' if failed else 'NEEDS_MODEL' if unsupported or (targets and not available) else
+        plan = plan_for(request, order, self.cards, parameters, evidence_ids) if available and not unsupported else None
+        status = ('FAILED' if failed else 'NEEDS_MODEL' if unsupported or (final and not available) else
                   'AWAITING_INPUT' if questions or not plan else 'AWAITING_CONFIRMATION')
         diagnostics.append(diagnostic('SOURCE_REVIEW_LIMITATION', '来源状态来自库内登记，本次没有独立复核原始文献。'))
         report = dict(schema_version=VERSION, profile=PROFILE, **{k: request[k] for k in ('task_id','revision','request_id')},
             parameters_proposal=parameters, conflicts=conflicts, missing_parameters=missing,
             candidate_models=[dict(model_id=c['id'], version=c['version'], status=c['status'], evidence_ids=evidence_ids) for c in candidates],
             calculation_plan_proposal=plan, evidence_ids=evidence_ids, evidence_refs=refs, knowledge_snapshot=snapshot,
-            questions=list(dict.fromkeys(questions)), assumptions=list(card['applicability'].get('notes', [])) if plan else [],
+            questions=list(dict.fromkeys(questions)), assumptions=list(plan['assumptions']) if plan else [],
             conditions=sorted(conditions), targets=targets, execution_status=status,
             component_modes=dict(interpretation=mode, retrieval='lexical_fallback'), runtime_health=health, diagnostics=diagnostics)
         checked=validate_report(report, request)

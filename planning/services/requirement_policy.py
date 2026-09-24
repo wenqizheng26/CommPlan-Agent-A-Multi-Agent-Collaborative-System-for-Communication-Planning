@@ -1,13 +1,14 @@
-"""Shared scope policy for the single-link, one-way free-space entry point."""
+"""Shared scope policy for single-link, one-way plans over the supported cards."""
 import re
 from formula_rag.parsing import extract_request
 from planning.requirements_contract import require
+from planning.services.plans import SUPPORTED
 
 
 def validate_target_semantics(model):
     for target in model.get('targets', []):
         parsed = extract_request(target['evidence'])
-        require(target['id'] == 'fspl_ghz' and parsed['targets'] == ['fspl_ghz']
+        require(target['id'] in SUPPORTED and parsed['targets'] == [target['id']]
                 and not parsed['unsupported_targets'], 'MODEL_TARGET_SEMANTICS')
 
 
@@ -26,7 +27,7 @@ def intent_conflict(request, parsed):
 
 
 def outside_scope(text, parsed, targets, conditions):
-    if parsed['unsupported_targets'] or any(t != 'fspl_ghz' for t in targets):
+    if parsed['unsupported_targets'] or any(t not in SUPPORTED for t in targets):
         return True
     for clause in re.split(r'[，,。；;\n]', text):
         # Only a complete, unambiguous disclaimer is exempt. A negative word
