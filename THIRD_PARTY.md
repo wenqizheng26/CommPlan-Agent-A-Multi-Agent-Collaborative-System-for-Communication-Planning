@@ -8,7 +8,6 @@
 | llama.cpp b10950 Windows Vulkan | 可选本地模型服务 | 否 | [llama.cpp](https://github.com/ggml-org/llama.cpp)，本地资源目录附 MIT 与 LLVM OpenMP 通知 |
 | BGE small zh v1.5 | 早期 Formula RAG 的可选嵌入模型，当前 Planning 使用词项检索 | 否 | [BAAI/bge-small-zh-v1.5](https://huggingface.co/BAAI/bge-small-zh-v1.5)，本地模型目录附许可证 |
 | Python 3.12 / Planning Python packages | 本机运行依赖 | 否 | 版本固定于 [requirements-planning.txt](requirements-planning.txt)，许可随所安装分发包提供 |
-| KaTeX | 早期 Web 应用使用 | 否 | [KaTeX](https://katex.org/)，当前 Planning 页面无此静态资产依赖 |
 
 上述可选模型和推理库若被用户单独放入 `models/signal-formula-qwen3/`，必须保留随资源提供的许可证和来源信息。该目录被 `.gitignore` 排除，source Demo builder 也明确禁止它进入 ZIP。模型权重和 llama runtime 不得加入 Git 或推送到 GitHub。当前公开 README 和 source ZIP 不声称包含外部机器的 `runtime/assets_manifest.json`、`runtime/licenses/python/` 或已安装包清单。
 
