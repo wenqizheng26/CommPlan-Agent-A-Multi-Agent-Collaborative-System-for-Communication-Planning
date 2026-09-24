@@ -14,12 +14,12 @@ from planning.providers.registry import Registry  # noqa: E402
 class EvaluationTests(unittest.TestCase):
     def test_shipped_cases_cover_all_required_categories_and_baseline_reproduces(self):
         cases = load_cases(DEFAULT_CASES)
-        self.assertEqual(len(cases), 30)
+        self.assertEqual(len(cases), 36)
         result = evaluate(ROOT, cases, 'deterministic', Registry(ROOT))
         self.assertEqual(result['availability'], 'ready')
         self.assertTrue(all(row['passed'] for row in result['cases']))
         self.assertEqual(result['summary']['structured'], {'passed': 0, 'attempted': 0})
-        self.assertEqual(result['summary']['accuracy']['status'], {'passed': 30, 'total': 30})
+        self.assertEqual(result['summary']['accuracy']['status'], {'passed': 36, 'total': 36})
 
     def test_explicit_expectations_detect_wrong_domain_and_missing_question(self):
         report = dict(parameters_proposal=[dict(canonical_name='frequency_ghz', value={
