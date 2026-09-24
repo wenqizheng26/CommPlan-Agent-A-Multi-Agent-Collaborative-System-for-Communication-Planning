@@ -87,25 +87,39 @@ function sourceSummary(inputs){
  const count=new Map();for(const x of inputs)count.set(x.kind,(count.get(x.kind)||0)+1);
  return TAGS.filter(([k])=>count.has(k)).map(([k,t])=>t+(count.get(k)>1?` ×${count.get(k)}`:'')).join(' · ');
 }
+function inputRows(ctx,inputs){
+ const ul=el('ul',undefined,'inputs');
+ for(const x of inputs){
+  const row=el('li',undefined,'input '+x.kind+(x.name===ctx.focusParameter?' highlight-row':'')),label=el('span',undefined,'in-name');
+  label.append(el('span',x.label));if(x.symbol)label.append(el('i',x.symbol));
+  const open=['missing','conflict'].includes(x.kind);
+  const pick=open?ctx.onMissing:x.kind==='step'?null:ctx.onParameter;
+  row.append(label,pick?button(open?x.value+' →':x.value,()=>pick(x.name),'text-button in-value'):el('span',x.value,'in-value'));
+  if(!open)row.append(el('span',x.tag,'tag '+x.kind));
+  ul.append(row);
+ }
+ return ul;
+}
 function stepList(ctx,steps,defaultOpen){
  const list=el('ol',undefined,'steps');
  for(const s of steps){
   const head=el('summary',undefined,'step-head'),name=el('span',undefined,'step-name');
   name.append(el('span',s.title,'step-title'));if(s.cite)name.append(el('span',s.cite,'cite'));
   head.append(el('span',circled(s.n),'step-no'),name,el('span',s.out||s.unit,'step-out'+(s.out?' done':'')),el('span',sourceSummary(s.inputs),'step-sources'));
-  const d=fold(ctx,'step:'+s.id,head,defaultOpen,'step'),ul=el('ul',undefined,'inputs');
-  for(const x of s.inputs){
-   const row=el('li',undefined,'input '+x.kind),label=el('span',undefined,'in-name');
-   label.append(el('span',x.label));if(x.symbol)label.append(el('i',x.symbol));
-   const open=['missing','conflict'].includes(x.kind);
-   const pick=open?ctx.onMissing:x.kind==='step'?null:ctx.onParameter;
-   row.append(label,pick?button(open?x.value+' →':x.value,()=>pick(x.name),'text-button in-value'):el('span',x.value,'in-value'));
-   if(!open)row.append(el('span',x.tag,'tag '+x.kind));
-   ul.append(row);
-  }
-  d.append(ul);const li=el('li');li.append(d);list.append(li);
+  const d=fold(ctx,'step:'+s.id,head,defaultOpen,'step');
+  d.append(inputRows(ctx,s.inputs));const li=el('li');li.append(d);list.append(li);
  }
  return list;
+}
+// The registered card of every step. The final card is stored with the task; the others come from
+// the catalog and are shown only when their content hash equals the one recorded in the task evidence.
+export function stepFormulas(plan,report,result,cards={},model=null){
+ const refs=Object.fromEntries((report.evidence_refs||[]).map(r=>[r.catalog_id,r]));
+ return planSteps(plan,report,result).map(s=>{
+  const ref=refs[s.tool],served=cards[s.tool];
+  const status=model?.id===s.tool?'ok':!ref?'missing':served===undefined?'loading':served===null?'missing':served.content_hash===ref.content_hash?'ok':'changed';
+  return {...s,status,card:status!=='ok'?null:model?.id===s.tool?model:served,version:ref?.card_version||''};
+ });
 }
 function planCard(host,ctx,open){
  const {state}=ctx,r=state.report,plan=r.calculation_plan_proposal;
@@ -187,26 +201,30 @@ function paramsView(host,ctx){
  table.append(body);const wrap=el('div',undefined,'table-wrap');wrap.append(table);host.append(wrap);
  if(state.confirmed_snapshot)host.append(el('p',`已确认 · ${new Date(state.confirmed_snapshot.confirmed_at).toLocaleString('zh-CN',{hour12:false})}`,'hint'));
 }
+const FORMULA_STATUS={loading:'正在读取登记公式…',missing:'未找到登记公式卡',changed:'公式卡已变更，与本任务所用版本不同，不显示'};
 function formulaView(host,ctx){
- const {state,focusParameter}=ctx,r=state.report,plan=r.calculation_plan_proposal,model=state.review?.model;
- if(!plan||!model){host.append(el('p','尚无可执行公式','muted'));return;}
- const ref=(r.evidence_refs||[]).find(x=>x.catalog_id===model.id);
- host.append(block(model.title,`${model.id} · v${model.version}${ref?' · '+citation(ref):''}`));
- const math=el('div',undefined,'math-formula');
- if(model.id==='fspl_ghz'&&model.expression==='92.4 + 20*log10(frequency_ghz) + 20*log10(distance_km)')math.append(formulaMath());else math.append(el('code',symbolic(model),'symbolic'));host.append(math);
- const last=plan.steps[plan.steps.length-1],list=el('ul',undefined,'inputs formula-inputs');
- for(const [name,spec] of Object.entries(model.parameters)){
-  const param=r.parameters_proposal.find(p=>p.canonical_name===name),fromStep=last.inputs[name]?.kind==='step';
-  const row=el('li',undefined,'input'+(name===focusParameter?' highlight-row':'')),label=el('span',undefined,'in-name');
-  label.append(el('span',parameterNames[name]||spec.description||name));if(symbols[name])label.append(el('i',symbols[name]));
-  row.append(label,el('span',fromStep?`上一步 · ${spec.unit}`:param?.value==null?'—':`${formatDomain(param.value)} ${param.unit}`,'in-value'));list.append(row);
+ const {state}=ctx,r=state.review?.report||state.report,plan=r.calculation_plan_proposal;
+ if(!plan){host.append(el('p','尚无可执行公式','muted'));return;}
+ const steps=stepFormulas(plan,r,state.result,ctx.cards||{},state.review?.model);
+ for(const s of steps){
+  const sec=el('section',undefined,'formula-step'),head=el('div',undefined,'formula-head');
+  head.append(el('span',circled(s.n),'step-no'),el('strong',s.card?.title||s.title));if(s.cite)head.append(el('span',s.cite,'cite'));
+  if(s.version)head.append(el('span','v'+s.version,'version'));
+  sec.append(head);
+  if(s.card){
+   const math=el('div',undefined,'math-formula');
+   if(s.card.id==='fspl_ghz'&&s.card.expression==='92.4 + 20*log10(frequency_ghz) + 20*log10(distance_km)')math.append(formulaMath());else math.append(el('code',symbolic(s.card),'symbolic'));
+   sec.append(math);
+  }else sec.append(el('p',FORMULA_STATUS[s.status],s.status==='loading'?'hint':'hint warn-text'));
+  const rows=inputRows(ctx,s.inputs);
+  if(s.out){const out=el('li',undefined,'input result'),label=el('span',undefined,'in-name');label.append(el('span','结果'));out.append(label,el('span',s.out,'in-value'));rows.append(out);}
+  sec.append(rows);host.append(sec);
  }
- host.append(list);
  const actual=state.result?.normalized_inputs;
- if(actual&&state.result.steps)host.append(block('逐步代入',state.result.steps.map((s,i)=>`${circled(i+1)} ${toolNames[s.tool_id]||s.tool_id}：${Object.entries(s.inputs).map(([k,v])=>`${symbols[k]||k} ${formatDomain(v,2)}`).join('，')} → ${formatDomain(s.output.value,2)} ${s.output.unit}`)));
- else if(actual&&state.result.outputs.length>1)host.append(block('实际代入',state.final_report?.conclusion||'候选分别执行'));
- else if(actual)host.append(block('实际代入',`92.4 + 20 × log₁₀(${formatDomain(actual.frequency_ghz)}) + 20 × log₁₀(${formatDomain(actual.distance_km)}) = ${formatDomain(state.result.outputs[0].value,2)} dB`));
- host.append(jsonDetails('登记表达式',model.expression));
+ if(actual&&!state.result.steps&&state.result.outputs.length>1)host.append(block('实际代入',state.final_report?.conclusion||'候选分别执行'));
+ else if(actual&&!state.result.steps&&actual.frequency_ghz!=null)host.append(block('实际代入',`92.4 + 20 × log₁₀(${formatDomain(actual.frequency_ghz)}) + 20 × log₁₀(${formatDomain(actual.distance_km)}) = ${formatDomain(state.result.outputs[0].value,2)} dB`));
+ const raw=steps.filter(s=>s.card).map(s=>`${s.card.id} v${s.card.version}: ${s.card.expression}`);
+ if(raw.length)host.append(jsonDetails('程序表达式',raw));
 }
 function evidenceView(host,ctx){
  const {state}=ctx,r=state.report,model=state.review?.model;

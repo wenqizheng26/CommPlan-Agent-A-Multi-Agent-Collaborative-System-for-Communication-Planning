@@ -55,7 +55,17 @@ function syncButtons(){
 }
 function readInput(){const p={};for(const[id,name]of [['frequency','frequency_ghz'],['distance','distance_km']])if($(id).value!==''){const value=Number($(id).value);if(!Number.isFinite(value))throw new Error('手工参数必须是有限数值。');p[name]={value,unit:$(id+'-unit').value};}return {raw_text:$('raw-text').value,manual_parameters:p,condition:$('condition').value||null,target:$('target').value||null};}
 function fillInput(s){$('raw-text').value=s.request.raw_text;$('condition').value=s.request.condition||'';$('target').value=s.request.target||'';for(const[id,name]of [['frequency','frequency_ghz'],['distance','distance_km']]){const p=s.request.manual_parameters[name];$(id).value=p?p.value:'';if(p)$(id+'-unit').value=p.unit;}$('manual-details').open=Object.keys(s.request.manual_parameters).length>0||!!s.request.condition||!!s.request.target;}
-function setView(next){view=next;popover=null;if(!matchMedia('(min-width: 1350px)').matches)sideChoice='plan';draw();$('detail-content').scrollTop=0;}
+// Registered cards for the formula view, verified against the task's evidence hashes when shown.
+const cards={};let cardsLoading=false;
+async function ensureCards(){
+ const s=shown(),plan=(s?.review?.report||s?.report)?.calculation_plan_proposal;if(!plan||cardsLoading)return;
+ const ids=[...new Set(plan.steps.map(x=>x.tool_id))].filter(id=>id!==s.review?.model?.id&&!(id in cards));if(!ids.length)return;
+ cardsLoading=true;
+ try{const data=await api('/api/formula-cards?ids='+ids.join(','));for(const c of data.cards)cards[c.id]=c;for(const id of data.missing)cards[id]=null;}
+ catch(e){notice('公式卡读取失败：'+e.message,true);}
+ finally{cardsLoading=false;if(view==='formula')drawRight();}
+}
+function setView(next){view=next;popover=null;if(next==='main')focusParameter=null;if(next==='formula')ensureCards();if(!matchMedia('(min-width: 1350px)').matches)sideChoice='plan';draw();$('detail-content').scrollTop=0;}
 function chooseParameter(name){focusParameter=name;setView('parameters');}
 // Fixed-height panels are overflow:hidden; scroll only the thread there so no panel shifts.
 function reveal(node,align='top'){
@@ -133,7 +143,8 @@ function drawRight(){
  const s=shown(),relevant=relevantEvents(s,activity);
  const h=headline(s,{busy,action:busyAction,editing,historical:!!historical,modelLabel:modelLabel(),ran:historical?'':runSummary(relevant)});
  $('headline-text').textContent=h.text;$('headline-sub').textContent=h.sub||'';$('headline').className='headline '+h.tone;
- renderRight($('detail-content'),{state:s,view,focusParameter,historical:!!historical,activeContext:!!activeContext,modelService,settings:settings?.settings,models,open:folds,
+ if(view==='formula')ensureCards();
+ renderRight($('detail-content'),{state:s,view,focusParameter,historical:!!historical,activeContext:!!activeContext,modelService,settings:settings?.settings,models,open:folds,cards,
   onView:setView,onParameter:chooseParameter,onMissing:focusQuestion,onReparse:()=>submit('edit').catch(e=>notice(e.message,true))});
  const n=openQuestions(s).length;
  $('pending-bar').hidden=!n||!!historical||busy||editing;$('pending-bar').textContent=`${h.text} · 去处理`;

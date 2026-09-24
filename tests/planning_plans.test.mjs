@@ -50,3 +50,16 @@ test('registered expressions read with symbols, not program ids',async()=>{
  assert.equal(symbolic({expression:'rx_power_dbm - rx_threshold_dbm - reserve_db',output:{name:'link_margin_db'}}),'M = Pr − Pth − M₀');
  assert.equal(symbolic({expression:'tx_power_dbm + tx_gain_dbi - path_loss_db'}),'Pt + Gt − L');
 });
+
+test('each step shows its registered formula only when the card hash matches the task',async()=>{
+ const {stepFormulas}=await import('../planning/web/details.mjs');
+ const evidence={...report,evidence_refs:[{...refs[0],content_hash:'a',card_version:'1.0.0'},{...refs[2],content_hash:'c',card_version:'1.0.0'}]};
+ const model={id:'link_margin',title:'扣除预留量后的链路电平余量',expression:'rx_power_dbm - rx_threshold_dbm - reserve_db',version:'1.0.0'};
+ const status=cards=>stepFormulas(plan,evidence,null,cards,model).map(s=>s.status);
+ assert.deepEqual(status({}),['loading','ok']);
+ assert.deepEqual(status({fspl_ghz:{id:'fspl_ghz',content_hash:'a'}}),['ok','ok']);
+ assert.deepEqual(status({fspl_ghz:{id:'fspl_ghz',content_hash:'b'}}),['changed','ok']);
+ assert.deepEqual(status({fspl_ghz:null}),['missing','ok']);
+ const [first,last]=stepFormulas(plan,evidence,null,{fspl_ghz:{id:'fspl_ghz',content_hash:'b'}},model);
+ assert.equal(first.card,null);assert.equal(last.card,model);assert.equal(first.version,'1.0.0');
+});

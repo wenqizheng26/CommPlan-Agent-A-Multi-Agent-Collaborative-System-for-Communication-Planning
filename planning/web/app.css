@@ -222,6 +222,16 @@ footer{display:none}
 .math-formula{margin-top:12px;padding:16px 8px;border-radius:var(--radius-sm);background:var(--fill);overflow-x:auto}
 math{font-size:17px;min-width:320px}
 .formula-inputs{margin-top:12px;padding:0}
+.formula-step{margin-top:12px;padding:12px 14px;border-radius:var(--radius-sm);background:var(--fill)}
+.formula-step:first-of-type{margin-top:0}
+.formula-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px}
+.formula-head strong{font-size:14px}
+.formula-head .version{font-size:11px;color:var(--text-3)}
+.formula-step .math-formula{margin-top:8px;background:var(--surface)}
+.formula-step .inputs{padding:8px 0 0}
+.input.result{margin-top:4px;padding-top:6px;border-top:1px solid var(--hairline)}
+.input.result .in-value{font-weight:600}
+.warn-text{color:var(--warn)}
 .math-formula code.symbolic{display:block;text-align:center;font-family:var(--font);font-size:18px;font-style:italic;letter-spacing:.01em}
 .table-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px;text-align:left}

@@ -106,6 +106,26 @@ class PlanningWebTests(unittest.TestCase):
         self.assertFalse(self.call('/api/cancel-operation',body)[1]['accepted'])
         self.assertEqual(self.call('/api/cancel-operation',body,headers={'X-Planning-Token':'bad'})[0],403)
 
+    def test_formula_cards_match_task_evidence_by_content_hash(self):
+        budget='按自由空间基准计算链路余量：频率2GHz，距离10km，发射功率30dBm，发射天线增益10dBi，接收天线增益10dBi，发射馈线损耗2dB，接收馈线损耗2dB，额外损耗0dB，接收灵敏度-100dBm，预留余量10dB。'
+        state=self.call('/api/commands',command(text=budget))[1]['state']
+        steps=state['report']['calculation_plan_proposal']['steps']
+        ids=[s['tool_id'] for s in steps]
+        self.assertEqual(ids,['fspl_ghz','received_power','link_margin'])
+        code,body=self.call('/api/formula-cards?ids='+','.join(ids+['no_such_card']))
+        self.assertEqual(code,200)
+        self.assertEqual(body['missing'],['no_such_card'])
+        served={c['id']:c for c in body['cards']}
+        for ref in state['report']['evidence_refs']:
+            self.assertEqual(served[ref['catalog_id']]['content_hash'],ref['content_hash'])
+        # The card stored in the review is the same registered card.
+        model=state['review']['model']
+        self.assertEqual(served[model['id']]['expression'],model['expression'])
+        for bad in ('','?ids=','?ids=Bad-Id','?ids='+','.join(['a']*21)):
+            with self.subTest(query=bad):
+                self.assertEqual(self.call('/api/formula-cards'+bad)[0],400)
+        self.assertEqual(self.call('/api/formula-cards?ids=fspl_ghz',headers={'Origin':'https://evil.example'})[0],403)
+
     def test_models_settings_and_metrics_endpoints(self):
         with patch('planning.web_server.probe_registry', return_value={'qwen3-4b-q4': 'unreachable'}):
             code, models = self.call('/api/models')
