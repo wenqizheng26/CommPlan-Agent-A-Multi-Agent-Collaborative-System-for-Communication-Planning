@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "defaults": {"chat": "qwen3-4b-q4", "embedding": "bge-small-zh-v1.5"},
+  "models": [
+    {
+      "id": "qwen3-4b-q4",
+      "kind": "chat",
+      "display_name": "Qwen3 4B · Q4_K_M · 标准",
+      "runtime": "llama.cpp",
+      "endpoint": "http://127.0.0.1:18081",
+      "alias": "signal-formula-qwen3",
+      "context": 4096,
+      "capabilities": {"json_schema_strict": true},
+      "defaults": {"temperature": 0, "timeout_s": 30},
+      "weights": "models/signal-formula-qwen3/models/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf",
+      "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b"
+    },
+    {
+      "id": "qwen3-4b-q4-fast-fail",
+      "kind": "chat",
+      "display_name": "Qwen3 4B · Q4_K_M · 快速失败",
+      "runtime": "llama.cpp",
+      "endpoint": "http://127.0.0.1:18081",
+      "alias": "signal-formula-qwen3",
+      "context": 4096,
+      "capabilities": {"json_schema_strict": true},
+      "defaults": {"temperature": 0, "timeout_s": 12},
+      "weights": "models/signal-formula-qwen3/models/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf",
+      "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b"
+    },
+    {
+      "id": "bge-small-zh-v1.5",
+      "kind": "embedding",
+      "display_name": "BGE small zh v1.5 · 512 维",
+      "runtime": "transformers-cpu",
+      "path": "models/signal-formula-qwen3/models/bge-small-zh-v1.5",
+      "dimension": 512,
+      "revision": "7999e1d3359715c523056ef9478215996d62a620"
+    }
+  ]
+}

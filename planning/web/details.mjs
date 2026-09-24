@@ -3,6 +3,8 @@ import {formatDomain} from './values.mjs';
 import {sourceExcerpt} from './text.mjs';
 import {nodes,statusText,nodeStates} from './flow.mjs';
 import {roleModeNames,reviewDecisionNames,reviewQuestion} from './roles.mjs';
+import {provenance,settingsDrift,RETRIEVAL} from './settings.mjs';
+import {fmt} from './timing.mjs';
 export const parameterNames={frequency_ghz:'载波频率',distance_km:'路径距离'};
 export const symbols={frequency_ghz:'f',distance_km:'d'};
 export const labels={AWAITING_CONFIRMATION:'等待核对确认',AWAITING_INPUT:'需要补充或修正',NEEDS_MODEL:'模型或依据不足',FAILED:'处理失败',COMPLETED:'已完成',CANCELLED:'已取消',RUNNING:'正在处理'};
@@ -19,7 +21,18 @@ function formulaMath(){
  const math=m('math',null,m('mrow',null,m('msub',null,m('mi','L'),m('mtext','dB')),m('mo','='),m('mn','92.4'),m('mo','+'),term('f','GHz'),m('mo','+'),term('d','km')));
  math.setAttribute('display','block');math.setAttribute('aria-label','L dB 等于 92.4 加 20 log10(f/GHz) 加 20 log10(d/km)');return math;
 }
-export function renderDetails(host,{state,events=[],node='input',tab='overview',focusParameter=null,onTab,onParameter,historical=false,modelService=null}){
+function retrievalTable(found){
+ const b=el('section',undefined,'detail-block');
+ b.append(el('h3','检索命中'),el('p',`${RETRIEVAL[found.mode_used]}检索 · 知识库 ${found.corpus.size} 条 · 返回 ${found.hits.length} / ${found.top_k} · 前 ${found.top_n} 条送入模型 · ${fmt(found.latency_ms.total)}`+(found.degraded?`。请求${RETRIEVAL[found.mode_requested]}检索，向量模型未就绪，已按词项检索`:'')+'。','hint'));
+ const table=el('table'),head=el('tr');['#','公式卡','词项','向量','融合','上下文'].forEach(t=>head.append(el('th',t)));const thead=el('thead');thead.append(head);table.append(thead);
+ const body=el('tbody'),num=v=>v==null?'—':v.toFixed(4);
+ for(const h of found.hits){const row=el('tr'),card=el('td'),used=found.used.includes(h.id);card.append(el('strong',h.title),el('small',h.id+(h.source?.title?' · '+h.source.title:'')));
+  row.append(el('td',String(h.rank)),card,el('td',num(h.scores.lexical),'num'),el('td',num(h.scores.dense),'num'),el('td',num(h.scores.fused),'num'),el('td',used?'已送入':'未送入','chip '+(used?'run':'')));body.append(row);}
+ table.append(body);const wrap=el('div',undefined,'table-wrap');wrap.append(table);b.append(wrap);
+ b.append(el('p','只有送入模型且含词项证据的候选，才可能成为计算模型；检索结果不是数值依据，公式仍须登记并经你确认。','hint'));
+ return b;
+}
+export function renderDetails(host,{state,events=[],node='input',tab='overview',focusParameter=null,onTab,onParameter,historical=false,modelService=null,settings=null,models=null,onReparse=null}){
  host.replaceChildren();const [title,subtitle]=nodes[node]||nodes.input;
  const heading=el('div',undefined,'detail-heading');heading.append(el('span',tab==='result'?'计算结果':'任务核对','eyebrow'),el('h2',title),el('p',subtitle,'hint'));host.append(heading);
  if(historical)host.append(block('历史只读','正在查看保存时的版本，不能在此确认或修改。','warning'));
@@ -41,7 +54,7 @@ export function renderDetails(host,{state,events=[],node='input',tab='overview',
   const status=nodeStates(state,events)[node];host.append(block(node==='llm'?'任务调用状态（非服务状态）':'本步骤状态',statusText[status]||status));
   host.append(block('当前任务描述',state.request?.raw_text||'等待输入'));
   if(state.failure)host.append(block('失败原因',[state.failure.message,state.failure.code,'下一步：'+state.failure.next_action],'warning'));
-  if(r){host.append(block('运行方式',`需求解析：${r.component_modes.interpretation==='llm'?'本机 LLM':'确定性解析'}；检索：词项检索；${r.runtime_health==='degraded'?'已明确降级':'本地运行'}。`));
+  if(r){host.append(block('运行方式',`需求解析：${r.component_modes.interpretation==='llm'?'本机 LLM':'确定性解析'}；检索：${RETRIEVAL[state.retrieval?.mode_used]||'词项'}检索；${r.runtime_health==='degraded'?'已明确降级':'本地运行'}。`));
    const ds=diagnosticMessages(r.diagnostics);if(ds.length)host.append(block('处理说明',ds),jsonDetails('逐次诊断记录',r.diagnostics));
    host.append(button('查看参数与原文对应 →',()=>onTab('parameters')),button('查看计算计划 →',()=>onTab('plan')));
   }
@@ -87,6 +100,7 @@ export function renderDetails(host,{state,events=[],node='input',tab='overview',
   host.append(block('模型假设',r.assumptions));host.append(button('定位公式来源与原式换算 →',()=>onTab('evidence')));host.append(jsonDetails('登记程序表达式',model.expression));return;
  }
  if(tab==='evidence'){
+  if(state.retrieval)host.append(retrievalTable(state.retrieval));
   host.append(block('证据用途','参数事实来自用户原文或手工输入；下列资料用于公式、参数定义和适用条件。检索命中不等于新完成了原文审核。'));
   if(!r.evidence_refs.length)host.append(block('暂无可用证据','不能根据空的检索结果继续推定模型适用。','warning'));
   for(const [i,ref]of r.evidence_refs.entries()){
@@ -101,9 +115,12 @@ export function renderDetails(host,{state,events=[],node='input',tab='overview',
  }
  if(tab==='result'){
   if(!state.final_report||state.status!=='COMPLETED'){host.append(block('尚无正式发布结果',state.failure?.message||'确认计算且结果校验通过后在此展示。'));return;}
+  const drift=historical?[]:settingsDrift(state,settings);
+  if(drift.length){const b=block('当前默认设置已改变',`${drift.join('；')}。这个结果按生成时的配置保存，不会自动重算；数值只取决于已确认的参数。`,'warning');if(onReparse)b.append(button('按新设置重新解析',onReparse,'secondary compact'));host.append(b);}
   for(const [i,value] of state.result.outputs.entries()){const metric=el('div',undefined,'metric');metric.append(el('strong',formatDomain(value.value,2)),el('span',value.unit));host.append(el('p',state.result.outputs.length>1?`候选 ${i+1} · 自由空间单程路径损耗`:'自由空间单程路径损耗','eyebrow'),metric);if(value.inputs)host.append(el('p',Object.entries(value.inputs).map(([k,v])=>`${parameterNames[k]||k} ${formatDomain(v)} ${{frequency_ghz:'GHz',distance_km:'km'}[k]||''}`).join('；'),'hint'));}host.append(el('p',state.final_report.conclusion));
   const names={result_integrity:'结果完整性',snapshot_identity:'确认快照版本',input_consistency:'输入一致性',plan_identity:'执行计划',evidence_consistency:'引用依据',model_identity:'模型与公式版本',numeric_domain:'数值、名称与单位',fspl_magnitude:'独立数量级检查'};
   const checks=block('程序校验');for(const v of state.validations)checks.append(el('p',`${v.passed?'✓':'×'} ${names[v.validator_id]||v.validator_id}`,'check-result'));host.append(checks);
+  const made=provenance(state,models);if(made.length){const b=el('section',undefined,'detail-block provenance');b.append(el('h3','生成配置'));const grid=el('dl');for(const [k,v] of made)grid.append(el('dt',k),el('dd',v));b.append(grid);host.append(b);}
   host.append(block('结果含义与适用限制',state.final_report.limitations),roles());host.append(el('p',state.final_report.review?'报告数值与正文来自已验证数据；结构化审查模式：'+(roleModeNames[state.final_report.review.mode]||state.final_report.review.mode)+'。':'此历史记录为确定性程序报告，未记录独立审查角色。','hint'));
   host.append(button('追溯公式与实际代入 →',()=>onTab('formula')),button('追溯参数原文 →',()=>onTab('parameters')),button('查看来源证据 →',()=>onTab('evidence')));return;
  }

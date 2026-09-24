@@ -1,28 +1,17 @@
-# Demo delivery 当前入口（2026-09-23）
+# CommPlan-Agent 当前交接（2026-09-24）
 
-## 旧网页提前清理（用户 2026-09-23 新授权）
+唯一实施规格：[V4](DEMO_HANDOFF_V4.md)。当前交付范围仍是 FSPL-stage Planning Workbench；后端确认、checkpoint、revision 与确定性数值合同保持冻结。验收证据见 [VALIDATION](../demo/VALIDATION.md) 和 [C5/C6 记录](evidence/2026-09-24-C5-C6.md)。
 
-- 用户同意先清理 GitHub 当前树中明显退役的旧应用文件，覆盖下方“Stage 5 前不执行 C4”的旧安排；本次只涉及 `app.py`、`web/`、专用测试、旧评测脚本与示例，以及相应的启动器和文档。父目录 `.workareas`、`signal-formula-rag` 和其他 C4 候选未动。
-- 清理前确认 Planning Workbench 仍依赖 `formula_rag/`、`launch.py` 中的 `model_command()` 和 `runtime_config.json`，这些均保留。旧页面被移除后，`launch.py` 不再提供指向已删除 `app.py` 的命令行入口。
-- 清理分支 `codex/github-prune` 的首个代码提交为 `8d7b70b`，PR #3 单独提交给 `main`。本机全量 Python 223 OK（1 symlink 权限 skip）、Node 27 PASS、`pip check` PASS；干净提交构建的 76 文件源码 ZIP，经完整性、HTTP 创建、确认和重启恢复校验 PASS。模型/检索新范围尚未实施；这次清理不构成 Demo 独立审查或最终发布验收。
+## 当前候选
 
-唯一实施规格：[V4](DEMO_HANDOFF_V4.md)。当前仅交付 FSPL-stage Planning Workbench；后端主体、确定性数值与确认/恢复合同维持冻结。权威验收状态见 [VALIDATION](../demo/VALIDATION.md)。
+- `codex/model-eval-integration` 将 `claude/model-retrieval` 的模型注册表、设置、检索和计时 UI，与已合并 GitHub `main` 的旧网页清理及 C5 评测合并。C5 提交 `41d18b0`；合并提交 `7771c2c`。旧应用 `app.py`、根目录 `web/`、对应脚本/测试已删除，工作台所依赖的 `formula_rag/` 保留。
+- C5 的 30 条固定案例已运行确定性基线及两个本地 Qwen 档案。模型 27 次实际尝试中，两个档案各 25 次结构化成功、2 个案例降级；参数和状态 30/30 包含程序回退，不能说成模型独立 30/30。
+- C6 合并后 Python 251 项 OK（1 项系统权限 skip）、Node 33 项 PASS、`pip check` PASS。真实 Qwen、快速失败审查档案、BGE 混合检索、离线降级已在独立数据库上验证；三个任务均完成并得到 98.42059991327963 dB。正常运行的审查角色曾因结构化失败降级；混合检索运行的 BGE 状态为 `ready`，三个模型角色均完成；离线运行三个模型角色均记录 `offline`，随后模型已重启并通过健康检查。
+- C6 的干净源码 ZIP 已完成构建与解压 smoke；全新解压目录的 `setup_planning.cmd`、`pip check` 和 HTTP 创建/确认/重启恢复也通过。首次 GitHub CI 暴露了评测单测依赖本机模型文件的假设；`e301ecc` 已修复，此后 [最终代码 CI](https://github.com/wenqizheng26/CommPlan-Agent-A-Multi-Agent-Collaborative-System-for-Communication-Planning/actions/runs/35948954929) 和 [验收记录 CI](https://github.com/wenqizheng26/CommPlan-Agent-A-Multi-Agent-Collaborative-System-for-Communication-Planning/actions/runs/35949403530) 两个作业均 PASS。用户已确认新候选在目标 Chrome 的七项及附加检查通过。后续提交的状态以 [分支 CI 列表](https://github.com/wenqizheng26/CommPlan-Agent-A-Multi-Agent-Collaborative-System-for-Communication-Planning/actions?query=branch%3Acodex%2Fmodel-eval-integration) 为准；发布门禁尚缺实施团队外独立审查。
 
-## 已完成：C3 历史归档
+## 下一步
 
-- 历史受跟踪文件先复制并逐文件验哈希，再从仓库移除；旧解压目录和闲置验收数据库移到仓库外 `_archive/2026-09-23-commplan/`。保留 4 份当前文档引用的证据、运行中的数据库和 `outputs/releases/`。
-- 仓库外 `MANIFEST.md` 记录 139 个条目的原路径、大小与来源提交；保留 Markdown 的相对链接检查为 0 个失效链接。原本就不存在的 2 个历史报告链接已标明失效。
-- 单独提交 `03c985f8757651ef3f6fb3ca54d947ead18c9585`；归档后 Python 233 OK（1 symlink 权限 skip）、Node 27 PASS，工作树干净。旧版 Formula RAG、CI legacy-full、父目录 `.workareas` 与 `signal-formula-rag` 不属本次归档范围。
+1. 请实施团队外的 Reviewer 独立审查最终候选，范围为 GitHub `main` 与 `codex/model-eval-integration` 的差异，重点核对模型评测口径、检索证据门禁、设置与状态快照、活动语义、启动身份和发布包排除项。此前实施者和子智能体的自审不计入。
+2. 独立审查通过后，才继续 V4 Stage 5：PR、接受到 `main`、从被接受的 `main` 重建/验收 ZIP、tag。此前不声明 `CommPlan-Agent Demo Release Ready`。
 
-## C2：视觉改版后的 Stage 4 候选
-
-- 基于干净提交 `03c985f` 运行 Python 233 OK（1 skip）、Node 27 PASS、`pip check` PASS。`--require-clean` source ZIP 的 SHA-256 为 `64CA21C1DAE6FF21B51CF7A05333D878CBC76AEFD7D1F97DC6D89CF3AE66942C`；验证器解压、指纹和 HTTP 创建/确认/重启恢复 smoke PASS。另在新目录解压该 ZIP，以已验证的 Python 3.12 设置 `COMMPLAN_PYTHON` 后执行 `setup_planning.cmd`、`pip check` 和解压目录自带 venv 的 HTTP smoke，均 PASS。
-- 独立数据库上的在线 Qwen 与真实离线降级均完成完整 FSPL 示例，确定性原值均为 98.42059991327963 dB。模型从项目内资源重启，`/health` 与 `/v1/models` 正常。内置浏览器所见流程高亮与结果一致；离线 LLM 明示“调用已降级”。
-- 1430×804 CSS 视口（对应当前 2560×1440 Windows 显示）浅色三栏同屏，无整页或流程内滚动，控制台无 warning/error。系统深色实测尚未完成；内置浏览器不能代替目标 Chrome 验收。
-- `commplan/codex/demo-delivery-final` 已推送到 `ce685d4`；[CI run 35830153906](https://github.com/wenqizheng26/CommPlan-Agent-A-Multi-Agent-Collaborative-System-for-Communication-Planning/actions/runs/35830153906) 的 `planning-minimal` 与 `legacy-full` 均 PASS。系统深色实测仍待完成，C2 未据此宣称全部 PASS。
-
-## Stage 4 外部门禁与 Stage 5
-
-- 目标 Chrome 七项流程按 V4 §29，由用户在最新候选 `http://127.0.0.1:18088` 手动验收；不能以 Node 或内置浏览器替代。
-- 实施团队外的独立 Reviewer 审查 `9ee7939..HEAD`，重点见 VALIDATION；本代理自审、测试和运行时 Review Agent 不计入。
-- 上述门禁通过并更新统一验收记录后，才进入 Stage 5：发布 PR、从已接受的 `main` 重建/验收 ZIP、打 tag。旧网页已按本页顶部的用户新授权提前单独清理；父目录旧工作区仍未清理。不声明 `CommPlan-Agent Demo Release Ready`。
+项目内模型资源位于被忽略的 `models/signal-formula-qwen3/`；源码包默认不包含模型权重与 llama runtime，GitHub 不应包含它们。父目录 `.workareas` 和 `signal-formula-rag` 不是当前入口，也不在本次修改范围。

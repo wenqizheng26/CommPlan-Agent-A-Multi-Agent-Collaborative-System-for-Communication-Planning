@@ -12,6 +12,7 @@ from formula_rag.parsing import extract_request, NUMBER, UNITS
 from planning.requirements_contract import require, obj, strict_json
 from planning.services.requirement_parameters import collect_parameters
 from planning.workflow.activity import observe
+from planning.agents.role_model import failure_reason, call_details
 from planning.services.input_domains import numbers, extract_domains
 
 FIELDS = {'frequency_ghz': '频率', 'distance_km': '距离'}
@@ -44,7 +45,10 @@ def edited_conversation(current, new_input, event_id):
 
 
 class LocalSupplementSelector:
-    """Uses the same loopback Qwen service, with a separate constrained schema."""
+    """Uses the bound loopback chat model, with a separate constrained schema."""
+    def __init__(self, binding=None):
+        self.binding = binding
+
     def __call__(self, current_text, message, candidates):
         schema = dict(type='object', properties={
             'action': {'type':'string','enum':['apply','clarify']},
@@ -52,7 +56,8 @@ class LocalSupplementSelector:
                 'field':{'type':'string','enum':list(FIELDS)},'evidence':{'type':'string'}},
                 'required':['field','evidence'],'additionalProperties':False}}},
             required=['action','fields'], additionalProperties=False)
-        payload = dict(model='signal-formula-qwen3', temperature=0, max_tokens=400,
+        b = self.binding
+        payload = dict(model=b.alias if b else 'signal-formula-qwen3', temperature=b.temperature if b else 0, max_tokens=400,
             chat_template_kwargs={'enable_thinking':False},
             response_format={'type':'json_schema','json_schema':{'name':'supplement_patch','strict':True,'schema':schema}},
             messages=[{'role':'system','content':
@@ -60,7 +65,8 @@ class LocalSupplementSelector:
                 '候选、否定、范围、条件句或语义不明须clarify。fields只能逐字复制给出的候选field/evidence，'
                 '不得新增数值、改写原文、计算或跳过确认。输出规定JSON。'},
                 {'role':'user','content':json.dumps(dict(current=current_text,supplement=message,candidates=candidates),ensure_ascii=False)}])
-        _, content=chat(payload)
+        envelope, content=chat(payload, *([b.url] if b else []), **(dict(timeout=b.timeout_s, context=b.context) if b else {}))
+        self.last_envelope = envelope
         return parse_output(content)
 
 
@@ -116,19 +122,25 @@ def merge_supplement(current, message, event_id, mode, selector=None, observer=N
         safe=safe and len(patches)==len(parameters) and bool(patches or parsed['conditions'])
         candidates=[{k:p[k] for k in ('field','evidence')} for p in patches]
         if mode=='llm' and safe and candidates:
-            observe(observer,'llm','started',caller='requirements',purpose='supplement')
+            caller=selector or LocalSupplementSelector()
+            binding=getattr(caller,'binding',None)
+            observe(observer,'llm','started',caller='requirements',purpose='supplement',**call_details(binding))
             try:
-                proposal=(selector or LocalSupplementSelector())(request['raw_text'],message,candidates)
+                proposal=caller(request['raw_text'],message,candidates)
                 obj(proposal,'action fields')
                 require(proposal['action'] in ('apply','clarify'),'SUPPLEMENT_MODEL_ACTION')
                 require(type(proposal['fields']) is list and proposal['fields']==candidates,'SUPPLEMENT_UNGROUNDED')
                 safe=proposal['action']=='apply'
                 used_mode='llm_grounded'
-                observe(observer,'llm','completed',caller='requirements',purpose='supplement')
+                observe(observer,'llm','completed',caller='requirements',purpose='supplement',
+                        **call_details(binding,getattr(caller,'last_envelope',None)))
             except (OSError,TimeoutError,ValueError,TypeError,KeyError,IndexError) as exc:
+                if str(exc)=='OPERATION_CANCELLED':
+                    raise
                 used_mode='deterministic_fallback'
                 diagnostics.append('本机模型不可用或建议未通过原话核验，使用明确规则合并：'+type(exc).__name__)
-                observe(observer,'llm','failed',caller='requirements',purpose='supplement',fallback=True)
+                observe(observer,'llm','failed',caller='requirements',purpose='supplement',fallback=True,
+                        reason=failure_reason(exc),**call_details(binding))
         if safe:
             from planning.services.clarification import replace_parameter
             for p in patches:

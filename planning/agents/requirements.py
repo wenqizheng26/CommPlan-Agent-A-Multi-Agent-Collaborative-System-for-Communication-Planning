@@ -3,7 +3,7 @@ import copy
 from pathlib import Path
 from formula_rag.catalog import load_catalog
 from formula_rag.parsing import extract_request
-from formula_rag.retrieval import Retriever
+from planning.retrieval import DefaultRetrievalService
 from formula_rag.model import LocalSelector
 from formula_rag.model_transport import ModelResponseError, check_cancelled
 from formula_rag.interpretation import merge_interpretation
@@ -38,13 +38,17 @@ def model_proposal(envelope, candidate_ids):
 
 
 class RequirementsAgent:
-    def __init__(self, root, selector=None, allow_fallback=True):
+    def __init__(self, root, selector=None, allow_fallback=True, retrieval=None, retrieval_params=None):
         self.root = Path(root)
         self.selector = LocalSelector() if selector is None else (None if selector is False else selector)
         self.allow_fallback = allow_fallback
         # Loading errors are handled by the graph/CLI as failures, not fake snapshots.
         self.cards = load_catalog(self.root)
-        self.retriever = Retriever(self.root, self.cards, dense=False)
+        # A long-lived service (warm vectors) may be shared; it follows this command's catalog.
+        self.retrieval = retrieval or DefaultRetrievalService(self.root, self.cards)
+        self.retrieval.update(self.cards)
+        self.retrieval_params = dict(mode='lexical', top_k=8, top_n=3) | (retrieval_params or {})
+        self.last_retrieval = None
 
     def run(self, request, *, expected_revision=None):
         observer=getattr(self,'observer',None)
@@ -68,11 +72,15 @@ class RequirementsAgent:
         observe(observer,'retrieval','started')
         observe(observer,'rag','started',caller='requirements')
         observe(observer,'knowledge','started',caller='rag',operation='search_cards')
-        hits = self.retriever.search(request['raw_text'])
+        found = self.retrieval.search(request['raw_text'], **self.retrieval_params)
+        self.last_retrieval = found.to_dict()
         observe(observer,'knowledge','completed',caller='rag',operation='search_cards')
-        observe(observer,'rag','completed',caller='requirements',mode='lexical_fallback')
-        observe(observer,'retrieval','completed',mode='lexical_fallback',hits=len(hits))
-        usable = {h['id']: h['rank'] for h in hits if h.get('lexical_similarity', 0) > 0}
+        observe(observer,'rag','completed',caller='requirements',mode=found.mode_used,degraded=found.degraded,
+                latency_ms=found.latency_ms.get('total'))
+        observe(observer,'retrieval','completed',mode=found.mode_used,hits=len(found.hits),used=len(found.used))
+        # Only the top-n hits reach the model context, and a candidate still needs lexical
+        # evidence from the request text: vector similarity alone never admits a formula.
+        usable = {h['id']: h['rank'] for h in found.hits if h['id'] in found.used and h['scores']['lexical'] > 0}
         # A manual target is a direct lookup, not a semantic retrieval claim.
         if request['target'] == ALLOWED_MODEL and card:
             usable[ALLOWED_MODEL] = 1
@@ -85,7 +93,8 @@ class RequirementsAgent:
             [request['target']] if request['target'] else parsed['targets'], prelim_conditions)
         if self.selector and candidates and not known_unsupported:
             observe(observer,'interpretation','started')
-            observe(observer,'llm','started',caller='requirements',purpose='intent')
+            observe(observer,'llm','started',caller='requirements',purpose='intent',
+                    **({'timeout_s':self.selector.timeout} if isinstance(self.selector, LocalSelector) else {}))
             correction=None
             for attempt in range(1, 4):
                 check_cancelled()
@@ -111,7 +120,8 @@ class RequirementsAgent:
                     parsed = checked
                     mode = 'llm' if isinstance(self.selector, LocalSelector) else 'stub'
                     diagnostics.append(diagnostic('MODEL_CALL', '意图建议经原文核验。', attempt=attempt,
-                        model=envelope.get('model'), usage=envelope.get('usage', {}), accepted=info['accepted']))
+                        model=envelope.get('model'), usage=envelope.get('usage', {}), accepted=info['accepted'],
+                        latency_ms=envelope.get('latency_ms')))
                     break
                 except ModelResponseError as exc:
                     correction={'stage':stage,'reason':str(exc)[:300]}
@@ -144,8 +154,16 @@ class RequirementsAgent:
         observe(observer,'interpretation','completed' if mode in {'llm','stub'} else 'skipped',
                 mode=mode,health=health)
         if self.selector and candidates and not known_unsupported:
-            observe(observer,'llm','completed' if mode in {'llm','stub'} else 'failed',
-                    caller='requirements',purpose='intent',mode=mode,health=health)
+            called = mode in {'llm','stub'}
+            last = next((d['code'] for d in reversed(diagnostics) if d['code'].startswith('MODEL_')), None)
+            reason = {'MODEL_UNAVAILABLE':'offline','MODEL_TIME_BUDGET':'timeout','MODEL_REQUEST_REJECTED':'rejected',
+                      'MODEL_CONTEXT_LIMIT':'rejected'}.get(last,'structure')
+            observe(observer,'llm','completed' if called else 'failed',
+                    caller='requirements',purpose='intent',mode=mode,health=health,
+                    **({} if called else {'reason':reason}),
+                    **({'model_id':self.selector.model_id} if getattr(self.selector,'model_id',None) else {}),
+                    **({'latency_ms':envelope.get('latency_ms'),'usage':envelope.get('usage') or {}}
+                       if called and isinstance(envelope, dict) else {}))
         observe(observer,'planning','started')
 
         targets = parsed['targets'] if parsed['target_origin'] in {'explicit_text', 'manual'} else []

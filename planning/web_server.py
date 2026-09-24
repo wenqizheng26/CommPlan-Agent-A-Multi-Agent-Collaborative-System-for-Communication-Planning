@@ -8,7 +8,7 @@ import sqlite3
 from urllib.parse import urlsplit
 from planning.requirements_contract import strict_json
 from planning.workflow.task_service import TaskService, identifier
-from planning.services.model_status import probe_model
+from planning.services.model_status import probe_model, probe_registry
 from planning.build_info import build_fingerprint
 
 MESSAGES={
@@ -30,6 +30,9 @@ MESSAGES={
     'FORBIDDEN':'请求来源或会话无效，请从本机页面重新打开。',
     'SERVER_ERROR':'本次操作未提交。可刷新核对状态后重试；请检查服务器终端。',
     'DATABASE_BUSY':'另一项操作正在处理，请稍后刷新重试。',
+    'STALE_SETTINGS':'设置已被其他页面修改。已载入最新设置，请核对后再保存。',
+    'SETTINGS_MODEL_NOT_STRUCTURED':'该模型不支持严格结构化输出，不能用于这个角色。',
+    'SETTINGS_TOP_N':'送入模型的条数不能超过召回数。',
 }
 
 
@@ -49,6 +52,8 @@ def create_server(root, db_path=None, port=18082):
             '/model-status.mjs':('model-status.mjs','text/javascript'),
             '/drafts.mjs':('drafts.mjs','text/javascript'),
             '/progress.mjs':('progress.mjs','text/javascript'),
+            '/settings.mjs':('settings.mjs','text/javascript'),
+            '/timing.mjs':('timing.mjs','text/javascript'),
             '/questions.mjs':('questions.mjs','text/javascript'),'/values.mjs':('values.mjs','text/javascript'),
             '/app.css':('app.css','text/css')}
 
@@ -93,6 +98,15 @@ def create_server(root, db_path=None, port=18082):
                 self.respond(200,{'tasks':service.store.recent()})
             elif path=='/api/model-status':
                 self.respond(200,probe_model())
+            elif path=='/api/models':
+                embeddings={e:service.retrieval_for(e).describe()['embedding'] for e,m in service.registry.models.items()
+                            if m['kind']=='embedding'}
+                self.respond(200,dict(service.registry.describe(),status=probe_registry(service.registry),
+                                      embeddings=embeddings,corpus=service.retrieval_for(None).describe()['corpus']))
+            elif path=='/api/settings':
+                self.respond(200,service.settings.get())
+            elif path=='/api/metrics':
+                self.respond(200,service.activity.metrics())
             elif path.startswith('/api/tasks/'):
                 parts=path.strip('/').split('/')
                 try:
@@ -115,7 +129,7 @@ def create_server(root, db_path=None, port=18082):
         def do_POST(self):
             if not self.allowed(write=True):
                 return
-            if self.path not in {'/api/commands','/api/cancel-operation'}:
+            if self.path not in {'/api/commands','/api/cancel-operation','/api/settings'}:
                 self.error(404,'NOT_FOUND'); return
             if self.headers.get_content_type()!='application/json':
                 self.error(400,'JSON_REQUIRED'); return
@@ -132,7 +146,11 @@ def create_server(root, db_path=None, port=18082):
                             pass
                     self.error(413,'REQUEST_SIZE'); return
                 payload=strict_json(self.rfile.read(size).decode('utf-8'))
-                if self.path=='/api/cancel-operation':
+                if self.path=='/api/settings':
+                    if type(payload) is not dict or set(payload)!={'settings','expected_version'}:
+                        raise ValueError('INVALID_REQUEST')
+                    result=service.update_settings(payload['settings'],payload['expected_version'])
+                elif self.path=='/api/cancel-operation':
                     if type(payload) is not dict or set(payload)!={'task_id','event_id'}:
                         raise ValueError('INVALID_REQUEST')
                     result=service.cancel_operation(payload['task_id'],payload['event_id'])
@@ -141,7 +159,7 @@ def create_server(root, db_path=None, port=18082):
                 self.respond(200,result)
             except (ValueError,TypeError,KeyError,OverflowError) as exc:
                 code=str(exc) if isinstance(exc,ValueError) and not isinstance(exc,UnicodeError) else 'INVALID_REQUEST'
-                status=409 if code in {'STALE_REVISION','STALE_STATE_VERSION','REVIEW_HASH_MISMATCH','KNOWLEDGE_CHANGED',
+                status=409 if code in {'STALE_SETTINGS','STALE_REVISION','STALE_STATE_VERSION','REVIEW_HASH_MISMATCH','KNOWLEDGE_CHANGED',
                     'TASK_EXISTS','NOT_CONFIRMABLE','NOT_CANCELLABLE','IDEMPOTENCY_CONFLICT','CHECKPOINT_STATE_MISMATCH'} else 400
                 self.error(status,code)
             except sqlite3.OperationalError:

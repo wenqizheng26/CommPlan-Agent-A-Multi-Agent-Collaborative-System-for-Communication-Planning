@@ -7,11 +7,12 @@ from formula_rag.model_transport import chat, parse_output
 
 
 class LocalSelector:
-    def __init__(self, url='http://127.0.0.1:18081/v1/chat/completions'):
+    def __init__(self, url='http://127.0.0.1:18081/v1/chat/completions', *, model='signal-formula-qwen3',
+                 temperature=0, timeout=30, context=4096):
         parsed = urlparse(url)
         if parsed.scheme != 'http' or not ipaddress.ip_address(parsed.hostname).is_loopback:
             raise ValueError('模型服务必须使用本机回环地址')
-        self.url = url
+        self.url, self.model, self.temperature, self.timeout, self.context = url, model, temperature, timeout, context
 
     def __call__(self, text, cards, *, manual_target=None, manual_condition=None, correction=None):
         context = [{'id': c['id'], 'title': c['title'], 'description': c.get('description', ''),
@@ -21,7 +22,7 @@ class LocalSelector:
             'required': ['id', 'evidence'], 'additionalProperties': False}
         ids = [c['id'] for c in cards]
         payload = {
-            'model': 'signal-formula-qwen3', 'temperature': 0, 'max_tokens': 600,
+            'model': self.model, 'temperature': self.temperature, 'max_tokens': 600,
             'chat_template_kwargs': {'enable_thinking': False},
             'response_format': {'type': 'json_schema', 'json_schema': {'name': 'formula_selection', 'strict': True,
                 'schema': {'type': 'object', 'properties': {'selected_ids': {'type': 'array', 'maxItems': len(cards),
@@ -48,10 +49,10 @@ class LocalSelector:
                 {'target': manual_target, 'condition': manual_condition}, ensure_ascii=False)
         if correction:
             payload['messages'][-1]['content'] += '\n上一次输出的程序校验反馈（请据此修正，仍须遵守原文引用规则）：'+json.dumps(correction,ensure_ascii=False)
-        envelope, content = chat(payload, self.url)
+        envelope, content = chat(payload, self.url, timeout=self.timeout, context=self.context)
         selected = parse_output(content)
         if not isinstance(selected, dict) or not isinstance(selected.get('selected_ids'), list):
             raise ValueError('本地模型没有返回规定的公式标识列表')
         return {'selected_ids': selected['selected_ids'], 'targets': selected.get('targets', []),
-                'conditions': selected.get('conditions', []), 'model': envelope.get('model', 'signal-formula-qwen3'),
-                'usage': envelope.get('usage', {}), 'raw_output': content}
+                'conditions': selected.get('conditions', []), 'model': envelope.get('model', self.model),
+                'usage': envelope.get('usage', {}), 'latency_ms': envelope.get('latency_ms'), 'raw_output': content}

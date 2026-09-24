@@ -17,6 +17,13 @@ from planning.workflow.requirements_graph import stamp
 from planning.workflow.activity import ActivityStore, observe
 from planning.services.supplement import merge_supplement, conversation_of, edited_conversation
 from planning.services.clarification import apply_answers, attach_issues
+from planning.services.supplement import LocalSupplementSelector
+from planning.providers.registry import Registry
+from planning.providers.settings import SettingsStore
+from planning.retrieval import DefaultRetrievalService
+from formula_rag.model import LocalSelector
+
+REQUIREMENT_ACTIONS = {'create', 'edit', 'supplement', 'answer'}
 
 
 def identifier(value):
@@ -61,8 +68,46 @@ class TaskService:
         self.root=Path(root)
         self.store=TaskStore(db_path)
         self.activity=ActivityStore(db_path)
+        self.registry=Registry(self.root)
+        self.settings=SettingsStore(db_path,self.registry)
+        self._retrieval={}
+        self._retrieval_lock=threading.Lock()
+        if self.settings.get()['settings']['retrieval']['mode']!='lexical':
+            self.warm_retrieval()
         self._running=[]
         self._running_lock=threading.Lock()
+
+    def retrieval_for(self, embedding_id):
+        # Long-lived per embedding model so warm vectors survive between commands.
+        with self._retrieval_lock:
+            if embedding_id not in self._retrieval:
+                path=self.registry.models[embedding_id].get('path') if embedding_id else None
+                self._retrieval[embedding_id]=DefaultRetrievalService(self.root,load_catalog(self.root),
+                    embedding_id=embedding_id,embedding_path=path)
+            return self._retrieval[embedding_id]
+
+    def warm_retrieval(self, settings=None):
+        r=(settings or self.settings.get()['settings'])['retrieval']
+        if r['mode']!='lexical' and r['embedding']:
+            return self.retrieval_for(r['embedding']).warm()
+        return 'disabled'
+
+    def update_settings(self, settings, expected_version):
+        saved=self.settings.put(settings,expected_version)
+        self.warm_retrieval(saved['settings'])
+        return saved
+
+    def run_settings(self, mode, current=None):
+        """Copy of the global defaults for one command, plus the bindings it will use."""
+        current=current or self.settings.get()
+        s=current['settings']
+        bindings=self.settings.bindings(s) if mode=='llm' else None
+        r=s['retrieval']
+        record=dict(settings_version=current['version'],mode=mode,recorded_at=stamp(),
+                    chat={role:b.record() for role,b in bindings.items()} if bindings else None,
+                    retrieval=dict(mode=r['mode'],embedding=r['embedding'] if r['mode']!='lexical' else None,
+                                   top_k=r['top_k'],top_n=r['top_n']))
+        return record,bindings,r
 
     def get(self, task_id):
         identifier(task_id)
@@ -130,6 +175,8 @@ class TaskService:
         payload_hash=digest(c)
         observe(observer,'orchestrator','started',caller='input',mode='bounded_policy')
         observe(observer,'state','started',caller='orchestrator',operation='read')
+        # Read the global defaults before the task transaction; this command keeps that copy.
+        defaults=self.settings.get()
         with self.store.transaction() as (conn,saver):
             current=self.store.get_in(conn,task_id)
             observe(observer,'state','completed',caller='orchestrator',operation='read')
@@ -148,13 +195,15 @@ class TaskService:
                 require(c['expected_state_version']==current['state_version'],'STALE_STATE_VERSION')
                 rev=current['revision']+(1 if action in {'edit','supplement','answer'} else 0)
                 version=current['state_version']+1
-            mode=c['mode'] if action in {'create','edit','supplement','answer'} else current['mode']
+            mode=c['mode'] if action in REQUIREMENT_ACTIONS else current['mode']
+            run,bindings,retrieval=self.run_settings(mode,defaults)
             conversation=conversation_of(current) if current else None
             if action=='answer':
                 next_input,conversation=apply_answers(current,c['answers'],event_id)
             elif action=='supplement':
                 observe(observer,'requirements','started',caller='orchestrator',purpose='supplement')
-                next_input,conversation=merge_supplement(current,c['message'],event_id,mode,observer=observer)
+                next_input,conversation=merge_supplement(current,c['message'],event_id,mode,observer=observer,
+                    selector=LocalSupplementSelector(bindings['supplement']) if bindings else None)
             elif action in {'create','edit'}:
                 next_input=c['input']
                 conversation=edited_conversation(current,next_input,event_id) if current else dict(
@@ -164,7 +213,17 @@ class TaskService:
             # Calculation and review may make their own bounded model calls.
             if action!='cancel': observe(observer,'knowledge','started',caller='rag',operation='load_catalog')
             cards=[] if action=='cancel' else load_catalog(self.root)
-            agent=None if action=='cancel' else RequirementsAgent(self.root,selector=False if mode=='deterministic' else None)
+            if action=='cancel':
+                agent=None
+            else:
+                b=bindings['requirements'] if bindings else None
+                selector=False if mode=='deterministic' else (
+                    LocalSelector(b.url,model=b.alias,temperature=b.temperature,timeout=b.timeout_s,context=b.context) if b else None)
+                if b:
+                    selector.model_id=b.model_id  # registry identity for observation; the service sees only the alias
+                agent=RequirementsAgent(self.root,selector=selector,
+                    retrieval=self.retrieval_for(retrieval['embedding'] if retrieval['mode']!='lexical' else None),
+                    retrieval_params=dict(mode=retrieval['mode'],top_k=retrieval['top_k'],top_n=retrieval['top_n']))
             if agent is not None:
                 require(agent.cards==cards,'KNOWLEDGE_CHANGED')
                 agent.observer=observer
@@ -173,7 +232,7 @@ class TaskService:
                 pending_questions=[p['question'] for p in (conversation or {}).get('pending',[])],
                 review_context=[dict(turn_id=t['turn_id'],kind=t['kind'],message=t.get('message','')[:300],
                     before=t.get('before',{}).get('raw_text','')[:300],after=t.get('after',{}).get('raw_text','')[:300])
-                    for t in (conversation or {}).get('turns',[])[-3:]])
+                    for t in (conversation or {}).get('turns',[])[-3:]],bindings=bindings)
             config={'configurable':{'thread_id':f'{task_id}:r{rev}'},'recursion_limit':24}
             if action in {'create','edit','supplement','answer'}:
                 request=dict(schema_version='1.0.0',task_id=task_id,revision=rev,request_id=event_id,**next_input)
@@ -202,9 +261,16 @@ class TaskService:
                 output.update(status='CANCELLED',failure=None)
                 graph.update_state(config,output)
             pending=[dict(id=i.id,value=i.value) for i in output.pop('__interrupt__',())]
+            # Provenance only: which settings each phase ran with. Never read back as input.
+            phases=dict((current or {}).get('run_settings') or {})
+            if action in REQUIREMENT_ACTIONS:
+                phases={'requirements':run}
+            elif action=='confirm':
+                phases['calculation']=run
+            found=agent.last_retrieval if agent is not None and action in REQUIREMENT_ACTIONS else (current or {}).get('retrieval')
             state=dict(output,schema_version='1.0.0',profile='confirmed-fspl-loop-v1',task_id=task_id,
                        revision=rev,state_version=version,mode=mode,pending_interrupt=pending,updated_at=stamp(),
-                       conversation=conversation)
+                       conversation=conversation,run_settings=phases,retrieval=found)
             attach_issues(state,current)
             ack=dict(task_id=task_id,event_id=event_id,revision=rev,state_version=version,status=state['status'])
             observe(observer,'state','started',caller='orchestrator',operation='save')

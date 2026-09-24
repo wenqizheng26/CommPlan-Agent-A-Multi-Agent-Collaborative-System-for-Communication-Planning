@@ -144,7 +144,7 @@ function box(x,y,w,h,r){return `M${x+r} ${y}H${x+w-r}Q${x+w} ${y} ${x+w} ${y+r}V
 function svgEl(tag, attrs={},text){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);if(text)n.textContent=text;return n;}
 function marker(id){const m=svgEl('marker',{id,viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:5,markerHeight:5,orient:'auto-start-reverse'});m.append(svgEl('path',{d:'M 0 0 L 10 5 L 0 10 z',fill:'context-stroke'}));return m;}
 function chip(text,x,y,w){return [svgEl('path',{d:box(x,y,w,18,9),class:'integration-chip'}),svgEl('text',{x:x+w/2,y:y+13,'text-anchor':'middle',class:'integration-text'},text)];}
-export function renderFlow(host,{view,state,events,selected,onSelect}){
+export function renderFlow(host,{view,state,events,selected,onSelect,latency={}}){
  const states=nodeStates(state,events);
  // Page 1 has no separate follow-up node: the user check loop carries it.
  const awaitingSupplement=states.supplement==='waiting'&&states.confirmation!=='waiting';
@@ -169,12 +169,15 @@ export function renderFlow(host,{view,state,events,selected,onSelect}){
   const status=states[id],label=titles[id]||nodes[id][0];
   const g=svgEl('g',{transform:`translate(${x},${y})`,class:`flow-node kind-${kind} ${status} ${selected===id?'selected':''}`,role:'button',tabindex:0,'aria-label':`${label}，${statusText[status]||status}`,'aria-pressed':String(selected===id),'data-node':id});
   g.append(svgEl('path',{d:box(0,0,w,h,id==='input'?h/2:12),class:'shape'}));
-  const sub=status==='running'?'运行中 · 等待返回':status==='waiting'?(awaitingSupplement&&id==='confirmation'?'等待补充 · 见右侧问题':'等待用户处理'):status==='degraded'?'部分调用已降级':nodeText[id]||'';
+  const time=latency[id]||'',waiting=time.startsWith('已等待');
+  const sub=waiting?time:status==='running'?'运行中 · 等待返回':status==='waiting'?(awaitingSupplement&&id==='confirmation'?'等待补充 · 见右侧问题':'等待用户处理'):status==='degraded'?'部分调用已降级':nodeText[id]||'';
   if(id==='input')g.append(svgEl('text',{x:w/2,y:h/2+5,'text-anchor':'middle',class:'node-title'},label));
   else{
-   const titleY=sub?h/2-3:h/2+5;
+   const pill=time&&!waiting,titleY=sub||pill?h/2-3:h/2+5;
    g.append(svgEl('circle',{cx:18,cy:titleY-5,r:4}),svgEl('text',{x:30,y:titleY,class:'node-title'},label));
    if(sub)g.append(svgEl('text',{x:30,y:titleY+19,class:'node-sub'},sub));
+   // Measured duration of this node's last run in this version (observation data).
+   if(pill){const bw=time.length*6.6+14;g.append(svgEl('path',{d:box(w-bw-10,titleY+6,bw,18,9),class:'latency-chip'}),svgEl('text',{x:w-10-bw/2,y:titleY+19,'text-anchor':'middle',class:'latency-text'},time));}
   }
   if(integration[id]){const cw=integration[id].length*11+14;g.append(...chip(integration[id],w-cw-8,8,cw));}
   const activate=()=>onSelect(id);g.addEventListener('click',activate);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();activate();}});svg.append(g);
