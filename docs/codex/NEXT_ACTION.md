@@ -3,9 +3,15 @@
 ## 范围变更：模型与检索纳入 v0.1.0-demo（用户 2026-09-23 决定）
 
 - 设计规格：[MODEL_RETRIEVAL](../design/MODEL_RETRIEVAL.md)。仅本机模型；设置为全局默认并逐次记录；检索只定义接口与合同测试，向量/混合/重排实现由其他 RAG 负责人完成。
-- 本轮用户要求不改代码，实施尚未开始。实施完成后按 V4 重跑 Stage 2–4，并加跑规格第 11 节新增门禁。
+- 模型与检索实施尚未开始；后续实施完成后按 V4 重跑 Stage 2–4，并加跑规格第 11 节新增门禁。本轮用户另行授权了下述旧网页清理，不等于授权模型与检索实施。
 - 因此下方 `ce685d4` 候选的目标 Chrome 验收与独立审查**暂缓**，待新候选再进行，避免重复验收；下方记录保持为该候选的真实状态。
 - 分工见规格第 10 节：判断与核心由 Claude，迁移、计时、评测运行、记录、重跑与推送由 Codex，RAG 实现由其他人。
+
+## 旧网页提前清理（用户 2026-09-23 新授权）
+
+- 用户同意先清理 GitHub 当前树中明显退役的旧应用文件，覆盖下方“Stage 5 前不执行 C4”的旧安排；本次只涉及 `app.py`、`web/`、专用测试、旧评测脚本与示例，以及相应的启动器和文档。父目录 `.workareas`、`signal-formula-rag` 和其他 C4 候选未动。
+- 清理前确认 Planning Workbench 仍依赖 `formula_rag/`、`launch.py` 中的 `model_command()` 和 `runtime_config.json`，这些均保留。旧页面被移除后，`launch.py` 不再提供指向已删除 `app.py` 的命令行入口。
+- 清理分支 `codex/github-prune` 的首个代码提交为 `8d7b70b`，PR #3 已合并至 `main`（`1d97f6d`）。本机全量 Python 223 OK（1 symlink 权限 skip）、Node 27 PASS、`pip check` PASS；干净提交构建的 76 文件源码 ZIP，经完整性、HTTP 创建、确认和重启恢复校验 PASS。模型/检索新范围尚未实施；这次清理不构成 Demo 独立审查或最终发布验收。
 
 唯一实施规格：[V4](DEMO_HANDOFF_V4.md)。当前仅交付 FSPL-stage Planning Workbench；后端主体、确定性数值与确认/恢复合同维持冻结。权威验收状态见 [VALIDATION](../demo/VALIDATION.md)。
 
@@ -26,4 +32,4 @@
 
 - 目标 Chrome 七项流程按 V4 §29，由用户在最新候选 `http://127.0.0.1:18088` 手动验收；不能以 Node 或内置浏览器替代。
 - 实施团队外的独立 Reviewer 审查 `9ee7939..HEAD`，重点见 VALIDATION；本代理自审、测试和运行时 Review Agent 不计入。
-- 上述门禁通过并更新统一验收记录后，才进入 Stage 5：PR、合并 `main`、从已接受的 `main` 重建/验收 ZIP、打 tag。此时之前不执行 C4 旧应用与旧工作区清理，不声明 `CommPlan-Agent Demo Release Ready`。
+- 上述门禁通过并更新统一验收记录后，才进入 Stage 5：发布 PR、从已接受的 `main` 重建/验收 ZIP、打 tag。旧网页已按本页顶部的用户新授权提前单独清理；父目录旧工作区仍未清理。不声明 `CommPlan-Agent Demo Release Ready`。
