@@ -1,8 +1,9 @@
 import copy
+import json
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from tests.test_planning_loop import command, ROOT, TEXT
 from planning.workflow.task_service import TaskService
 
@@ -98,6 +99,46 @@ class SupplementTests(unittest.TestCase):
         request, conversation=merge_supplement(current,'频率也可以用3GHz','turn-2','llm',selector=optimistic)
         self.assertEqual(request['raw_text'],TEXT)
         self.assertTrue(conversation['pending'])
+
+    def test_local_selector_payload_has_apply_and_clarify_examples(self):
+        from planning.services.supplement import LocalSupplementSelector
+
+        current = '按自由空间基准计算，频率2GHz，距离1km，求路径损耗。'
+        message = '频率改为3GHz'
+        candidates = [{'field': 'frequency_ghz', 'evidence': message}]
+        response = json.dumps({'action': 'apply', 'fields': candidates}, ensure_ascii=False)
+        with patch('planning.services.supplement.chat', return_value=({}, response)) as mocked:
+            self.assertEqual(LocalSupplementSelector()(current, message, candidates)['action'], 'apply')
+        messages = mocked.call_args.args[0]['messages']
+        self.assertEqual([item['role'] for item in messages],
+                         ['system', 'user', 'assistant', 'user', 'assistant', 'user'])
+        examples = [json.loads(item['content']) for item in messages if item['role'] == 'assistant']
+        self.assertEqual([item['action'] for item in examples], ['apply', 'clarify'])
+        self.assertEqual(json.loads(messages[-1]['content']),
+                         {'current': current, 'supplement': message, 'candidates': candidates})
+
+    def test_service_llm_supplement_applies_or_keeps_pending_from_selector(self):
+        message = '频率改为3GHz'
+        intent = MagicMock(return_value={'raw_output': json.dumps({
+            'selected_ids': ['fspl_ghz'], 'targets': [], 'conditions': []})})
+        for action in ('apply', 'clarify'):
+            with self.subTest(action=action):
+                current = self.create()
+                def chat_reply(payload, *args, **kwargs):
+                    fields = json.loads(payload['messages'][-1]['content'])['candidates']
+                    return {}, json.dumps({'action': action, 'fields': fields}, ensure_ascii=False)
+                with patch('planning.services.supplement.chat', side_effect=chat_reply), \
+                        patch('planning.workflow.task_service.LocalSelector', return_value=intent):
+                    state = self.service.apply(command('supplement', current, message=message, mode='llm'))['state']
+                turn = state['conversation']['turns'][-1]
+                self.assertEqual(turn['mode'], 'llm_grounded', turn['diagnostics'])
+                self.assertEqual(turn['applied'], action == 'apply')
+                if action == 'apply':
+                    self.assertIn('3GHz', state['request']['raw_text'])
+                    self.assertFalse(state['conversation']['pending'])
+                else:
+                    self.assertEqual(state['request']['raw_text'], TEXT)
+                    self.assertTrue(state['conversation']['pending'])
 
     def test_failed_save_rolls_back_supplement_and_history(self):
         s=self.create()
