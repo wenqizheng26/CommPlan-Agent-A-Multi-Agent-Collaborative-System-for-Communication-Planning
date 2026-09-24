@@ -170,7 +170,7 @@ export function renderFlow(host,{view,state,events,selected,onSelect,latency={}}
   const g=svgEl('g',{transform:`translate(${x},${y})`,class:`flow-node kind-${kind} ${status} ${selected===id?'selected':''}`,role:'button',tabindex:0,'aria-label':`${label}，${statusText[status]||status}`,'aria-pressed':String(selected===id),'data-node':id});
   g.append(svgEl('path',{d:box(0,0,w,h,id==='input'?h/2:12),class:'shape'}));
   const time=latency[id]||'',waiting=time.startsWith('已等待');
-  const sub=waiting?time:status==='running'?'运行中 · 等待返回':status==='waiting'?(awaitingSupplement&&id==='confirmation'?'等待补充 · 见右侧问题':'等待用户处理'):status==='degraded'?'部分调用已降级':nodeText[id]||'';
+  const sub=waiting?time:status==='running'?'运行中 · 等待返回':status==='waiting'?(awaitingSupplement&&id==='confirmation'?'等待补充 · 见对话栏':'等待用户处理'):status==='degraded'?'部分调用已降级':nodeText[id]||'';
   if(id==='input')g.append(svgEl('text',{x:w/2,y:h/2+5,'text-anchor':'middle',class:'node-title'},label));
   else{
    const pill=time&&!waiting,titleY=sub||pill?h/2-3:h/2+5;

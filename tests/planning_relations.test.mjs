@@ -82,5 +82,5 @@ test('awaiting supplement is shown on the confirmation node',()=>{
  const created=renderNodes({...state,status:'AWAITING_INPUT'});
  const node=created.find(n=>n.attrs['data-node']==='confirmation');
  assert.match(node.attrs.class,/waiting/);
- assert.ok(node.children.some(c=>c.textContent==='等待补充 · 见右侧问题'));
+ assert.ok(node.children.some(c=>c.textContent==='等待补充 · 见对话栏'));
 });

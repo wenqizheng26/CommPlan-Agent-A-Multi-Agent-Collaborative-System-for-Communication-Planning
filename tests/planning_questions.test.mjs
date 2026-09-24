@@ -10,6 +10,6 @@ test('interval and candidates remain visibly different',()=>{
 test('question count excludes resolved items and old states remain readable',()=>{
  const state={input_issues:[{id:'a',status:'resolved'},{id:'b',status:'open'},{id:'c',status:'open'}]};
  assert.equal(openQuestions(state).length,2);
- assert.equal(questionTitle(state),'需求确认与补充 · 还有 2 项待完成');
+ assert.equal(questionTitle(state),'待补充');assert.equal(questionTitle({}),'无待补充项');
  assert.deepEqual(openQuestions({}),[]);
 });
