@@ -7,13 +7,12 @@
 - `codex/model-eval-integration` 将 `claude/model-retrieval` 的模型注册表、设置、检索和计时 UI，与已合并 GitHub `main` 的旧网页清理及 C5 评测合并。C5 提交 `41d18b0`；合并提交 `7771c2c`。旧应用 `app.py`、根目录 `web/`、对应脚本/测试已删除，工作台所依赖的 `formula_rag/` 保留。
 - C5 的 30 条固定案例已运行确定性基线及两个本地 Qwen 档案。模型 27 次实际尝试中，两个档案各 25 次结构化成功、2 个案例降级；参数和状态 30/30 包含程序回退，不能说成模型独立 30/30。
 - C6 合并后 Python 250 项 OK（1 项系统权限 skip）、Node 33 项 PASS、`pip check` PASS。真实 Qwen、快速失败审查档案、BGE 混合检索、离线降级已在独立数据库上验证；三个任务均完成并得到 98.42059991327963 dB。正常运行的审查角色曾因结构化失败降级；混合检索运行的 BGE 状态为 `ready`，三个模型角色均完成；离线运行三个模型角色均记录 `offline`，随后模型已重启并通过健康检查。
-- 上述是本地候选证据。源码包重建、推送及 CI 状态以 [VALIDATION](../demo/VALIDATION.md) 最新记录为准，不继承旧 ZIP 或旧 CI 的 PASS。
+- C6 的干净源码 ZIP 已完成构建与解压 smoke；全新解压目录的 `setup_planning.cmd`、`pip check` 和 HTTP 创建/确认/重启恢复也通过。推送及 CI 状态以 [VALIDATION](../demo/VALIDATION.md) 最新记录为准，不继承旧 CI 的 PASS。
 
 ## 下一步
 
-1. 在干净提交上执行 `scripts/build_planning_release.py --require-clean` 与 `scripts/validate_planning_release.py`，核对源码包不含模型、runtime、数据库及旧网页。
-2. 推送集成分支，等待 GitHub CI；审查新的 diff 和 CI 结果，修复实际失败。
-3. 请用户在目标 Chrome 对**这一候选**复验 V4 §29 七项流程。旧版本上的七项通过不能自动继承；内置浏览器可做预览，但不是目标 Chrome 门禁。
-4. 请实施团队外的 Reviewer 独立审查最终候选。此前实施者和子智能体的自审不计入。两项外部门禁都通过后，才继续 V4 Stage 5 的接受、从 `main` 重建 ZIP、合并和 tag；此前不声明 `CommPlan-Agent Demo Release Ready`。
+1. 推送集成分支，等待 GitHub CI；审查新的 diff 和 CI 结果，修复实际失败。文档提交后从干净 HEAD 再构建一次 ZIP，记录最终 SHA-256。
+2. 请用户在目标 Chrome 对**这一候选**复验 V4 §29 七项流程。旧版本上的七项通过不能自动继承；内置浏览器可做预览，但不是目标 Chrome 门禁。
+3. 请实施团队外的 Reviewer 独立审查最终候选。此前实施者和子智能体的自审不计入。两项外部门禁都通过后，才继续 V4 Stage 5 的接受、从 `main` 重建 ZIP、合并和 tag；此前不声明 `CommPlan-Agent Demo Release Ready`。
 
 项目内模型资源位于被忽略的 `models/signal-formula-qwen3/`；源码包默认不包含模型权重与 llama runtime，GitHub 不应包含它们。父目录 `.workareas` 和 `signal-formula-rag` 不是当前入口，也不在本次修改范围。
