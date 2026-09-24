@@ -1,32 +1,19 @@
-# Demo delivery 当前入口（2026-09-24）
+# CommPlan-Agent 当前交接（2026-09-24）
 
-## C5 已完成，C6 集成验证进行中
+唯一实施规格：[V4](DEMO_HANDOFF_V4.md)。当前交付范围仍是 FSPL-stage Planning Workbench；后端确认、checkpoint、revision 与确定性数值合同保持冻结。验收证据见 [VALIDATION](../demo/VALIDATION.md) 和 [C5/C6 记录](evidence/2026-09-24-C5-C6.md)。
 
-- `claude/model-retrieval` 已实现模型注册表、设置与检索接口、工作台页面及计时视图；其 2026-09-23 本机验证记录见设计规格第 12 节。该分支的历史记录不是当前集成候选的验收结果。
-- C5 在 `codex/model-eval-integration` 提交 `41d18b0`：30 条固定案例、`scripts/eval_models.py` 和统计测试。确定性基线 30/30；本机 Qwen 的标准与快速失败档案各 30 条案例，27 条实际尝试模型，其中 25 条得到合格结构化输出、2 条明确降级。其余参数和状态匹配包含程序回退，不能当作模型独立成绩。完整 Python 回归 260 OK（1 skip）。评测原始报告在本机忽略目录 `outputs/eval/`。
-- C6 将 C5、Claude 实现和已合并到 GitHub `main` 的旧应用清理合成一个候选。当前尚需最终树的全量回归、源码包、真实联调、CI 与证据记录。目标 Chrome 与实施团队外独立审查仍是外部门禁。
+## 当前候选
 
-## 旧网页提前清理（用户 2026-09-23 新授权）
+- `codex/model-eval-integration` 将 `claude/model-retrieval` 的模型注册表、设置、检索和计时 UI，与已合并 GitHub `main` 的旧网页清理及 C5 评测合并。C5 提交 `41d18b0`；合并提交 `7771c2c`。旧应用 `app.py`、根目录 `web/`、对应脚本/测试已删除，工作台所依赖的 `formula_rag/` 保留。
+- C5 的 30 条固定案例已运行确定性基线及两个本地 Qwen 档案。模型 27 次实际尝试中，两个档案各 25 次结构化成功、2 个案例降级；参数和状态 30/30 包含程序回退，不能说成模型独立 30/30。
+- C6 合并后 Python 250 项 OK（1 项系统权限 skip）、Node 33 项 PASS、`pip check` PASS。真实 Qwen、快速失败审查档案、BGE 混合检索、离线降级已在独立数据库上验证；三个任务均完成并得到 98.42059991327963 dB。正常运行的审查角色曾因结构化失败降级；混合检索运行的 BGE 状态为 `ready`，三个模型角色均完成；离线运行三个模型角色均记录 `offline`，随后模型已重启并通过健康检查。
+- 上述是本地候选证据。源码包重建、推送及 CI 状态以 [VALIDATION](../demo/VALIDATION.md) 最新记录为准，不继承旧 ZIP 或旧 CI 的 PASS。
 
-- PR #3 已合并至 GitHub `main`（`1d97f6d`）：移除早期 `app.py`、`web/`、专用测试、脚本和示例；保留工作台实际依赖的 `formula_rag/`、`launch.py` 的 `model_command()` 和 `runtime_config.json`。父目录 `.workareas` 与 `signal-formula-rag` 未动。
-- 清理本机 Python 223 OK（1 skip）、Node 27 PASS、`pip check` PASS；76 文件源码 ZIP 的完整性与 HTTP 创建、确认和重启恢复校验 PASS。该清理不等于 Demo 发布验收。
-唯一实施规格：[V4](DEMO_HANDOFF_V4.md)。当前仅交付 FSPL-stage Planning Workbench；后端主体、确定性数值与确认/恢复合同维持冻结。权威验收状态见 [VALIDATION](../demo/VALIDATION.md)。
+## 下一步
 
-## 已完成：C3 历史归档
+1. 在干净提交上执行 `scripts/build_planning_release.py --require-clean` 与 `scripts/validate_planning_release.py`，核对源码包不含模型、runtime、数据库及旧网页。
+2. 推送集成分支，等待 GitHub CI；审查新的 diff 和 CI 结果，修复实际失败。
+3. 请用户在目标 Chrome 对**这一候选**复验 V4 §29 七项流程。旧版本上的七项通过不能自动继承；内置浏览器可做预览，但不是目标 Chrome 门禁。
+4. 请实施团队外的 Reviewer 独立审查最终候选。此前实施者和子智能体的自审不计入。两项外部门禁都通过后，才继续 V4 Stage 5 的接受、从 `main` 重建 ZIP、合并和 tag；此前不声明 `CommPlan-Agent Demo Release Ready`。
 
-- 历史受跟踪文件先复制并逐文件验哈希，再从仓库移除；旧解压目录和闲置验收数据库移到仓库外 `_archive/2026-09-23-commplan/`。保留 4 份当前文档引用的证据、运行中的数据库和 `outputs/releases/`。
-- 仓库外 `MANIFEST.md` 记录 139 个条目的原路径、大小与来源提交；保留 Markdown 的相对链接检查为 0 个失效链接。原本就不存在的 2 个历史报告链接已标明失效。
-- 单独提交 `03c985f8757651ef3f6fb3ca54d947ead18c9585`；归档后 Python 233 OK（1 symlink 权限 skip）、Node 27 PASS，工作树干净。旧版 Formula RAG、CI legacy-full、父目录 `.workareas` 与 `signal-formula-rag` 不属本次归档范围。
-
-## C2：视觉改版后的 Stage 4 候选
-
-- 基于干净提交 `03c985f` 运行 Python 233 OK（1 skip）、Node 27 PASS、`pip check` PASS。`--require-clean` source ZIP 的 SHA-256 为 `64CA21C1DAE6FF21B51CF7A05333D878CBC76AEFD7D1F97DC6D89CF3AE66942C`；验证器解压、指纹和 HTTP 创建/确认/重启恢复 smoke PASS。另在新目录解压该 ZIP，以已验证的 Python 3.12 设置 `COMMPLAN_PYTHON` 后执行 `setup_planning.cmd`、`pip check` 和解压目录自带 venv 的 HTTP smoke，均 PASS。
-- 独立数据库上的在线 Qwen 与真实离线降级均完成完整 FSPL 示例，确定性原值均为 98.42059991327963 dB。模型从项目内资源重启，`/health` 与 `/v1/models` 正常。内置浏览器所见流程高亮与结果一致；离线 LLM 明示“调用已降级”。
-- 1430×804 CSS 视口（对应当前 2560×1440 Windows 显示）浅色三栏同屏，无整页或流程内滚动，控制台无 warning/error。系统深色实测尚未完成；内置浏览器不能代替目标 Chrome 验收。
-- `commplan/codex/demo-delivery-final` 已推送到 `ce685d4`；[CI run 35830153906](https://github.com/wenqizheng26/CommPlan-Agent-A-Multi-Agent-Collaborative-System-for-Communication-Planning/actions/runs/35830153906) 的 `planning-minimal` 与 `legacy-full` 均 PASS。系统深色实测仍待完成，C2 未据此宣称全部 PASS。
-
-## Stage 4 外部门禁与 Stage 5
-
-- 目标 Chrome 七项流程按 V4 §29，由用户在最新候选 `http://127.0.0.1:18088` 手动验收；不能以 Node 或内置浏览器替代。
-- 实施团队外的独立 Reviewer 审查 `9ee7939..HEAD`，重点见 VALIDATION；本代理自审、测试和运行时 Review Agent 不计入。
-- 上述门禁通过并更新统一验收记录后，才进入 Stage 5：发布 PR、从已接受的 `main` 重建/验收 ZIP、打 tag。旧网页已按本页顶部的用户新授权提前单独清理；父目录旧工作区仍未清理。不声明 `CommPlan-Agent Demo Release Ready`。
+项目内模型资源位于被忽略的 `models/signal-formula-qwen3/`；源码包默认不包含模型权重与 llama runtime，GitHub 不应包含它们。父目录 `.workareas` 和 `signal-formula-rag` 不是当前入口，也不在本次修改范围。
