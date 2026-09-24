@@ -1,9 +1,21 @@
 """Constrained local model selection. Model text never becomes a result value."""
 import ipaddress
 import json
+import re
 import urllib.request
 from urllib.parse import urlparse
 from formula_rag.model_transport import chat, parse_output
+
+
+def evidence_spans(text):
+    """Clauses of the request, and their parts around conjunctions. Every span is verbatim."""
+    spans = []
+    for clause in re.findall(r'[^，,。；;\n]+', text):
+        for piece in [clause, *re.split(r'以及|并且|和|与|及|并', clause)]:
+            piece = piece.strip()
+            if 2 <= len(piece) <= 300 and piece in text and piece not in spans:
+                spans.append(piece)
+    return spans
 
 
 class LocalSelector:
@@ -17,8 +29,12 @@ class LocalSelector:
     def __call__(self, text, cards, *, manual_target=None, manual_condition=None, correction=None):
         context = [{'id': c['id'], 'title': c['title'], 'description': c.get('description', ''),
                     'required_conditions': c.get('applicability', {}).get('requires', [])} for c in cards]
+        # Constrained decoding can only emit a verbatim span, so evidence is never paraphrased
+        # or copied from card descriptions. The program still re-grounds every span.
+        spans = evidence_spans(text)
+        evidence = {'type': 'string', 'enum': spans} if spans else {'type': 'string'}
         evidence_item = lambda identifiers: {'type': 'object', 'properties': {
-            'id': {'type': 'string', 'enum': identifiers}, 'evidence': {'type': 'string'}},
+            'id': {'type': 'string', 'enum': identifiers}, 'evidence': evidence},
             'required': ['id', 'evidence'], 'additionalProperties': False}
         ids = [c['id'] for c in cards]
         payload = {
@@ -36,6 +52,9 @@ class LocalSelector:
                 {'role': 'assistant', 'content': '{"selected_ids":["thermal_noise"],"targets":[{"id":"thermal_noise","evidence":"求热噪声功率"}],"conditions":[]}'},
                 {'role': 'user', 'content': '用户问题：按自由空间基准计算，2GHz，1km，求路径损耗。'},
                 {'role': 'assistant', 'content': '{"selected_ids":["fspl_ghz"],"targets":[{"id":"fspl_ghz","evidence":"求路径损耗"}],"conditions":[{"id":"free_space_reference","evidence":"按自由空间基准计算"}]}'},
+                # A chained target: evidence is the user's own phrase, upstream steps are not targets.
+                {'role': 'user', 'content': '用户问题：按自由空间基准计算，1.5GHz，20km，发射功率33dBm，接收门限-95dBm，求链路余量。'},
+                {'role': 'assistant', 'content': '{"selected_ids":["link_margin"],"targets":[{"id":"link_margin","evidence":"求链路余量"}],"conditions":[{"id":"free_space_reference","evidence":"按自由空间基准计算"}]}'},
                 {'role': 'user', 'content': '以下是公式候选资料，仅用于理解公式ID，不能用作evidence：\n' + json.dumps(context, ensure_ascii=False)
                     + '\n\n现在分析这个用户问题。evidence只能逐字引用下方问题。明确的传播模型或理想基准应写入conditions，没有明确条件则为空。不要从公式资料复制evidence：\n<question>' + text + '</question>'}]
         }

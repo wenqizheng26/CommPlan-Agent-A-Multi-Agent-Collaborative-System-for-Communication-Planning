@@ -25,7 +25,7 @@ export function renderQuestions(host,state,{disabled=false,onSubmit,onEdit}={}){
   }else{
    const input=el(q.choices.length?'select':'input');input.id='answer-'+q.id;input.setAttribute('aria-label',q.title);input.disabled=disabled;
    if(q.choices.length){const blank=el('option','暂不回答');blank.value='';input.append(blank);for(const choice of q.choices){const o=el('option',choice.label);o.value=choice.value;if(q.field==='goal'&&['link_feasibility','scheme_comparison'].includes(choice.value)){o.disabled=true;o.textContent+='（后续范围，当前不支持）';}input.append(o);}}
-   else{input.type='text';input.maxLength=500;input.placeholder=q.field==='distance_km'?'例如 1km、1–2km':'例如 2GHz、2±0.1GHz、2GHz或3GHz';}
+   else{input.type='text';input.maxLength=500;input.placeholder={distance_km:'例如 1km、1–2km',frequency_ghz:'例如 2GHz、2±0.1GHz、2GHz或3GHz'}[q.field]||'单个数值和单位';}
    input.value=drafts.get(key)||'';if(input.selectedOptions?.[0]?.disabled)input.value='';input.addEventListener('input',()=>drafts.set(key,input.value));card.append(input);inputs.push({input,id:q.id});
   }
   form.append(card);

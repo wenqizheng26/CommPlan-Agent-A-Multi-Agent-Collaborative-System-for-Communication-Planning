@@ -82,7 +82,7 @@ class ReviewAgent:
             request=snapshot['review']['request']['raw_text'],
             user_selections={k:snapshot['review']['request'][k] for k in ('target','condition')},
             confirmed_parameters=[dict(field=p['canonical_name'],value=p['value'],unit=p['unit'],
-                sources=[dict(kind=o['kind'],source_ref=o['source_ref'],span=o['span'],
+                sources=[dict(kind=o['kind'],
                     excerpt=snapshot['review']['request']['raw_text'][slice(*o['span'])] if o['span'] else None)
                     for o in p['origins']]) for p in snapshot['review']['report']['parameters_proposal']],
             boundary='仅声明的自由空间基准；真实海面、散射、链路可行性未评估'),

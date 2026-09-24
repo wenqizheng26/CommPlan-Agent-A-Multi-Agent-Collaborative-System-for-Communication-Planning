@@ -4,10 +4,32 @@ import re
 from planning.requirements_contract import digest, require
 from planning.services.requirement_parameters import collect_parameters
 from planning.services.input_domains import numbers, APPROX, format_value
-from formula_rag.parsing import extract_request, FIELDS
+from formula_rag.parsing import extract_request, FIELDS, UNITS, NUMBER
 from planning.services.supplement import input_of, conversation_of
 
 NAMES={'frequency_ghz':'载波频率','distance_km':'路径距离'}
+# Link-budget inputs: one confirmed scalar each, any sign; card bounds are checked by planning.
+BUDGET={'tx_power_dbm':'发射功率','tx_gain_dbi':'发射天线增益','rx_gain_dbi':'接收天线增益',
+        'tx_loss_db':'发射馈线损耗','rx_loss_db':'接收馈线损耗','extra_loss_db':'额外损耗',
+        'path_loss_db':'路径损耗','rx_power_dbm':'接收信号电平','rx_threshold_dbm':'接收门限',
+        'reserve_db':'预留余量'}
+LABELS=NAMES|BUDGET
+
+
+def label_pattern(field):
+    if field=='frequency_ghz':
+        return r'载波频率|工作频率|频率|载频'
+    if field=='distance_km':
+        return r'路径距离|通信距离|链路距离|距离|相距'
+    return '|'.join(re.escape(a) for a in sorted(FIELDS[field][2]+[BUDGET[field]],key=len,reverse=True))
+
+
+EXAMPLES={'tx_power_dbm':'30dBm','rx_threshold_dbm':'-100dBm','rx_power_dbm':'-70dBm','path_loss_db':'120dB',
+          'reserve_db':'10dB','extra_loss_db':'0dB'}
+
+
+def example(field):
+    return EXAMPLES.get(field,{'dBi':'10dBi','dB':'2dB'}.get(FIELDS[field][1],'1'+FIELDS[field][1]))
 
 
 def issues_for(state):
@@ -50,19 +72,31 @@ def issues_for(state):
             add('missing',field,'请补充'+NAMES[field],'可输入单值、区间或离散候选，必须包含单位。')
         elif min(numbers(p['value']))<=0:
             add('invalid',field,NAMES[field]+'必须大于零','区间的所有端点与候选都必须大于零。')
-    # Link-budget inputs are answered by editing or supplementing the text, one list per state.
-    budget=[f for f,p in params.items() if f not in NAMES and f in FIELDS and p['status'] in {'missing','conflicting'}]
-    if budget:
-        add('missing','task','请补充计算所需参数','尚缺或冲突：'+'、'.join(f'{FIELDS[f][0]}（{FIELDS[f][1]}）' for f in budget)
-            +'。请编辑当前任务或在“补充与修改”中写明，例如“发射功率 30 dBm”。')
+    # Link-budget inputs are answered one field at a time, like frequency and distance.
+    unit=lambda f: FIELDS[f][1]
+    for field in BUDGET:  # link order, transmitter first
+        p=params.get(field)
+        if not p:
+            continue
+        if p['status']=='conflicting':
+            add('conflict',field,BUDGET[field]+'有多个冲突来源',f'输入最终采用的单个数值（含单位，例如 {example(field)}）。',
+                excerpt=' / '.join(format_value(o['value'])+' '+o['unit'] for o in p['origins']))
+        elif p['status']=='missing':
+            add('missing',field,f'请补充{BUDGET[field]}（{unit(field)}）',f'输入单个数值和单位，例如 {example(field)}。')
     for d in diagnostics:
-        if d['code'] in {'PLAN_DOMAIN_UNSUPPORTED','PLAN_TARGETS_SPLIT'} or (d['code']=='INPUT_DOMAIN_INVALID' and d['details'].get('fields') and not set(d['details']['fields'])&set(NAMES)):
+        if d['code']=='INPUT_DOMAIN_INVALID':
+            for field in d['details'].get('fields') or []:
+                if field in BUDGET:
+                    add('invalid',field,BUDGET[field]+'超出公式定义域','按登记公式，该量不能取当前值；请重新输入（含单位）。',
+                        excerpt=format_value(params[field]['value'])+' '+params[field]['unit'] if field in params else '')
+    for d in diagnostics:
+        if d['code'] in {'PLAN_DOMAIN_UNSUPPORTED','PLAN_TARGETS_SPLIT'}:
             add('clarification','task','计算计划需要调整',d['message'])
     for d in diagnostics:
         if d['code'] in {'SOURCE_AMBIGUOUS','INPUT_PARSE_ISSUE'}:
             field=d['details'].get('field')
             if not any(i['field']==field for i in issues):
-                add('clarification',field if field in NAMES else 'task','有一项数值表达需要澄清',d['message'],excerpt=str(d['details'].get('excerpt','')))
+                add('clarification',field if field in LABELS else 'task','有一项数值表达需要澄清',d['message'],excerpt=str(d['details'].get('excerpt','')))
     for pending in (state.get('conversation') or {}).get('pending',[]):
         # Same-field questions share one answer; unrelated text remains separate.
         field=pending.get('field')
@@ -99,16 +133,26 @@ def attach_issues(state,previous=None):
 def replace_parameter(request, report, field, answer):
     probe=dict(schema_version='1.0.0',task_id='answer',revision=0,request_id='answer',raw_text=answer,
                manual_parameters={},condition=None,target=None)
+    require(field in LABELS,'ANSWER_REQUIRES_EDIT')
+    labels=label_pattern(field)
     parameters,conflicts,diagnostics=collect_parameters(probe,extract_request(answer),[])
+    # A bare budget value such as "30dBm" carries no field; the question names it.
+    if not parameters and field in BUDGET:
+        answer=BUDGET[field]+answer
+        probe['raw_text']=answer
+        parameters,conflicts,diagnostics=collect_parameters(probe,extract_request(answer),[])
     require(len(parameters)==1 and parameters[0]['canonical_name']==field and not conflicts
-            and parameters[0]['value'] is not None and min(numbers(parameters[0]['value']))>0, 'ANSWER_PARAMETER_REQUIRED')
+            and parameters[0]['value'] is not None, 'ANSWER_PARAMETER_REQUIRED')
+    # Frequency and distance may be domains but must be positive; budget inputs are one scalar.
+    value=parameters[0]['value']
+    require(min(numbers(value))>0 if field in NAMES else type(value) is not dict, 'ANSWER_PARAMETER_REQUIRED')
     require(not any(d['code'] in {'INPUT_PARSE_ISSUE','SOURCE_AMBIGUOUS','PARAMETER_APPROXIMATE'} for d in diagnostics), 'ANSWER_STILL_AMBIGUOUS')
     # Only accept a numeric expression and optional field label, no silently ignored prose.
     param=parameters[0]
     spans=[o['span'] for o in param['origins'] if o['span']]
     require(len(spans)==1,'ANSWER_STILL_AMBIGUOUS')
     residual=answer[:spans[0][0]]+answer[spans[0][1]:]
-    residual=re.sub(r'载波频率|频率|路径距离|距离|采用|确定为|按|单值|计算|为|[\s=：:，,。;；]', '',residual)
+    residual=re.sub(rf'{labels}|采用|确定为|按|单值|计算|为|[\s=：:，,。;；]', '',residual)
     require(not residual,'ANSWER_STILL_AMBIGUOUS')
     # Re-collect against the current text: earlier answers may have shifted offsets.
     current_probe=dict(probe, **request)
@@ -116,13 +160,12 @@ def replace_parameter(request, report, field, answer):
     old=next((p for p in old_parameters if p['canonical_name']==field),None)
     remove=[o['span'] for o in old['origins'] if o['kind']=='user_text' and o['span']] if old else []
     text=request['raw_text']
-    labels = (r'载波频率|工作频率|频率|载频' if field=='frequency_ghz'
-              else r'路径距离|通信距离|链路距离|距离|相距')
+    units=r'GHz|MHz|kHz|Hz|吉赫兹|兆赫兹|千赫兹|赫兹|km|千米|公里|m|米' if field in NAMES else UNITS
     # Consume the whole old numeric expression, including approximation/negation
     # and incomplete units. Never rewrite unrelated prose in that clause.
     fragment=re.compile(rf'(?:{labels})(?:\s|为|是|不是|不为|不确定|未知|大约|大概|约|近似|差不多|改为|采用|[:：=])*'
-                        r'[-+0-9.eE\s±/~～–—至到或、]*(?:GHz|MHz|kHz|Hz|吉赫兹|兆赫兹|千赫兹|赫兹|km|千米|公里|m|米)?'
-                        r'(?:\s*(?:或者|或|、)\s*[-+0-9.eE]+\s*(?:GHz|MHz|kHz|Hz|km|m|千米|米|公里)?)*'
+                        rf'[-+0-9.eE\s±/~～–—至到或、]*(?:{units})?'
+                        rf'(?:\s*(?:或者|或|、)\s*[-+0-9.eE]+\s*(?:{units})?)*'
                         r'(?:左右|上下)?',re.I)
     for m in fragment.finditer(text):
         if re.search(r'\d',m.group()):
@@ -137,7 +180,9 @@ def replace_parameter(request, report, field, answer):
         else:
             merged.append([start,end])
     numeric=answer[slice(*spans[0])].strip()
-    replacement=NAMES[field]+numeric
+    if field in BUDGET:  # the span may include the label; keep only the value and unit
+        numeric=re.search(rf'{NUMBER}\s*(?:{UNITS})(?![A-Za-z/\d])',numeric,re.I).group()
+    replacement=LABELS[field]+numeric
     if merged:
         for i,(start,end) in reversed(list(enumerate(merged))):
             text=text[:start]+(replacement if i==0 else '')+text[end:]
@@ -173,7 +218,7 @@ def apply_answers(current,answers,event_id):
         elif field=='condition':
             require(value in {c['value'] for c in issue['choices']},'INVALID_ANSWER_CHOICE')
             request['condition']=value
-        elif field in NAMES:
+        elif field in LABELS:
             replace_parameter(request,current['report'],field,value)
             conversation['pending']=[p for p in conversation['pending'] if p.get('field')!=field]
         else:

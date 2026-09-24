@@ -39,6 +39,35 @@ def model_proposal(envelope, candidate_ids):
     return data
 
 
+def correction_hints(raw_output, text, rejected=()):
+    """Say which item failed and why, so a retry is not blind. Never suggests a value."""
+    try:
+        data = strict_json(raw_output)
+    except (ValueError, TypeError):
+        return ['上一次输出不是规定的 JSON 对象，请只输出 selected_ids、targets、conditions 三个字段。']
+    hints = []
+    for item in rejected:
+        if item.get('kind') == 'condition' and item.get('id'):
+            hints.append(f'conditions 中的 {item["id"]} 在原文中没有依据（{item["reason"]}）；'
+                         '原文没有明确写出传播条件时，conditions 返回空数组，由程序向用户追问。')
+        elif item.get('reason') == '证据未明确计算意图':
+            hints.append('targets 的 evidence 没有表达要计算什么；原文没有明确计算目标时，targets 返回空数组，由程序向用户追问。')
+    for key in ('targets', 'conditions'):
+        for item in data.get(key) or []:
+            if type(item) is not dict or type(item.get('evidence')) is not str:
+                continue
+            evidence, ident = item['evidence'], item.get('id')
+            if evidence not in text:
+                hints.append(f'{key} 中 {ident} 的 evidence「{evidence[:40]}」不是用户问题的原文片段；'
+                             '只能从 <question> 中逐字摘取，不能用公式资料的说明。')
+            elif key == 'targets':
+                found = extract_request(evidence)['targets']
+                if found != [ident]:
+                    hints.append(f'targets 中 {ident} 的 evidence「{evidence[:40]}」表达的目标是 {found or "无"}，'
+                                 f'与 {ident} 不对应；中间步骤不填入 targets，只填用户要的最终量。')
+    return hints
+
+
 class RequirementsAgent:
     def __init__(self, root, selector=None, allow_fallback=True, retrieval=None, retrieval_params=None):
         self.root = Path(root)
@@ -143,6 +172,8 @@ class RequirementsAgent:
                     break
                 except (ValueError, KeyError, TypeError, IndexError) as exc:
                     correction={'stage':stage,'reason':str(exc)[:300],'rejected':info.get('rejected',[])}
+                    if isinstance(envelope, dict) and type(envelope.get('raw_output')) is str:
+                        correction['hints'] = correction_hints(envelope['raw_output'], request['raw_text'], info.get('rejected', []))
                     diagnostics.append(diagnostic('MODEL_OUTPUT_INVALID', '模型结构或原文证据不合法。', attempt=attempt,
                         exception=type(exc).__name__, reason=str(exc)[:300], stage=stage,
                         rejected=info.get('rejected', []),
