@@ -1,6 +1,72 @@
-# CommPlan-Agent 当前交接（2026-09-24）
+# CommPlan-Agent 当前交接（2026-09-25）
 
-## M1 下一阶段（分支 `claude/calc-plans`，不影响正在审查的 v0.1.0 候选）
+## M1 第 2 周：模型主导（分支 `claude/calc-plans`）
+
+设计见 [AGENT_LED](../design/AGENT_LED.md)，验收见 [ACCEPTANCE_M1](../design/ACCEPTANCE_M1.md)。v0.1.0 发布之前，不要把该分支合入 `codex/model-eval-integration` 或 `main`。
+
+分工：C8–C11 由 Codex 执行，用户已确认（2026-09-25），可以开始。Claude 同期在本工作区做需求抽取扩展、计划格式扩展与硬规则 H3、站点和设备接入参数来源，C9–C11 合入后接上。
+
+四个任务的共同约定：
+- **工作区**：Codex 在单独的工作区做，避免与 Claude 同时改一个目录。第一次开始时在 cmd 中执行 `git -C E:/codex/项目/信号与AI/CommPlan-Agent-M1 worktree add ../CommPlan-Agent-M1-codex -b codex/m1-week2`，此后所有命令都在 `E:/codex/项目/信号与AI/CommPlan-Agent-M1-codex` 运行（`git worktree list` 核对）。按 C8 → C9 → C10 → C11 依次做，每个任务单独提交；C9 与 C11 都会改 `knowledge/formulas.json`，不要同时进行。
+- Python 用主工作区的 `CommPlan-Agent\.venv`。需要模型时，在该工作区执行 `mklink /J models E:\codex\项目\信号与AI\CommPlan-Agent\models` 建目录联接（该路径被忽略，完成后可删）。
+- 不推送、不合并；每完成一个任务，把提交号告诉 Claude，由 Claude 审核后合入 `claude/calc-plans`。发现与设计不符的地方，记录原始输出交给 Claude 判断，不要自行改设计。
+- 回归：Python、Node、`pip check` 全部通过；证据写入 `docs/codex/evidence/`，并在对应任务末尾补一行状态。
+
+### Codex 任务 C8：换用本机 9B 模型
+
+> **目标**：演示模型换成 Qwen3.5-9B（Q4_K_M，Vulkan，上下文 16384），在注册表中设为默认；达不到下面的标准时改用 Qwen3-8B。
+> **范围**：`config/models.json`、`launch.py`、`start_commplan.py`、模型状态探测、主工作区被忽略的 `models/`、相关测试与证据。不改 `planning/agents`、`planning/services` 的业务逻辑。
+> **步骤**：
+> 1. 从 Hugging Face `unsloth/Qwen3.5-9B-GGUF` 下载 `Qwen3.5-9B-Q4_K_M.gguf`（5,680,522,464 字节）到 `CommPlan-Agent\models\signal-formula-qwen3\models\Qwen3.5-9B-GGUF\`；SHA256 以该文件页的 LFS 信息为准（设计时查到以 `03b74727` 开头）。只下载这一个文件，不下载 mmproj 视觉文件。
+> 2. 先停掉 4B 服务（8 GB 显存放不下两个模型）。用项目内 `llama.cpp-b10950`（Vulkan）按 `launch.py` 现有参数启动，`-c 16384`，端口仍为 18081。检查：启动日志显示全部层在 GPU、没有算子回落 CPU（Qwen3.5 的 DeltaNet 层在部分 Vulkan 版本上回落 CPU 会导致输出异常，见 llama.cpp issue #19957）；3 条固定中文提示输出正常；记录生成速度与首字延迟；一条 `response_format: json_schema`（strict）请求输出合法。
+> 3. 通过标准：输出正常，生成 ≥ 15 token/s，严格 JSON 可用。任何一项不通过，改下 `Qwen/Qwen3-8B-GGUF` 的 `Qwen3-8B-Q4_K_M.gguf`（5,027,783,488 字节，SHA256 以文件页为准，设计时查到以 `d98cdcbd` 开头），重复第 2 步，并在证据中写明原因。
+> 4. 注册表新增一项（如 id `qwen35-9b-q4`，显示名“Qwen3.5 9B · Q4_K_M”，context 16384，`json_schema_strict: true`，timeout 60 s，别名如 `commplan-qwen35-9b`），`defaults.chat` 改为它；两项 4B 保留。
+> 5. 启动器改为按注册表的默认生成模型启动（权重、别名、端口、上下文、设备都取自注册表），不再读 `runtime_config.json` 的 `generation` 段；状态探测按注册表中的别名判断“就绪”或“不是目标模型”。同一时间只启动一个生成模型。
+> 6. 用新模型跑 `scripts/eval_models.py`（36 条），与 [第 1 周收尾](evidence/2026-09-24-M1-week1-closeout.md) 的 4B 结果（33/33 结构化成功、0 降级）逐条比较，退化项逐条列出。
+> **完成标准**：新模型能由启动器启动、健康检查就绪；评测报告与比较写入证据；未通过的项如实标注。
+
+### Codex 任务 C9：直线距离、视距两张卡与假设值
+
+> **目标**：公式库新增 `slant_range_wgs84`、`radio_horizon`；卡片参数支持假设值 `default`。
+> **范围**：`knowledge/formulas.json`、`formula_rag/`（目录校验、计算内核、内容哈希、公式展示）、`planning/services/reference_models.py`（独立复算）、测试。不接入需求解析和页面流程。
+> **步骤**：
+> 1. `radio_horizon`：表达式卡 `4.12*(sqrt(antenna1_m)+sqrt(antenna2_m))`，输出 `radio_horizon_km`（km），参数单位 m、`min: 0`；适用说明写明 k = 4/3、不含地形与菲涅耳区余隙。出处在公开文献（ITU-R 建议书或教材）中查到并记录定位；找不到时写明由 k = 4/3、R = 6371 km 推导，并引用 k 因子的出处。两条算例。
+> 2. `slant_range_wgs84`：登记的程序工具卡（`"kind": "python_tool"`，实现函数登记在白名单里；表达式语言写不下）。输入 8 个：`lat1_deg`、`lon1_deg`、`ground1_m`、`antenna1_m`、`lat2_deg`、`lon2_deg`、`ground2_m`、`antenna2_m`；输出 `distance_km`（km）。算法：WGS84 大地坐标（高度 = 地面高程 + 天线离地高度）→ 地心坐标 → 两点弦长。独立复算用另一种写法（如 ENU 分解），两者相差 ≤ 1e-6 km。数值基准：至少一个公开的大地坐标转地心坐标算例（如 NGA、NOAA 文档或教材），误差 ≤ 0.01 m；AGENT_LED 附录 A 的 A→B、A→F 作为回归值。卡片内容哈希要覆盖实现函数的源码。
+> 3. 参数 `default`：`{"value", "unit", "note"}`，目录校验要求单位与参数一致、值在范围内。设置：`received_power.tx_loss_db`、`rx_loss_db` 为 2 dB（note：“工程假设，典型取值，非标准值；请按实际馈线修改”，用户 2026-09-25 确认）；`received_power.extra_loss_db` 为 0 dB（“按自由空间假设，不计其他损耗”）；`link_margin.reserve_db` 为 0 dB（“要求余量单独比较，不预先扣除”）。
+> 4. 公式页：程序工具卡显示算法说明与出处，不显示表达式。
+> 5. 测试：两张卡的算例；复算一致；`default` 校验（单位不符、越界被拒）；改动实现源码后内容哈希变化；现有 FSPL 单步结果与 v0.1.0 逐位一致。
+> **完成标准**：以上测试通过；附录 A 各链路的距离与视距实现值写入证据，与附录 A 相差超过 0.01 km 时报告 Claude。
+
+### Codex 任务 C10：模拟站点库、设备库与查询
+
+> **目标**：按 AGENT_LED 附录 A 建立模拟站点库、设备库，实现 `FactService` 的 `find_site`、`find_device` 查询。
+> **范围**：`knowledge/facts/`、`knowledge/documents/simulated/`、新模块（建议 `planning/knowledge/facts.py`）、知识快照、测试。不接入需求解析和页面流程。
+> **步骤**：
+> 1. 写 `knowledge/facts/sites.json`、`devices.json`：字段按 KNOWLEDGE_FACTS §3，`position.height_m` 拆成 `ground_m` 与 `antenna_m`（D 站 `antenna_m: null`）；新增设备类型 `device`：`model`、`tx_power_dbm`、`antenna_gain_dbi`、`rx_sensitivity_dbm`、`band_ghz`；每条 `simulated: true`，`source` 指向第 2 步文档的具体行或章节。
+> 2. 写三份模拟文档（Markdown，开头标“模拟数据，仅供演示”）：`站址表.md`（附录 A 全部站点）、`XX-100 手册.md`、`XX-200 手册.md`（规格表加两三段说明）。数值与 JSON 一致，由测试核对。
+> 3. `FactService`：`find_site(name)`、`find_device(name)`、`describe()`。匹配顺序：名称精确 → 别名精确 → 去掉空格和末尾“站”字后的包含匹配；返回全部候选、匹配方式与来源；同级按 id 排序；不联网；只返回库中记录；空输入或超过 50 字报错。
+> 4. 事实库与模拟文档的内容哈希进入知识快照；变化时，已确认任务按“知识目录已变化”处理。
+> 5. 测试：“A站”“A岸站”精确命中；“港口站”返回东港站、西港站两个候选；D 站天线高度为 null；未知名称返回空列表；文档与 JSON 数值一致；KNOWLEDGE_FACTS §7 的合同要点。C9 完成后，再用两张卡算附录 A 的预期表（容差：距离 0.001 km、余量 0.01 dB）。
+> **完成标准**：以上测试通过；与附录 A 不符时报告 Claude，不改数据。
+
+### Codex 任务 C11：反求工具
+
+> **目标**：实现 `solve`，对计划中的一个未知量做一维反求并复核，满足 CALCULATION_PLANS §7。
+> **范围**：新模块（建议 `planning/services/solve.py`），复用现有多步执行器（必要时抽出一个不依赖任务状态的纯函数），测试。不接入流程与页面。
+> **步骤**：
+> 1. 接口：`solve(plan, unknown, condition, bracket=None) -> dict`；失败时抛出以错误码为消息的 `ValueError`（与现有 `require` 一致），不给数值。`condition` 如 `{"quantity": "link_margin_db", "op": ">=", "value": 10}`。搜索区间取卡片参数的 `search_range`，没有时报 `SOLVE_BRACKET`。给 `received_power.tx_power_dbm` 加 `search_range: [-30, 70]`（dBm），`fspl_ghz.distance_km` 加 `[0.001, 1000]`（km）。
+> 2. 算法：区间内等距取 ≥ 16 个点，确认严格单调、两端点的“条件量 − 阈值”异号；否则报 `SOLVE_NOT_MONOTONIC` 或 `SOLVE_NO_ROOT`。二分至区间宽度 ≤ 1e-9 × max(1, |x|)；按单调方向把解解释为“最小”或“最大”；把解代回整条计划算残差；在解两侧各取一点（±1e-6 相对）确认一侧满足、一侧不满足。
+> 3. 返回：解与单位、方向、区间、迭代次数、残差、两侧点的条件量与判断、每步中间值。
+> 4. 测试：附录 A 的 A→B（距离直接给 34.064 km）最小发射功率与闭式解（37 + 10 − 余量）相对误差 ≤ 1e-6；最远距离与闭式解比较（只在单测里）；无解、非单调、缺区间各一条；同一输入重复 3 次结果一致。
+> **完成标准**：以上测试通过；结果写入证据。
+
+### Claude（同期进行）
+
+- A1 需求抽取扩展：模型抽取参数、站点、设备、要求与反求意图（schema、提示词、摘录核对），规则改为核对，不一致时列为冲突。
+- A2 计划格式扩展：`requirement`、`solve_if_unmet`、站点与设备来源、假设值，校验加 H3。
+- A3 站点、设备接入参数来源：同名、缺项、冲突走原有提问面板（C10 完成后接入）。
+
+## M1 第 1 周（已完成，分支 `claude/calc-plans`）
 
 验收点见 [ACCEPTANCE_M1](../design/ACCEPTANCE_M1.md)，设计见 [CALCULATION_PLANS](../design/CALCULATION_PLANS.md)。第 1 周的通用计算链已提交在 9a69535。v0.1.0 发布之前，不要把该分支合入 `codex/model-eval-integration` 或 `main`。
 
