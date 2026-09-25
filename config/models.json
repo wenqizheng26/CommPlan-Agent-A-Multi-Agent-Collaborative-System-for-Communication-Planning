@@ -1,7 +1,21 @@
 {
   "schema_version": 1,
-  "defaults": {"chat": "qwen3-4b-q4", "embedding": "bge-small-zh-v1.5"},
+  "defaults": {"chat": "qwen35-9b-q4", "embedding": "bge-small-zh-v1.5"},
   "models": [
+    {
+      "id": "qwen35-9b-q4",
+      "kind": "chat",
+      "display_name": "Qwen3.5 9B · Q4_K_M",
+      "runtime": "llama.cpp",
+      "endpoint": "http://127.0.0.1:18081",
+      "alias": "commplan-qwen35-9b",
+      "context": 16384,
+      "capabilities": {"json_schema_strict": true},
+      "defaults": {"temperature": 0, "timeout_s": 60},
+      "runtime_options": {"device": "Vulkan1", "gpu_layers": 99},
+      "weights": "models/signal-formula-qwen3/models/Qwen3.5-9B-GGUF/Qwen3.5-9B-Q4_K_M.gguf",
+      "revision": "3885219b6810b007914f3a7950a8d1b469d598a5"
+    },
     {
       "id": "qwen3-4b-q4",
       "kind": "chat",

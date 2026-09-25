@@ -1,11 +1,15 @@
 """Read-only live service probe, separate from saved task outcomes."""
 from datetime import datetime, timezone
 import json
+from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import build_opener, ProxyHandler, HTTPRedirectHandler
+from planning.providers.registry import Registry
 
-MODEL_URL = 'http://127.0.0.1:18081'
-MODEL_ALIAS = 'signal-formula-qwen3'
+def default_endpoint_alias():
+    registry = Registry(Path(__file__).resolve().parents[2])
+    model = registry.models[registry.defaults['chat']]
+    return model['endpoint'].rstrip('/'), model['alias']
 
 
 class NoRedirect(HTTPRedirectHandler):
@@ -13,13 +17,17 @@ class NoRedirect(HTTPRedirectHandler):
         return None
 
 
-def read_status(path, base=MODEL_URL):
+def read_status(path, base):
     opener = build_opener(ProxyHandler({}), NoRedirect())
     with opener.open(base + path, timeout=2) as response:
         return json.loads(response.read(65536))
 
 
-def probe_model(base=MODEL_URL, alias=MODEL_ALIAS):
+def probe_model(base=None, alias=None):
+    if base is None or alias is None:
+        default_base, default_alias = default_endpoint_alias()
+        base = default_base if base is None else base
+        alias = default_alias if alias is None else alias
     status = 'unknown'
     try:
         health = read_status('/health', base)

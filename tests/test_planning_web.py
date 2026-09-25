@@ -130,7 +130,7 @@ class PlanningWebTests(unittest.TestCase):
         with patch('planning.web_server.probe_registry', return_value={'qwen3-4b-q4': 'unreachable'}):
             code, models = self.call('/api/models')
         self.assertEqual(code, 200)
-        self.assertEqual(models['defaults']['chat'], 'qwen3-4b-q4')
+        self.assertEqual(models['defaults']['chat'], 'qwen35-9b-q4')
         self.assertIn('bge-small-zh-v1.5', models['embeddings'])
         self.assertEqual(models['corpus']['size'], 7)
         self.assertNotIn('weights', json.dumps(models))

@@ -1,13 +1,14 @@
 import unittest
 from unittest.mock import patch
 from urllib.error import HTTPError, URLError
-from planning.services.model_status import probe_model
+from planning.services.model_status import probe_model, default_endpoint_alias
 
 
 class ModelServiceStatusTests(unittest.TestCase):
     def test_ready_requires_health_and_expected_model(self):
+        alias = default_endpoint_alias()[1]
         with patch('planning.services.model_status.read_status', side_effect=[
-            {'status': 'ok'}, {'data': [{'id': 'signal-formula-qwen3'}]}
+            {'status': 'ok'}, {'data': [{'id': alias}]}
         ]) as read:
             result = probe_model()
         self.assertEqual(result['status'], 'ready')

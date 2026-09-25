@@ -11,12 +11,16 @@ import urllib.error
 import urllib.request
 import webbrowser
 
-from launch import model_command
+from launch import model_command, model_paths
 from planning.build_info import build_fingerprint
+from planning.providers.registry import Registry
 
 ROOT = Path(__file__).resolve().parent
-MODEL_URL = 'http://127.0.0.1:18081'
-MODEL_ALIAS = 'signal-formula-qwen3'
+
+
+def default_model():
+    registry = Registry(ROOT)
+    return registry.models[registry.defaults['chat']]
 
 
 def read_json(url):
@@ -37,15 +41,18 @@ def listening(port):
 
 
 def model_ready():
-    data = read_json(MODEL_URL + '/v1/models')
-    health = read_json(MODEL_URL + '/health')
+    model = default_model()
+    base = model['endpoint'].rstrip('/')
+    data = read_json(base + '/v1/models')
+    health = read_json(base + '/health')
     return (isinstance(data, dict) and isinstance(health, dict)
             and health.get('status') == 'ok'
-            and any(isinstance(item, dict) and item.get('id') == MODEL_ALIAS
+            and any(isinstance(item, dict) and item.get('id') == model['alias']
                     for item in data.get('data', [])))
 
 
 def asset_root(explicit=None):
+    model = default_model()
     configured = explicit or os.environ.get('COMMPLAN_ASSET_ROOT')
     candidates = [Path(configured)] if configured else [
         ROOT / 'models' / 'signal-formula-qwen3', ROOT,
@@ -53,15 +60,9 @@ def asset_root(explicit=None):
         ROOT.parent.parent / 'signal-formula-rag',
     ]
     for root in candidates:
-        config_path = root / 'runtime_config.json'
-        if not config_path.is_file():
-            continue
-        config = json.loads(config_path.read_text(encoding='utf-8'))['generation']
-        if config.get('port') != 18081 or config.get('alias') != MODEL_ALIAS:
-            continue
-        if all((root / config[key]).is_file() for key in ('path', 'executable')):
+        if model_paths(root, model):
             return root.resolve()
-    raise RuntimeError('未找到 Qwen 权重和 llama-server。请用 --asset-root 指向含 runtime_config.json 的资源目录，或使用 --without-model。')
+    raise RuntimeError('未找到默认模型权重和 llama-server。请用 --asset-root 指向资源目录，或使用 --without-model。')
 
 
 def spawn(command, name, cwd):
@@ -99,11 +100,14 @@ def wait_ready(check, process, label, timeout=180):
 
 
 def ensure_model(args):
+    model = default_model()
+    base = model['endpoint'].rstrip('/')
+    port = int(base.rsplit(':', 1)[1])
     if model_ready():
-        print('复用已就绪的本机 Qwen：' + MODEL_URL, flush=True)
+        print('复用已就绪的本机 Qwen：' + base, flush=True)
         return
-    if listening(18081):
-        raise RuntimeError('18081 端口已占用，但未确认目标 Qwen 就绪；未重复启动或关闭已有服务。')
+    if listening(port):
+        raise RuntimeError(f'{port} 端口已占用，但未确认目标 Qwen 就绪；未重复启动或关闭已有服务。')
     root = asset_root(args.asset_root)
     print(f'启动本机 Qwen，资源目录：{root}', flush=True)
     process = spawn(model_command(root, args.cpu), 'commplan-model', root)
@@ -113,15 +117,16 @@ def ensure_model(args):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description='一键启动通信筹划工作台与本地模型（不下载资源）')
-    parser.add_argument('--asset-root', type=Path, help='含 runtime_config.json、模型与运行时的目录')
+    parser.add_argument('--asset-root', type=Path, help='含模型与运行时的目录')
     parser.add_argument('--without-model', action='store_true', help='只启动工作台')
     parser.add_argument('--cpu', action='store_true', help='本次新启动的模型使用 CPU')
     parser.add_argument('--no-browser', action='store_true')
     parser.add_argument('--port', type=int, default=18082)
     parser.add_argument('--db', type=Path, help='仅在新启动工作台时生效；不会更换已有服务的数据库')
     args = parser.parse_args(argv)
-    if not 1 <= args.port <= 65535 or args.port == 18081:
-        parser.error('工作台端口必须在 1–65535 之间，且不能占用模型端口 18081。')
+    model_port = int(default_model()['endpoint'].rsplit(':', 1)[1])
+    if not 1 <= args.port <= 65535 or args.port == model_port:
+        parser.error(f'工作台端口必须在 1–65535 之间，且不能占用模型端口 {model_port}。')
     address = f'http://127.0.0.1:{args.port}'
 
     def workbench_ready():
