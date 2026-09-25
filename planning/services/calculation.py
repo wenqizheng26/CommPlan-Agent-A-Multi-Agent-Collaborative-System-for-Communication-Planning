@@ -9,9 +9,31 @@ from planning.agents.calculation import propose_calculation
 from planning.workflow.requirements_graph import stamp
 from planning.workflow.activity import observe
 from planning.services.domain_calculation import evaluate_domains, validate_domains, conclusion
-from planning.services.reference_models import agrees
+from planning.services.reference_models import agrees, REFERENCE
 
 MARGIN_NOTE = '余量只表示所填预算条件下与接收门限的关系，不保证现场可靠通信。'
+SOLVE_ERRORS = {'SOLVE_NO_ROOT': '搜索区间内没有满足要求的值', 'SOLVE_NOT_MONOTONIC': '结果随该量不单调，无法唯一反求',
+                'SOLVE_BRACKET': '该量没有登记搜索区间', 'SOLVE_PLAN': '计划中找不到该量', 'SOLVE_CONDITION': '要求与计算目标不符'}
+
+
+class Blocked(ValueError):
+    """A plan check stopped the calculation (H2). The steps before it and the reason are kept, no later value."""
+
+    def __init__(self, code, message, steps, details):
+        super().__init__(code)
+        self.message, self.steps, self.details = message, steps, details
+
+
+def check_plan(plan, done, steps):
+    """Plan checks whose steps have both run. A distance from coordinates must be within the radio horizon."""
+    for check in plan.get('checks', []):
+        if check['kind'] == 'line_of_sight' and check['distance'] in done and check['horizon'] in done:
+            distance, horizon = done[check['distance']]['value'], done[check['horizon']]['value']
+            if distance > horizon:
+                raise Blocked('BEYOND_LINE_OF_SIGHT',
+                              f'两站直线距离 {distance:.2f} km，超过两端天线的无线电视距 {horizon:.2f} km；'
+                              '自由空间链路预算在视距外不适用，未计算路径损耗及之后各步。',
+                              steps, dict(distance_km=distance, radio_horizon_km=horizon))
 
 
 def single_fspl(plan):
@@ -46,7 +68,26 @@ def run_steps(plan, cards, parameters, parameter_names, conditions):
         out = dict(name=card['output']['name'], value=value, unit=result['unit'])
         done[step['step_id']] = out
         steps.append(dict(step_id=step['step_id'], tool_id=card['id'], version=card['version'], inputs=inputs, output=out))
+        check_plan(plan, done, steps)
     return steps
+
+
+def solve_for(plan, cards, parameters, names, report):
+    """Invert the confirmed plan for the unknown the user asked about (C11), and compare with the radio's rating."""
+    from planning.services.solve import solve  # solve imports run_steps from here
+    requirement, unknown = plan['requirement'], plan['solve_if_unmet']
+    envelope = dict(steps=plan['steps'], cards=cards, parameters=parameters, parameter_names=names,
+                    conditions=report['conditions'])
+    try:
+        found = solve(envelope, unknown, {k: requirement[k] for k in ('quantity', 'op', 'value')})
+    except ValueError as exc:
+        return dict(unknown=unknown, error=str(exc))
+    rated = next((o for p in report['parameters_proposal'] if p['canonical_name'] == unknown
+                  for o in p['origins'] if o['kind'] == 'device'), None)
+    if rated:
+        found['rated'] = dict(value=rated['value'], unit=rated['unit'], source_ref=rated['source_ref'],
+                              exceeded=found['value'] > rated['value'])
+    return found
 
 
 def execute(snapshot, review, cards, proposal, observer=None, attempt=1, root=None):
@@ -113,12 +154,19 @@ def execute_plan(snapshot, cards, observer, attempt):
         observe(observer,'model','failed',caller='compute_agent')
         raise
     observe(observer,'model','completed',caller='compute_agent',model_id=final['id'],steps=len(steps))
+    extra = {}
+    if plan.get('requirement'):
+        # A margin requirement is compared, never deducted; only an unmet one is solved for.
+        actual = steps[-1]['output']['value']
+        extra['requirement'] = dict(plan['requirement'], actual=actual, met=actual >= plan['requirement']['value'])
+        if not extra['requirement']['met'] and plan.get('solve_if_unmet'):
+            extra['solve'] = solve_for(plan, cards, parameters, names, report)
     output = dict(result_id=snapshot['snapshot_id']+':result'+('' if attempt==1 else f':attempt-{attempt}'), task_id=snapshot['task_id'],
                   revision=snapshot['revision'], snapshot_id=snapshot['snapshot_id'],
                   snapshot_hash=snapshot['content_hash'], plan_hash=plan['plan_hash'],
                   model_id=final['id'], model_version=final['version'], formula=final['expression'],
                   normalized_inputs={k:parameters[k] for k in plan['required_parameters']},
-                  outputs=[copy.deepcopy(steps[-1]['output'])], steps=steps,
+                  outputs=[copy.deepcopy(steps[-1]['output'])], steps=steps, **extra,
                   evidence_ids=copy.deepcopy(report['evidence_ids']), runtime_mode='deterministic',
                   tool_version='confirmed-plan-v1/'+RULE_VERSION, started_at=started, finished_at=stamp())
     output['result_hash'] = digest(output)
@@ -153,7 +201,53 @@ def validate_plan_result(result, snapshot, expected_inputs):
     return dict(
         model_identity=result['model_id']==model['id']==plan['steps'][-1]['tool_id'] and result['model_version']==model['version']
             and result['formula']==model['expression'],
-        numeric_domain=numeric_ok, step_chain=chain_ok, independent_magnitude=magnitude_ok)
+        numeric_domain=numeric_ok, step_chain=chain_ok, independent_magnitude=magnitude_ok,
+        plan_checks=chain_ok and all(done[c['distance']]['value'] <= done[c['horizon']]['value'] for c in plan.get('checks', [])),
+        requirement_and_solve=numeric_ok and goal_ok(result, snapshot, expected_inputs))
+
+
+def reference_value(plan, inputs, unknown, x):
+    """The plan's final value with the unknown set to x, from the independent reference models only."""
+    values, done = dict(inputs, **{unknown: x}), {}
+    for step in plan['steps']:
+        args = {name: values[name] if b['kind'] == 'parameter' else done[b['ref']] for name, b in step['inputs'].items()}
+        done[step['step_id']] = REFERENCE[step['tool_id']][0](args)
+    return done[plan['steps'][-1]['step_id']]
+
+
+def goal_ok(result, snapshot, inputs):
+    """The requirement comparison and a solved value, checked again; the solution against the reference models."""
+    report = snapshot['review']['report']
+    plan = report['calculation_plan_proposal']
+    requirement = plan.get('requirement')
+    if not requirement:
+        return 'requirement' not in result and 'solve' not in result
+    actual = result['outputs'][0]['value']
+    if result.get('requirement') != dict(requirement, actual=actual, met=actual >= requirement['value']):
+        return False
+    if result['requirement']['met'] or not plan.get('solve_if_unmet'):
+        return 'solve' not in result
+    found, unknown, target = result.get('solve'), plan['solve_if_unmet'], requirement['value']
+    if type(found) is not dict or found.get('unknown') != unknown:
+        return False
+    if 'error' in found:
+        return set(found) == {'unknown', 'error'} and found['error'] in SOLVE_ERRORS
+    try:
+        tolerance = sum(REFERENCE[s['tool_id']][1] for s in plan['steps']) + 1e-9
+        x = found['value']
+        sides_ok = all(abs(reference_value(plan, inputs, unknown, side['unknown_value']) - side['condition_value']) <= tolerance
+                       and side['satisfies'] == (side['condition_value'] >= target) for side in (found['left'], found['right']))
+        rated = next((o for p in report['parameters_proposal'] if p['canonical_name'] == unknown
+                      for o in p['origins'] if o['kind'] == 'device'), None)
+        rated_ok = (found.get('rated') == dict(value=rated['value'], unit=rated['unit'], source_ref=rated['source_ref'],
+                                                exceeded=x > rated['value'])) if rated else 'rated' not in found
+        return (sides_ok and rated_ok and found['left']['satisfies'] != found['right']['satisfies']
+                and found['direction'] == ('minimum' if found['right']['satisfies'] else 'maximum')
+                and found['condition'] == {k: requirement[k] for k in ('quantity', 'op', 'value')}
+                and abs(found['condition_value'] - target) <= 1e-6 * max(1, abs(target))
+                and abs(reference_value(plan, inputs, unknown, x) - target) <= tolerance)
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return False
 
 
 def validate_result(result, snapshot):
@@ -225,9 +319,30 @@ def plan_conclusion(result):
     text = '按已确认自由空间条件，' if 'fspl_ghz' in tools else '按已确认输入，'
     if result['model_id']=='link_margin':
         meaning = describe_result('link_margin', out['value'])['message'].split('，')[0]
-        return text + f"链路余量 {out['value']:.2f} dB（{meaning}）。"
+        return text + f"链路余量 {out['value']:.2f} dB（{meaning}）" + goal_text(result) + '。'
     label = {'received_power':'接收信号电平','fspl_ghz':'路径损耗'}.get(result['model_id'], out['name'])
     return text + f"{label} {out['value']:.2f} {out['unit']}。"
+
+
+def goal_text(result):
+    """The comparison with the margin requirement, and the solved value with its rating note (decision 6)."""
+    req = result.get('requirement')
+    if not req:
+        return ''
+    if req['met']:
+        return f"，满足不低于 {req['value']:g} dB 的要求"
+    text = f"，低于要求的 {req['value']:g} dB"
+    found = result.get('solve')
+    if not found:
+        return text
+    if 'error' in found:
+        return text + f"；反求没有结果：{SOLVE_ERRORS.get(found['error'], found['error'])}"
+    word = '至少' if found['direction'] == 'minimum' else '至多'
+    text += f"；发射功率{word}需 {found['value']:.2f} {found['unit']} 才能满足"
+    rated = found.get('rated')
+    if rated and rated['exceeded']:
+        text += f"，超过所选电台的额定发射功率 {rated['value']:g} {rated['unit']}"
+    return text
 
 
 def publish_plan(result, snapshot, validations):
@@ -249,4 +364,5 @@ def publish_plan(result, snapshot, validations):
                 conclusion=plan_conclusion(result),
                 limitations=list(dict.fromkeys(limits)),
                 evidence_refs=copy.deepcopy(report['evidence_refs']), component_modes=copy.deepcopy(report['component_modes']),
-                runtime_health=report['runtime_health'], generated_at=stamp())
+                runtime_health=report['runtime_health'], generated_at=stamp(),
+                **{k: copy.deepcopy(result[k]) for k in ('requirement', 'solve') if k in result})

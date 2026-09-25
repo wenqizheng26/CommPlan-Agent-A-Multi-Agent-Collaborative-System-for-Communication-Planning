@@ -104,6 +104,12 @@ def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(
             output = failed(state,'calculation',exc)
             output.update(calculation_attempts=attempt,calculation_role=role,review_assessment=None,validations=[],
                 calculation_roles=state.get('calculation_roles',[])+[dict(attempt=attempt,role=role)])
+            if isinstance(exc, calculation.Blocked):
+                # Outside the free-space model's range (H2): the steps before the check stay visible, nothing after.
+                output['status'] = 'NEEDS_MODEL'
+                output['failure'].update(message=exc.message, details=dict(exc.details, steps=exc.steps),
+                    next_action='缩短距离或升高天线后重新确认；视距外的链路需要绕射或散射模型。')
+                return output
             # Only a tool transport failure is retryable. Model/schema/domain/storage
             # failures cannot use this route to bypass the existing hard gates.
             if role is not None and isinstance(exc,(TimeoutError,ConnectionError)):

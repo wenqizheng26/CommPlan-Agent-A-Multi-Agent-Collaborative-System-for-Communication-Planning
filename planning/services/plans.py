@@ -111,6 +111,8 @@ def plan_for(request, order, cards, parameters, evidence_ids, requirement=None, 
     # Only plans that need them carry these keys, so earlier plans keep their shape and hash.
     if 'slant_range_wgs84' in order and 'radio_horizon' in order:
         plan['checks'] = [dict(LINE_OF_SIGHT)]
+    if notes:
+        plan['assumed'] = list(dict.fromkeys(notes))  # the task's own assumptions, also first in assumptions
     if requirement:
         plan['requirement'] = dict(requirement)
     if solve_if_unmet:

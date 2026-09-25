@@ -10,7 +10,8 @@ from formula_rag.applicability import describe_result
 from formula_rag.parsing import FIELDS
 from planning.agents.role_model import Rewrite, suggest
 from planning.requirements_contract import digest, obj, require
-from planning.services.calculation import validate_result
+from planning.services.calculation import SOLVE_ERRORS, validate_result
+from planning.services.fact_fields import FACT_FIELDS, field_label
 from planning.services.number_check import known, unquoted
 
 DECISIONS = {'pass': '通过', 'caution': '请核对', 'not_applicable': '超出适用范围'}
@@ -24,7 +25,7 @@ LIMITS = dict(answer=240, opinions=160, steps=100)
 MAX_OPINIONS = 3
 OUTPUTS = {'path_loss_db': '路径损耗', 'rx_power_dbm': '接收信号电平', 'link_margin_db': '链路余量（已扣除预留余量）',
            'noise_power_dbm': '热噪声功率', 'maximum_doppler_hz': '最大多普勒频移'}
-ORIGINS = {'user_text': '原文', 'manual_form': '手填'}
+ORIGINS = {'user_text': '原文', 'manual_form': '手填', 'site': '站点库', 'device': '设备库', 'default': '假设'}
 
 PROMPT = (
     '你是通信计算的解释与审查 Agent。facts 是一项已由用户确认、由程序按登记公式算完并通过全部数值校验的任务；'
@@ -42,6 +43,8 @@ PROMPT = (
     '数字规则：只照抄 facts 里已有的数值，一般保留两位小数（如 98.4206 写成 98.42），数值后写单位；'
     '不要自己做加减乘除或换算单位，不写 facts 里没有的数字；数字用阿拉伯数字；型号和标准编号照原样写。'
     '链路余量已经扣除了预留余量：预留余量不是要求值，不要拿链路余量和预留余量比较；facts 里没有余量要求时，不说“满足要求”或“不满足要求”。'
+    '有 goal（余量要求）时先回答是否满足；不满足且有 solve 时，给出所需的发射功率，并说明是否超过所选电台的额定值。'
+    '差值只用 facts 里给出的 difference 与 change。'
     'recent_changes 只说明输入是怎样改到现在的，不要引用其中的旧数值。'
     '结果只是声明条件下的自由空间基准，不要声称真实链路一定可用。')
 
@@ -49,7 +52,7 @@ PROMPT = (
 def label(name):
     if name == 'reserve_db':  # the model kept comparing the margin with the reserve it already has deducted
         return '预留余量（已在链路余量中扣除，不是要求值）'
-    return OUTPUTS.get(name) or (FIELDS[name][0] if name in FIELDS else name)
+    return OUTPUTS.get(name) or (field_label(name) if name in FIELDS or name in FACT_FIELDS else name)
 
 
 def source_of(parameter, text):
@@ -84,7 +87,9 @@ def steps_of(result, report):
         rows = [(step['step_id'], step['tool_id'], result['outputs'])]
     def case(step_id, output):
         # A range or candidate run reports which input values each output belongs to.
-        return {'case': [dict(name=label(k), value=shown(v), unit=units[step_id].get(k)) for k, v in output['inputs'].items()]}             if 'inputs' in output else {}
+        if 'inputs' not in output:
+            return {}
+        return {'case': [dict(name=label(k), value=shown(v), unit=units[step_id].get(k)) for k, v in output['inputs'].items()]}
     return [dict(id='step:' + step_id, name=label(outputs[0]['name']), basis=basis.get(tool), uses=uses[step_id],
                  outputs=[dict(value=shown(o['value']), unit=o['unit'], **case(step_id, o)) for o in outputs])
             for step_id, tool, outputs in rows]
@@ -96,8 +101,8 @@ def facts_for(result, snapshot, validations):
     plan = report['calculation_plan_proposal']
     params = {p['canonical_name']: p for p in report['parameters_proposal']}
     # Card notes and the free-space boundary are shown by the program; given to the model they only came
-    # back as boilerplate. Assumptions here are this task's own (values the user did not state).
-    notes = []
+    # back as boilerplate. Assumptions here are this task's own: sites, radio and card assumptions.
+    notes = plan.get('assumed', [])
     def meaning(o):
         found = describe_result(result['model_id'], o['value']) if type(o['value']) in (int, float) else None
         return {'meaning': found['message'].split('，')[0]} if found and result['model_id'] == 'link_margin' else {}
@@ -110,12 +115,39 @@ def facts_for(result, snapshot, validations):
                                           for o in result['outputs']]),
         checks=dict(id='checks', passed=sum(v['passed'] for v in validations), total=len(validations)),
         assumptions=[dict(id=f'as:{i}', text=t) for i, t in enumerate(dict.fromkeys(notes), 1)],
-        scope=dict(id='scope', conditions=report['conditions']))
+        scope=dict(id='scope', conditions=report['conditions']),
+        **goal_facts(result, params))
+
+
+def goal_facts(result, params):
+    """The requirement comparison and the solved value, with the differences worked out so the model need not."""
+    facts = {}
+    req = result.get('requirement')
+    if req:
+        facts['goal'] = dict(id='goal', required=dict(value=req['value'], unit='dB', meaning='余量要求：不低于'),
+                             met=req['met'], difference=dict(value=shown(abs(req['actual'] - req['value'])), unit='dB',
+                                                              meaning='余量比要求' + ('高' if req['met'] else '低')))
+    found = result.get('solve')
+    if found and 'error' in found:
+        facts['solve'] = dict(id='solve', name=label(found['unknown']), error=SOLVE_ERRORS.get(found['error'], found['error']))
+    elif found:
+        current = params[found['unknown']]['value']
+        entry = dict(id='solve', name=label(found['unknown']), meaning='满足余量要求所需的' + ('最小值' if found['direction'] == 'minimum' else '最大值'),
+                     value=shown(found['value']), unit=found['unit'],
+                     change=dict(value=shown(abs(found['value'] - current)), unit='dB',
+                                 meaning='比当前取值' + ('高' if found['value'] > current else '低')))
+        if found.get('rated'):
+            rated = found['rated']
+            entry['rated'] = dict(value=rated['value'], unit=rated['unit'], meaning='所选电台的额定值', exceeded=rated['exceeded'],
+                                  difference=dict(value=shown(abs(found['value'] - rated['value'])), unit='dB',
+                                                  meaning='所需值比额定值' + ('高' if rated['exceeded'] else '低')))
+        facts['solve'] = entry
+    return facts
 
 
 def ref_ids(facts):
     return ['question', *(i['id'] for i in facts['inputs']), *(s['id'] for s in facts['steps']), 'result', 'checks',
-            *(a['id'] for a in facts['assumptions']), 'scope']
+            *(a['id'] for a in facts['assumptions']), 'scope', *(k for k in ('goal', 'solve') if k in facts)]
 
 
 def schema_for(facts):

@@ -19,7 +19,7 @@ SOLVE_UNKNOWNS = {'tx_power_dbm'}
 ORIGIN_KINDS = {'user_text', 'manual_form', 'site', 'device', 'default'}
 PLAN_FIELDS = 'plan_id task_id revision objective steps required_parameters selected_model assumptions evidence_ids plan_hash'
 # Only plans that need them carry these.
-PLAN_OPTIONAL = {'checks', 'requirement', 'solve_if_unmet'}
+PLAN_OPTIONAL = {'checks', 'requirement', 'solve_if_unmet', 'assumed'}
 
 
 def strict_json(text):
@@ -247,6 +247,8 @@ def validate_report(value, request):
             obj(plan['requirement'], 'quantity op value unit'); number(plan['requirement']['value'])
             require(plan['requirement']['quantity'] == 'link_margin_db' and plan['requirement']['op'] == '>='
                     and plan['requirement']['unit'] == 'dB', 'PLAN_REQUIREMENT')
+        if 'assumed' in plan:
+            strings(plan['assumed']); require(plan['assumed'] == plan['assumptions'][:len(plan['assumed'])], 'PLAN_ASSUMED')
         if 'solve_if_unmet' in plan:
             require('requirement' in plan and plan['solve_if_unmet'] in SOLVE_UNKNOWNS
                     and plan['solve_if_unmet'] in plan['required_parameters'], 'PLAN_SOLVE')
