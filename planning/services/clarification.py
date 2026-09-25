@@ -6,6 +6,7 @@ from planning.services.requirement_parameters import collect_parameters
 from planning.services.input_domains import numbers, APPROX, format_value
 from formula_rag.parsing import extract_request, FIELDS, UNITS, NUMBER
 from planning.services.supplement import input_of, conversation_of
+from planning.services.fact_fields import FACT_FIELDS
 
 NAMES={'frequency_ghz':'载波频率','distance_km':'路径距离'}
 # Link-budget inputs: one confirmed scalar each, any sign; card bounds are checked by planning.
@@ -96,6 +97,17 @@ def issues_for(state):
                 if field in BUDGET:
                     add('invalid',field,BUDGET[field]+'超出公式定义域','按登记公式，该量不能取当前值；请重新输入（含单位）。',
                         excerpt=format_value(params[field]['value'])+' '+params[field]['unit'] if field in params else '')
+    # Names the fact store could not settle: a shared name is a choice, anything else is edited in the text.
+    for d in diagnostics:
+        det=d['details']
+        if d['code']=='ENTITY_AMBIGUOUS':
+            add('choice','entity',f"“{det['mention']}”是哪一个？",d['message'],excerpt=det['mention'],
+                choices=[dict(value=name,label=name) for name in det['choices']])
+        elif d['code'] in {'ENTITY_UNKNOWN','SITE_COUNT','DEVICE_COUNT','DEVICE_BAND'}:
+            add('clarification','task','站点或设备需要核对',d['message']+'请在补充中说明或编辑原文。',excerpt=d['message'])
+    for field,p in params.items():
+        if field in FACT_FIELDS and p['status']=='missing':
+            add('missing',field,f'请补充{FACT_FIELDS[field][0]}（{FACT_FIELDS[field][1]}）','站点库没有这一项；输入单个数值和单位，例如 20m。')
     for d in diagnostics:
         if d['code'] in {'PLAN_DOMAIN_UNSUPPORTED','PLAN_TARGETS_SPLIT'}:
             add('clarification','task','计算计划需要调整',d['message'])
@@ -226,6 +238,24 @@ def replace_parameter(request, report, field, answer):
     actual=next((p for p in check if p['canonical_name']==field),None)
     require(actual is not None and actual['value']==param['value'] and not any(c['parameter_name']==field for c in conflicts),
             'ANSWER_REPLACEMENT_CONFLICT')
+    return param
+
+
+def fact_value(field, answer):
+    """One number for an input only the fact store supplies, such as an antenna height; the unit is optional."""
+    unit = FACT_FIELDS[field][1]
+    units = {'m': r'm|米', 'deg': r'°|度'}[unit]
+    found = re.fullmatch(rf'\s*(?:{re.escape(FACT_FIELDS[field][0])})?\s*[:：=为]?\s*({NUMBER})\s*(?:{units})?\s*', answer)
+    require(found is not None, 'ANSWER_PARAMETER_REQUIRED')
+    value = float(found.group(1))
+    require(value >= 0 or not field.startswith('antenna'), 'ANSWER_PARAMETER_REQUIRED')
+    return {'value': value, 'unit': unit}
+
+
+def record_fields(report):
+    """Parameters that a site or device record currently supplies."""
+    return {p['canonical_name'] for p in (report or {}).get('parameters_proposal', [])
+            if any(o['kind'] in ('site', 'device') for o in p['origins'])}
 
 
 
@@ -248,8 +278,18 @@ def apply_answers(current,answers,event_id):
             require(value in {c['value'] for c in issue['choices']},'INVALID_ANSWER_CHOICE')
             request['condition']=value
         elif field in LABELS:
-            replace_parameter(request,current['report'],field,value)
+            accepted=replace_parameter(request,current['report'],field,value)
+            if field in record_fields(current['report']):
+                # The user settled a text-versus-record conflict; the chosen value now overrides the record.
+                request['manual_parameters'][field]={'value':accepted['value'],'unit':accepted['unit']}
             conversation['pending']=[p for p in conversation['pending'] if p.get('field')!=field]
+        elif field in FACT_FIELDS:
+            request['manual_parameters'][field]=fact_value(field,value)
+        elif field=='entity':
+            require(value in {c['value'] for c in issue['choices']},'INVALID_ANSWER_CHOICE')
+            [span]=[d['details']['span'] for d in current['report']['diagnostics']
+                    if d['code']=='ENTITY_AMBIGUOUS' and d['details']['mention']==issue['excerpt']]
+            request['raw_text']=request['raw_text'][:span[0]]+value+request['raw_text'][span[1]:]
         else:
             raise ValueError('ANSWER_REQUIRES_EDIT')
         display=next((c['label'] for c in issue['choices'] if c['value']==value),value)
