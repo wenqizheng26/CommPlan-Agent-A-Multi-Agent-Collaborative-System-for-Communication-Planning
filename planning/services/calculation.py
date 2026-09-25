@@ -237,6 +237,10 @@ def goal_ok(result, snapshot, inputs):
         x = found['value']
         sides_ok = all(abs(reference_value(plan, inputs, unknown, side['unknown_value']) - side['condition_value']) <= tolerance
                        and side['satisfies'] == (side['condition_value'] >= target) for side in (found['left'], found['right']))
+        # The displayed curve must be the plan's own values too.
+        sides_ok = sides_ok and len(found['samples']) == 17 and all(
+            abs(reference_value(plan, inputs, unknown, point['unknown_value']) - point['condition_value']) <= tolerance
+            for point in found['samples'])
         rated = next((o for p in report['parameters_proposal'] if p['canonical_name'] == unknown
                       for o in p['origins'] if o['kind'] == 'device'), None)
         rated_ok = (found.get('rated') == dict(value=rated['value'], unit=rated['unit'], source_ref=rated['source_ref'],

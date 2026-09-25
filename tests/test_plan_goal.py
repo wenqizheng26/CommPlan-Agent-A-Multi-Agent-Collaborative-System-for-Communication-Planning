@@ -52,6 +52,10 @@ class PlanGoalTests(unittest.TestCase):
         # Margin grows dB for dB with transmit power, so the closed form is 37 + (10 - margin).
         self.assertLessEqual(abs(solved['value'] - (37 + 10 - margin)) / solved['value'], 1e-6)
         self.assertEqual((solved['direction'], solved['rated']['value'], solved['rated']['exceeded']), ('minimum', 37, True))
+        # 17 checked points across the search range, for the margin-versus-power curve on the page.
+        curve = [p['condition_value'] for p in solved['samples']]
+        self.assertEqual((len(curve), solved['samples'][0]['unknown_value'], solved['samples'][-1]['unknown_value']), (17, -30, 70))
+        self.assertTrue(all(b > a for a, b in zip(curve, curve[1:])))
         self.assertEqual(report['conclusion'], '按已确认自由空间条件，链路余量 5.93 dB（扣除预留余量后高于门限），低于要求的 10 dB；'
                                                '发射功率至少需 41.07 dBm 才能满足，超过所选电台的额定发射功率 37 dBm。')
         self.assertTrue(all(v['passed'] for v in done['validations']))

@@ -56,7 +56,9 @@ def solve(plan, unknown, condition, bracket=None) -> dict:
         value = steps[-1]['output']['value']
         return value, value - condition['value'], steps
 
-    samples = [evaluate_at(low + (high - low) * i / 16)[1] for i in range(17)]
+    points = [low + (high - low) * i / 16 for i in range(17)]
+    curve = [evaluate_at(x)[0] for x in points]
+    samples = [y - condition['value'] for y in curve]
     slopes = [b - a for a, b in zip(samples, samples[1:])]
     increasing = all(s > 0 for s in slopes)
     decreasing = all(s < 0 for s in slopes)
@@ -86,7 +88,9 @@ def solve(plan, unknown, condition, bracket=None) -> dict:
     left, right = side(value - delta), side(value + delta)
     require(left['satisfies'] != right['satisfies'], 'SOLVE_NO_ROOT')
     direction = 'minimum' if right['satisfies'] else 'maximum'
+    # The sampled curve is kept for display: the condition quantity at each of the 17 points.
     return {'unknown': unknown, 'value': value, 'unit': spec['unit'], 'direction': direction,
+            'samples': [{'unknown_value': x, 'condition_value': y} for x, y in zip(points, curve)],
             'bracket': original_bracket, 'iterations': iterations, 'residual': residual,
             'condition': dict(condition), 'condition_value': quantity,
             'left': left, 'right': right, 'steps': steps}
