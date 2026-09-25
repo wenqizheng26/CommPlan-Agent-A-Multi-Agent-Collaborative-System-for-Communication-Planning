@@ -172,7 +172,8 @@ class PlanLoopTests(unittest.TestCase):
             role = ReviewAgent(selector=None, context=review_context(done['conversation'])).run(
                 done['result'], done['confirmed_snapshot'])['role']
         self.assertEqual(role['mode'], 'llm')
-        self.assertLessEqual(estimate_tokens(sent[0]), 4096)
+        # The demo model has at least 8K of context (AGENT_LED §0); the 4B profiles fall back when it does not fit.
+        self.assertLessEqual(estimate_tokens(sent[0]), 8192)
 
     def test_a_budget_answer_must_be_one_value_for_that_field(self):
         state = self.service.apply(command(text='按自由空间基准计算链路余量，频率2GHz，距离10km。'))['state']

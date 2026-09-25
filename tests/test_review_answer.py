@@ -101,6 +101,17 @@ class ReviewAnswerTests(unittest.TestCase):
         self.assertIsNone(report['explanation'][0]['note'])
         self.assertAlmostEqual(report['outputs'][0]['value'], MARGIN_DB, places=9)
 
+    def test_text_cut_off_at_the_length_cap_is_rewritten_then_withheld(self):
+        from planning.agents.review import LIMITS
+        long = dict(GOOD, steps=[dict(id='step:fspl-step', note=('按自由空间公式计算路径损耗' * 20)[:LIMITS['steps']])])
+        fake = model(long)
+        done = self.confirm(ReviewAgent(fake))
+        role = done['review_assessment']['role']
+        self.assertEqual([d['code'] for d in role['diagnostics']], ['REVIEW_TEXT_CUT', 'REVIEW_TEXT_CUT'])
+        self.assertIn('截断', fake.seen[1]['correction'])
+        self.assertEqual(done['final_report']['review']['withheld'], ['steps.0'])
+        self.assertEqual(done['final_report']['answer']['text'], GOOD['answer'])
+
     def test_a_stored_answer_is_checked_again_before_publication(self):
         done = self.confirm(ReviewAgent(model(GOOD)))
         tampered = copy.deepcopy(done['review_assessment'])
