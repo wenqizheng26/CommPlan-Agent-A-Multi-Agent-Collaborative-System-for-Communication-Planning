@@ -84,6 +84,13 @@ def issues_for(state):
         elif p['status']=='missing':
             add('missing',field,f'请补充{BUDGET[field]}（{unit(field)}）',f'输入单个数值和单位，例如 {example(field)}。')
     for d in diagnostics:
+        if d['code']=='LABEL_CONFLICT':
+            det=d['details']
+            named=lambda f: LABELS.get(f,FIELDS[f][0] if f in FIELDS else '余量要求' if f=='required_margin_db' else f)
+            add('conflict',det['field'] if det['field'] in LABELS else 'task','原文数值的含义不一致',
+                f"“{det['excerpt']}”：规则判断为{'、'.join(named(f) for f in det['rule_fields'])}，模型判断为{named(det['field'])}。"
+                f"请在补充中写明，例如“{named(det['field'])}{det['excerpt']}”。",excerpt=det['excerpt'])
+    for d in diagnostics:
         if d['code']=='INPUT_DOMAIN_INVALID':
             for field in d['details'].get('fields') or []:
                 if field in BUDGET:

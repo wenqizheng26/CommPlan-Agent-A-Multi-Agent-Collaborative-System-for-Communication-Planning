@@ -5,10 +5,15 @@ from planning.requirements_contract import require
 from planning.services.plans import SUPPORTED
 
 
+# A feasibility question is the model's reading of "link margin"; the rules have no keyword for it.
+FEASIBILITY = r'能(?:不能)?通|能否(?:打)?通|通不通|够不够|够用|行不行|可行吗|能否满足|能不能满足|是否满足|满不满足|能满足吗'
+
+
 def validate_target_semantics(model):
     for target in model.get('targets', []):
         parsed = extract_request(target['evidence'])
-        require(target['id'] in SUPPORTED and parsed['targets'] == [target['id']]
+        feasible = target['id'] == 'link_margin' and re.search(FEASIBILITY, target['evidence'])
+        require(target['id'] in SUPPORTED and (parsed['targets'] == [target['id']] or bool(feasible))
                 and not parsed['unsupported_targets'], 'MODEL_TARGET_SEMANTICS')
 
 

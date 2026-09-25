@@ -13,7 +13,7 @@ def merge_interpretation(request, model, candidate_ids, manual_target=None, manu
     info = {'target_origin': 'manual' if manual_target else request.get('target_origin', 'text'),
             'targets': [], 'conditions': [], 'accepted': [], 'rejected': []}
     text = request['text']
-    clauses = [m.group() for m in re.finditer(r'[^，,。；;\n]+', text)]
+    clauses = [m.group() for m in re.finditer(r'[^，,。；;\n？?！!]+', text)]
 
     def proposals(key):
         value = model.get(key, [])
@@ -33,13 +33,14 @@ def merge_interpretation(request, model, candidate_ids, manual_target=None, manu
             info['rejected'].append({'kind': 'target', 'reason': '目标或原文证据无效'})
             continue
         enclosing = [c for c in clauses if item['evidence'] in c]
-        if any(re.search(r'不(?:是|要|用|必|想|需)|不能|并非|无需', c) for c in enclosing):
+        # "能不能通""够不够" ask a question; they are not negations.
+        if any(re.search(r'不(?:是|要|用|必|想|需)|不能|并非|无需', re.sub(r'(.)不\1', '', c)) for c in enclosing):
             info['rejected'].append({'kind': 'target', 'reason': '目标证据处于否定语境'})
             continue
         if request.get('unsupported_targets'):
             info['rejected'].append({'kind': 'target', 'reason': '不能用相似公式替代未支持的待求量'})
             continue
-        if not re.search(r'计算|求|算|多大|多少|多强|够不够|能否|还剩|还有|上界|损耗|余量|功率|频移|底噪', item['evidence']):
+        if not re.search(r'计算|求|算|多大|多少|多强|够不够|够用|能否|能通|通不通|行不行|可行|满足|还剩|还有|上界|损耗|余量|功率|频移|底噪', item['evidence']):
             info['rejected'].append({'kind': 'target', 'reason': '证据未明确计算意图'})
             continue
         targets.append(item)

@@ -10,8 +10,22 @@ def diagnostic(code, message, **details):
     return {'code': code, 'message': message, 'details': details}
 
 
-def collect_parameters(request, parsed, required):
+def overlaps(text, excerpt, span):
+    """Whether an occurrence of excerpt in text overlaps span."""
+    start = text.find(excerpt) if excerpt else -1
+    while start >= 0:
+        if start < span[1] and span[0] < start + len(excerpt):
+            return True
+        start = text.find(excerpt, start + 1)
+    return False
+
+
+def collect_parameters(request, parsed, required, labeled=()):
+    """Rule observations plus model labels. A label only names a quantity the text already contains;
+    where the rules bound the same quantity to another field, the label is left out and a question is raised."""
     observations, diagnostics = {}, []
+    # A margin requirement such as "余量至少10dB" is a comparison the rules refuse as a value.
+    required_spans = [item['span'] for item in labeled if item['field'] == 'required_margin_db']
     domains, domain_issues = extract_domains(request['raw_text'])
     diagnostics.extend(domain_issues)
     masked = list(request['raw_text'])
@@ -43,6 +57,9 @@ def collect_parameters(request, parsed, required):
     for issue in parsed['issues']:
         if issue['message'] == '发现不同数值，请明确采用哪一个':
             snippets.setdefault(issue['field'], []).extend(issue['evidence'])
+        elif any(overlaps(request['raw_text'], issue.get('evidence'), s) for s in required_spans
+                 if isinstance(issue.get('evidence'), str)):
+            continue
         else:
             diagnostics.append(diagnostic('INPUT_PARSE_ISSUE', issue['message'],
                                           field=issue.get('field'), excerpt=issue.get('evidence'),
@@ -75,6 +92,20 @@ def collect_parameters(request, parsed, required):
             observations.setdefault(field, []).append(dict(kind='user_text', source_ref=request['request_id'] + ':raw_text',
                 span=span, value=original, unit=unit))
             diagnostics.append(diagnostic('SOURCE_EXCERPT', '用户原文来源', field=field, excerpt=excerpt, span=span))
+    for item in labeled:
+        field, (a, b) = item['field'], item['span']
+        bound = {f for f, origins in observations.items() for o in origins
+                 if o['span'] and o['span'][0] < b and a < o['span'][1]}
+        if field in bound or (field == 'required_margin_db' and not bound):
+            continue
+        if bound:
+            diagnostics.append(diagnostic('LABEL_CONFLICT', '原文数值的含义，规则与模型判断不一致。', field=field,
+                                          rule_fields=sorted(bound), excerpt=request['raw_text'][a:b], span=[a, b]))
+            continue
+        observations.setdefault(field, []).append(dict(kind='user_text', source_ref=request['request_id'] + ':raw_text',
+            span=[a, b], value=item['value'], unit=item['unit']))
+        diagnostics.append(diagnostic('SOURCE_EXCERPT', '用户原文来源（模型标注）', field=field,
+                                      excerpt=request['raw_text'][a:b], span=[a, b]))
     # Every explicitly labelled numeric fragment must be accounted for. A second
     # unitless/negative expression cannot silently disappear behind a valid value.
     labels = r'载波频率|工作频率|频率|载频|路径距离|通信距离|链路距离|距离|相距'

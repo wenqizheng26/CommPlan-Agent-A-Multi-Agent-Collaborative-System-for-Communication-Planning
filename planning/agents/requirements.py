@@ -12,6 +12,8 @@ from planning.services.input_domains import numbers, scenarios
 from planning.requirements_contract import (PROFILE, VERSION, CONDITIONS, obj, require, strings,
     strict_json, validate_request, validate_report)
 from planning.services.requirement_parameters import collect_parameters, diagnostic
+from planning.services.requirement_quantities import (find_quantities, ground_labels, summary, LABEL_FIELDS,
+    SOLVE_UNKNOWNS)
 from planning.services.requirement_evidence import snapshot_for, evidence_for
 from planning.services.requirement_policy import validate_target_semantics, intent_conflict, outside_scope
 from planning.services.plans import SUPPORTED, chain, final_target, plan_for, requires_free_space, bound_issues
@@ -22,10 +24,16 @@ REQUIRED = ['frequency_ghz', 'distance_km']
 TARGET_LABELS = {'fspl_ghz': '路径损耗', 'received_power': '接收信号电平', 'link_margin': '链路余量'}
 
 
-def model_proposal(envelope, candidate_ids):
+OPTIONAL = ('quantities', 'solve', 'sites', 'devices')
+
+
+def model_proposal(envelope, candidate_ids, quantity_ids=()):
     require(type(envelope) is dict and type(envelope.get('raw_output')) is str, 'MODEL_RAW_OUTPUT_REQUIRED')
     data = strict_json(envelope['raw_output'])
-    obj(data, 'selected_ids targets conditions')
+    require(type(data) is dict and {'selected_ids', 'targets', 'conditions'} <= set(data)
+            <= {'selected_ids', 'targets', 'conditions', *OPTIONAL}, 'SCHEMA_FIELDS: model output')
+    for key in OPTIONAL:
+        data.setdefault(key, [])
     strings(data['selected_ids'])
     require(set(data['selected_ids']) <= set(candidate_ids), 'MODEL_UNKNOWN_ID')
     for key, ids, limit in [('targets', candidate_ids, 3), ('conditions', CONDITIONS, 5)]:
@@ -36,6 +44,21 @@ def model_proposal(envelope, candidate_ids):
             require(type(item['id']) is str and item['id'] in ids and item['id'] not in seen, 'MODEL_UNKNOWN_ID')
             require(type(item['evidence']) is str and 2 <= len(item['evidence']) <= 300, 'MODEL_EVIDENCE')
             seen.add(item['id'])
+    require(type(data['quantities']) is list and len(data['quantities']) <= len(quantity_ids), 'MODEL_LIST')
+    seen = set()
+    for item in data['quantities']:
+        obj(item, 'id field')
+        require(item['id'] in quantity_ids and item['id'] not in seen and item['field'] in LABEL_FIELDS, 'MODEL_UNKNOWN_ID')
+        seen.add(item['id'])
+    for key, fields, limit in (('solve', 'unknown evidence', 1), ('sites', 'mention evidence', 4), ('devices', 'mention evidence', 2)):
+        require(type(data[key]) is list and len(data[key]) <= limit, 'MODEL_LIST')
+        for item in data[key]:
+            obj(item, fields)
+            require(type(item['evidence']) is str and 2 <= len(item['evidence']) <= 300, 'MODEL_EVIDENCE')
+            if key == 'solve':
+                require(item['unknown'] in SOLVE_UNKNOWNS, 'MODEL_UNKNOWN_ID')
+            else:
+                require(type(item['mention']) is str and 1 <= len(item['mention'].strip()) <= 30, 'MODEL_EVIDENCE')
     return data
 
 
@@ -44,10 +67,12 @@ def correction_hints(raw_output, text, rejected=()):
     try:
         data = strict_json(raw_output)
     except (ValueError, TypeError):
-        return ['上一次输出不是规定的 JSON 对象，请只输出 selected_ids、targets、conditions 三个字段。']
+        return ['上一次输出不是规定的 JSON 对象，请只输出 selected_ids、targets、conditions、quantities、solve、sites、devices 七个字段。']
     hints = []
     for item in rejected:
-        if item.get('kind') == 'condition' and item.get('id'):
+        if item.get('kind') in {'quantity', 'solve', 'site', 'device'}:
+            hints.append(f'{item["kind"]}：{item["reason"]}。拿不准时，数量标 other，其余返回空数组。')
+        elif item.get('kind') == 'condition' and item.get('id'):
             hints.append(f'conditions 中的 {item["id"]} 在原文中没有依据（{item["reason"]}）；'
                          '原文没有明确写出传播条件时，conditions 返回空数组，由程序向用户追问。')
         elif item.get('reason') == '证据未明确计算意图':
@@ -123,6 +148,9 @@ class RequirementsAgent:
             prelim_conditions.add(request['condition'])
         known_unsupported = outside_scope(request['raw_text'], original,
             [request['target']] if request['target'] else parsed['targets'], prelim_conditions)
+        # Numbers with units found by the program; the model only labels them.
+        quantities = find_quantities(request['raw_text'])
+        labels = []
         if self.selector and candidates and not known_unsupported:
             observe(observer,'interpretation','started')
             observe(observer,'llm','started',caller='requirements',purpose='intent',
@@ -135,11 +163,12 @@ class RequirementsAgent:
                 try:
                     if isinstance(self.selector, LocalSelector):
                         envelope = self.selector(request['raw_text'], copy.deepcopy(candidates),
-                            manual_target=request['target'], manual_condition=request['condition'], correction=correction)
+                            manual_target=request['target'], manual_condition=request['condition'], correction=correction,
+                            quantities=copy.deepcopy(quantities), label_fields=LABEL_FIELDS, solve_unknowns=SOLVE_UNKNOWNS)
                     else:
                         envelope = self.selector(request['raw_text'], copy.deepcopy(candidates))
                     stage = 'structure'
-                    model = model_proposal(envelope, [c['id'] for c in candidates])
+                    model = model_proposal(envelope, [c['id'] for c in candidates], [q['id'] for q in quantities])
                     require(not request['target'] or not model['targets'], 'MODEL_SELECTED_TARGET_REPEATED')
                     require(not request['condition'] or not model['conditions'], 'MODEL_SELECTED_CONDITION_REPEATED')
                     stage = 'target_semantics'
@@ -148,8 +177,15 @@ class RequirementsAgent:
                     checked = copy.deepcopy(parsed)
                     info = merge_interpretation(checked, model, [c['id'] for c in candidates],
                                                manual_target=request['target'], manual_condition=request['condition'])
+                    found, rejected, dropped = ground_labels(request['raw_text'], quantities, model)
+                    info['rejected'].extend(rejected)
                     require(not info['rejected'], 'MODEL_UNGROUNDED')
                     parsed = checked
+                    labels = found
+                    info['accepted'].extend(found)
+                    if dropped:
+                        diagnostics.append(diagnostic('MODEL_LABEL_DROPPED', '模型给出的部分站点、设备或反求问句在原文中找不到，已忽略。',
+                                                      items=dropped))
                     mode = 'llm' if isinstance(self.selector, LocalSelector) else 'stub'
                     diagnostics.append(diagnostic('MODEL_CALL', '意图建议经原文核验。', attempt=attempt,
                         model=envelope.get('model'), usage=envelope.get('usage', {}), accepted=info['accepted'],
@@ -230,12 +266,22 @@ class RequirementsAgent:
         if targets and not unsupported and final is None:
             questions.append('多个计算目标不在同一条计算链上，请只保留一个目标。')
             diagnostics.append(diagnostic('PLAN_TARGETS_SPLIT', '请求的目标不能由一条计算链同时给出。', targets=targets))
+        numeric = [a for a in labels if a['kind'] in {'quantity', 'requirement'}]
         if final:
-            observed, _, _ = collect_parameters(request, original, [])
+            observed, _, _ = collect_parameters(request, original, [], numeric)
             order, leaves = chain(final, self.cards, {p['canonical_name'] for p in observed})
         required = leaves if final else (REQUIRED if unsupported else [])
-        parameters, conflicts, param_diagnostics = collect_parameters(request, original, required)
+        parameters, conflicts, param_diagnostics = collect_parameters(request, original, required, numeric)
         diagnostics.extend(param_diagnostics)
+        if any(d['code'] == 'LABEL_CONFLICT' for d in param_diagnostics):
+            questions.append('原文中有数值的含义，规则与模型判断不一致，请写明它是哪个参数。')
+        requirement, solve, entities = summary(labels)
+        if requirement and final and final != 'link_margin':
+            questions.append('余量要求只适用于链路余量，请确认要计算的量。')
+            diagnostics.append(diagnostic('REQUIREMENT_TARGET', '原文给出余量要求，但计算目标不是链路余量。'))
+        if solve:
+            diagnostics.append(diagnostic('SOLVE_REQUESTED', '已识别反求要求：最小发射功率。反求接入前只计算余量。',
+                                          unknown=solve['unknown']))
         missing = [p['canonical_name'] for p in parameters if p['status'] == 'missing']
         if missing:
             questions.append('请补充：' + '、'.join(missing))
@@ -293,7 +339,8 @@ class RequirementsAgent:
             candidate_models=[dict(model_id=c['id'], version=c['version'], status=c['status'], evidence_ids=evidence_ids) for c in candidates],
             calculation_plan_proposal=plan, evidence_ids=evidence_ids, evidence_refs=refs, knowledge_snapshot=snapshot,
             questions=list(dict.fromkeys(questions)), assumptions=list(plan['assumptions']) if plan else [],
-            conditions=sorted(conditions), targets=targets, execution_status=status,
+            conditions=sorted(conditions), targets=targets, requirement=requirement, solve=solve, entities=entities,
+            execution_status=status,
             component_modes=dict(interpretation=mode, retrieval='lexical_fallback'), runtime_health=health, diagnostics=diagnostics)
         checked=validate_report(report, request)
         observe(observer,'planning','completed',status=status)

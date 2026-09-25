@@ -6,8 +6,33 @@ from formula_rag.interpretation import merge_interpretation
 from formula_rag.applicability import scope_issues
 from planning.services.input_domains import numbers, scenarios
 from planning.requirements_contract import require, validate_report
+from formula_rag.parsing import convert
 from planning.services.requirement_parameters import collect_parameters
+from planning.services.requirement_quantities import find_quantities, summary, SOLVE_UNKNOWNS
 from planning.services.requirement_evidence import snapshot_for, evidence_for
+
+LABEL_KINDS = {'quantity', 'requirement', 'solve', 'site', 'device'}
+
+
+def check_labels(text, labels):
+    """Every recorded model label must still sit on the text; none can carry its own number."""
+    quantities = {tuple(q['span']): q for q in find_quantities(text)}
+    for a in labels:
+        if a['kind'] in {'quantity', 'requirement'}:
+            q = quantities.get(tuple(a.get('span') or ()))
+            require(q is not None and a['value'] == q['value'], 'LABEL_NOT_GROUNDED')
+            if a['kind'] == 'requirement':
+                require(a['unit'] == 'dB' and q['unit'].lower() == 'db' and q['comparison'] != '<=', 'LABEL_NOT_GROUNDED')
+            else:
+                require(a['unit'] == q['unit'] and a['field'] in FIELDS and not q['comparison'], 'LABEL_NOT_GROUNDED')
+                convert(a['field'], a['value'], a['unit'])
+        else:
+            a0, b0 = a['span']
+            require(0 <= a0 < b0 <= len(text), 'LABEL_NOT_GROUNDED')
+            if a['kind'] == 'solve':
+                require(a['unknown'] in SOLVE_UNKNOWNS and re.search(r'功率|发射电平', text[a0:b0]), 'LABEL_NOT_GROUNDED')
+            else:
+                require(text[a0:b0] == a['mention'], 'LABEL_NOT_GROUNDED')
 from planning.services.plans import SUPPORTED, chain, final_target, plan_for, requires_free_space, bound_issues
 from planning.services.requirement_policy import validate_target_semantics, intent_conflict, outside_scope
 
@@ -47,10 +72,15 @@ def check_report(report, request, cards):
         require(type(details.get('model')) is str and bool(details['model']) and
                 type(details.get('usage')) is dict and bool(details['usage']), 'MODEL_IDENTITY_REQUIRED')
     parsed = extract_request(request['raw_text'])
+    # Model labels are replayed from the recorded call; each must still sit on the text.
+    labels = [a for d in calls for a in d['details'].get('accepted', []) if a.get('kind') in LABEL_KINDS]
+    check_labels(request['raw_text'], labels)
+    numeric = [a for a in labels if a['kind'] in {'quantity', 'requirement'}]
+    require((r['requirement'], r['solve'], r['entities']) == summary(labels), 'LABEL_SUMMARY_MISMATCH')
     # A missing entry only claims absence; every observed value is re-collected from source.
     needed = [p['canonical_name'] for p in r['parameters_proposal'] if p['status']=='missing']
     require(all(n in FIELDS for n in needed), 'UNKNOWN_PARAMETER')
-    parameters, conflicts, issues = collect_parameters(request, parsed, needed)
+    parameters, conflicts, issues = collect_parameters(request, parsed, needed, numeric)
     require(r['parameters_proposal'] == parameters, 'PARAMETER_SOURCE_MISMATCH')
     require(r['conflicts'] == conflicts, 'CONFLICT_MISMATCH')
     require(r['missing_parameters'] == [p['canonical_name'] for p in parameters if p['status']=='missing'], 'MISSING_MISMATCH')
@@ -71,7 +101,7 @@ def check_report(report, request, cards):
     if r['calculation_plan_proposal'] is not None:
         final = final_target(r['targets'], cards)
         require(final is not None, 'PLAN_TARGET')
-        observed, _, _ = collect_parameters(request, parsed, [])
+        observed, _, _ = collect_parameters(request, parsed, [], numeric)
         order, _ = chain(final, cards, {p['canonical_name'] for p in observed})
         require([c['model_id'] for c in candidates] == order, 'PLAN_CANDIDATES')
         expected = plan_for(request, order, cards, parameters, r['evidence_ids'])
@@ -109,7 +139,7 @@ def check_report(report, request, cards):
     require(r['conditions']==sorted(conditions) and ('free_space' in conditions or not requires_free_space(order, cards)), 'CONDITION_MISMATCH')
     require(not outside_scope(request['raw_text'],parsed,target,conditions), 'UNSUPPORTED_SCOPE')
     require('non_free_space' not in conditions or 'free_space_reference' in conditions, 'MODEL_NOT_APPLICABLE')
-    require(not any(d['code'] in {'INPUT_PARSE_ISSUE','SOURCE_AMBIGUOUS','PARAMETER_APPROXIMATE'} for d in issues), 'INPUT_NOT_RESOLVED')
+    require(not any(d['code'] in {'INPUT_PARSE_ISSUE','SOURCE_AMBIGUOUS','PARAMETER_APPROXIMATE','LABEL_CONFLICT'} for d in issues), 'INPUT_NOT_RESOLVED')
     values = {p['canonical_name']:p['value'] for p in parameters if p['value'] is not None}
     leaves = r['calculation_plan_proposal']['required_parameters']
     require(all(k in values for k in leaves) and not bound_issues(order, cards, values), 'INPUT_DOMAIN_INVALID')

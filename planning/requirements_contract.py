@@ -12,7 +12,8 @@ PROFILE = 'requirements-slice-v1'
 STATUSES = {'AWAITING_INPUT', 'AWAITING_CONFIRMATION', 'NEEDS_MODEL', 'FAILED'}
 CONDITIONS = {'free_space', 'free_space_reference', 'non_free_space', 'maximum_doppler', 'two_way'}
 REQUEST_FIELDS = 'schema_version task_id revision request_id raw_text manual_parameters condition target'
-REPORT_FIELDS = 'schema_version profile task_id revision request_id parameters_proposal conflicts missing_parameters candidate_models calculation_plan_proposal evidence_ids evidence_refs knowledge_snapshot questions assumptions conditions targets execution_status component_modes runtime_health diagnostics'
+REPORT_FIELDS = 'schema_version profile task_id revision request_id parameters_proposal conflicts missing_parameters candidate_models calculation_plan_proposal evidence_ids evidence_refs knowledge_snapshot questions assumptions conditions targets requirement solve entities execution_status component_modes runtime_health diagnostics'
+SOLVE_UNKNOWNS = {'tx_power_dbm'}
 
 
 def strict_json(text):
@@ -117,6 +118,21 @@ def validate_report(value, request):
     for key in ('missing_parameters', 'evidence_ids', 'questions', 'assumptions', 'conditions', 'targets'):
         strings(value[key])
     require(set(value['conditions']) <= CONDITIONS, 'INVALID_CONDITIONS')
+    text = request['raw_text']
+    def text_span(span):
+        require(type(span) is list and len(span) == 2 and all(type(i) is int for i in span)
+                and 0 <= span[0] < span[1] <= len(text), 'TEXT_SPAN')
+    if value['requirement'] is not None:
+        req = value['requirement']
+        obj(req, 'quantity op value unit span'); number(req['value']); text_span(req['span'])
+        require(req['quantity'] == 'link_margin_db' and req['op'] == '>=' and req['unit'] == 'dB', 'REQUIREMENT_SHAPE')
+    if value['solve'] is not None:
+        obj(value['solve'], 'unknown span'); text_span(value['solve']['span'])
+        require(value['solve']['unknown'] in SOLVE_UNKNOWNS, 'SOLVE_UNKNOWN')
+    require(type(value['entities']) is list and len(value['entities']) <= 6, 'ENTITIES_LIST')
+    for e in value['entities']:
+        obj(e, 'kind mention span'); string(e['mention']); text_span(e['span'])
+        require(e['kind'] in {'site', 'device'} and text[e['span'][0]:e['span'][1]] == e['mention'], 'ENTITY_SPAN')
     require(type(value['diagnostics']) is list, 'DIAGNOSTICS_LIST')
     for item in value['diagnostics']:
         obj(item, 'code message details'); string(item['code']); string(item['message'])
