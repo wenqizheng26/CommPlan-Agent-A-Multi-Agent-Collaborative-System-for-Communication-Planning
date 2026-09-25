@@ -202,12 +202,14 @@
       "tx_loss_db": {
         "unit": "dB",
         "description": "发射馈线损耗；无损耗请显式填写 0",
-        "min": 0
+        "min": 0,
+        "default": {"value": 2, "unit": "dB", "note": "工程假设，典型取值，非标准值；请按实际馈线修改"}
       },
       "rx_loss_db": {
         "unit": "dB",
         "description": "接收馈线损耗；无损耗请显式填写 0",
-        "min": 0
+        "min": 0,
+        "default": {"value": 2, "unit": "dB", "note": "工程假设，典型取值，非标准值；请按实际馈线修改"}
       },
       "path_loss_db": {
         "unit": "dB",
@@ -217,7 +219,8 @@
       "extra_loss_db": {
         "unit": "dB",
         "description": "尚未计入其他项的额外损耗；无损耗请显式填写 0",
-        "min": 0
+        "min": 0,
+        "default": {"value": 0, "unit": "dB", "note": "按自由空间假设，不计其他损耗"}
       }
     },
     "applicability": {
@@ -275,7 +278,8 @@
       "reserve_db": {
         "unit": "dB",
         "description": "未计入接收电平或门限的工程预留量；不预留请显式填写 0",
-        "min": 0
+        "min": 0,
+        "default": {"value": 0, "unit": "dB", "note": "要求余量单独比较，不预先扣除"}
       }
     },
     "applicability": {
@@ -424,6 +428,77 @@
         "expected": -62,
         "tolerance": 1e-10
       }
+    ]
+  },
+  {
+    "id": "radio_horizon",
+    "title": "标准大气假设下的两端无线电视距",
+    "description": "按等效地球半径系数 k = 4/3 估算两端天线的无线电地平线距离之和；不考虑中间地形遮挡或菲涅耳区余隙，不能单独证明链路可用。",
+    "version": "1.0.0",
+    "status": "verified",
+    "expression": "4.12*(sqrt(antenna1_m)+sqrt(antenna2_m))",
+    "output": {"name": "radio_horizon_km", "unit": "km"},
+    "parameters": {
+      "antenna1_m": {"unit": "m", "description": "第一端天线离地高度", "min": 0},
+      "antenna2_m": {"unit": "m", "description": "第二端天线离地高度", "min": 0}
+    },
+    "applicability": {
+      "requires": [],
+      "notes": ["k = 4/3 为标准大气的典型等效地球半径系数；不含地形遮挡和菲涅耳区余隙。"]
+    },
+    "sources": [{
+      "title": "ITU-R, Radiowave propagation information for designing terrestrial point-to-point links (2009)",
+      "url": "https://www.itu.int/dms_pub/itu-r/opb/hdb/R-HDB-54-2009-OAS-PDF-E.pdf",
+      "locator": "Part 1, section 3.3: effective Earth radius factor k about 4/3",
+      "checked_date": "2026-09-25",
+      "derivation": "由 d≈sqrt(2kRh) 对两端求和，k=4/3、R≈6371 km，h 单位 m，系数约 4.12 km/sqrt(m)；4.12 是舍入值。"
+    }],
+    "examples": [
+      {"inputs": {"antenna1_m": 30, "antenna2_m": 25}, "expected": 43.16616936921285, "tolerance": 1e-9},
+      {"inputs": {"antenna1_m": 30, "antenna2_m": 15}, "expected": 38.5228607555874, "tolerance": 1e-9}
+    ]
+  },
+  {
+    "id": "slant_range_wgs84",
+    "title": "WGS84 两端天线直线距离",
+    "description": "将两端 WGS84 经纬度与椭球高转换为地心直角坐标，求两天线相位中心之间的弦长。地面高程加天线离地高度在此卡中按 WGS84 椭球高处理；若实测高程基准不同，需先转换。",
+    "version": "1.0.0",
+    "status": "verified",
+    "kind": "python_tool",
+    "algorithm": "WGS84 椭球参数 a=6378137 m、f=1/298.257223563；每端椭球高=ground_m+antenna_m；经纬高转换为 ECEF X/Y/Z 后，以欧氏距离求两点弦长并换算为 km。",
+    "output": {"name": "distance_km", "unit": "km"},
+    "parameters": {
+      "lat1_deg": {"unit": "deg", "description": "第一端 WGS84 纬度", "min": -90, "max": 90},
+      "lon1_deg": {"unit": "deg", "description": "第一端 WGS84 经度", "min": -180, "max": 180},
+      "ground1_m": {"unit": "m", "description": "第一端地面 WGS84 椭球高"},
+      "antenna1_m": {"unit": "m", "description": "第一端天线离地高度", "min": 0},
+      "lat2_deg": {"unit": "deg", "description": "第二端 WGS84 纬度", "min": -90, "max": 90},
+      "lon2_deg": {"unit": "deg", "description": "第二端 WGS84 经度", "min": -180, "max": 180},
+      "ground2_m": {"unit": "m", "description": "第二端地面 WGS84 椭球高"},
+      "antenna2_m": {"unit": "m", "description": "第二端天线离地高度", "min": 0}
+    },
+    "applicability": {
+      "requires": [],
+      "notes": ["仅给两点直线几何距离，不检查地形遮挡、视距或菲涅耳区余隙。"]
+    },
+    "sources": [{
+      "title": "EPSG Guidance Note 7, geographic/geocentric conversion (GDAL mirror)",
+      "url": "https://gdal.org/en/stable/proj_list/guid7.html",
+      "locator": "section 2.2.1; WGS84 worked example in section 2.3.2",
+      "checked_date": "2026-09-25"
+    }, {
+      "title": "NGA Geomatics, World Geodetic System 1984",
+      "url": "https://earth-info.nga.mil/?action=wgs84&dir=wgs84",
+      "locator": "WGS 84 reference frame and ellipsoid",
+      "checked_date": "2026-09-25"
+    }],
+    "examples": [
+      {"inputs": {"lat1_deg": 30.05, "lon1_deg": 122.1, "ground1_m": 12, "antenna1_m": 30,
+                  "lat2_deg": 30.0229, "lon2_deg": 122.4518, "ground2_m": 25, "antenna2_m": 25},
+       "expected": 34.06437891885911, "tolerance": 1e-9},
+      {"inputs": {"lat1_deg": 30.05, "lon1_deg": 122.1, "ground1_m": 12, "antenna1_m": 30,
+                  "lat2_deg": 29.9565, "lon2_deg": 122.1623, "ground2_m": 6, "antenna2_m": 15},
+       "expected": 11.981648366331887, "tolerance": 1e-9}
     ]
   }
 ]
