@@ -65,6 +65,71 @@
 - A1 需求抽取扩展：模型抽取参数、站点、设备、要求与反求意图（schema、提示词、摘录核对），规则改为核对，不一致时列为冲突。**第一部分已完成（2026-09-25）**：模型标注程序找出的数量、余量要求、反求意图、站点与设备，核对时重放；Python 287 项、Node 41 项通过；4B 的 36 条评测无退化。见 [A1 记录](evidence/2026-09-25-A1-labels.md)。**第二部分已完成（同日）**：补充由模型读、规则核对，合并前先删掉只由模型标注的旧值；Python 293 项、Node 41 项通过；真实模型实测等 C8 完成后用 9B 做。
 - A2 计划格式扩展：`requirement`、`solve_if_unmet`、站点与设备来源、假设值，校验加 H3。
 - A3 站点、设备接入参数来源：同名、缺项、冲突走原有提问面板（C10 完成后接入）。
+- 第 3 周的“审查与解释”提前开始（不依赖 C9–C11）：模型写审查意见与最终答复，数字过 H4。
+
+## M1 第 3 周：Codex 任务单（C8–C11 合入后开始）
+
+- **工作区**：Claude 把 C8–C11 合入 `claude/calc-plans` 后，删除旧的 `CommPlan-Agent-M1-codex`，从合入后的分支新建同名工作区：`git -C E:/codex/项目/信号与AI/CommPlan-Agent-M1 worktree add ../CommPlan-Agent-M1-codex -b codex/m1-week3`。其余约定同第 2 周（不推送、不合并、每个任务单独提交、证据与状态行）。
+- **顺序**：C12 → C13 第 1–4 步。C13 第 5 步等 Claude 通知。
+- 页面与报告合同的任务单，等 Claude 与用户定好页面规格后再补。
+
+### Codex 任务 C12：文档库与混合检索
+
+> **目标**：建立文档库（模拟文档与三份公开 ITU-R 建议书），切块后用词项加向量混合检索。向量模型换成中英文通用的 Qwen3-Embedding-0.6B，由 llama.cpp 在 CPU 上运行。检索只提供可引用的原文片段，不参与数值。
+> **范围**：`knowledge/documents/`、`planning/retrieval/`、`formula_rag/retrieval.py`（如需要）、`config/models.json`、启动器与模型状态、`scripts/`（文档导入）、`requirements-planning.txt`（加 pypdf）、`THIRD_PARTY.md`、测试与证据。不改需求、计划、审查的业务逻辑；审查与解释如何使用检索由 Claude 接入。
+> **步骤**：
+> 1. 下载（只下这些）：
+>    - `Qwen/Qwen3-Embedding-0.6B-GGUF` 的 `Qwen3-Embedding-0.6B-Q8_0.gguf`（639,150,592 字节；SHA256 以文件页为准，设计时查到以 `06507c7b` 开头），放到 `CommPlan-Agent\models\signal-formula-qwen3\models\Qwen3-Embedding-0.6B-GGUF\`，附上游许可证。
+>    - ITU-R P.525-5（11/2024）、P.530-19（09/2025）、P.453-14（08/2019）的英文 PDF，从 ITU 官网各建议书页面下载在用版本，放到被 git 忽略的 `knowledge/sources/itu/`。ITU 原文不进入 Git 和源码包（THIRD_PARTY 已写明不再分发原文）。
+> 2. 注册表：新增 embedding 项 `qwen3-embedding-0.6b-q8`（runtime `llama.cpp`，endpoint `http://127.0.0.1:18082`，1024 维），`defaults.embedding` 改为它，bge 项保留。启动器在生成模型之后另起一个 CPU 进程（`--embedding --pooling last -ngl 0`，`-c`、`-b`、`-ub` 均不小于 2048，端口 18082），身份核验与停止规则和生成模型相同；查询前缀和文本结尾是否要加结束符，以模型卡说明为准。权重缺失时显示“未安装”，检索降为词项，不报错；模型状态同时报告两个模型。
+> 3. 文档清单 `knowledge/documents/manifest.json`（入库）：每份文档记 `doc_id`、标题、版本、语言、来源 URL 或仓库内路径、本地路径、SHA256、`redistributable`（ITU 为 false）、`simulated`。C10 的三份模拟文档也列入。本地文件缺失或哈希不符的文档，标为“未安装”或“已变化”，不进索引，并在 `describe()` 中列出。
+> 4. 切块：Markdown 按标题分节；PDF 用 pypdf 逐页取文本，再按段落切到每块 ≤ 800 字。块 id 形如 `doc:<doc_id>:<定位>`（如 `doc:itu-p530-19:p12-2`）；每块记录文档 id、标题、定位（页码与页内序号，或章节标题路径）、文本、文档 SHA256。同一文件重复切块，结果逐字相同。
+> 5. 检索：`DefaultRetrievalService` 同时索引公式卡与文档块。`filters` 支持 `{"source_type": "formula_card" | "document_chunk"}` 和 `{"doc_ids": [...]}`；不传 filters 时只返回公式卡，需求 Agent 的行为不变。词项检索按 `knowledge/documents/glossary.json`（见下表）做中英术语扩展：查询里出现中文术语时，追加对应的英文词。向量通过 HTTP `/v1/embeddings` 获取；块向量按文档 SHA256 与模型 revision 缓存到被忽略的目录；后台预热，未就绪时按词项检索并标“降级”（沿用现有语义）。
+> 6. 测试：`tests/test_retrieval_contract.py` 覆盖文档块（字段、确定性、越界参数、无网络、未就绪降级、`used` 与 top_n）。一律用假的 encoder 或假的 HTTP 服务，不依赖真实模型。另加：切块确定性与定位；清单哈希不符时不进索引；ITU 文件缺失时只少这几份，测试照常通过；术语扩展能让“海面多径”检索到英文段落（用自己写的小段英文样例，不用 ITU 原文）；用 3 组中英句子核对向量相似度排序（真实模型，可 skip）。
+> 7. 真实模型实测，写入证据：以下 8 条查询在词项、向量、混合三种方式下各自的前 3 条命中（块 id、定位、各项分数）与延迟：自由空间损耗公式；视距与等效地球半径；k 因子取值；海面反射与多径衰落；衰落余量；A站坐标与天线高度；XX-100 发射功率；XX-200 接收灵敏度。另记首次建索引的耗时与向量缓存大小。
+> **完成标准**：以上测试通过；实测结果写入证据；`git ls-files knowledge/sources` 为空。
+>
+> 术语表（`glossary.json` 按此写入，一个中文词可对应多个英文词）：
+>
+> | 中文 | 英文 |
+> | --- | --- |
+> | 自由空间 | free space, free-space |
+> | 路径损耗、传输损耗 | path loss, transmission loss, basic transmission loss, free-space attenuation |
+> | 视距 | line-of-sight, line of sight, radio horizon |
+> | 等效地球半径、k 因子 | effective earth radius, k-factor |
+> | 折射、折射率 | refraction, refractive index, refractivity |
+> | 余量、衰落余量 | margin, fade margin |
+> | 多径 | multipath |
+> | 衰落 | fading |
+> | 海面、水面 | sea, over-water, water surface |
+> | 反射 | reflection |
+> | 菲涅耳区、余隙 | Fresnel zone, clearance |
+> | 天线高度 | antenna height |
+> | 馈线 | feeder |
+> | 天线增益 | antenna gain |
+> | 接收灵敏度、门限 | receiver sensitivity, threshold |
+> | 发射功率 | transmit power, transmitter power |
+> | 地形、遮挡、绕射 | terrain, obstruction, diffraction |
+> | 大气、气体吸收 | atmospheric, gaseous absorption |
+> | 雨衰、降雨 | rain attenuation, rain |
+> | 可用性、中断 | availability, outage |
+> | 链路预算 | link budget |
+> | 距离 | distance, path length |
+> | 频率 | frequency |
+
+### Codex 任务 C13：M1 评测集 v2（验收用）
+
+> **目标**：写一套验收用例，用于 ACCEPTANCE_M1 目标档：演示问题换说法、5 个变体、四条硬规则的拦截、离线时规则结果与在线相同。说法必须独立于 Claude 调提示词时用过的句子。
+> **范围**：`tests/eval/m1_cases.jsonl`（新）、`scripts/eval_m1.py`（新，端到端运行）、测试、证据。不改业务代码和提示词。
+> **独立性**：写说法之前，不读 `formula_rag/model.py`、`planning/services/supplement.py` 里的示例和提示词，不读 `tests/test_requirement_labels.py`、`tests/test_supplement_labels.py` 与 A1 记录。第一次提交只含用例文件，之后再读代码写运行脚本。Claude 在第一次正式运行之前不看这些说法（合入时只核对格式测试）。
+> **步骤**：
+> 1. 演示问题：以“A 站到 B 站用 XX-100 电台、2 GHz，要留 10 dB 余量，能通吗？不行的话发射功率最小要多少？”为基准，写 12 种说法。覆盖：口语与书面；语序打乱；省略“站”字；用别名（A岸站、B岛站）；问法换成“够不够”“能否满足”等；余量要求放在句尾；反求换一种问法（如“功率得提到多少”）；频率写成 MHz；夹一句无关的话。数字一律用阿拉伯数字（中文数字暂不支持，不写进验收用例）。每条期望：状态、目标 `link_margin`、要求 ≥ 10 dB、反求 `tx_power_dbm`、站点 A 与 B、设备 XX-100、余量与最小发射功率的数值（取 C9–C11 实现复核后的附录 A 数值）、超过额定功率的提示。
+> 2. 五个变体（AGENT_LED 附录 A）各写 2 种说法：D 站缺天线高度 → 追问；C 站超出视距 → 拦截、不给损耗值；原文 40 dBm 与设备库 37 dBm 不一致 → 追问用哪个；“港口站”同名 → 让用户选；F 站 → 能通、不反求。
+> 3. 硬规则 H1–H4 各至少 2 条：H1 计划用了未审核的卡；H2 越界或超出视距；H3 同一个量的来源冲突；H4 用替身模型给出与结果不符的数字，确认该段被隐藏并注明“说明未通过数字核对”（H4 用替身，不依赖真实模型）。
+> 4. 离线等价：6 条参数写全的请求（路径损耗、接收电平、链路余量各 2 条），模型离线时规则算出的正式数值与在线逐位相同。
+> 5. 运行脚本 `scripts/eval_m1.py --models <id>`：通过 `TaskService` 逐条创建任务，按期望回答追问或做选择，确认，取结果；逐条输出是否通过、不通过的原因、耗时、模型调用次数，汇总写入 `outputs/eval/`。确定性基线只跑硬规则与离线等价两类。
+> **开始条件**：第 1–4 步只写用例与格式测试，可以随时做；第 5 步要等 Claude 完成 A2、A3 和第 3 周的模型接入，届时本任务单补一行“可以运行”。
+> **完成标准**：用例文件通过格式测试；第一次正式运行的结果原样写入证据，之后的修正另行记录，不覆盖第一次的数字。
 
 ## M1 第 1 周（已完成，分支 `claude/calc-plans`）
 
