@@ -8,29 +8,37 @@ import math
 from planning.requirements_contract import digest, require
 from planning.services.input_domains import numbers
 
-# Cards that may appear in a plan in this version. Others stay retrievable only.
-SUPPORTED = ('fspl_ghz', 'received_power', 'link_margin')
+# What a user can ask for. Others stay retrievable only.
+TARGETS = ('fspl_ghz', 'received_power', 'link_margin')
+# Geometry from site records: the straight-line distance, and the radio horizon it must stay within.
+GEOMETRY = ('slant_range_wgs84', 'radio_horizon')
+# Cards that may appear in a plan in this version.
+SUPPORTED = TARGETS + GEOMETRY
 OBJECTIVES = {'fspl_ghz': '自由空间单链路损耗基准',
               'received_power': '接收信号电平（链路预算）',
               'link_margin': '链路余量（链路预算）'}
 MAX_STEPS = 8
+LINE_OF_SIGHT = dict(check_id='line-of-sight', kind='line_of_sight',
+                     distance='slant_range_wgs84-step', horizon='radio_horizon-step')
 
 
-def producers(cards):
+def producers(cards, exclude=()):
     out = {}
     for card in cards:
-        if card['id'] in SUPPORTED and card['status'] == 'verified':
+        if card['id'] in SUPPORTED and card['id'] not in exclude and card['status'] == 'verified':
             out.setdefault(card['output']['name'], []).append(card['id'])
     return out
 
 
-def chain(target, cards, known):
+def chain(target, cards, known, exclude=GEOMETRY):
     """Backward-chain from target. Known names stay inputs; others come from the unique producer.
 
-    Returns (order, leaves): card ids in execution order, and input names the user provides.
+    Cards in exclude never produce an input. By default that is the geometry: the distance comes
+    from coordinates only when both sites were found in the fact store. Returns (order, leaves):
+    card ids in execution order, and input names the user or the fact store provides.
     """
     by_id = {c['id']: c for c in cards}
-    made = producers(cards)
+    made = producers(cards, exclude)
     order, leaves, visiting = [], [], set()
 
     def visit(card_id):
@@ -57,7 +65,7 @@ def chain(target, cards, known):
 
 def final_target(targets, cards):
     """The one requested quantity whose chain covers every other requested one, else None."""
-    if not targets or any(t not in SUPPORTED for t in targets):
+    if not targets or any(t not in TARGETS for t in targets):
         return None
     for target in targets:
         order, _ = chain(target, cards, set())
@@ -66,12 +74,21 @@ def final_target(targets, cards):
     return None
 
 
-def plan_for(request, order, cards, parameters, evidence_ids):
+def with_line_of_sight(order):
+    """A distance taken from coordinates is used only within the radio horizon (H2), so the horizon runs next."""
+    if 'slant_range_wgs84' not in order:
+        return list(order)
+    i = order.index('slant_range_wgs84') + 1
+    return list(order[:i]) + ['radio_horizon'] + list(order[i:])
+
+
+def plan_for(request, order, cards, parameters, evidence_ids, requirement=None, solve_if_unmet=None, notes=()):
+    """notes are this task's own assumptions (values the user did not state); they come before card notes."""
     by_id = {c['id']: c for c in cards}
     by_name = {p['canonical_name']: p for p in parameters}
     step_ids = {card_id: ('fspl-step' if card_id == 'fspl_ghz' else card_id + '-step') for card_id in order}
     output_of = {by_id[card_id]['output']['name']: card_id for card_id in order}
-    steps, required, assumptions = [], [], []
+    steps, required, assumptions = [], [], list(dict.fromkeys(notes))
     for card_id in order:
         card = by_id[card_id]
         inputs, dependencies = {}, []
@@ -91,6 +108,13 @@ def plan_for(request, order, cards, parameters, evidence_ids):
                 objective=OBJECTIVES[order[-1]], selected_model=list(order),
                 required_parameters=required, assumptions=assumptions,
                 evidence_ids=evidence_ids, steps=steps)
+    # Only plans that need them carry these keys, so earlier plans keep their shape and hash.
+    if 'slant_range_wgs84' in order and 'radio_horizon' in order:
+        plan['checks'] = [dict(LINE_OF_SIGHT)]
+    if requirement:
+        plan['requirement'] = dict(requirement)
+    if solve_if_unmet:
+        plan['solve_if_unmet'] = solve_if_unmet
     plan['plan_hash'] = digest(plan)
     return plan
 

@@ -125,20 +125,26 @@ class PlanLoopTests(unittest.TestCase):
 
     def test_budget_questions_are_answered_one_field_at_a_time(self):
         state = self.service.apply(command(text='按自由空间基准计算链路余量，频率2GHz，距离10km，发射功率30dBm。'))['state']
+        # Feeder and extra losses and the reserve take their card assumptions; the rest is asked.
+        self.assertEqual({i['field'] for i in state['input_issues']}, {'tx_gain_dbi', 'rx_gain_dbi', 'rx_threshold_dbm'})
         # Labelled and bare answers are both accepted; the question already names the field.
-        state = self.answer(state, dict(tx_gain_dbi='发射天线增益10dBi', rx_gain_dbi='10dBi', tx_loss_db='2dB',
-                                        rx_loss_db='2dB', extra_loss_db='0dB'))
+        state = self.answer(state, dict(tx_gain_dbi='发射天线增益10dBi', rx_gain_dbi='10dBi'))
         self.assertEqual(state['status'], 'AWAITING_INPUT')
-        self.assertEqual({i['field'] for i in state['input_issues']}, {'rx_threshold_dbm', 'reserve_db'})
-        state = self.answer(state, dict(rx_threshold_dbm='-100dBm', reserve_db='10dB'))
+        self.assertEqual({i['field'] for i in state['input_issues']}, {'rx_threshold_dbm'})
+        state = self.answer(state, dict(rx_threshold_dbm='-100dBm'))
         self.assertEqual(state['status'], 'AWAITING_CONFIRMATION', state['report']['questions'])
+        report = state['report']
+        assumed = {p['canonical_name'] for p in report['parameters_proposal'] if p['origins'][0]['kind'] == 'default'}
+        self.assertEqual(assumed, {'tx_loss_db', 'rx_loss_db', 'extra_loss_db', 'reserve_db'})
+        self.assertIn('发馈线损耗按假设取 2 dB：工程假设，典型取值，非标准值；请按实际馈线修改。', report['assumptions'])
         # Each answer becomes one readable "label value" line, whether or not it was labelled.
         text = state['request']['raw_text']
         self.assertEqual(text.count('发射天线增益'), 1)
         self.assertEqual(text.count('接收天线增益'), 1)
         self.assertIn('接收门限-100dBm', text)
         done = self.service.apply(command('confirm', state))['state']
-        self.assertAlmostEqual(done['result']['outputs'][0]['value'], MARGIN_DB, places=9)
+        # No reserve is assumed: a margin requirement is compared separately, never deducted.
+        self.assertAlmostEqual(done['result']['outputs'][0]['value'], MARGIN_DB + 10, places=9)
 
     def test_budget_values_can_be_supplied_in_one_supplement(self):
         state = self.service.apply(command(text='按自由空间基准计算链路余量，频率2GHz，距离10km。'))['state']
@@ -160,7 +166,7 @@ class PlanLoopTests(unittest.TestCase):
 
     def test_review_input_fits_the_local_model_context_after_several_turns(self):
         state = self.service.apply(command(text='按自由空间基准计算链路余量，频率2GHz，距离10km，发射功率30dBm。'))['state']
-        state = self.answer(state, dict(tx_gain_dbi='10dBi', rx_gain_dbi='10dBi', tx_loss_db='2dB', rx_loss_db='2dB', extra_loss_db='0dB'))
+        state = self.answer(state, dict(tx_gain_dbi='10dBi', rx_gain_dbi='10dBi'))
         state = self.service.apply(command('supplement', state, message='接收灵敏度-100dBm，预留余量10dB', mode='deterministic'))['state']
         state = self.service.apply(command('supplement', state, message='发射功率改为33dBm', mode='deterministic'))['state']
         done = self.service.apply(command('confirm', state))['state']

@@ -2,7 +2,7 @@
 import re
 from formula_rag.parsing import extract_request
 from planning.requirements_contract import require
-from planning.services.plans import SUPPORTED
+from planning.services.plans import TARGETS
 
 
 # A feasibility question is the model's reading of "link margin"; the rules have no keyword for it.
@@ -13,7 +13,7 @@ def validate_target_semantics(model):
     for target in model.get('targets', []):
         parsed = extract_request(target['evidence'])
         feasible = target['id'] == 'link_margin' and re.search(FEASIBILITY, target['evidence'])
-        require(target['id'] in SUPPORTED and (parsed['targets'] == [target['id']] or bool(feasible))
+        require(target['id'] in TARGETS and (parsed['targets'] == [target['id']] or bool(feasible))
                 and not parsed['unsupported_targets'], 'MODEL_TARGET_SEMANTICS')
 
 
@@ -32,7 +32,7 @@ def intent_conflict(request, parsed):
 
 
 def outside_scope(text, parsed, targets, conditions):
-    if parsed['unsupported_targets'] or any(t not in SUPPORTED for t in targets):
+    if parsed['unsupported_targets'] or any(t not in TARGETS for t in targets):
         return True
     for clause in re.split(r'[，,。；;\n]', text):
         # Only a complete, unambiguous disclaimer is exempt. A negative word

@@ -2,6 +2,8 @@
 import copy
 import re
 from formula_rag.parsing import extract_request, FIELDS
+from planning.services.fact_fields import FACT_FIELDS
+from planning.services.requirement_facts import sources_for, band_issues, plan_goal
 from formula_rag.interpretation import merge_interpretation
 from formula_rag.applicability import scope_issues
 from planning.services.input_domains import numbers, scenarios
@@ -33,7 +35,7 @@ def check_labels(text, labels):
                 require(a['unknown'] in SOLVE_UNKNOWNS and re.search(r'功率|发射电平', text[a0:b0]), 'LABEL_NOT_GROUNDED')
             else:
                 require(text[a0:b0] == a['mention'], 'LABEL_NOT_GROUNDED')
-from planning.services.plans import SUPPORTED, chain, final_target, plan_for, requires_free_space, bound_issues
+from planning.services.plans import SUPPORTED, TARGETS, chain, final_target, plan_for, requires_free_space, bound_issues
 from planning.services.requirement_policy import validate_target_semantics, intent_conflict, outside_scope
 
 
@@ -79,8 +81,12 @@ def check_report(report, request, cards, root=None):
     require((r['requirement'], r['solve'], r['entities']) == summary(labels), 'LABEL_SUMMARY_MISMATCH')
     # A missing entry only claims absence; every observed value is re-collected from source.
     needed = [p['canonical_name'] for p in r['parameters_proposal'] if p['status']=='missing']
-    require(all(n in FIELDS for n in needed), 'UNKNOWN_PARAMETER')
-    parameters, conflicts, issues = collect_parameters(request, parsed, needed, numeric)
+    require(all(n in FIELDS or n in FACT_FIELDS for n in needed), 'UNKNOWN_PARAMETER')
+    # Fact-store values and card assumptions are looked up again, for the same target as the agent chose.
+    final = None if outside_scope(request['raw_text'], parsed, r['targets'], set(r['conditions'])) else final_target(r['targets'], cards)
+    observed = {p['canonical_name'] for p in collect_parameters(request, parsed, [], numeric)[0]}
+    facts = sources_for(request, r['entities'], cards, final, observed, root)
+    parameters, conflicts, issues = collect_parameters(request, parsed, needed, numeric, facts['sources'])
     require(r['parameters_proposal'] == parameters, 'PARAMETER_SOURCE_MISMATCH')
     require(r['conflicts'] == conflicts, 'CONFLICT_MISMATCH')
     require(r['missing_parameters'] == [p['canonical_name'] for p in parameters if p['status']=='missing'], 'MISSING_MISMATCH')
@@ -99,12 +105,11 @@ def check_report(report, request, cards, root=None):
         require(c == dict(model_id=card['id'], version=card['version'], status=card['status'], evidence_ids=r['evidence_ids']), 'MODEL_VERSION_MISMATCH')
     order = []
     if r['calculation_plan_proposal'] is not None:
-        final = final_target(r['targets'], cards)
         require(final is not None, 'PLAN_TARGET')
-        observed, _, _ = collect_parameters(request, parsed, [], numeric)
-        order, _ = chain(final, cards, {p['canonical_name'] for p in observed})
+        order = facts['order']
         require([c['model_id'] for c in candidates] == order, 'PLAN_CANDIDATES')
-        expected = plan_for(request, order, cards, parameters, r['evidence_ids'])
+        wanted, solve_if_unmet = plan_goal(r['requirement'], r['solve'], final, facts['leaves'])
+        expected = plan_for(request, order, cards, parameters, r['evidence_ids'], wanted, solve_if_unmet, facts['notes'])
         require(r['calculation_plan_proposal'] == expected, 'PLAN_SOURCE_MISMATCH')
         require(r['assumptions']==expected['assumptions'], 'ASSUMPTIONS_MISMATCH')
     if r['execution_status'] != 'AWAITING_CONFIRMATION':
@@ -121,7 +126,7 @@ def check_report(report, request, cards, root=None):
         model = {'targets':[{k:a[k] for k in ('id','evidence')} for a in accepted if a.get('kind')=='target'],
                  'conditions':[{k:a[k] for k in ('id','evidence')} for a in accepted if a.get('kind')=='condition']}
         validate_target_semantics(model)
-        info = merge_interpretation(interpreted, model, list(SUPPORTED), request['target'], request['condition'])
+        info = merge_interpretation(interpreted, model, list(TARGETS), request['target'], request['condition'])
         require(not info['rejected'], 'MODEL_GROUNDING_MISMATCH')
     if request['target']:
         require(parsed['target_origin'] != 'explicit_text' or parsed['targets']==[request['target']], 'INTENT_CONFLICT')
@@ -141,10 +146,11 @@ def check_report(report, request, cards, root=None):
     require('non_free_space' not in conditions or 'free_space_reference' in conditions, 'MODEL_NOT_APPLICABLE')
     require(not any(d['code'] in {'INPUT_PARSE_ISSUE','SOURCE_AMBIGUOUS','PARAMETER_APPROXIMATE','LABEL_CONFLICT'} for d in issues), 'INPUT_NOT_RESOLVED')
     values = {p['canonical_name']:p['value'] for p in parameters if p['value'] is not None}
+    require(not facts['issues'] and not band_issues(facts['devices'], values), 'ENTITY_NOT_RESOLVED')
     leaves = r['calculation_plan_proposal']['required_parameters']
     require(all(k in values for k in leaves) and not bound_issues(order, cards, values), 'INPUT_DOMAIN_INVALID')
     if 'fspl_ghz' in order:
-        fspl_values = {k: values[k] for k in ('frequency_ghz','distance_km')}
+        fspl_values = {k: values[k] for k in ('frequency_ghz','distance_km') if k in values}  # a distance may come from coordinates
         require(all(min(numbers(v))>0 for v in fspl_values.values()), 'INPUT_DOMAIN_INVALID')
         require(not any(scope_issues('fspl_ghz', case, parsed) for case in scenarios(fspl_values)), 'MODEL_NOT_APPLICABLE')
     require(order == ['fspl_ghz'] or not any(type(values[k]) is dict for k in leaves), 'PLAN_DOMAIN_UNSUPPORTED')

@@ -4,6 +4,7 @@ import re
 import unicodedata
 from formula_rag.parsing import FIELDS, NUMBER, UNITS, convert, extract_request
 from planning.services.input_domains import extract_domains, convert_domain, same, APPROX, field_for
+from planning.services.fact_fields import FACT_FIELDS, field_unit
 
 
 def diagnostic(code, message, **details):
@@ -20,9 +21,11 @@ def overlaps(text, excerpt, span):
     return False
 
 
-def collect_parameters(request, parsed, required, labeled=()):
+def collect_parameters(request, parsed, required, labeled=(), sources=None):
     """Rule observations plus model labels. A label only names a quantity the text already contains;
-    where the rules bound the same quantity to another field, the label is left out and a question is raised."""
+    where the rules bound the same quantity to another field, the label is left out and a question is raised.
+    sources adds values from the fact store and card assumptions (requirement_facts.sources_for);
+    where they differ from the text, the parameter is a conflict for the user to settle."""
     observations, diagnostics = {}, []
     # A margin requirement such as "余量至少10dB" is a comparison the rules refuse as a value.
     required_spans = [item['span'] for item in labeled if item['field'] == 'required_margin_db']
@@ -129,16 +132,19 @@ def collect_parameters(request, parsed, required, labeled=()):
     for field, item in request['manual_parameters'].items():
         observations.setdefault(field, []).append(dict(kind='manual_form', source_ref=request['request_id'] + ':manual_parameters/' + field,
             span=None, value=item['value'], unit=item['unit']))
+    for field, origins in (sources or {}).items():
+        observations.setdefault(field, []).extend(dict(o) for o in origins)
     parameters, conflicts = [], []
     for field in sorted(set(required) | set(observations)):
         origins = observations.get(field, [])
         for i, origin in enumerate(origins):
             origin['origin_id'] = f"{request['request_id']}:{field}:origin:{i}"
-        values = [convert_domain(field, o['value'], o['unit']) for o in origins]
+        # Fact-store geometry already comes in its card's unit.
+        values = [o['value'] if field in FACT_FIELDS else convert_domain(field, o['value'], o['unit']) for o in origins]
         conflict = bool(values) and any(not same(v, values[0]) for v in values)
         status = 'conflicting' if conflict else ('user_provided' if values else 'missing')
         p = dict(parameter_id=f"{request['request_id']}:{field}", canonical_name=field,
-                 value=values[0] if values and not conflict else None, unit=FIELDS[field][1],
+                 value=values[0] if values and not conflict else None, unit=field_unit(field),
                  original_value=origins[0]['value'] if len(origins) == 1 else None,
                  original_unit=origins[0]['unit'] if len(origins) == 1 else None,
                  status=status, origins=origins, evidence_ids=[], created_revision=request['revision'])

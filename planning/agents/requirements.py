@@ -12,11 +12,12 @@ from planning.services.input_domains import numbers, scenarios
 from planning.requirements_contract import (PROFILE, VERSION, CONDITIONS, obj, require, strings,
     strict_json, validate_request, validate_report)
 from planning.services.requirement_parameters import collect_parameters, diagnostic
+from planning.services.requirement_facts import sources_for, band_issues, fact_questions, plan_goal
 from planning.services.requirement_quantities import (find_quantities, ground_labels, summary, LABEL_FIELDS,
     SOLVE_UNKNOWNS)
 from planning.services.requirement_evidence import snapshot_for, evidence_for
 from planning.services.requirement_policy import validate_target_semantics, intent_conflict, outside_scope
-from planning.services.plans import SUPPORTED, chain, final_target, plan_for, requires_free_space, bound_issues
+from planning.services.plans import TARGETS, chain, final_target, plan_for, requires_free_space, bound_issues
 from planning.workflow.activity import observe
 
 ALLOWED_MODEL = 'fspl_ghz'
@@ -138,11 +139,11 @@ class RequirementsAgent:
         # evidence from the request text: vector similarity alone never admits a formula.
         usable = {h['id']: h['rank'] for h in found.hits if h['id'] in found.used and h['scores']['lexical'] > 0}
         # A manual target is a direct lookup, not a semantic retrieval claim.
-        if request['target'] in SUPPORTED and request['target'] in by_id:
+        if request['target'] in TARGETS and request['target'] in by_id:
             usable[request['target']] = 1
             diagnostics.append(diagnostic('EXPLICIT_CARD_LOOKUP', '按用户显式目标查找登记卡。'))
         # Only plan-capable cards with this request's own evidence are offered as targets.
-        candidates = sorted((by_id[i] for i in usable if i in SUPPORTED and i in by_id), key=lambda c: (usable[c['id']], c['id']))
+        candidates = sorted((by_id[i] for i in usable if i in TARGETS and i in by_id), key=lambda c: (usable[c['id']], c['id']))
         prelim_conditions = set(parsed['conditions'])
         if request['condition']:
             prelim_conditions.add(request['condition'])
@@ -267,21 +268,24 @@ class RequirementsAgent:
             questions.append('多个计算目标不在同一条计算链上，请只保留一个目标。')
             diagnostics.append(diagnostic('PLAN_TARGETS_SPLIT', '请求的目标不能由一条计算链同时给出。', targets=targets))
         numeric = [a for a in labels if a['kind'] in {'quantity', 'requirement'}]
-        if final:
-            observed, _, _ = collect_parameters(request, original, [], numeric)
-            order, leaves = chain(final, self.cards, {p['canonical_name'] for p in observed})
+        requirement, solve, entities = summary(labels)
+        # Named sites and radios are looked up; inputs nothing states take their card's assumption.
+        observed = {p['canonical_name'] for p in collect_parameters(request, original, [], numeric)[0]}
+        facts = sources_for(request, entities, self.cards, final, observed, self.root)
+        order, leaves = facts['order'], facts['leaves']
         required = leaves if final else (REQUIRED if unsupported else [])
-        parameters, conflicts, param_diagnostics = collect_parameters(request, original, required, numeric)
-        diagnostics.extend(param_diagnostics)
+        parameters, conflicts, param_diagnostics = collect_parameters(request, original, required, numeric, facts['sources'])
+        diagnostics.extend(param_diagnostics + facts['issues'])
         if any(d['code'] == 'LABEL_CONFLICT' for d in param_diagnostics):
             questions.append('原文中有数值的含义，规则与模型判断不一致，请写明它是哪个参数。')
-        requirement, solve, entities = summary(labels)
+        questions.extend(fact_questions(facts['issues']))
         if requirement and final and final != 'link_margin':
             questions.append('余量要求只适用于链路余量，请确认要计算的量。')
             diagnostics.append(diagnostic('REQUIREMENT_TARGET', '原文给出余量要求，但计算目标不是链路余量。'))
+        plan_requirement, solve_if_unmet = plan_goal(requirement, solve, final, leaves)
         if solve:
-            diagnostics.append(diagnostic('SOLVE_REQUESTED', '已识别反求要求：最小发射功率。反求接入前只计算余量。',
-                                          unknown=solve['unknown']))
+            diagnostics.append(diagnostic('SOLVE_REQUESTED', '已识别反求要求：余量不满足要求时，求最小发射功率。' if solve_if_unmet
+                                          else '已识别反求要求，但原文没有余量要求，只计算余量。', unknown=solve['unknown']))
         missing = [p['canonical_name'] for p in parameters if p['status'] == 'missing']
         if missing:
             questions.append('请补充：' + '、'.join(missing))
@@ -292,6 +296,9 @@ class RequirementsAgent:
         if any(d['code'] in {'INPUT_PARSE_ISSUE', 'SOURCE_AMBIGUOUS', 'PARAMETER_APPROXIMATE'} for d in diagnostics):
             questions.append('请核对未能明确解析的数值及其来源。')
         values = {p['canonical_name']: p['value'] for p in parameters if p['value'] is not None}
+        band = band_issues(facts['devices'], values)
+        diagnostics.extend(band)
+        questions.extend(d['message'] + '请核对频率或设备。' for d in band)
         invalid = [k for k in REQUIRED if k in values and min(numbers(values[k])) <= 0]
         if invalid:
             questions.append('频率和距离必须大于零，请修正：' + '、'.join(invalid))
@@ -330,7 +337,8 @@ class RequirementsAgent:
                                           next_action='明确改为自由空间基准，或等待对应模型接入。'))
         elif final and not available:
             diagnostics.append(diagnostic('EVIDENCE_UNAVAILABLE', '没有可用的已登记模型证据。', next_action='检查知识目录与目标。'))
-        plan = plan_for(request, order, self.cards, parameters, evidence_ids) if available and not unsupported else None
+        plan = (plan_for(request, order, self.cards, parameters, evidence_ids, plan_requirement, solve_if_unmet, facts['notes'])
+                if available and not unsupported else None)
         status = ('FAILED' if failed else 'NEEDS_MODEL' if unsupported or (final and not available) else
                   'AWAITING_INPUT' if questions or not plan else 'AWAITING_CONFIRMATION')
         diagnostics.append(diagnostic('SOURCE_REVIEW_LIMITATION', '来源状态来自库内登记，本次没有独立复核原始文献。'))
