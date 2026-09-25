@@ -61,7 +61,7 @@ export function nodeStates(state, events=[]){
   }
  }
  s.compute_agent=s.calculation;s.validator_agent=s.validation==='idle'?'partial':s.validation;
- if(state.review_assessment){const decision=state.review_assessment.role.proposal.decision;s.review=s.validator_agent=decision==='pass'?'completed':'waiting';}
+ if(state.review_assessment){const decision=state.review_assessment.role.proposal.decision;s.review=s.validator_agent=['pass','caution'].includes(decision)?'completed':'waiting';}
  else if(s.review!=='idle')s.validator_agent=s.review;
  const explicit=new Set(relevant.filter(e=>e.run_id===last?.run_id).map(e=>e.node));
  if(!explicit.has('model')||state.status==='COMPLETED')s.model=s.calculation;

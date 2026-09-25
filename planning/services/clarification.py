@@ -111,10 +111,6 @@ def issues_for(state):
             continue
         add('pending',field or ('pending:'+pending['turn_id']),'有一条补充尚未明确',pending['question'],
             excerpt=pending['turn_id'],choices=[dict(value='withdraw',label='撤回这条补充')])
-    if state.get('review_assessment',{}):
-        decision=state['review_assessment']['role']['proposal']['decision']
-        if decision=='needs_input':
-            add('review','task','审查要求重新核对模型假设','请编辑需求或补充明确的模型条件，再重新确认。')
     if not issues:
         for question in report.get('questions',[]):
             add('clarification','task','请澄清当前描述',question,excerpt=question)

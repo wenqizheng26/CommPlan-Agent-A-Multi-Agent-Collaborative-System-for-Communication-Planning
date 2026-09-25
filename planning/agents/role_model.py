@@ -5,6 +5,19 @@ import urllib.error
 from formula_rag.model_transport import chat, parse_output, ModelResponseError, check_cancelled
 from planning.workflow.activity import observe
 
+# Output budget per role; the reviewer writes the answer and the review opinions.
+MAX_TOKENS = {'validator_agent': 900}
+
+
+class Rewrite(ValueError):
+    """The output is well formed but some text must be rewritten.
+
+    `kept` is the output with that text withheld; it is used when no attempt is left.
+    """
+    def __init__(self, code, kept, hint):
+        super().__init__(code)
+        self.kept, self.hint = kept, hint
+
 
 def failure_reason(exc):
     """Coarse cause for statistics: offline, timeout, rejected or structure."""
@@ -32,7 +45,7 @@ class LocalRoleSelector:
     def __call__(self, role, prompt, view, schema):
         b = self.binding
         payload = dict(model=b.alias if b else 'signal-formula-qwen3', temperature=b.temperature if b else 0,
-            max_tokens=700, chat_template_kwargs={'enable_thinking': False},
+            max_tokens=MAX_TOKENS.get(role, 700), chat_template_kwargs={'enable_thinking': False},
             response_format={'type': 'json_schema', 'json_schema': {
                 'name': role, 'strict': True, 'schema': schema}},
             messages=[{'role': 'system', 'content': prompt},
@@ -62,6 +75,18 @@ def suggest(role, prompt, view, schema, fallback, validate, selector=False, obse
             return dict(proposal=copy.deepcopy(proposal), mode='llm' if isinstance(caller, LocalRoleSelector) else 'stub',
                         attempts=attempt, diagnostics=diagnostics, model=envelope.get('model'), usage=envelope.get('usage', {}),
                         **({'model_id': binding.model_id} if binding else {}))
+        except Rewrite as exc:
+            diagnostics.append(dict(code=str(exc), reason=exc.hint[:300],
+                                    model_output=str(envelope.get('raw_output', ''))[:4000], attempt=attempt))
+            if attempt == 2:
+                observe(observer, 'llm', 'completed', caller=role, purpose=role, attempt=attempt,
+                        **call_details(binding, envelope))
+                return dict(proposal=copy.deepcopy(exc.kept), mode='llm' if isinstance(caller, LocalRoleSelector) else 'stub',
+                            attempts=attempt, diagnostics=diagnostics, model=envelope.get('model'), usage=envelope.get('usage', {}),
+                            **({'model_id': binding.model_id} if binding else {}))
+            observe(observer, 'llm', 'failed', caller=role, purpose=role, attempt=attempt, reason='numbers',
+                    **call_details(binding))
+            view = dict(view, correction=exc.hint)
         except ModelResponseError as exc:
             diagnostics.append(dict(code=exc.code,reason=str(exc),model_output=exc.raw_output,attempt=attempt))
             observe(observer,'llm','failed',caller=role,purpose=role,fallback=True,reason=failure_reason(exc),

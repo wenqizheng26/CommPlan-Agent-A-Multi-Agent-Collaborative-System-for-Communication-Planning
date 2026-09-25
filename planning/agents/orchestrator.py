@@ -1,5 +1,6 @@
 """Auditable bounded scheduling policy. Model suggestions have no goto authority."""
 from planning.requirements_contract import require
+from planning.agents.review import PUBLISHABLE
 
 MAX_CALCULATIONS = 2
 
@@ -12,13 +13,12 @@ def decide(state):
         require(state.get('result') is not None, 'RESULT_REQUIRED')
         action, reason = 'validate_result', 'tool_result_available'
     elif status == 'VALIDATING_REPORT':
-        require(state.get('review_assessment', {}).get('role', {}).get('proposal', {}).get('decision') == 'pass', 'REVIEW_REQUIRED')
+        require(state.get('review_assessment', {}).get('role', {}).get('proposal', {}).get('decision') in PUBLISHABLE, 'REVIEW_REQUIRED')
         action, reason = 'publish', 'review_passed'
-    elif status in {'RETRYABLE_CALCULATION_FAILURE', 'RECALCULATION_REQUESTED'}:
+    elif status == 'RETRYABLE_CALCULATION_FAILURE':
         require(state.get('confirmed_snapshot') is not None, 'CONFIRMATION_REQUIRED')
         if attempts < MAX_CALCULATIONS:
-            action = 'calculation'
-            reason = 'transient_tool_retry' if status == 'RETRYABLE_CALCULATION_FAILURE' else 'review_requested_recalculation'
+            action, reason = 'calculation', 'transient_tool_retry'
         else:
             action, reason = 'stop', 'calculation_budget_exhausted'
     elif status in {'AWAITING_INPUT', 'NEEDS_MODEL', 'FAILED'}:

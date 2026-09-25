@@ -1,4 +1,5 @@
 """Bounded confirm/calculate/validate/publish graph with a durable human interrupt."""
+import copy
 from typing import TypedDict
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import interrupt
@@ -6,7 +7,7 @@ from planning.requirements_contract import require
 from planning.services.confirmation import review_for, validate_snapshot
 from planning.services import calculation
 from planning.agents.calculation import CalculationAgent
-from planning.agents.review import ReviewAgent, validate_assessment, REASONS
+from planning.agents.review import ReviewAgent, validate_assessment, DECISIONS, PUBLISHABLE, SUMMARY
 from planning.agents.role_model import LocalRoleSelector
 from planning.agents.orchestrator import decide, MAX_CALCULATIONS
 from planning.workflow.requirements_graph import run_requirements, stamp
@@ -126,8 +127,7 @@ def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(
         try:
             assessment = review_agent.run(state['result'], state['confirmed_snapshot'], observer=observer)
             decision = validate_assessment(assessment, state['result'], state['confirmed_snapshot'])['decision']
-            status = {'pass':'VALIDATING_REPORT','needs_input':'AWAITING_INPUT',
-                      'not_applicable':'NEEDS_MODEL','recalculate':'RECALCULATION_REQUESTED'}[decision]
+            status = 'VALIDATING_REPORT' if decision in PUBLISHABLE else 'NEEDS_MODEL'
             observe(observer,'review','completed',caller='orchestrator',decision=decision)
             return dict(review_assessment=assessment,review_history=state.get('review_history',[])+[assessment],
                         status=status,trace=trace(state,'review_result',decision.upper()))
@@ -153,12 +153,17 @@ def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(
     def publish(state):
         observe(observer,'publish','started',caller='validator_agent')
         try:
-            require(validate_assessment(state['review_assessment'],state['result'],state['confirmed_snapshot'])['decision']=='pass', 'REVIEW_NOT_PASSED')
+            proposal = validate_assessment(state['review_assessment'],state['result'],state['confirmed_snapshot'])
+            require(proposal['decision'] in PUBLISHABLE, 'REVIEW_NOT_PASSED')
             report = calculation.publish(state['result'],state['confirmed_snapshot'],state['validations'])
             assessment = state['review_assessment']
-            report['review'] = dict(assessment_hash=assessment['assessment_hash'],
-                decision=assessment['role']['proposal']['decision'], mode=assessment['role']['mode'],
-                summary=REASONS['pass'][1], fact_ids=assessment['role']['proposal']['fact_ids'])
+            withheld = [h['path'] for h in proposal['hidden']]
+            # The program's conclusion stays; the model's answer and notes sit beside it, each already past H4.
+            report['review'] = dict(assessment_hash=assessment['assessment_hash'], decision=proposal['decision'],
+                label=DECISIONS[proposal['decision']], mode=assessment['role']['mode'], summary=SUMMARY[proposal['decision']],
+                opinions=copy.deepcopy(proposal['opinions']), withheld=withheld)
+            report['answer'] = dict(text=proposal['answer'], mode=assessment['role']['mode'], withheld='answer' in withheld)
+            report['explanation'] = copy.deepcopy(proposal['steps'])
             report['component_modes'].update(calculation=state['calculation_role']['mode'],review=assessment['role']['mode'])
             report['component_modes']['orchestrator']='bounded_policy'
             if 'deterministic_fallback' in report['component_modes'].values(): report['runtime_health']='degraded'

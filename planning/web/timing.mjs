@@ -3,7 +3,7 @@ const LABELS={state:'读取 / 保存状态',knowledge:'知识库读取',parse:'�
  model:'计算模型 FSPL',validation:'硬校验',publish:'发布结果','llm/intent':'需求理解 · 模型','llm/supplement':'补问合并 · 模型',
  'llm/compute_agent':'计算建议 · 模型','llm/validator_agent':'结构化审查 · 模型',requirements:'需求与规划（整体）',
  calculation:'专业计算（整体）',review:'结果审查（整体）',interpretation:'意图理解（整体）',rag:'RAG 检索（整体）',orchestrator:'总控调度'};
-export const REASONS={offline:'离线',timeout:'超时',structure:'输出不合格',rejected:'请求被拒',unrecorded:'未记录原因'};
+export const REASONS={offline:'离线',timeout:'超时',structure:'输出不合格',numbers:'数字未通过核对',rejected:'请求被拒',unrecorded:'未记录原因'};
 export const label=key=>LABELS[key]||key;
 // Leaf spans for the waterfall: containers (requirements, calculation, review, rag) overlap their children.
 const LEAVES=new Set(['state','knowledge','parse','retrieval','planning','model','validation','publish']);

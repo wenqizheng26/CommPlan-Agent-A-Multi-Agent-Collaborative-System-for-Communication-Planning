@@ -167,7 +167,7 @@ class PlanLoopTests(unittest.TestCase):
         sent = []
         def fake_chat(payload, *args, **kwargs):
             sent.append(payload)
-            return {}, '{"decision":"pass","reason_code":"checks_passed","fact_ids":["confirmed_scope","numeric_checks"]}'
+            return {}, '{"decision":"pass","answer":"链路余量为 20.58 dB。","opinions":[],"steps":[]}'
         with mock.patch.object(role_model, 'chat', fake_chat):
             role = ReviewAgent(selector=None, context=review_context(done['conversation'])).run(
                 done['result'], done['confirmed_snapshot'])['role']
