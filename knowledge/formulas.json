@@ -19,7 +19,8 @@
       "distance_km": {
         "unit": "km",
         "description": "发射端到接收端的路径距离",
-        "exclusive_min": 0
+        "exclusive_min": 0,
+        "search_range": [0.001, 1000]
       }
     },
     "applicability": {
@@ -189,7 +190,8 @@
     "parameters": {
       "tx_power_dbm": {
         "unit": "dBm",
-        "description": "发射机输出功率，不是已含天线增益的 EIRP"
+        "description": "发射机输出功率，不是已含天线增益的 EIRP",
+        "search_range": [-30, 70]
       },
       "tx_gain_dbi": {
         "unit": "dBi",

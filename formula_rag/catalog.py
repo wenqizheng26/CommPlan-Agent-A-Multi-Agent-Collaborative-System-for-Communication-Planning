@@ -61,6 +61,15 @@ def validate_card(card: dict) -> list[str]:
                     errors.append(f"{name}: min exceeds max")
                 if "exclusive_min" in spec and spec["exclusive_min"] >= spec["max"]:
                     errors.append(f"{name}: empty numeric domain")
+            if 'search_range' in spec:
+                interval = spec['search_range']
+                if (not isinstance(interval, list) or len(interval) != 2 or not all(_number(x) for x in interval)
+                        or interval[0] >= interval[1]):
+                    errors.append(f'{name}.search_range: increasing finite pair required')
+                elif (('min' in spec and interval[0] < spec['min'])
+                      or ('exclusive_min' in spec and interval[0] <= spec['exclusive_min'])
+                      or ('max' in spec and interval[1] > spec['max'])):
+                    errors.append(f'{name}.search_range: interval outside parameter domain')
             if 'default' in spec:
                 default = spec['default']
                 if (not isinstance(default, dict) or set(default) != {'value', 'unit', 'note'}
