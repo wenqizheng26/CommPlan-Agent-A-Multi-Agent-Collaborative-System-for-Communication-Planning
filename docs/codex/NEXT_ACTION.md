@@ -77,7 +77,7 @@
 
 ## M1 第 3 周：Codex 任务单（C8–C11 合入后开始）
 
-- **工作区**：Claude 把 C8–C11 合入 `claude/calc-plans` 后，删除旧的 `CommPlan-Agent-M1-codex`，从合入后的分支新建同名工作区：`git -C E:/codex/项目/信号与AI/CommPlan-Agent-M1 worktree add ../CommPlan-Agent-M1-codex -b codex/m1-week3`。其余约定同第 2 周（不推送、不合并、每个任务单独提交、证据与状态行）。
+- **工作区**：C8–C11 已合入 `claude/calc-plans`（2026-09-25，合并提交 aa9ec5d）。Claude 已删除旧工作区，并从合入后的分支新建同名工作区 `CommPlan-Agent-M1-codex`，分支 `codex/m1-week3`。开始前在 cmd 中建两个目录联接：`mklink /J models E:\codex\项目\信号与AI\CommPlan-Agent\models` 与 `mklink /J knowledge\sources E:\codex\项目\信号与AI\CommPlan-Agent\knowledge\sources`（后者的目标目录不存在时先建）；两者都被 git 忽略。其余约定同第 2 周（不推送、不合并、每个任务单独提交、证据与状态行）。
 - **顺序**：C12 → C13 第 1–4 步。C13 第 5 步等 Claude 通知。
 - 页面与报告合同的任务单，等 Claude 与用户定好页面规格后再补。
 
@@ -88,7 +88,7 @@
 > **步骤**：
 > 1. 下载（只下这些）：
 >    - `Qwen/Qwen3-Embedding-0.6B-GGUF` 的 `Qwen3-Embedding-0.6B-Q8_0.gguf`（639,150,592 字节；SHA256 以文件页为准，设计时查到以 `06507c7b` 开头），放到 `CommPlan-Agent\models\signal-formula-qwen3\models\Qwen3-Embedding-0.6B-GGUF\`，附上游许可证。
->    - ITU-R P.525-5（11/2024）、P.530-19（09/2025）、P.453-14（08/2019）的英文 PDF，从 ITU 官网各建议书页面下载在用版本，放到被 git 忽略的 `knowledge/sources/itu/`。ITU 原文不进入 Git 和源码包（THIRD_PARTY 已写明不再分发原文）。
+>    - ITU-R P.525-5（11/2024）、P.530-19（09/2025）、P.453-14（08/2019）的英文 PDF，从 ITU 官网各建议书页面下载在用版本，放到主工作区被 git 忽略的 `CommPlan-Agent\knowledge\sources\itu\`，各工作区经 `knowledge\sources` 联接读取（与 `models` 相同）。ITU 原文不进入 Git 和源码包（THIRD_PARTY 已写明不再分发原文）。
 > 2. 注册表：新增 embedding 项 `qwen3-embedding-0.6b-q8`（runtime `llama.cpp`，endpoint `http://127.0.0.1:18084`，1024 维），`defaults.embedding` 改为它，bge 项保留。启动器在生成模型之后另起一个 CPU 进程（`--embedding --pooling last -ngl 0`，`-c`、`-b`、`-ub` 均不小于 2048，端口 18084；18082 是工作台端口），身份核验与停止规则和生成模型相同；查询前缀和文本结尾是否要加结束符，以模型卡说明为准。权重缺失时显示“未安装”，检索降为词项，不报错；模型状态同时报告两个模型。
 > 3. 文档清单 `knowledge/documents/manifest.json`（入库）：每份文档记 `doc_id`、标题、版本、语言、来源 URL 或仓库内路径、本地路径、SHA256、`redistributable`（ITU 为 false）、`simulated`。C10 的三份模拟文档也列入。本地文件缺失或哈希不符的文档，标为“未安装”或“已变化”，不进索引，并在 `describe()` 中列出。
 > 4. 切块：Markdown 按标题分节；PDF 用 pypdf 逐页取文本，再按段落切到每块 ≤ 800 字。块 id 形如 `doc:<doc_id>:<定位>`（如 `doc:itu-p530-19:p12-2`）；每块记录文档 id、标题、定位（页码与页内序号，或章节标题路径）、文本、文档 SHA256。同一文件重复切块，结果逐字相同。
