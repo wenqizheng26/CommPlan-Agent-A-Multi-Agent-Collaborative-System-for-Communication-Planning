@@ -47,6 +47,7 @@
 - 报告新增 `requirement`（余量下限）、`solve`（反求的未知量与问句位置）、`entities`（站点、设备的原文提及）；核对时按记录的模型输出重放，逐项复核它们仍落在原文上（2026-09-25 已实现，见 [A1 记录](../codex/evidence/2026-09-25-A1-labels.md)）。
 - 计划目标增加 `requirement`（量、比较、阈值、摘录）与 `solve_if_unmet`（未知量，如 `tx_power_dbm`）；步骤可以用 `slant_range_wgs84`、`radio_horizon`；距离由坐标得出时，计划必须含视距检查。
 - 反求在正式计算中执行，用 C11 的 `solve`，复核结果写进报告。
+- 以上与参数来源的三种新 kind 于 2026-09-25 实现（计划另带 `checks` 与 `assumed`：本任务自己的假设），视距外的任务标为“需要其他模型”；见 [A2/A3 记录](../codex/evidence/2026-09-25-A2-A3-review.md)。
 
 ## 5. 模型调用
 
