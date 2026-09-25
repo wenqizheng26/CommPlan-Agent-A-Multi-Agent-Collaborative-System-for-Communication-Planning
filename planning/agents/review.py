@@ -6,11 +6,11 @@ rewritten once and otherwise withheld, while the step values stay as the program
 them. Its conclusion only decides whether an already checked result is published.
 """
 import copy
-from formula_rag.applicability import FARFIELD_NOTE
+from formula_rag.applicability import describe_result
 from formula_rag.parsing import FIELDS
 from planning.agents.role_model import Rewrite, suggest
 from planning.requirements_contract import digest, obj, require
-from planning.services.calculation import MARGIN_NOTE, validate_result
+from planning.services.calculation import validate_result
 from planning.services.number_check import known, unquoted
 
 DECISIONS = {'pass': '通过', 'caution': '请核对', 'not_applicable': '超出适用范围'}
@@ -22,8 +22,7 @@ KINDS = ('risk', 'assumption', 'suggestion')
 # Hard caps for the grammar, about twice what the prompt asks for; a text that reaches its cap was cut off.
 LIMITS = dict(answer=240, opinions=160, steps=100)
 MAX_OPINIONS = 3
-BOUNDARY = '只是声明条件下的自由空间基准；真实海面反射、散射、地形遮挡与链路可用率都未评估。'
-OUTPUTS = {'path_loss_db': '路径损耗', 'rx_power_dbm': '接收信号电平', 'link_margin_db': '链路余量',
+OUTPUTS = {'path_loss_db': '路径损耗', 'rx_power_dbm': '接收信号电平', 'link_margin_db': '链路余量（已扣除预留余量）',
            'noise_power_dbm': '热噪声功率', 'maximum_doppler_hz': '最大多普勒频移'}
 ORIGINS = {'user_text': '原文', 'manual_form': '手填'}
 
@@ -33,20 +32,23 @@ PROMPT = (
     'decision：pass 表示结果回答了用户的问题、所用假设合理；caution 表示结果可以发布，但有用户应当核对的风险或假设'
     '（例如余量为负或接近门限、结论依赖某个假设值、问题里有一部分这次没有算）；not_applicable 表示用户问的是自由空间基准回答不了的问题'
     '（例如要求评估真实海面、地形或降雨的影响），这次的结果不能作答。\n'
-    'answer：用中文直接回答用户的问题，不超过 120 字：先给结论，再给关键数值和条件。\n'
+    'answer：用中文直接回答用户的问题，不超过 100 字：先给结论，再给与结论直接相关的 2 到 3 个数值，不逐项罗列输入。\n'
     'opinions：0 到 3 条审查意见，kind 取 risk（风险）、assumption（假设的影响）或 suggestion（调整建议），'
-    '每条不超过 80 字，refs 写支持它的事实 id。caution 和 not_applicable 至少写 1 条。只写会影响结论或用户决定的内容，'
+    '每条不超过 80 字，refs 写支持它的事实 id。caution 和 not_applicable 至少写 1 条；没有值得提的就不写，pass 时通常 0 到 1 条。'
+    '只写会影响结论或用户决定的内容，'
     '例如余量离门限有多近、哪个输入或假设值对结论影响最大、可以调整哪个参数；不复述通用免责声明，'
     '不谈与结论无关的公式细节（如常数舍入），自由空间的适用边界程序会另行注明。建议里不提出新的数值目标。\n'
     'steps：按顺序给每个计算步骤写一句说明：算了什么、依据哪个来源，不超过 50 字。\n'
     '数字规则：只照抄 facts 里已有的数值，一般保留两位小数（如 98.4206 写成 98.42），数值后写单位；'
     '不要自己做加减乘除或换算单位，不写 facts 里没有的数字；数字用阿拉伯数字；型号和标准编号照原样写。'
-    '链路余量已经扣除了预留余量：预留余量不是要求值，不要拿链路余量和预留余量比较。'
+    '链路余量已经扣除了预留余量：预留余量不是要求值，不要拿链路余量和预留余量比较；facts 里没有余量要求时，不说“满足要求”或“不满足要求”。'
     'recent_changes 只说明输入是怎样改到现在的，不要引用其中的旧数值。'
     '结果只是声明条件下的自由空间基准，不要声称真实链路一定可用。')
 
 
 def label(name):
+    if name == 'reserve_db':  # the model kept comparing the margin with the reserve it already has deducted
+        return '预留余量（已在链路余量中扣除，不是要求值）'
     return OUTPUTS.get(name) or (FIELDS[name][0] if name in FIELDS else name)
 
 
@@ -93,18 +95,22 @@ def facts_for(result, snapshot, validations):
     report, request = snapshot['review']['report'], snapshot['review']['request']
     plan = report['calculation_plan_proposal']
     params = {p['canonical_name']: p for p in report['parameters_proposal']}
-    tools = [s['tool_id'] for s in plan['steps']]
-    notes = list(report['assumptions']) + [FARFIELD_NOTE] * ('fspl_ghz' in tools) + [MARGIN_NOTE] * ('link_margin' in tools)
+    # Card notes and the free-space boundary are shown by the program; given to the model they only came
+    # back as boilerplate. Assumptions here are this task's own (values the user did not state).
+    notes = []
+    def meaning(o):
+        found = describe_result(result['model_id'], o['value']) if type(o['value']) in (int, float) else None
+        return {'meaning': found['message'].split('，')[0]} if found and result['model_id'] == 'link_margin' else {}
     return dict(
         question=dict(id='question', text=request['raw_text']),
         inputs=[dict(id='in:' + name, name=label(name), value=shown(params[name]['value']), unit=params[name]['unit'],
                      source=source_of(params[name], request['raw_text'])) for name in plan['required_parameters']],
         steps=steps_of(result, report),
-        result=dict(id='result', outputs=[dict(name=label(o['name']), value=shown(o['value']), unit=o['unit'])
+        result=dict(id='result', outputs=[dict(name=label(o['name']), value=shown(o['value']), unit=o['unit'], **meaning(o))
                                           for o in result['outputs']]),
         checks=dict(id='checks', passed=sum(v['passed'] for v in validations), total=len(validations)),
         assumptions=[dict(id=f'as:{i}', text=t) for i, t in enumerate(dict.fromkeys(notes), 1)],
-        scope=dict(id='scope', conditions=report['conditions'], boundary=BOUNDARY))
+        scope=dict(id='scope', conditions=report['conditions']))
 
 
 def ref_ids(facts):
