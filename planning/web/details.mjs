@@ -212,9 +212,17 @@ function formulaView(host,ctx){
   if(s.version)head.append(el('span','v'+s.version,'version'));
   sec.append(head);
   if(s.card){
-   const math=el('div',undefined,'math-formula');
-   if(s.card.id==='fspl_ghz'&&s.card.expression==='92.4 + 20*log10(frequency_ghz) + 20*log10(distance_km)')math.append(formulaMath());else math.append(el('code',symbolic(s.card),'symbolic'));
-   sec.append(math);
+   if(s.card.kind==='python_tool'){
+    sec.append(block('算法',s.card.algorithm));
+    for(const source of s.card.sources||[]){
+     sec.append(el('p',`${source.title} · ${source.locator||'未提供定位'}`,'hint'));
+     sec.append(sourceLink({source_url:source.url,source_id:source.path}));
+    }
+   }else{
+    const math=el('div',undefined,'math-formula');
+    if(s.card.id==='fspl_ghz'&&s.card.expression==='92.4 + 20*log10(frequency_ghz) + 20*log10(distance_km)')math.append(formulaMath());else math.append(el('code',symbolic(s.card),'symbolic'));
+    sec.append(math);
+   }
   }else sec.append(el('p',FORMULA_STATUS[s.status],s.status==='loading'?'hint':'hint warn-text'));
   const rows=inputRows(ctx,s.inputs);
   if(s.out){const out=el('li',undefined,'input result'),label=el('span',undefined,'in-name');label.append(el('span','结果'));out.append(label,el('span',s.out,'in-value'));rows.append(out);}
@@ -223,7 +231,7 @@ function formulaView(host,ctx){
  const actual=state.result?.normalized_inputs;
  if(actual&&!state.result.steps&&state.result.outputs.length>1)host.append(block('实际代入',state.final_report?.conclusion||'候选分别执行'));
  else if(actual&&!state.result.steps&&actual.frequency_ghz!=null)host.append(block('实际代入',`92.4 + 20 × log₁₀(${formatDomain(actual.frequency_ghz)}) + 20 × log₁₀(${formatDomain(actual.distance_km)}) = ${formatDomain(state.result.outputs[0].value,2)} dB`));
- const raw=steps.filter(s=>s.card).map(s=>`${s.card.id} v${s.card.version}: ${s.card.expression}`);
+ const raw=steps.filter(s=>s.card?.kind!=='python_tool'&&s.card?.expression).map(s=>`${s.card.id} v${s.card.version}: ${s.card.expression}`);
  if(raw.length)host.append(jsonDetails('程序表达式',raw));
 }
 function evidenceView(host,ctx){

@@ -16,10 +16,10 @@ def review_for(request, report, cards):
     return review
 
 
-def confirm_review(review, cards):
+def confirm_review(review, cards, root=None):
     request, report = review['request'], review['report']
     require(review == review_for(request, report, cards), 'REVIEW_CONTENT_MISMATCH')
-    checked = check_report(report, request, cards)
+    checked = check_report(report, request, cards, root)
     require(checked['execution_status'] == 'AWAITING_CONFIRMATION', 'NOT_CONFIRMABLE')
     snapshot = dict(schema_version='1.0.0', profile='confirmed-fspl-loop-v1',
                     snapshot_id=request['request_id'] + ':confirmed', task_id=request['task_id'],
@@ -29,7 +29,7 @@ def confirm_review(review, cards):
     return snapshot
 
 
-def validate_snapshot(snapshot, review, cards):
+def validate_snapshot(snapshot, review, cards, root=None):
     obj(snapshot, 'schema_version profile snapshot_id task_id revision review confirmed_by confirmed_at content_hash')
     require(snapshot['content_hash'] == digest({k:v for k,v in snapshot.items() if k != 'content_hash'}), 'SNAPSHOT_HASH_MISMATCH')
     require(snapshot['schema_version']=='1.0.0' and snapshot['profile']=='confirmed-fspl-loop-v1', 'SNAPSHOT_PROFILE')
@@ -38,6 +38,6 @@ def validate_snapshot(snapshot, review, cards):
     require(snapshot['task_id']==request['task_id'] and snapshot['revision']==request['revision'] and
             snapshot['snapshot_id']==request['request_id']+':confirmed', 'SNAPSHOT_IDENTITY_MISMATCH')
     require(snapshot['confirmed_by']=='local_user' and bool(snapshot['confirmed_at']), 'CONFIRMATION_REQUIRED')
-    check_report(review['report'], request, cards)
+    check_report(review['report'], request, cards, root)
     require(review['report']['execution_status']=='AWAITING_CONFIRMATION', 'NOT_CONFIRMABLE')
     return copy.deepcopy(snapshot)

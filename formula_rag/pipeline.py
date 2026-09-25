@@ -78,7 +78,7 @@ class Engine:
                 return {'id': identifier, 'status': 'unknown_formula'}
             visiting.add(identifier)
             base = {'id': identifier, 'title': card['title'], 'version': card['version'],
-                    'expression': card['expression'], 'sources': card.get('sources', []),
+                    'expression': card.get('expression'), 'sources': card.get('sources', []),
                     'description': card.get('description', ''), 'value_origin': 'deterministic_calculator',
                     'display': formula_view(card),
                     'declared_conditions': request['conditions'], 'applicability': card.get('applicability', {})}

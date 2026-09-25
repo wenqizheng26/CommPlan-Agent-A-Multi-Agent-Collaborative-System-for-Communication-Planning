@@ -7,6 +7,7 @@ formula review status. Knowledge text is never interpreted as instructions.
 import ast
 import math
 import operator
+from .tools import TOOLS
 
 _FUNCTIONS = {"log10": math.log10, "ln": math.log, "sqrt": math.sqrt,
               "sin": math.sin, "cos": math.cos, "abs": abs}
@@ -126,8 +127,13 @@ def evaluate(card: dict, parameters: dict[str, float]) -> dict:
     if missing:
         return {"status": "missing_parameters", "missing": missing}
     try:
-        tree = _parse(card.get("expression"), specs)
-        value = _calculate(tree, values)
+        if card.get('kind') == 'python_tool':
+            if card.get('id') not in TOOLS:
+                raise ValueError('python_tool is not whitelisted')
+            value = _finite_number(TOOLS[card['id']](values))
+        else:
+            tree = _parse(card.get("expression"), specs)
+            value = _calculate(tree, values)
         unit = card["output"]["unit"]
         if not isinstance(unit, str) or not unit:
             raise ValueError("output unit is missing")

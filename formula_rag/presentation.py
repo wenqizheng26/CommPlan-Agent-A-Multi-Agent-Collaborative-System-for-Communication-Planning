@@ -70,6 +70,14 @@ def expression_latex(expression):
 
 
 def formula_view(card):
+    if card.get('kind') == 'python_tool':
+        return {
+            'kind': 'python_tool', 'algorithm': card['algorithm'],
+            'sources': card['sources'], 'output_unit': card['output']['unit'],
+            'symbols': [{'field': k, 'label': FIELDS.get(k, (s['description'],))[0],
+                         'unit': s['unit'], 'description': s['description']}
+                        for k, s in card['parameters'].items()],
+        }
     return {
         'latex': symbol(card['output']['name']) + ' = ' + expression_latex(card['expression']),
         'output_unit': card['output']['unit'],

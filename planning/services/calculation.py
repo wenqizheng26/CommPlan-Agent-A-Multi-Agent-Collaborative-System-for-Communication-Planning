@@ -49,9 +49,9 @@ def run_steps(plan, cards, parameters, parameter_names, conditions):
     return steps
 
 
-def execute(snapshot, review, cards, proposal, observer=None, attempt=1):
+def execute(snapshot, review, cards, proposal, observer=None, attempt=1, root=None):
     require(type(attempt) is int and 1 <= attempt <= 2, 'INVALID_CALCULATION_ATTEMPT')
-    snapshot = validate_snapshot(snapshot, review, cards)
+    snapshot = validate_snapshot(snapshot, review, cards, root)
     require(proposal == propose_calculation(snapshot), 'SNAPSHOT_INPUT_MISMATCH')
     report = snapshot['review']['report']
     plan = report['calculation_plan_proposal']
