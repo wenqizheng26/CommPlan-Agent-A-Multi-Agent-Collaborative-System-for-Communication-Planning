@@ -88,16 +88,19 @@ class SupplementTests(unittest.TestCase):
     def test_model_cannot_invent_parameters_or_resolve_ambiguous_input(self):
         from planning.services.supplement import merge_supplement
         current=self.create()
+        # The model can only point at numbers the program found; an unknown one falls back to the rules.
         def invented(*args):
-            return {'action':'apply','fields':[{'field':'frequency_ghz','evidence':'9GHz'}]}
+            return {'action':'apply','quantities':[{'id':'q9','field':'frequency_ghz'}]}
         request, conversation=merge_supplement(current,'频率改为3GHz','turn-1','llm',selector=invented)
         self.assertNotIn('9GHz',request['raw_text'])
         self.assertEqual(conversation['turns'][-1]['mode'],'deterministic_fallback')
+        # "也可以" keeps a change tentative even when the model says apply.
         def optimistic(*args):
-            return {'action':'apply','fields':[{'field':'frequency_ghz','evidence':'3GHz'}]}
+            return {'action':'apply','quantities':[{'id':'q1','field':'frequency_ghz'}]}
         request, conversation=merge_supplement(current,'频率也可以用3GHz','turn-2','llm',selector=optimistic)
         self.assertEqual(request['raw_text'],TEXT)
         self.assertTrue(conversation['pending'])
+        self.assertEqual(conversation['turns'][-1]['mode'],'llm_grounded')
 
     def test_failed_save_rolls_back_supplement_and_history(self):
         s=self.create()

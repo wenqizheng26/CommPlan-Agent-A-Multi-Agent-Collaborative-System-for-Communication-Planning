@@ -59,6 +59,11 @@ def find_quantities(text):
     return found
 
 
+def count_quantities(text):
+    """All numbers with units, including the ones find_quantities keeps away from the model."""
+    return len(QUANTITY.findall(normalized(text)[0]))
+
+
 def ground_labels(text, quantities, model):
     """Check the model's labels against the text; never a new value.
 

@@ -137,6 +137,31 @@ def attach_issues(state,previous=None):
     return state
 
 
+def strip_labelled(request, report, fields):
+    """Remove values that only the model bound in the current text, before they are replaced.
+
+    Rule-bound values are rewritten by replace_parameter; a model-only value (e.g. "发射端5W")
+    would otherwise stay behind and conflict with the new one. The report must describe the
+    current text, so this runs before any other edit of the request.
+    """
+    if not report or not fields:
+        return
+    origins = {tuple(o['span']) for p in report.get('parameters_proposal', []) if p['canonical_name'] in fields
+               for o in p['origins'] if o['kind'] == 'user_text' and o['span']}
+    spans = []
+    for d in report.get('diagnostics', []):
+        if d['code'] != 'MODEL_CALL':
+            continue
+        for a in d['details'].get('accepted', []):
+            if (a.get('kind') == 'quantity' and a['field'] in fields and tuple(a['span']) in origins) or \
+               (a.get('kind') == 'requirement' and 'required_margin_db' in fields):
+                spans.append(a['span'])
+    text = request['raw_text']
+    for a, b in sorted(spans, reverse=True):
+        text = text[:a] + text[b:]
+    request['raw_text'] = text
+
+
 def replace_parameter(request, report, field, answer):
     probe=dict(schema_version='1.0.0',task_id='answer',revision=0,request_id='answer',raw_text=answer,
                manual_parameters={},condition=None,target=None)
@@ -214,6 +239,7 @@ def apply_answers(current,answers,event_id):
     require(set(answers)<=set(issues),'STALE_QUESTION')
     request=input_of(current);before=copy.deepcopy(request);conversation=conversation_of(current)
     answered=[]
+    strip_labelled(request,current.get('report'),{issues[k]['field'] for k in answers if issues[k]['field'] in LABELS})
     for key,value in answers.items():
         require(type(value) is str and 0<len(value.strip())<=500,'INVALID_ANSWER')
         issue=issues[key];field=issue['field'];value=value.strip()
