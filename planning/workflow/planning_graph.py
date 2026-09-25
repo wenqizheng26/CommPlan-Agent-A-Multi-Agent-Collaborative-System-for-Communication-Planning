@@ -80,7 +80,7 @@ def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(
             observe(observer,'confirmation','cancelled')
             return dict(status='CANCELLED',trace=trace(state,'human_confirmation','CANCELLED'))
         require(decision['action']=='confirm','INVALID_CONFIRM_ACTION')
-        snapshot = validate_snapshot(decision['snapshot'],state['review'],cards)
+        snapshot = validate_snapshot(decision['snapshot'],state['review'],cards,agent.root)
         observe(observer,'confirmation','completed',caller='requirements')
         return dict(confirmed_snapshot=snapshot,status='READY_TO_CALCULATE',trace=trace(state,'human_confirmation','CONFIRMED'))
 
@@ -91,7 +91,7 @@ def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(
         try:
             require(attempt <= MAX_CALCULATIONS, 'CALCULATION_BUDGET_EXHAUSTED')
             role = calculation_agent.run(state['confirmed_snapshot'], observer=observer)
-            result = calculation.execute(state['confirmed_snapshot'],state['review'],cards,role['proposal'],observer=observer,attempt=attempt)
+            result = calculation.execute(state['confirmed_snapshot'],state['review'],cards,role['proposal'],observer=observer,attempt=attempt,root=agent.root)
             observe(observer,'calculation','completed',caller='orchestrator')
             return dict(result=result,calculation_role=role,calculation_attempts=attempt,
                         calculation_roles=state.get('calculation_roles',[])+[dict(attempt=attempt,role=role)],

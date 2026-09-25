@@ -55,7 +55,7 @@ def build_requirements_graph(agent, *, expected_revision=None):
     def check(state):
         started = stamp()
         try:
-            report = check_report(state['report'],state['request'],trusted_cards)
+            report = check_report(state['report'],state['request'],trusted_cards,agent.root)
             status = report['execution_status']
             return dict(report=report,status=status,trace=state['trace']+[event(state,'check_requirements',status,started=started)])
         except Exception as exc:

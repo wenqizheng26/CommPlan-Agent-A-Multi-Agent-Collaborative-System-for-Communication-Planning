@@ -61,7 +61,7 @@ def check_source_labels(parameters, text):
                 require(max(occurrences)[1]==field,'SOURCE_LABEL_MISMATCH')
 
 
-def check_report(report, request, cards):
+def check_report(report, request, cards, root=None):
     r = validate_report(report, request)
     require(r['component_modes']['retrieval']=='lexical_fallback', 'UNVERIFIED_RETRIEVAL_MODE')
     calls = [d for d in r['diagnostics'] if d['code']=='MODEL_CALL']
@@ -84,7 +84,7 @@ def check_report(report, request, cards):
     require(r['parameters_proposal'] == parameters, 'PARAMETER_SOURCE_MISMATCH')
     require(r['conflicts'] == conflicts, 'CONFLICT_MISMATCH')
     require(r['missing_parameters'] == [p['canonical_name'] for p in parameters if p['status']=='missing'], 'MISSING_MISMATCH')
-    snapshot = snapshot_for(cards)
+    snapshot = snapshot_for(cards, root)
     require(r['knowledge_snapshot'] == snapshot, 'SNAPSHOT_MISMATCH')
     by_id = {c['id']:c for c in cards}
     candidates = r['candidate_models']

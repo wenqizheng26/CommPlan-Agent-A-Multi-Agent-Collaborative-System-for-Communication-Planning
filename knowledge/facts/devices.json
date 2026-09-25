@@ -1,0 +1,4 @@
+[
+  {"id":"device:sim-xx100","type":"device","names":["XX-100"],"model":"XX-100","tx_power_dbm":37,"antenna_gain_dbi":5,"rx_sensitivity_dbm":-92,"band_ghz":[1.4,2.7],"simulated":true,"status":"verified","source":{"title":"XX-100 手册（模拟）","path":"knowledge/documents/simulated/XX-100 手册.md","version":"M1-2026-09-25","locator":"§1 规格表"}},
+  {"id":"device:sim-xx200","type":"device","names":["XX-200"],"model":"XX-200","tx_power_dbm":43,"antenna_gain_dbi":8,"rx_sensitivity_dbm":-95,"band_ghz":[1.4,2.7],"simulated":true,"status":"verified","source":{"title":"XX-200 手册（模拟）","path":"knowledge/documents/simulated/XX-200 手册.md","version":"M1-2026-09-25","locator":"§1 规格表"}}
+]

@@ -311,7 +311,7 @@ class RequirementsAgent:
         if scope:
             unsupported = True
             diagnostics.append(diagnostic('MODEL_NOT_APPLICABLE', scope[0]['message'], next_action='核对单位或另选适用模型。'))
-        snapshot = snapshot_for(self.cards)
+        snapshot = snapshot_for(self.cards, self.root)
         ranks = dict(usable)
         available = bool(final and final in usable and all(by_id[i]['status'] == 'verified' for i in order))
         if available:
