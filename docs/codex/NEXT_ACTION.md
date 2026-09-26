@@ -74,11 +74,12 @@
 - A2 计划格式扩展：`requirement`、`solve_if_unmet`、站点与设备来源、假设值，校验加 H3。**已完成（2026-09-25）**：视距外停止、余量要求比较、反求最小发射功率并与额定值比较，结果按参考模型复核。
 - A3 站点、设备接入参数来源：同名、缺项、冲突走原有提问面板。**已完成（同日）**：查库取坐标、天线高度与电台参数，缺项取卡片假设值随确认一起确认；同名可选、缺天线高度可填、原文与库值冲突由用户选定。
 - 第 3 周的“审查与解释”提前完成：模型写结论、答复、审查意见与逐步说明，数字过 H4。真实 9B 跑通演示问题 A→B、A→C、A→F。见 [A2/A3 与审查记录](evidence/2026-09-25-A2-A3-review.md)。Python 333 项、Node 41 项通过。
-- 下一步（Claude）：专业计算 Agent 的确认前检查、模型写计划；页面规格先与用户确认，再写 Codex 任务单。
+- 页面规格已与用户确认（2026-09-25），写成 C14。
+- 下一步（Claude）：专业计算 Agent 写计划与适用性评估，设计已定（[AGENT_LED](../design/AGENT_LED.md) §2a，用户 2026-09-26 确认，展示细节交 Claude）；站点记录加“环境”。完成后在 C13 补“可以运行”。
 
 ## M1 第 3 周：Codex 任务单（C8–C11 合入后开始）
 
-- **工作区**：C8–C11 已合入 `claude/calc-plans`（2026-09-25，合并提交 aa9ec5d）。Claude 已删除旧工作区，并从合入后的分支新建同名工作区 `CommPlan-Agent-M1-codex`，分支 `codex/m1-week3`。开始前在 cmd 中建两个目录联接：`mklink /J models E:\codex\项目\信号与AI\CommPlan-Agent\models` 与 `mklink /J knowledge\sources E:\codex\项目\信号与AI\CommPlan-Agent\knowledge\sources`（后者的目标目录不存在时先建）；两者都被 git 忽略。其余约定同第 2 周（不推送、不合并、每个任务单独提交、证据与状态行）。
+- **工作区**：C8–C11 已合入 `claude/calc-plans`（2026-09-25，合并提交 aa9ec5d）。Claude 已删除旧工作区，并从合入后的分支新建同名工作区 `CommPlan-Agent-M1-codex`，分支 `codex/m1-week3`。开始前在 cmd 中建两个目录联接：`mklink /J models E:\codex\项目\信号与AI\CommPlan-Agent\models` 与 `mklink /J knowledge\sources E:\codex\项目\信号与AI\CommPlan-Agent\knowledge\sources`（后者的目标目录不存在时先建）；两者都被 git 忽略。其余约定同第 2 周（不推送、不合并、每个任务单独提交、证据与状态行）。例外（用户 2026-09-26 安排）：开始前把 `claude/calc-plans` 推到 GitHub 远端 `commplan`（`git push -u commplan claude/calc-plans`；`origin` 是旧的 signal-formula-rag 仓库），只推这个分支，不开 PR，不合入 `main` 或 `codex/model-eval-integration`。
 - **顺序**：C12 → C13 第 1–4 步 → C14（页面）。C13 第 5 步等 Claude 通知。
 - 报告合同没有升版：新字段都是可选的，旧任务照常读取；AGENT_LED §8 的“升一版”不再单独做。
 
@@ -142,15 +143,15 @@
 
 ### Codex 任务 C14：页面——模型答复、查库来源、假设值与反求
 
-> **目标**：按 [WORKBENCH_UI](../design/WORKBENCH_UI.md) “M1 第 3 周”一节（用户 2026-09-25 确认）实现页面。后端字段已由 Claude 实现。
+> **目标**：按 [WORKBENCH_UI](../design/WORKBENCH_UI.md) “M1 第 3 周”一节（用户 2026-09-25 确认，计划卡 2026-09-26 更新）实现页面。结果区与来源的后端字段已由 Claude 实现；计划来源、适用性评估、每步理由与站点“环境”由 Claude 另行实现（AGENT_LED §2a），开始 C14 时若还没合入，先按规格用替身数据做。
 > **范围**：`planning/web/`、`planning/web_server.py`（只加一个只读接口）、测试、证据。不改 `planning/agents`、`planning/services` 的业务逻辑；发现后端字段不够用，记录下来交给 Claude。
 > **步骤**：
-> 1. 只读接口 `GET /api/facts`：返回 `FactService` 的站点与设备记录（id、名称、`simulated`、来源标题与定位，站点带位置，设备带参数）和 `describe()` 的版本；安全要求与 `/api/formula-cards` 相同。加 Python 测试。
+> 1. 只读接口 `GET /api/facts`：返回 `FactService` 的站点与设备记录（id、名称、`simulated`、来源标题与定位，站点带位置与环境，设备带参数）和 `describe()` 的版本；安全要求与 `/api/formula-cards` 相同。加 Python 测试。
 > 2. 结果区：请核对提示条、答复卡、程序结论小字、余量要求、反求块（含 17 点曲线、要求线、解、额定值提示）、审查意见、逐步说明，逐条按规格。没有模型答复时保持现在的样式。
 > 3. 视距外停止的显示。
-> 4. 计划卡：新来源标签（含“模拟”）、只限“假设”值的直接修改（走原有“编辑”命令，改后标“手填（原假设 X）”）、“本次假设”、目标行、视距检查行、专业计算 Agent 意见的占位。已识别列表同样换标签。
+> 4. 计划卡：按计算书顺序（标题 → 目标与条件 → 适用性评估 → 步骤 → 本次假设）；标题按计划来源的四种写法；适用性评估块；每步下面一行理由；新来源标签（含“模拟”）；只限“假设”值的直接修改（走原有“编辑”命令，改后标“手填（原假设 X）”）；“本次假设”放在步骤之后；目标行、视距检查行。已识别列表同样换标签。
 > 5. 流程图说明文字按规格改。
-> 6. 测试与检查：新的显示逻辑写成纯函数并加 Node 测试（标签、答复是否显示、反求文字、视距停止文字、假设值修改后发出的命令内容）。在内置浏览器用三种宽度检查以下场景，截图写入证据：A→B 完成（请核对 + 反求 + 曲线）、A→C 视距外停止、A→F 通过、一个假设值直接改后重新确认。需要模型时用本机 9B；只查看页面时可以用 `tests/test_plan_goal.py` 中的替身办法造数据。
+> 6. 测试与检查：新的显示逻辑写成纯函数并加 Node 测试（标签、计划标题四种写法、适用性评估三种状态、答复是否显示、反求文字、视距停止文字、假设值修改后发出的命令内容）。在内置浏览器用三种宽度检查以下场景，截图写入证据：A→B 完成（请核对 + 反求 + 曲线）、A→C 视距外停止、A→F 通过、一个假设值直接改后重新确认。需要模型时用本机 9B；只查看页面时可以用 `tests/test_plan_goal.py` 中的替身办法造数据。
 > 7. 回归：Python、Node、`pip check` 全部通过。
 > **开始条件**：C12 之后，与 C13 第 1–4 步的先后不限。
 > **完成标准**：以上测试与检查通过，证据写入 `docs/codex/evidence/`；页面与规格不符的地方逐条列出。
