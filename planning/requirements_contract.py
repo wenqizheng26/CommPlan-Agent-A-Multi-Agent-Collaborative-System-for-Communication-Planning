@@ -115,7 +115,7 @@ def validate_request(value, *, expected_revision=None):
 
 def validate_report(value, request):
     request = validate_request(request)
-    require(type(value) is dict and set(REPORT_FIELDS.split())<=set(value)<=set(REPORT_FIELDS.split())|{'planning_role'},'SCHEMA_FIELDS: report')
+    require(type(value) is dict and set(REPORT_FIELDS.split())<=set(value)<=set(REPORT_FIELDS.split())|{'planning_role','document_retrieval'},'SCHEMA_FIELDS: report')
     json_value(value); identity(value)
     require(value['profile'] == PROFILE, 'PROFILE')
     for key in ('task_id', 'revision', 'request_id'):

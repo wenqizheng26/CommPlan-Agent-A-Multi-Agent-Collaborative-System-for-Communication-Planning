@@ -75,6 +75,10 @@ def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(
             report['calculation_plan_proposal'],report['planning_role']=planning_agent.run(state['request'],report,cards,observer)
             if report['planning_role']['mode']=='deterministic_fallback':
                 report['runtime_health']='degraded'
+            if isinstance(getattr(agent,'selector',None),ModelSelector):
+                mode=agent.retrieval_params.get('mode','lexical')
+                report['document_retrieval']=agent.retrieval.search(state['request']['raw_text'],top_k=4,top_n=3,
+                    mode=mode,filters={'source_type':'document_chunk'}).to_dict()
             check_report(report,state['request'],cards,agent.root)
         observe(observer,'requirements','failed' if status=='FAILED' else 'completed',status=status,caller='orchestrator')
         if status in {'AWAITING_INPUT','NEEDS_MODEL'}:
@@ -181,6 +185,8 @@ def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(
                 opinions=copy.deepcopy(proposal['opinions']), withheld=withheld)
             report['answer'] = dict(text=proposal['answer'], mode=assessment['role']['mode'], withheld='answer' in withheld)
             report['explanation'] = copy.deepcopy(proposal['steps'])
+            if state['confirmed_snapshot']['review']['report'].get('document_retrieval'):
+                report['document_evidence']=copy.deepcopy(assessment['facts'].get('documents',[]))
             report['component_modes'].update(calculation=state['calculation_role']['mode'],review=assessment['role']['mode'])
             report['component_modes']['orchestrator']='bounded_policy'
             if 'deterministic_fallback' in report['component_modes'].values(): report['runtime_health']='degraded'

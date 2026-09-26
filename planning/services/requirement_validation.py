@@ -1,6 +1,7 @@
 """Deterministic trust-boundary checks against source input and loaded catalog."""
 import copy
 import re
+from pathlib import Path
 from formula_rag.parsing import extract_request, FIELDS
 from planning.services.fact_fields import FACT_FIELDS
 from planning.services.requirement_facts import sources_for, band_issues, plan_goal
@@ -65,6 +66,19 @@ def check_source_labels(parameters, text):
 
 def check_report(report, request, cards, root=None):
     r = validate_report(report, request)
+    if 'document_retrieval' in r:
+        from planning.retrieval.documents import DocumentStore
+        found=r['document_retrieval']
+        documents={c['id']:c for c in DocumentStore(root or Path(__file__).resolve().parents[2]).chunks}
+        require(type(found) is dict and type(found.get('hits')) is list and len(found['hits'])<=20,'DOCUMENT_EVIDENCE')
+        require(type(found.get('used')) is list and found['used']==[h['id'] for h in found['hits'][:found.get('top_n',0)]],'DOCUMENT_EVIDENCE')
+        for hit in found['hits']:
+            item=documents.get(hit['id'])
+            require(item is not None and hit['source_type']=='document_chunk' and hit['excerpt']==item['description']
+                and hit['title']==item['title'],'DOCUMENT_EVIDENCE_CHANGED')
+            source=item['sources'][0]
+            require(hit['source']==dict(title=source['title'],uri=source['url'],version=item['version'],
+                **{k:source[k] for k in ('doc_id','locator','sha256','simulated')}),'DOCUMENT_EVIDENCE_CHANGED')
     require(r['component_modes']['retrieval']=='lexical_fallback', 'UNVERIFIED_RETRIEVAL_MODE')
     calls = [d for d in r['diagnostics'] if d['code']=='MODEL_CALL']
     if r['component_modes']['interpretation'] in {'llm','stub'}:

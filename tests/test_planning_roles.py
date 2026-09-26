@@ -69,6 +69,22 @@ class RoleTests(unittest.TestCase):
                 ReviewAgent(None).run(result,self.snapshot)
             model.assert_not_called()
 
+    def test_document_numbers_cannot_be_laundered_into_an_answer(self):
+        from planning.agents.review import facts_for, accept, validate_proposal
+        from planning.agents.role_model import Rewrite
+        from planning.services.calculation import validate_result
+        result=self.result()
+        facts=facts_for(result,self.snapshot,validate_result(result,self.snapshot))
+        facts['documents']=[dict(id='doc:sample:s1-1',excerpt='Sample power 98765 dBm',title='Sample')]
+        output=dict(decision='caution',answer='发射功率为98765 dBm',steps=[],
+            opinions=[dict(kind='risk',text='实际传播仍需核对。',refs=['doc:sample:s1-1'])])
+        with self.assertRaises(Rewrite):accept(output,facts)
+        with self.assertRaisesRegex(ValueError,'REVIEW_NUMBERS'):
+            validate_proposal(dict(output,hidden=[]),facts)
+        output['answer']='该文档用于适用条件说明。'
+        output['opinions']=[dict(kind='risk',text='实际传播仍需核对。',refs=['doc:sample:s1-1'])]
+        self.assertFalse(accept(output,facts)['hidden'])
+
     def test_review_invalid_references_cannot_be_published_as_model_review(self):
         def selector(*args):
             return dict(output=dict(decision='caution', answer='路径损耗为 98.42 dB。', steps=[],
