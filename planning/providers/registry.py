@@ -61,12 +61,14 @@ class Registry:
             require(type(m) is dict and type(m.get('id')) is str and m['id'] not in self.models, 'REGISTRY_ID')
             require(m.get('kind') in KINDS, 'REGISTRY_KIND')
             require(type(m.get('display_name')) is str, 'REGISTRY_NAME')
-            if m['kind'] == 'chat':
+            if m['kind'] == 'chat' or m.get('runtime') == 'llama.cpp':
                 require(type(m.get('endpoint')) is str and loopback(m['endpoint']), 'REGISTRY_NOT_LOOPBACK')
                 require(type(m.get('alias')) is str and m['alias'], 'REGISTRY_ALIAS')
                 require(type(m.get('context')) is int and 512 <= m['context'] <= 131072, 'REGISTRY_CONTEXT')
                 d = m.get('defaults', {})
                 require(0 <= d.get('temperature', 0) <= 1 and 1 <= d.get('timeout_s', 30) <= 120, 'REGISTRY_DEFAULTS')
+            if m['kind'] == 'embedding' and m.get('runtime') == 'llama.cpp':
+                require(type(m.get('dimension')) is int and 1 <= m['dimension'] <= 4096, 'REGISTRY_DIMENSION')
             for key in ('weights', 'path'):
                 if key in m:
                     require(relative(m[key]), 'REGISTRY_PATH')

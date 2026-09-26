@@ -11,6 +11,7 @@ def build_fingerprint(root):
     # Never include mutable history, logs, PID files or local model weights.
     files.extend(root/name for name in ('knowledge/formulas.json', 'runtime_config.json', 'config/models.json')
                  if (root/name).is_file())
+    files.extend(p for pattern in ('knowledge/facts/*.json','knowledge/documents/*.json','knowledge/documents/simulated/*.md') for p in root.glob(pattern))
     h=hashlib.sha256()
     for p in sorted(files):
         h.update(p.relative_to(root).as_posix().encode() + b'\0')

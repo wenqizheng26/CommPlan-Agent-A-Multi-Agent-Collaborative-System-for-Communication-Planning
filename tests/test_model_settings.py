@@ -155,7 +155,7 @@ class RunSettingsTests(unittest.TestCase):
             self.assertEqual(set(chat), set(ROLES))
             self.assertEqual(chat['validator_agent']['model_id'], 'qwen3-4b-q4-fast-fail')
             self.assertEqual(chat['validator_agent']['timeout_s'], 12.0)
-            self.assertEqual(chat['requirements']['model_id'], 'qwen3-4b-q4')
+            self.assertEqual(chat['requirements']['model_id'], self.service.registry.defaults['chat'])
             done = self.service.apply(command('confirm', event_id='e2', ver=state['state_version'],
                                               review_hash=state['review']['review_hash']))['state']
         self.assertEqual(done['status'], 'COMPLETED')  # offline models degrade, numbers stay deterministic

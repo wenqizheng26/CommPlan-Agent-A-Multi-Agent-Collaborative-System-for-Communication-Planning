@@ -1,7 +1,7 @@
 // Catalog labels refer to the two-page source Visio; status is runtime evidence.
 export const nodes = {
  input:['任务输入','原文与补充条件','overview'],
- requirements:['需求与规划 Agent','已接入 · 受规则约束','overview'],
+ requirements:['需求与规划 Agent','模型抽取，程序核对','overview'],
  parse:['解析需求','程序抽取参数与单位','parameters'],
  retrieval:['检索专业依据','词项检索 · 保留出处','evidence'],
  interpretation:['意图建议（可选）','本机 LLM · 可明确降级','overview'],
@@ -13,14 +13,14 @@ export const nodes = {
  supplement:['需求确认与补充','多问题汇总 · 保存部分回答','parameters'],
  gap:['模型或依据缺口','说明缺口，停止计算','evidence'],
  failure:['异常处理','失败原因与下一步','overview'],
- explanation:['LLM 解释与审查','未接入 · 当前为程序报告','result'],
+ explanation:['LLM 解释与审查','已接入 · 数字核对','result'],
  orchestrator:['总控 Agent','受控策略 · 退回与重算有上限','overview'],
- compute_agent:['专业计算 Agent','工具调用建议 · 程序受控执行','formula'],
+ compute_agent:['专业计算 Agent','模型写计划、评估适用性，程序计算','formula'],
  validator_agent:['验证与解释 Agent','硬校验 + 可选结构化审查','result'],
  review:['结构化审查','引用结果与已确认假设','result'],
  model:['链路损耗计算模型','登记公式与程序','formula'],
  llm:['共享大模型 LLM','可选 · 需求、计算与审查','overview'],
- rag:['RAG 检索服务','当前仅词项检索','evidence'],
+ rag:['RAG 检索服务','公式库、站点库、设备库、文档库','evidence'],
  knowledge:['专业知识库','版本化公式卡与来源','evidence'],
  state:['共享状态／检查点','确认快照、历史与恢复','overview'],
 };
@@ -61,7 +61,7 @@ export function nodeStates(state, events=[]){
   }
  }
  s.compute_agent=s.calculation;s.validator_agent=s.validation==='idle'?'partial':s.validation;
- if(state.review_assessment){const decision=state.review_assessment.role.proposal.decision;s.review=s.validator_agent=decision==='pass'?'completed':'waiting';}
+ if(state.review_assessment){const decision=state.review_assessment.role.proposal.decision;s.review=s.validator_agent=['pass','caution'].includes(decision)?'completed':'waiting';}
  else if(s.review!=='idle')s.validator_agent=s.review;
  const explicit=new Set(relevant.filter(e=>e.run_id===last?.run_id).map(e=>e.node));
  if(!explicit.has('model')||state.status==='COMPLETED')s.model=s.calculation;
@@ -129,7 +129,7 @@ const architectureEdges=[
  ['compute_agent','model','capability','M310 238V300','参数 / 损耗',318,285,true],
  ['requirements','llm','capability','M176 176V164H612V112H640'],
  ['validator_agent','llm','capability','M590 176V164H612V112H640'],
- ['compute_agent','llm','optional','M380 176V164H612V112H640','工具建议 · 可选',520,159],
+ ['compute_agent','llm','optional','M380 176V164H612V112H640','写计划与评估',520,159],
  ['orchestrator','llm','unavailable','M460 100H640','未接入',530,94],
  ['requirements','rag','capability','M176 238V262H616V329H640'],
  ['validator_agent','rag','capability','M590 238V262H616V329H640'],
@@ -137,7 +137,7 @@ const architectureEdges=[
  ['state','orchestrator','state','M12 425H6V108H160','',0,0,true],
 ];
 // Static descriptions live in the detail panel; the diagram keeps only integration caveats.
-const nodeText={validator_agent:'解释未接入',rag:'词项检索'};
+const nodeText={validator_agent:'解释与审查已接入',rag:'文档与公式检索'};
 const integration={orchestrator:'部分接入',llm:'可选'};
 const titles={input:'用户输入通信需求'};
 function box(x,y,w,h,r){return `M${x+r} ${y}H${x+w-r}Q${x+w} ${y} ${x+w} ${y+r}V${y+h-r}Q${x+w} ${y+h} ${x+w-r} ${y+h}H${x+r}Q${x} ${y+h} ${x} ${y+h-r}V${y+r}Q${x} ${y} ${x+r} ${y}Z`;}
@@ -163,14 +163,14 @@ export function renderFlow(host,{view,state,events,selected,onSelect,latency={}}
  }
  // Visio's knowledge-enhancement step; only lexical formula-card retrieval is wired today.
  const note=svgEl('g',{class:'flow-note'});
- note.append(svgEl('text',{x:732,y:212,'text-anchor':'middle',class:'note-title'},'知识增强过程'),...chip('部分接入 · 仅公式卡',662,224,140));
+ note.append(svgEl('text',{x:732,y:212,'text-anchor':'middle',class:'note-title'},'知识增强过程'),...chip('公式 · 站点 · 设备 · 文档',662,224,140));
  svg.append(note);
  for(const[id,x,y,w,h,kind]of architecture){
   const status=states[id],label=titles[id]||nodes[id][0];
   const g=svgEl('g',{transform:`translate(${x},${y})`,class:`flow-node kind-${kind} ${status} ${selected===id?'selected':''}`,role:'button',tabindex:0,'aria-label':`${label}，${statusText[status]||status}`,'aria-pressed':String(selected===id),'data-node':id});
   g.append(svgEl('path',{d:box(0,0,w,h,id==='input'?h/2:12),class:'shape'}));
   const time=latency[id]||'',waiting=time.startsWith('已等待');
-  const sub=waiting?time:status==='running'?'运行中 · 等待返回':status==='waiting'?(awaitingSupplement&&id==='confirmation'?'等待补充 · 见右侧问题':'等待用户处理'):status==='degraded'?'部分调用已降级':nodeText[id]||'';
+  const sub=waiting?time:status==='running'?'运行中 · 等待返回':status==='waiting'?(awaitingSupplement&&id==='confirmation'?'等待补充 · 见对话栏':'等待用户处理'):status==='degraded'?'部分调用已降级':nodeText[id]||'';
   if(id==='input')g.append(svgEl('text',{x:w/2,y:h/2+5,'text-anchor':'middle',class:'node-title'},label));
   else{
    const pill=time&&!waiting,titleY=sub||pill?h/2-3:h/2+5;

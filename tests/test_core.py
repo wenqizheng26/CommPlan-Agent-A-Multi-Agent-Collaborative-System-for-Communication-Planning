@@ -117,7 +117,7 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(out["status"], "invalid_parameters")
 
     def test_catalog_has_sourced_formulas_and_all_examples_reproduce(self):
-        self.assertEqual(set(self.cards), {"fspl_ghz", "doppler_max", "thermal_noise", "received_power", "link_margin", "noise_density", "receiver_threshold"})
+        self.assertEqual(set(self.cards), {"fspl_ghz", "doppler_max", "thermal_noise", "received_power", "link_margin", "noise_density", "receiver_threshold", "radio_horizon", "slant_range_wgs84"})
         for card in self.cards.values():
             self.assertTrue(card["sources"])
             self.assertTrue(card["examples"])

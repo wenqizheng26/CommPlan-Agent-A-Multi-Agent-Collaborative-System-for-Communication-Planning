@@ -11,6 +11,17 @@ from test_planning_loop import ROOT, command
 
 
 class PlanningWebTests(unittest.TestCase):
+    def test_facts_are_read_only_reviewed_and_same_origin(self):
+        code, data=self.call('/api/facts')
+        self.assertEqual(code,200)
+        self.assertEqual(len(data['records']),9)
+        self.assertEqual(len(data['version']),64)
+        for row in data['records']:
+            self.assertTrue(row['simulated'])
+            self.assertEqual(set(row['source']),{'title','version','locator'})
+        self.assertEqual(self.call('/api/facts',headers={'Origin':'https://evil.example'})[0],403)
+        self.assertNotEqual(self.call('/api/facts',body={})[0],200)
+
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
@@ -106,13 +117,43 @@ class PlanningWebTests(unittest.TestCase):
         self.assertFalse(self.call('/api/cancel-operation',body)[1]['accepted'])
         self.assertEqual(self.call('/api/cancel-operation',body,headers={'X-Planning-Token':'bad'})[0],403)
 
+    def test_formula_cards_match_task_evidence_by_content_hash(self):
+        budget='按自由空间基准计算链路余量：频率2GHz，距离10km，发射功率30dBm，发射天线增益10dBi，接收天线增益10dBi，发射馈线损耗2dB，接收馈线损耗2dB，额外损耗0dB，接收灵敏度-100dBm，预留余量10dB。'
+        state=self.call('/api/commands',command(text=budget))[1]['state']
+        steps=state['report']['calculation_plan_proposal']['steps']
+        ids=[s['tool_id'] for s in steps]
+        self.assertEqual(ids,['fspl_ghz','received_power','link_margin'])
+        code,body=self.call('/api/formula-cards?ids='+','.join(ids+['no_such_card']))
+        self.assertEqual(code,200)
+        self.assertEqual(body['missing'],['no_such_card'])
+        served={c['id']:c for c in body['cards']}
+        for ref in state['report']['evidence_refs']:
+            self.assertEqual(served[ref['catalog_id']]['content_hash'],ref['content_hash'])
+        # The card stored in the review is the same registered card.
+        model=state['review']['model']
+        self.assertEqual(served[model['id']]['expression'],model['expression'])
+        for bad in ('','?ids=','?ids=Bad-Id','?ids='+','.join(['a']*21)):
+            with self.subTest(query=bad):
+                self.assertEqual(self.call('/api/formula-cards'+bad)[0],400)
+        self.assertEqual(self.call('/api/formula-cards?ids=fspl_ghz',headers={'Origin':'https://evil.example'})[0],403)
+
+    def test_program_tool_card_exposes_algorithm_and_source_without_expression(self):
+        code, body = self.call('/api/formula-cards?ids=slant_range_wgs84')
+        self.assertEqual(code, 200)
+        card = body['cards'][0]
+        self.assertEqual(card['kind'], 'python_tool')
+        self.assertIn('ECEF', card['algorithm'])
+        self.assertNotIn('expression', card)
+        self.assertTrue(card['sources'][0]['url'])
+        self.assertEqual(len(card['content_hash']), 64)
+
     def test_models_settings_and_metrics_endpoints(self):
         with patch('planning.web_server.probe_registry', return_value={'qwen3-4b-q4': 'unreachable'}):
             code, models = self.call('/api/models')
         self.assertEqual(code, 200)
-        self.assertEqual(models['defaults']['chat'], 'qwen3-4b-q4')
+        self.assertEqual(models['defaults']['chat'], 'qwen35-9b-q4')
         self.assertIn('bge-small-zh-v1.5', models['embeddings'])
-        self.assertEqual(models['corpus']['size'], 7)
+        self.assertEqual(models['corpus']['size'], 9)
         self.assertNotIn('weights', json.dumps(models))
 
         code, current = self.call('/api/settings')

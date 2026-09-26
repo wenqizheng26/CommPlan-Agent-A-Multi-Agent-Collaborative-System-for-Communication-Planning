@@ -35,3 +35,38 @@ export function taskProgress(state,events=[],{dirty=false,historical=false}={}){
  if(dirty)action='输入已修改；当前显示上次保存版本，请保存修改后重新确认。';
  return {steps:labels.map((label,i)=>({label,status:status[i]})),action};
 }
+
+const STATUS={AWAITING_CONFIRMATION:'待确认',AWAITING_INPUT:'待补充',NEEDS_MODEL:'超出范围',FAILED:'失败',COMPLETED:'已完成',CANCELLED:'已取消'};
+// The one sentence that says what to do now; the flow diagram shows where the task is.
+export function headline(state,{busy=false,action=null,editing=false,historical=false,modelLabel='',ran=''}={}){
+ if(historical)return {text:`第 ${state.revision} 版 · 只读`,sub:STATUS[state.status]||'',tone:'idle'};
+ if(busy){
+  if(action==='confirm')return {text:'计算中…',sub:'确定性求值',tone:'run'};
+  if(action==='cancel')return {text:'取消中…',sub:'',tone:'run'};
+  if(action==='restore')return {text:'恢复中…',sub:'',tone:'run'};
+  return {text:'解析中…',sub:modelLabel,tone:'run'};
+ }
+ if(editing)return {text:'编辑原文中',sub:'保存后需重新确认',tone:'wait'};
+ if(!state)return {text:'输入需求开始',sub:'支持：路径损耗 · 接收电平 · 链路余量',tone:'idle'};
+ const open=(state.input_issues||[]).filter(q=>q.status==='open'),n=open.length,kinds=new Set(open.map(q=>q.kind));
+ const only=(...k)=>n&&[...kinds].every(x=>k.includes(x));
+ switch(state.status){
+  case 'AWAITING_INPUT':
+   if(only('missing'))return {text:`缺 ${n} 项参数`,sub:'在对话栏补充',tone:'wait'};
+   if(only('conflict'))return {text:`${n} 处冲突`,sub:'在对话栏选定',tone:'wait'};
+   if(only('clarification','pending','review'))return {text:`${n} 处待澄清`,sub:'在对话栏说明',tone:'wait'};
+   return {text:n?`${n} 项待处理`:'待补充',sub:'见对话栏',tone:'wait'};
+  case 'NEEDS_MODEL':return {text:'超出计算范围',sub:'见对话栏',tone:'wait'};
+  case 'AWAITING_CONFIRMATION':{
+   const steps=state.report?.calculation_plan_proposal?.steps?.length;
+   return {text:steps?`${steps} 步计算链 · 待确认`:'待确认',sub:'',tone:'wait'};
+  }
+  case 'COMPLETED':{
+   const v=state.validations||[];
+   return {text:v.length?`完成 · ${v.filter(x=>x.passed).length}/${v.length} 校验通过`:'完成',sub:ran,tone:'ok'};
+  }
+  case 'FAILED':return {text:'未完成',sub:state.failure?.message||'',tone:'bad'};
+  case 'CANCELLED':return {text:'已取消',sub:'',tone:'idle'};
+  default:return {text:'解析中…',sub:'',tone:'run'};
+ }
+}

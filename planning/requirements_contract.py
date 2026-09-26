@@ -5,6 +5,7 @@ import json
 import math
 import re
 from formula_rag.parsing import FIELDS, convert
+from planning.services.fact_fields import FACT_FIELDS
 from planning.services.input_domains import numbers, convert_domain
 
 VERSION = '1.0.0'
@@ -12,7 +13,13 @@ PROFILE = 'requirements-slice-v1'
 STATUSES = {'AWAITING_INPUT', 'AWAITING_CONFIRMATION', 'NEEDS_MODEL', 'FAILED'}
 CONDITIONS = {'free_space', 'free_space_reference', 'non_free_space', 'maximum_doppler', 'two_way'}
 REQUEST_FIELDS = 'schema_version task_id revision request_id raw_text manual_parameters condition target'
-REPORT_FIELDS = 'schema_version profile task_id revision request_id parameters_proposal conflicts missing_parameters candidate_models calculation_plan_proposal evidence_ids evidence_refs knowledge_snapshot questions assumptions conditions targets execution_status component_modes runtime_health diagnostics'
+REPORT_FIELDS = 'schema_version profile task_id revision request_id parameters_proposal conflicts missing_parameters candidate_models calculation_plan_proposal evidence_ids evidence_refs knowledge_snapshot questions assumptions conditions targets requirement solve entities execution_status component_modes runtime_health diagnostics'
+SOLVE_UNKNOWNS = {'tx_power_dbm'}
+# Where a parameter value came from: the text, the form, a site or device record, or a card assumption.
+ORIGIN_KINDS = {'user_text', 'manual_form', 'site', 'device', 'default'}
+PLAN_FIELDS = 'plan_id task_id revision objective steps required_parameters selected_model assumptions evidence_ids plan_hash'
+# Only plans that need them carry these.
+PLAN_OPTIONAL = {'checks', 'requirement', 'solve_if_unmet', 'assumed', 'origin', 'origin_note', 'assessment'}
 
 
 def strict_json(text):
@@ -97,15 +104,19 @@ def validate_request(value, *, expected_revision=None):
         string(value['target'])
     require(type(value['manual_parameters']) is dict, 'MANUAL_PARAMETERS_OBJECT')
     for name, item in value['manual_parameters'].items():
-        require(name in FIELDS, 'UNKNOWN_PARAMETER')
+        require(name in FIELDS or name in FACT_FIELDS, 'UNKNOWN_PARAMETER')
         obj(item, 'value unit'); number(item['value']); string(item['unit'])
-        number(convert(name, item['value'], item['unit']))
+        if name in FACT_FIELDS:
+            require(item['unit'] == FACT_FIELDS[name][1], 'UNIT_MISMATCH')
+        else:
+            number(convert(name, item['value'], item['unit']))
     return copy.deepcopy(value)
 
 
 def validate_report(value, request):
     request = validate_request(request)
-    obj(value, REPORT_FIELDS); json_value(value); identity(value)
+    require(type(value) is dict and set(REPORT_FIELDS.split())<=set(value)<=set(REPORT_FIELDS.split())|{'planning_role','document_retrieval'},'SCHEMA_FIELDS: report')
+    json_value(value); identity(value)
     require(value['profile'] == PROFILE, 'PROFILE')
     for key in ('task_id', 'revision', 'request_id'):
         require(value[key] == request[key], 'REPORT_IDENTITY_MISMATCH')
@@ -117,6 +128,21 @@ def validate_report(value, request):
     for key in ('missing_parameters', 'evidence_ids', 'questions', 'assumptions', 'conditions', 'targets'):
         strings(value[key])
     require(set(value['conditions']) <= CONDITIONS, 'INVALID_CONDITIONS')
+    text = request['raw_text']
+    def text_span(span):
+        require(type(span) is list and len(span) == 2 and all(type(i) is int for i in span)
+                and 0 <= span[0] < span[1] <= len(text), 'TEXT_SPAN')
+    if value['requirement'] is not None:
+        req = value['requirement']
+        obj(req, 'quantity op value unit span'); number(req['value']); text_span(req['span'])
+        require(req['quantity'] == 'link_margin_db' and req['op'] == '>=' and req['unit'] == 'dB', 'REQUIREMENT_SHAPE')
+    if value['solve'] is not None:
+        obj(value['solve'], 'unknown span'); text_span(value['solve']['span'])
+        require(value['solve']['unknown'] in SOLVE_UNKNOWNS, 'SOLVE_UNKNOWN')
+    require(type(value['entities']) is list and len(value['entities']) <= 6, 'ENTITIES_LIST')
+    for e in value['entities']:
+        obj(e, 'kind mention span'); string(e['mention']); text_span(e['span'])
+        require(e['kind'] in {'site', 'device'} and text[e['span'][0]:e['span'][1]] == e['mention'], 'ENTITY_SPAN')
     require(type(value['diagnostics']) is list, 'DIAGNOSTICS_LIST')
     for item in value['diagnostics']:
         obj(item, 'code message details'); string(item['code']); string(item['message'])
@@ -142,7 +168,10 @@ def validate_report(value, request):
         for origin in p['origins']:
             obj(origin, 'origin_id kind source_ref span value unit')
             string(origin['origin_id']); string(origin['source_ref']); string(origin['unit']); numbers(origin['value'])
-            require(origin['kind'] in {'user_text', 'manual_form'}, 'ORIGIN_KIND')
+            require(origin['kind'] in ORIGIN_KINDS, 'ORIGIN_KIND')
+            require(origin['kind'] in {'user_text', 'manual_form'} or (origin['span'] is None and
+                    re.fullmatch(r'(?:site|device):[a-z0-9-]+#[a-z_.]+|card:[a-z0-9_]+#[a-z0-9_]+', origin['source_ref'])),
+                    'ORIGIN_SOURCE')
             require(origin['origin_id'] not in origins, 'DUPLICATE_ORIGIN')
             origins[origin['origin_id']] = p['canonical_name']
             span = origin['span']
@@ -189,7 +218,8 @@ def validate_report(value, request):
     strings(candidate_ids)
     plan = value['calculation_plan_proposal']
     if plan is not None:
-        obj(plan, 'plan_id task_id revision objective steps required_parameters selected_model assumptions evidence_ids plan_hash')
+        require(type(plan) is dict and set(PLAN_FIELDS.split()) <= set(plan) <= set(PLAN_FIELDS.split()) | PLAN_OPTIONAL,
+                'SCHEMA_FIELDS: plan')
         string(plan['plan_id']); string(plan['objective']); revision(plan['revision'])
         require(plan['task_id'] == request['task_id'] and plan['revision'] == request['revision'], 'PLAN_IDENTITY')
         strings(plan['required_parameters']); strings(plan['selected_model']); strings(plan['assumptions']); strings(plan['evidence_ids'])
@@ -199,7 +229,8 @@ def validate_report(value, request):
         require(type(plan['steps']) is list and bool(plan['steps']), 'PLAN_STEPS')
         seen = set()
         for step in plan['steps']:
-            obj(step, 'step_id tool_id inputs expected_unit dependencies required_conditions')
+            obj({k:v for k,v in step.items() if k!='why'}, 'step_id tool_id inputs expected_unit dependencies required_conditions')
+            if 'why' in step:string(step['why'])
             string(step['step_id']); string(step['tool_id']); string(step['expected_unit'])
             strings(step['dependencies']); strings(step['required_conditions'])
             require(step['step_id'] not in seen and set(step['dependencies']) <= seen, 'PLAN_DAG')
@@ -211,6 +242,18 @@ def validate_report(value, request):
                 require(binding['kind'] in {'parameter', 'step'}, 'PLAN_BINDING')
                 require(binding['ref'] in (ids if binding['kind'] == 'parameter' else seen), 'PLAN_BINDING_REFERENCE')
             seen.add(step['step_id'])
+        for check in plan.get('checks', []):
+            obj(check, 'check_id kind distance horizon'); string(check['check_id'])
+            require(check['kind'] == 'line_of_sight' and {check['distance'], check['horizon']} <= seen, 'PLAN_CHECK')
+        if 'requirement' in plan:
+            obj(plan['requirement'], 'quantity op value unit'); number(plan['requirement']['value'])
+            require(plan['requirement']['quantity'] == 'link_margin_db' and plan['requirement']['op'] == '>='
+                    and plan['requirement']['unit'] == 'dB', 'PLAN_REQUIREMENT')
+        if 'assumed' in plan:
+            strings(plan['assumed']); require(plan['assumed'] == plan['assumptions'][:len(plan['assumed'])], 'PLAN_ASSUMED')
+        if 'solve_if_unmet' in plan:
+            require('requirement' in plan and plan['solve_if_unmet'] in SOLVE_UNKNOWNS
+                    and plan['solve_if_unmet'] in plan['required_parameters'], 'PLAN_SOLVE')
     if value['execution_status'] == 'AWAITING_CONFIRMATION':
         require(plan is not None and bool(evidence_ids) and not value['conflicts'] and not value['missing_parameters'] and not value['questions'], 'PREMATURE_CONFIRMATION')
     return copy.deepcopy(value)

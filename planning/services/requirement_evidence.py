@@ -1,11 +1,16 @@
 """Versioned evidence from the existing catalog; no second retrieval index."""
 from planning.requirements_contract import digest
+from planning.knowledge.facts import fact_manifest
+from pathlib import Path
 
 
-def snapshot_for(cards):
+def snapshot_for(cards, root=None):
     catalog_hash = digest(cards)
-    return dict(snapshot_id='knowledge:' + catalog_hash, catalog_hash=catalog_hash,
-                source_manifest_hash=digest([{'id': c['id'], 'sources': c['sources']} for c in cards]),
+    root = Path(root) if root is not None else Path(__file__).resolve().parents[2]
+    sources = [{'id': c['id'], 'sources': c['sources']} for c in cards]
+    source_manifest_hash = digest({'formula_sources': sources, 'facts_and_documents': fact_manifest(root)})
+    return dict(snapshot_id='knowledge:' + digest({'catalog_hash': catalog_hash, 'source_manifest_hash': source_manifest_hash}), catalog_hash=catalog_hash,
+                source_manifest_hash=source_manifest_hash,
                 embedding_weights_hash=None, tokenizer_config_hash=None,
                 encoder_rule_version='not-used', retrieval_rule_version='requirements-lexical-v1')
 

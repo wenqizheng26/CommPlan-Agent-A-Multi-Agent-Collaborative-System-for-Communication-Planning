@@ -30,6 +30,13 @@ def identifier(value):
     require(type(value) is str and re.fullmatch(r'[A-Za-z0-9_-]{1,100}',value) is not None,'INVALID_ID')
 
 
+def review_context(conversation):
+    # What the user said in the last turns. The resulting text is already the reviewed request,
+    # so whole before/after copies would only crowd the local model's context window.
+    return [dict(turn=t['number'],kind=t['kind'],message=t.get('message','')[:120])
+            for t in (conversation or {}).get('turns',[])[-3:]]
+
+
 def validate_command(command):
     require(type(command) is dict,'COMMAND_OBJECT_REQUIRED')
     action=command.get('action')
@@ -81,9 +88,15 @@ class TaskService:
         # Long-lived per embedding model so warm vectors survive between commands.
         with self._retrieval_lock:
             if embedding_id not in self._retrieval:
-                path=self.registry.models[embedding_id].get('path') if embedding_id else None
+                model=self.registry.models[embedding_id] if embedding_id else {}
+                path=model.get('weights') or model.get('path')
+                options={}
+                if model.get('runtime')=='llama.cpp':
+                    from planning.retrieval.http_encoder import HTTPEncoder
+                    options['remote_encoder']=True
+                    options['encoder_factory']=lambda path: HTTPEncoder(model, self.root/'runtime/embedding-cache')
                 self._retrieval[embedding_id]=DefaultRetrievalService(self.root,load_catalog(self.root),
-                    embedding_id=embedding_id,embedding_path=path)
+                    embedding_id=embedding_id,embedding_path=path,**options)
             return self._retrieval[embedding_id]
 
     def warm_retrieval(self, settings=None):
@@ -230,9 +243,7 @@ class TaskService:
                 observe(observer,'knowledge','completed',caller='rag',operation='load_catalog')
             graph=build_planning_graph(agent,saver,cards,observer=observer,
                 pending_questions=[p['question'] for p in (conversation or {}).get('pending',[])],
-                review_context=[dict(turn_id=t['turn_id'],kind=t['kind'],message=t.get('message','')[:300],
-                    before=t.get('before',{}).get('raw_text','')[:300],after=t.get('after',{}).get('raw_text','')[:300])
-                    for t in (conversation or {}).get('turns',[])[-3:]],bindings=bindings)
+                review_context=review_context(conversation),bindings=bindings)
             config={'configurable':{'thread_id':f'{task_id}:r{rev}'},'recursion_limit':24}
             if action in {'create','edit','supplement','answer'}:
                 request=dict(schema_version='1.0.0',task_id=task_id,revision=rev,request_id=event_id,**next_input)
@@ -245,8 +256,8 @@ class TaskService:
                 require(current['status']=='AWAITING_CONFIRMATION','NOT_CONFIRMABLE')
                 require(not conversation['pending'],'UNRESOLVED_SUPPLEMENT')
                 require(c['review_hash']==current['review']['review_hash'],'REVIEW_HASH_MISMATCH')
-                require(current['report']['knowledge_snapshot']==snapshot_for(cards),'KNOWLEDGE_CHANGED')
-                snapshot=confirm_review(current['review'],cards)
+                require(current['report']['knowledge_snapshot']==snapshot_for(cards,self.root),'KNOWLEDGE_CHANGED')
+                snapshot=confirm_review(current['review'],cards,self.root)
                 saved=graph.get_state(config)
                 require(saved.values['review']==current['review'] and saved.next==('human_confirmation',),'CHECKPOINT_STATE_MISMATCH')
                 output=graph.invoke(Command(resume={'action':'confirm','snapshot':snapshot}),config,durability='sync')

@@ -1,4 +1,5 @@
 """Bounded confirm/calculate/validate/publish graph with a durable human interrupt."""
+import copy
 from typing import TypedDict
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import interrupt
@@ -6,8 +7,11 @@ from planning.requirements_contract import require
 from planning.services.confirmation import review_for, validate_snapshot
 from planning.services import calculation
 from planning.agents.calculation import CalculationAgent
-from planning.agents.review import ReviewAgent, validate_assessment, REASONS
+from planning.agents.review import ReviewAgent, validate_assessment, DECISIONS, PUBLISHABLE, SUMMARY
 from planning.agents.role_model import LocalRoleSelector
+from planning.agents.planner import PlanningAgent
+from planning.services.requirement_validation import check_report
+from formula_rag.model import LocalSelector as ModelSelector
 from planning.agents.orchestrator import decide, MAX_CALCULATIONS
 from planning.workflow.requirements_graph import run_requirements, stamp
 from planning.workflow.activity import observe
@@ -54,8 +58,11 @@ def role_selector(agent, bindings, role):
 
 
 def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(), calculation_agent=None, review_agent=None,
-                         review_context=None, bindings=None):
-    calculation_agent = calculation_agent or CalculationAgent(role_selector(agent, bindings, 'compute_agent'))
+                         review_context=None, bindings=None, planning_agent=None):
+    # Confirmed plans execute directly. The model's calculation work happens before confirmation.
+    calculation_agent = calculation_agent or CalculationAgent(False)
+    selector=role_selector(agent,bindings,'compute_agent') if isinstance(getattr(agent,'selector',None),ModelSelector) else False
+    planning_agent=planning_agent or PlanningAgent(selector,getattr(agent,'root',None))
     review_agent = review_agent or ReviewAgent(role_selector(agent, bindings, 'validator_agent'), context=review_context)
     def propose(state):
         observe(observer,'requirements','started',caller='orchestrator')
@@ -64,6 +71,15 @@ def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(
         if pending_questions and report and status!='FAILED':
             report['questions']=list(dict.fromkeys(report['questions']+list(pending_questions)))
             status=report['execution_status']='AWAITING_INPUT'
+        if status=='AWAITING_CONFIRMATION':
+            report['calculation_plan_proposal'],report['planning_role']=planning_agent.run(state['request'],report,cards,observer)
+            if report['planning_role']['mode']=='deterministic_fallback':
+                report['runtime_health']='degraded'
+            if isinstance(getattr(agent,'selector',None),ModelSelector):
+                mode=agent.retrieval_params.get('mode','lexical')
+                report['document_retrieval']=agent.retrieval.search(state['request']['raw_text'],top_k=4,top_n=3,
+                    mode=mode,filters={'source_type':'document_chunk'}).to_dict()
+            check_report(report,state['request'],cards,agent.root)
         observe(observer,'requirements','failed' if status=='FAILED' else 'completed',status=status,caller='orchestrator')
         if status in {'AWAITING_INPUT','NEEDS_MODEL'}:
             observe(observer,'supplement' if status=='AWAITING_INPUT' else 'gap','waiting',status=status)
@@ -80,7 +96,7 @@ def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(
             observe(observer,'confirmation','cancelled')
             return dict(status='CANCELLED',trace=trace(state,'human_confirmation','CANCELLED'))
         require(decision['action']=='confirm','INVALID_CONFIRM_ACTION')
-        snapshot = validate_snapshot(decision['snapshot'],state['review'],cards)
+        snapshot = validate_snapshot(decision['snapshot'],state['review'],cards,agent.root)
         observe(observer,'confirmation','completed',caller='requirements')
         return dict(confirmed_snapshot=snapshot,status='READY_TO_CALCULATE',trace=trace(state,'human_confirmation','CONFIRMED'))
 
@@ -91,7 +107,7 @@ def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(
         try:
             require(attempt <= MAX_CALCULATIONS, 'CALCULATION_BUDGET_EXHAUSTED')
             role = calculation_agent.run(state['confirmed_snapshot'], observer=observer)
-            result = calculation.execute(state['confirmed_snapshot'],state['review'],cards,role['proposal'],observer=observer,attempt=attempt)
+            result = calculation.execute(state['confirmed_snapshot'],state['review'],cards,role['proposal'],observer=observer,attempt=attempt,root=agent.root)
             observe(observer,'calculation','completed',caller='orchestrator')
             return dict(result=result,calculation_role=role,calculation_attempts=attempt,
                         calculation_roles=state.get('calculation_roles',[])+[dict(attempt=attempt,role=role)],
@@ -103,6 +119,12 @@ def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(
             output = failed(state,'calculation',exc)
             output.update(calculation_attempts=attempt,calculation_role=role,review_assessment=None,validations=[],
                 calculation_roles=state.get('calculation_roles',[])+[dict(attempt=attempt,role=role)])
+            if isinstance(exc, calculation.Blocked):
+                # Outside the free-space model's range (H2): the steps before the check stay visible, nothing after.
+                output['status'] = 'NEEDS_MODEL'
+                output['failure'].update(message=exc.message, details=dict(exc.details, steps=exc.steps),
+                    next_action='缩短距离或升高天线后重新确认；视距外的链路需要绕射或散射模型。')
+                return output
             # Only a tool transport failure is retryable. Model/schema/domain/storage
             # failures cannot use this route to bypass the existing hard gates.
             if role is not None and isinstance(exc,(TimeoutError,ConnectionError)):
@@ -126,8 +148,7 @@ def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(
         try:
             assessment = review_agent.run(state['result'], state['confirmed_snapshot'], observer=observer)
             decision = validate_assessment(assessment, state['result'], state['confirmed_snapshot'])['decision']
-            status = {'pass':'VALIDATING_REPORT','needs_input':'AWAITING_INPUT',
-                      'not_applicable':'NEEDS_MODEL','recalculate':'RECALCULATION_REQUESTED'}[decision]
+            status = 'VALIDATING_REPORT' if decision in PUBLISHABLE else 'NEEDS_MODEL'
             observe(observer,'review','completed',caller='orchestrator',decision=decision)
             return dict(review_assessment=assessment,review_history=state.get('review_history',[])+[assessment],
                         status=status,trace=trace(state,'review_result',decision.upper()))
@@ -153,12 +174,19 @@ def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(
     def publish(state):
         observe(observer,'publish','started',caller='validator_agent')
         try:
-            require(validate_assessment(state['review_assessment'],state['result'],state['confirmed_snapshot'])['decision']=='pass', 'REVIEW_NOT_PASSED')
+            proposal = validate_assessment(state['review_assessment'],state['result'],state['confirmed_snapshot'])
+            require(proposal['decision'] in PUBLISHABLE, 'REVIEW_NOT_PASSED')
             report = calculation.publish(state['result'],state['confirmed_snapshot'],state['validations'])
             assessment = state['review_assessment']
-            report['review'] = dict(assessment_hash=assessment['assessment_hash'],
-                decision=assessment['role']['proposal']['decision'], mode=assessment['role']['mode'],
-                summary=REASONS['pass'][1], fact_ids=assessment['role']['proposal']['fact_ids'])
+            withheld = [h['path'] for h in proposal['hidden']]
+            # The program's conclusion stays; the model's answer and notes sit beside it, each already past H4.
+            report['review'] = dict(assessment_hash=assessment['assessment_hash'], decision=proposal['decision'],
+                label=DECISIONS[proposal['decision']], mode=assessment['role']['mode'], summary=SUMMARY[proposal['decision']],
+                opinions=copy.deepcopy(proposal['opinions']), withheld=withheld)
+            report['answer'] = dict(text=proposal['answer'], mode=assessment['role']['mode'], withheld='answer' in withheld)
+            report['explanation'] = copy.deepcopy(proposal['steps'])
+            if state['confirmed_snapshot']['review']['report'].get('document_retrieval'):
+                report['document_evidence']=copy.deepcopy(assessment['facts'].get('documents',[]))
             report['component_modes'].update(calculation=state['calculation_role']['mode'],review=assessment['role']['mode'])
             report['component_modes']['orchestrator']='bounded_policy'
             if 'deterministic_fallback' in report['component_modes'].values(): report['runtime_health']='degraded'

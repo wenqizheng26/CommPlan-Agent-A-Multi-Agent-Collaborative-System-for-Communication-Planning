@@ -69,9 +69,26 @@ class RoleTests(unittest.TestCase):
                 ReviewAgent(None).run(result,self.snapshot)
             model.assert_not_called()
 
+    def test_document_numbers_cannot_be_laundered_into_an_answer(self):
+        from planning.agents.review import facts_for, accept, validate_proposal
+        from planning.agents.role_model import Rewrite
+        from planning.services.calculation import validate_result
+        result=self.result()
+        facts=facts_for(result,self.snapshot,validate_result(result,self.snapshot))
+        facts['documents']=[dict(id='doc:sample:s1-1',excerpt='Sample power 98765 dBm',title='Sample')]
+        output=dict(decision='caution',answer='发射功率为98765 dBm',steps=[],
+            opinions=[dict(kind='risk',text='实际传播仍需核对。',refs=['doc:sample:s1-1'])])
+        with self.assertRaises(Rewrite):accept(output,facts)
+        with self.assertRaisesRegex(ValueError,'REVIEW_NUMBERS'):
+            validate_proposal(dict(output,hidden=[]),facts)
+        output['answer']='该文档用于适用条件说明。'
+        output['opinions']=[dict(kind='risk',text='实际传播仍需核对。',refs=['doc:sample:s1-1'])]
+        self.assertFalse(accept(output,facts)['hidden'])
+
     def test_review_invalid_references_cannot_be_published_as_model_review(self):
         def selector(*args):
-            return dict(output=dict(decision='pass',reason_code='checks_passed',fact_ids=['invented']))
+            return dict(output=dict(decision='caution', answer='路径损耗为 98.42 dB。', steps=[],
+                                    opinions=[dict(kind='risk', text='需要核对。', refs=['invented'])]))
         result = self.result()
         assessment = ReviewAgent(selector).run(result,self.snapshot)
         self.assertEqual(assessment['role']['mode'],'deterministic_fallback')
@@ -80,34 +97,36 @@ class RoleTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'REVIEW_IDENTITY'):
             validate_assessment(assessment,result,self.snapshot)
 
-    def test_review_blocks_publication_and_preserves_readonly_result(self):
-        for decision, reason, fact, status in [
-            ('needs_input','assumptions_need_review','model_assumptions','AWAITING_INPUT'),
-            ('not_applicable','scope_needs_review','confirmed_scope','NEEDS_MODEL')]:
-            with self.subTest(decision=decision):
-                def selector(*args):
-                    return dict(output=dict(decision=decision,reason_code=reason,fact_ids=[fact]))
-                reviewer = ReviewAgent(selector)
-                with patch('planning.workflow.planning_graph.ReviewAgent',return_value=reviewer):
-                    done = self.service.apply(command('confirm',self.draft))['state']
-                self.assertEqual(done['status'],status)
-                self.assertIsNone(done['final_report'])
-                self.assertAlmostEqual(done['result']['outputs'][0]['value'],98.42059991327963)
-                self.assertEqual(done['review_assessment']['role']['mode'],'stub')
-                self.draft = self.service.apply(command())['state']
-
-    def test_review_recalculation_has_distinct_results_then_stops_at_budget(self):
+    def test_review_out_of_scope_blocks_publication_and_preserves_readonly_result(self):
         def selector(*args):
-            return dict(output=dict(decision='recalculate',reason_code='numerical_recheck',fact_ids=['numeric_checks']))
-        with patch('planning.workflow.planning_graph.ReviewAgent',return_value=ReviewAgent(selector)):
+            return dict(output=dict(decision='not_applicable', answer='所问的真实海面损耗超出自由空间基准。', steps=[],
+                                    opinions=[dict(kind='risk', text='自由空间基准不含海面反射。', refs=['scope'])]))
+        reviewer = ReviewAgent(selector)
+        with patch('planning.workflow.planning_graph.ReviewAgent',return_value=reviewer):
             done = self.service.apply(command('confirm',self.draft))['state']
-        self.assertEqual(done['status'],'FAILED')
-        self.assertEqual(done['calculation_attempts'],2)
-        self.assertEqual(done['failure']['code'],'CALCULATION_BUDGET_EXHAUSTED')
+        self.assertEqual(done['status'],'NEEDS_MODEL')
         self.assertIsNone(done['final_report'])
-        self.assertEqual(len({r['result_id'] for r in done['execution_results']}),2)
-        self.assertEqual(len(done['review_history']),2)
-        self.assertEqual(done['routing_decisions'][-1]['action'],'stop')
+        self.assertAlmostEqual(done['result']['outputs'][0]['value'],98.42059991327963)
+        self.assertEqual(done['review_assessment']['role']['mode'],'stub')
+
+    def test_a_caution_is_published_with_its_opinions_and_an_edit_clears_all_roles(self):
+        def selector(*args):
+            return dict(output=dict(decision='caution', answer='按自由空间基准，2 GHz、1 km 的路径损耗约为 98.42 dB。',
+                                    opinions=[dict(kind='assumption', text='结果不含海面反射与遮挡。', refs=['scope'])],
+                                    steps=[dict(id='step:fspl-step', note='按 ITU-R P.525-5 的自由空间公式计算。')]))
+        with patch('planning.workflow.planning_graph.ReviewAgent',return_value=ReviewAgent(selector)):
+            done=self.service.apply(command('confirm',self.draft))['state']
+        self.assertEqual(done['status'],'COMPLETED')
+        report = done['final_report']
+        self.assertEqual((report['review']['decision'], report['review']['label']), ('caution', '请核对'))
+        self.assertEqual(report['answer'], dict(text='按自由空间基准，2 GHz、1 km 的路径损耗约为 98.42 dB。', mode='stub', withheld=False))
+        self.assertEqual(report['explanation'][0]['id'], 'step:fspl-step')
+        self.assertTrue(report['conclusion'].startswith('按已确认自由空间条件'))
+        edited=self.service.apply(command('edit',done))['state']
+        for key in ('execution_results','review_history','calculation_roles','routing_decisions'):
+            self.assertEqual(edited[key],[])
+        self.assertIsNone(edited['review_assessment'])
+        self.assertEqual(edited['calculation_attempts'],0)
 
     def test_transient_tool_failure_recovers_once_and_replay_never_reexecutes(self):
         from formula_rag import core
@@ -137,25 +156,11 @@ class RoleTests(unittest.TestCase):
                 self.assertIsNone(done['final_report'])
             self.draft=self.service.apply(command())['state']
 
-    def test_recalculation_can_pass_and_current_revision_clears_all_roles(self):
-        answers=iter([dict(decision='recalculate',reason_code='numerical_recheck',fact_ids=['numeric_checks']),
-                      dict(decision='pass',reason_code='checks_passed',fact_ids=['confirmed_scope','numeric_checks'])])
-        with patch('planning.workflow.planning_graph.ReviewAgent',return_value=ReviewAgent(lambda *a:dict(output=next(answers)))):
-            done=self.service.apply(command('confirm',self.draft))['state']
-        self.assertEqual(done['status'],'COMPLETED')
-        self.assertEqual(done['final_report']['result_id'],done['execution_results'][1]['result_id'])
-        self.assertEqual(len(done['execution_results']),2)
-        edited=self.service.apply(command('edit',done))['state']
-        for key in ('execution_results','review_history','calculation_roles','routing_decisions'):
-            self.assertEqual(edited[key],[])
-        self.assertIsNone(edited['review_assessment'])
-        self.assertEqual(edited['calculation_attempts'],0)
-
     def test_orchestrator_cannot_publish_unreviewed_or_unconfirmed_state(self):
         with self.assertRaisesRegex(ValueError,'REVIEW_REQUIRED'):
             decide(dict(status='VALIDATING_REPORT',calculation_attempts=1))
         with self.assertRaisesRegex(ValueError,'CONFIRMATION_REQUIRED'):
-            decide(dict(status='RECALCULATION_REQUESTED',calculation_attempts=1))
+            decide(dict(status='RETRYABLE_CALCULATION_FAILURE',calculation_attempts=1))
 
 
 if __name__ == '__main__': unittest.main()

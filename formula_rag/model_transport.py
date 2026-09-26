@@ -20,17 +20,20 @@ def check_cancelled():
         raise ValueError('OPERATION_CANCELLED')
 
 
+def estimate_tokens(payload):
+    # Conservative character estimate, not an exact tokenizer claim. Leave room
+    # for template/schema and output within the model's configured context.
+    content=''.join(m['content'] for m in payload['messages'])
+    return sum(1.5 if ord(c)>127 else 0.34 for c in content)+payload.get('max_tokens',700)+500
+
+
 def chat(payload, url='http://127.0.0.1:18081/v1/chat/completions', *, timeout=30, context=4096):
     check_cancelled()
     deadline=operation_deadline.get()
     remaining=deadline-time.monotonic() if deadline else timeout
     if remaining<=0:
         raise ModelResponseError('MODEL_TIME_BUDGET', '本次操作的模型调用时间预算已用尽。')
-    # Conservative character estimate, not an exact tokenizer claim. Leave room
-    # for template/schema and output within the model's configured context.
-    content=''.join(m['content'] for m in payload['messages'])
-    estimate=sum(1.5 if ord(c)>127 else 0.34 for c in content)+payload.get('max_tokens',700)+500
-    if estimate>context:
+    if estimate_tokens(payload)>context:
         raise ModelResponseError('MODEL_CONTEXT_LIMIT', f'输入和输出预算可能超过本机 {context} token 上下文，请缩短当前描述。')
     request=urllib.request.Request(url,json.dumps(payload,ensure_ascii=False).encode(),{'Content-Type':'application/json'})
     opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))

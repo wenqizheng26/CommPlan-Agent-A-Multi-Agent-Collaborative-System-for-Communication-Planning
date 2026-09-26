@@ -19,14 +19,6 @@ def make_assets(root):
     executable.parent.mkdir(parents=True, exist_ok=True)
     model.write_bytes(b"model placeholder")
     executable.write_bytes(b"runtime placeholder")
-    (root / "runtime_config.json").write_text(
-        json.dumps({"generation": {
-            "path": "models/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf",
-            "executable": "runtime/llama.cpp-b10950/llama-server.exe",
-            "alias": "signal-formula-qwen3", "port": 18081,
-        }}),
-        encoding="utf-8",
-    )
     return root
 
 
@@ -36,6 +28,15 @@ class AssetRootTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.project = Path(self.temp.name) / "project"
         self.project.mkdir()
+        (self.project / 'config').mkdir()
+        (self.project / 'config' / 'models.json').write_text(json.dumps({
+            'schema_version': 1,
+            'defaults': {'chat': 'test-chat'},
+            'models': [{'id': 'test-chat', 'kind': 'chat', 'display_name': 'Test',
+                        'endpoint': 'http://127.0.0.1:18081', 'alias': 'signal-formula-qwen3',
+                        'context': 4096,
+                        'weights': 'models/signal-formula-qwen3/models/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf'}]
+        }), encoding='utf-8')
         self.local = make_assets(self.project / "models" / "signal-formula-qwen3")
         self.root = make_assets(self.project)
         self.legacy = make_assets(self.project.parent / "signal-formula-rag")
@@ -50,9 +51,9 @@ class AssetRootTests(unittest.TestCase):
         self.assertEqual(start_commplan.asset_root(), self.local.resolve())
 
     def test_root_and_legacy_remain_fallbacks(self):
-        (self.local / "runtime_config.json").unlink()
+        (self.local / "models/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf").unlink()
         self.assertEqual(start_commplan.asset_root(), self.root.resolve())
-        (self.root / "runtime_config.json").unlink()
+        (self.root / "models/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf").unlink()
         self.assertEqual(start_commplan.asset_root(), self.legacy.resolve())
 
     def test_explicit_path_overrides_environment_and_project(self):

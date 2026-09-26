@@ -1,0 +1,167 @@
+[
+  {
+    "id": "site:sim-a",
+    "type": "site",
+    "names": [
+      "A站",
+      "A岸站"
+    ],
+    "position": {
+      "lat": 30.05,
+      "lon": 122.1,
+      "datum": "WGS84",
+      "ground_m": 12,
+      "antenna_m": 30
+    },
+    "simulated": true,
+    "status": "verified",
+    "source": {
+      "title": "站址表（模拟）",
+      "path": "knowledge/documents/simulated/站址表.md",
+      "version": "M1-2026-09-25",
+      "locator": "表 1 行 site:sim-a"
+    },
+    "environment": "海岸"
+  },
+  {
+    "id": "site:sim-b",
+    "type": "site",
+    "names": [
+      "B站",
+      "B岛站"
+    ],
+    "position": {
+      "lat": 30.0229,
+      "lon": 122.4518,
+      "datum": "WGS84",
+      "ground_m": 25,
+      "antenna_m": 25
+    },
+    "simulated": true,
+    "status": "verified",
+    "source": {
+      "title": "站址表（模拟）",
+      "path": "knowledge/documents/simulated/站址表.md",
+      "version": "M1-2026-09-25",
+      "locator": "表 1 行 site:sim-b"
+    },
+    "environment": "海岛"
+  },
+  {
+    "id": "site:sim-c",
+    "type": "site",
+    "names": [
+      "C站"
+    ],
+    "position": {
+      "lat": 30.43,
+      "lon": 122.8678,
+      "datum": "WGS84",
+      "ground_m": 8,
+      "antenna_m": 20
+    },
+    "simulated": true,
+    "status": "verified",
+    "source": {
+      "title": "站址表（模拟）",
+      "path": "knowledge/documents/simulated/站址表.md",
+      "version": "M1-2026-09-25",
+      "locator": "表 1 行 site:sim-c"
+    },
+    "environment": "海岛"
+  },
+  {
+    "id": "site:sim-d",
+    "type": "site",
+    "names": [
+      "D站"
+    ],
+    "position": {
+      "lat": 29.881,
+      "lon": 122.0291,
+      "datum": "WGS84",
+      "ground_m": 15,
+      "antenna_m": null
+    },
+    "simulated": true,
+    "status": "verified",
+    "source": {
+      "title": "站址表（模拟）",
+      "path": "knowledge/documents/simulated/站址表.md",
+      "version": "M1-2026-09-25",
+      "locator": "表 1 行 site:sim-d"
+    },
+    "environment": "海岸"
+  },
+  {
+    "id": "site:sim-f",
+    "type": "site",
+    "names": [
+      "F站"
+    ],
+    "position": {
+      "lat": 29.9565,
+      "lon": 122.1623,
+      "datum": "WGS84",
+      "ground_m": 6,
+      "antenna_m": 15
+    },
+    "simulated": true,
+    "status": "verified",
+    "source": {
+      "title": "站址表（模拟）",
+      "path": "knowledge/documents/simulated/站址表.md",
+      "version": "M1-2026-09-25",
+      "locator": "表 1 行 site:sim-f"
+    },
+    "environment": "内陆"
+  },
+  {
+    "id": "site:sim-east",
+    "type": "site",
+    "names": [
+      "东港站",
+      "港口站"
+    ],
+    "position": {
+      "lat": 30.229,
+      "lon": 122.274,
+      "datum": "WGS84",
+      "ground_m": 5,
+      "antenna_m": 20
+    },
+    "simulated": true,
+    "status": "verified",
+    "source": {
+      "title": "站址表（模拟）",
+      "path": "knowledge/documents/simulated/站址表.md",
+      "version": "M1-2026-09-25",
+      "locator": "表 1 行 site:sim-east"
+    },
+    "environment": "港口"
+  },
+  {
+    "id": "site:sim-west",
+    "type": "site",
+    "names": [
+      "西港站",
+      "港口站"
+    ],
+    "position": {
+      "lat": 30.1488,
+      "lon": 121.9019,
+      "datum": "WGS84",
+      "ground_m": 5,
+      "antenna_m": 20
+    },
+    "simulated": true,
+    "status": "verified",
+    "source": {
+      "title": "站址表（模拟）",
+      "path": "knowledge/documents/simulated/站址表.md",
+      "version": "M1-2026-09-25",
+      "locator": "表 1 行 site:sim-west"
+    },
+    "environment": "港口"
+  }
+]

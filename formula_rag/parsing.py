@@ -106,8 +106,8 @@ def extract_request(text, overrides=None, condition=None, target=None, field_spe
         prefix = text[max(0, match.start()-12):match.start()]
         field = nearest_field(prefix)
         issues.append({'field': field, 'message': '范围或复合数字不能自动选值，请输入单个数值与单位；科学计数可写2e2', 'evidence': match.group()})
-    for clause in re.finditer(r'[^，,。；;\n]+', text):
-        if re.search(r'不是|不为|不用|不要用|不能用|未知|不确定|不知道|是否|例如|假如|如果', clause.group()) and re.search(rf'{NUMBER}\s*{UNITS}', clause.group(), re.I):
+    for clause in re.finditer(r'[^，,。；;\n？?！!]+', text):
+        if re.search(r'不是|不为|不用|不要用|不能用|未知|不确定|不知道|是否(?!满足|达标|达成|够用|可行|能通)|例如|假如|如果', clause.group()) and re.search(rf'{NUMBER}\s*{UNITS}', clause.group(), re.I):
             blocked.append(clause.span())
             field = next((k for k, (_, _, aliases) in FIELDS.items() if any(a in clause.group() for a in aliases)), None)
             issues.append({'field': field, 'message': '数值处于否定、未知或举例语境，请明确采用值', 'evidence': clause.group()})

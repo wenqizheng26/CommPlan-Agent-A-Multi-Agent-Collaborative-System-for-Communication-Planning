@@ -89,33 +89,34 @@ class SupplementTests(unittest.TestCase):
     def test_model_cannot_invent_parameters_or_resolve_ambiguous_input(self):
         from planning.services.supplement import merge_supplement
         current=self.create()
+        # The model can only point at numbers the program found; an unknown one falls back to the rules.
         def invented(*args):
-            return {'action':'apply','fields':[{'field':'frequency_ghz','evidence':'9GHz'}]}
+            return {'action':'apply','quantities':[{'id':'q9','field':'frequency_ghz'}]}
         request, conversation=merge_supplement(current,'频率改为3GHz','turn-1','llm',selector=invented)
         self.assertNotIn('9GHz',request['raw_text'])
         self.assertEqual(conversation['turns'][-1]['mode'],'deterministic_fallback')
+        # "也可以" keeps a change tentative even when the model says apply.
         def optimistic(*args):
-            return {'action':'apply','fields':[{'field':'frequency_ghz','evidence':'3GHz'}]}
+            return {'action':'apply','quantities':[{'id':'q1','field':'frequency_ghz'}]}
         request, conversation=merge_supplement(current,'频率也可以用3GHz','turn-2','llm',selector=optimistic)
         self.assertEqual(request['raw_text'],TEXT)
         self.assertTrue(conversation['pending'])
+        self.assertEqual(conversation['turns'][-1]['mode'],'llm_grounded')
 
     def test_local_selector_payload_has_apply_and_clarify_examples(self):
         from planning.services.supplement import LocalSupplementSelector
 
         current = '按自由空间基准计算，频率2GHz，距离1km，求路径损耗。'
         message = '频率改为3GHz'
-        candidates = [{'field': 'frequency_ghz', 'evidence': message}]
-        response = json.dumps({'action': 'apply', 'fields': candidates}, ensure_ascii=False)
+        quantities = [{'id': 'q1', 'text': '3GHz'}]
+        response = json.dumps({'action': 'apply', 'quantities': [{'id': 'q1', 'field': 'frequency_ghz'}]})
         with patch('planning.services.supplement.chat', return_value=({}, response)) as mocked:
-            self.assertEqual(LocalSupplementSelector()(current, message, candidates)['action'], 'apply')
+            self.assertEqual(LocalSupplementSelector()(current, message, quantities)['action'], 'apply')
         messages = mocked.call_args.args[0]['messages']
-        self.assertEqual([item['role'] for item in messages],
-                         ['system', 'user', 'assistant', 'user', 'assistant', 'user'])
-        examples = [json.loads(item['content']) for item in messages if item['role'] == 'assistant']
-        self.assertEqual([item['action'] for item in examples], ['apply', 'clarify'])
-        self.assertEqual(json.loads(messages[-1]['content']),
-                         {'current': current, 'supplement': message, 'candidates': candidates})
+        self.assertEqual([item['role'] for item in messages], ['system'] + ['user', 'assistant'] * 3 + ['user'])
+        examples = [json.loads(item['content'])['action'] for item in messages if item['role'] == 'assistant']
+        self.assertEqual(set(examples), {'apply', 'clarify'})
+        self.assertEqual(messages[-1]['content'], f'当前任务：{current}\n补充：{message}\n数量表：q1=3GHz')
 
     def test_service_llm_supplement_applies_or_keeps_pending_from_selector(self):
         message = '频率改为3GHz'
@@ -125,8 +126,9 @@ class SupplementTests(unittest.TestCase):
             with self.subTest(action=action):
                 current = self.create()
                 def chat_reply(payload, *args, **kwargs):
-                    fields = json.loads(payload['messages'][-1]['content'])['candidates']
-                    return {}, json.dumps({'action': action, 'fields': fields}, ensure_ascii=False)
+                    table = payload['messages'][-1]['content'].rsplit('数量表：', 1)[1]
+                    labels = [{'id': item.split('=')[0], 'field': 'frequency_ghz'} for item in table.split('；') if '=' in item]
+                    return {}, json.dumps({'action': action, 'quantities': labels}, ensure_ascii=False)
                 with patch('planning.services.supplement.chat', side_effect=chat_reply), \
                         patch('planning.workflow.task_service.LocalSelector', return_value=intent):
                     state = self.service.apply(command('supplement', current, message=message, mode='llm'))['state']

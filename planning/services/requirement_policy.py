@@ -1,13 +1,21 @@
-"""Shared scope policy for the single-link, one-way free-space entry point."""
+"""Shared scope policy for single-link, one-way plans over the supported cards."""
 import re
 from formula_rag.parsing import extract_request
 from planning.requirements_contract import require
+from planning.services.plans import TARGETS
+
+
+# A feasibility question is the model's reading of "link margin"; the rules have no keyword for it.
+FEASIBILITY = r'能(?:不能)?通|能否(?:打)?通|通不通|够不够|够用|行不行|可行吗|能否满足|能不能满足|是否满足|满不满足|能满足吗'
 
 
 def validate_target_semantics(model):
     for target in model.get('targets', []):
+        require(not re.fullmatch(r'\s*(?:解释|介绍|什么是|定义|说明什么是|解释什么是).*(?:余量|损耗|功率|电平)[。？?]?\s*',target['evidence']),'MODEL_TARGET_CONCEPT')
         parsed = extract_request(target['evidence'])
-        require(target['id'] == 'fspl_ghz' and parsed['targets'] == ['fspl_ghz']
+        feasible = target['id'] == 'link_margin' and re.search(FEASIBILITY, target['evidence'])
+        margin_goal=(target['id']=='link_margin' and bool(re.search(r'(?:要求|需要|希望|至少|不低于|要留|留出|得有).{0,18}余量|余量.{0,18}(?:要求|需要|至少|不低于|达到|达标|[0-9]+\s*dB)',target['evidence'],re.I)))
+        require(target['id'] in TARGETS and (parsed['targets'] == [target['id']] or bool(feasible) or margin_goal)
                 and not parsed['unsupported_targets'], 'MODEL_TARGET_SEMANTICS')
 
 
@@ -26,7 +34,7 @@ def intent_conflict(request, parsed):
 
 
 def outside_scope(text, parsed, targets, conditions):
-    if parsed['unsupported_targets'] or any(t != 'fspl_ghz' for t in targets):
+    if parsed['unsupported_targets'] or any(t not in TARGETS for t in targets):
         return True
     for clause in re.split(r'[，,。；;\n]', text):
         # Only a complete, unambiguous disclaimer is exempt. A negative word

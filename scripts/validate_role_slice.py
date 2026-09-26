@@ -62,15 +62,14 @@ def main():
         with patch('formula_rag.core.evaluate',side_effect=wrong_number):
             state=run(command('confirm',draft))
         record('independent_numeric_gate',state,'FAILED','tool returns a value 20 dB too high')
-        for decision,reason,fact,status in [
-            ('needs_input','assumptions_need_review','model_assumptions','AWAITING_INPUT'),
-            ('not_applicable','scope_needs_review','confirmed_scope','NEEDS_MODEL'),
-            ('recalculate','numerical_recheck','numeric_checks','FAILED')]:
+        for decision,status in [('caution','COMPLETED'),('not_applicable','NEEDS_MODEL')]:
             draft=run(command())
-            def selector(*args): return dict(output=dict(decision=decision,reason_code=reason,fact_ids=[fact]))
+            output=dict(decision=decision,answer='按自由空间基准，路径损耗约为 98.42 dB。',steps=[],
+                        opinions=[dict(kind='risk',text='自由空间基准不含海面反射与遮挡。',refs=['scope'])])
+            def selector(*args): return dict(output=output)
             with patch('planning.workflow.planning_graph.ReviewAgent',return_value=ReviewAgent(selector)):
                 state=run(command('confirm',draft))
-            assert state['final_report'] is None
+            assert (state['final_report'] is None)==(status!='COMPLETED')
             record('review_'+decision,state,status,'structured reviewer stub; not a live model result')
     output=ROOT/'docs/codex/evidence/role-acceptance-matrix-20260921.json'
     output.write_text(json.dumps(dict(at=stamp(),cases=records),ensure_ascii=False,indent=2),encoding='utf-8')

@@ -1,0 +1,2227 @@
+{
+  "embedding": "qwen3-embedding-0.6b-q8",
+  "revision": "370f27d7550e0def9b39c1f16d3fbaa13aa67728",
+  "warm_status": "ready",
+  "warm_seconds": 158.1892103,
+  "documents": {
+    "documents": [
+      {
+        "doc_id": "itu-p525-5",
+        "title": "ITU-R P.525-5 Calculation of free-space attenuation",
+        "status": "ready",
+        "chunks": 18
+      },
+      {
+        "doc_id": "itu-p530-19",
+        "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+        "status": "ready",
+        "chunks": 246
+      },
+      {
+        "doc_id": "itu-p453-14",
+        "title": "ITU-R P.453-14 The radio refractive index: its formula and refractivity data",
+        "status": "ready",
+        "chunks": 45
+      },
+      {
+        "doc_id": "sim-sites",
+        "title": "站址表",
+        "status": "ready",
+        "chunks": 3
+      },
+      {
+        "doc_id": "sim-xx100",
+        "title": "XX-100 手册",
+        "status": "ready",
+        "chunks": 3
+      },
+      {
+        "doc_id": "sim-xx200",
+        "title": "XX-200 手册",
+        "status": "ready",
+        "chunks": 3
+      }
+    ],
+    "chunks": 318
+  },
+  "results": [
+    {
+      "hits": [
+        {
+          "id": "doc:itu-p525-5:p3-2",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.525-5 Calculation of free-space attenuation",
+          "source": {
+            "title": "ITU-R P.525-5 Calculation of free-space attenuation",
+            "uri": "https://www.itu.int/rec/R-REC-P.525-5-202411-I/en",
+            "version": "P.525-5",
+            "doc_id": "itu-p525-5",
+            "locator": "page 3, chunk 2",
+            "sha256": "55ff9bf5bb4534b91863fd84d760fe689e2f969b91db0ea786717fd078df1da5",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.382029,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:itu-p525-5:p3-1",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.525-5 Calculation of free-space attenuation",
+          "source": {
+            "title": "ITU-R P.525-5 Calculation of free-space attenuation",
+            "uri": "https://www.itu.int/rec/R-REC-P.525-5-202411-I/en",
+            "version": "P.525-5",
+            "doc_id": "itu-p525-5",
+            "locator": "page 3, chunk 1",
+            "sha256": "55ff9bf5bb4534b91863fd84d760fe689e2f969b91db0ea786717fd078df1da5",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.309839,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:itu-p525-5:p6-2",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.525-5 Calculation of free-space attenuation",
+          "source": {
+            "title": "ITU-R P.525-5 Calculation of free-space attenuation",
+            "uri": "https://www.itu.int/rec/R-REC-P.525-5-202411-I/en",
+            "version": "P.525-5",
+            "doc_id": "itu-p525-5",
+            "locator": "page 6, chunk 2",
+            "sha256": "55ff9bf5bb4534b91863fd84d760fe689e2f969b91db0ea786717fd078df1da5",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.298142,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:itu-p525-5:p3-2",
+        "doc:itu-p525-5:p3-1",
+        "doc:itu-p525-5:p6-2"
+      ],
+      "mode_requested": "lexical",
+      "mode_used": "lexical",
+      "degraded": false,
+      "embedding_model_id": null,
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 13.53,
+        "fusion": 0.31,
+        "total": 13.92
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "自由空间损耗公式"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:itu-p525-5:p6-2",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.525-5 Calculation of free-space attenuation",
+          "source": {
+            "title": "ITU-R P.525-5 Calculation of free-space attenuation",
+            "uri": "https://www.itu.int/rec/R-REC-P.525-5-202411-I/en",
+            "version": "P.525-5",
+            "doc_id": "itu-p525-5",
+            "locator": "page 6, chunk 2",
+            "sha256": "55ff9bf5bb4534b91863fd84d760fe689e2f969b91db0ea786717fd078df1da5",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.298142,
+            "dense": 0.718933,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:itu-p525-5:p6-1",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.525-5 Calculation of free-space attenuation",
+          "source": {
+            "title": "ITU-R P.525-5 Calculation of free-space attenuation",
+            "uri": "https://www.itu.int/rec/R-REC-P.525-5-202411-I/en",
+            "version": "P.525-5",
+            "doc_id": "itu-p525-5",
+            "locator": "page 6, chunk 1",
+            "sha256": "55ff9bf5bb4534b91863fd84d760fe689e2f969b91db0ea786717fd078df1da5",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.167542,
+            "dense": 0.712301,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:itu-p525-5:p3-1",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.525-5 Calculation of free-space attenuation",
+          "source": {
+            "title": "ITU-R P.525-5 Calculation of free-space attenuation",
+            "uri": "https://www.itu.int/rec/R-REC-P.525-5-202411-I/en",
+            "version": "P.525-5",
+            "doc_id": "itu-p525-5",
+            "locator": "page 3, chunk 1",
+            "sha256": "55ff9bf5bb4534b91863fd84d760fe689e2f969b91db0ea786717fd078df1da5",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.309839,
+            "dense": 0.705063,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:itu-p525-5:p6-2",
+        "doc:itu-p525-5:p6-1",
+        "doc:itu-p525-5:p3-1"
+      ],
+      "mode_requested": "dense",
+      "mode_used": "dense",
+      "degraded": false,
+      "embedding_model_id": "qwen3-embedding-0.6b-q8",
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 11.03,
+        "dense": 404.67,
+        "fusion": 0.3,
+        "total": 416.11
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "自由空间损耗公式"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:itu-p525-5:p6-2",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.525-5 Calculation of free-space attenuation",
+          "source": {
+            "title": "ITU-R P.525-5 Calculation of free-space attenuation",
+            "uri": "https://www.itu.int/rec/R-REC-P.525-5-202411-I/en",
+            "version": "P.525-5",
+            "doc_id": "itu-p525-5",
+            "locator": "page 6, chunk 2",
+            "sha256": "55ff9bf5bb4534b91863fd84d760fe689e2f969b91db0ea786717fd078df1da5",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.298142,
+            "dense": 0.718665,
+            "fused": 0.032266,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:itu-p525-5:p3-1",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.525-5 Calculation of free-space attenuation",
+          "source": {
+            "title": "ITU-R P.525-5 Calculation of free-space attenuation",
+            "uri": "https://www.itu.int/rec/R-REC-P.525-5-202411-I/en",
+            "version": "P.525-5",
+            "doc_id": "itu-p525-5",
+            "locator": "page 3, chunk 1",
+            "sha256": "55ff9bf5bb4534b91863fd84d760fe689e2f969b91db0ea786717fd078df1da5",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.309839,
+            "dense": 0.70463,
+            "fused": 0.032002,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:itu-p525-5:p3-2",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.525-5 Calculation of free-space attenuation",
+          "source": {
+            "title": "ITU-R P.525-5 Calculation of free-space attenuation",
+            "uri": "https://www.itu.int/rec/R-REC-P.525-5-202411-I/en",
+            "version": "P.525-5",
+            "doc_id": "itu-p525-5",
+            "locator": "page 3, chunk 2",
+            "sha256": "55ff9bf5bb4534b91863fd84d760fe689e2f969b91db0ea786717fd078df1da5",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.382029,
+            "dense": 0.679147,
+            "fused": 0.031319,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:itu-p525-5:p6-2",
+        "doc:itu-p525-5:p3-1",
+        "doc:itu-p525-5:p3-2"
+      ],
+      "mode_requested": "hybrid",
+      "mode_used": "hybrid",
+      "degraded": false,
+      "embedding_model_id": "qwen3-embedding-0.6b-q8",
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 12.27,
+        "dense": 88.6,
+        "fusion": 0.84,
+        "total": 101.8
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "自由空间损耗公式"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:itu-p530-19:p47-6",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 47, chunk 6",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.333333,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:itu-p530-19:p41-4",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 41, chunk 4",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.322031,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:itu-p530-19:p1-1",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 1, chunk 1",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.307771,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:itu-p530-19:p47-6",
+        "doc:itu-p530-19:p41-4",
+        "doc:itu-p530-19:p1-1"
+      ],
+      "mode_requested": "lexical",
+      "mode_used": "lexical",
+      "degraded": false,
+      "embedding_model_id": null,
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 15.13,
+        "fusion": 0.41,
+        "total": 15.62
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "视距与等效地球半径"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:itu-p530-19:p44-1",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 44, chunk 1",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.245217,
+            "dense": 0.571448,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:itu-p530-19:p43-4",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 43, chunk 4",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.277372,
+            "dense": 0.547661,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:itu-p530-19:p46-2",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 46, chunk 2",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.188824,
+            "dense": 0.5157,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:itu-p530-19:p44-1",
+        "doc:itu-p530-19:p43-4",
+        "doc:itu-p530-19:p46-2"
+      ],
+      "mode_requested": "dense",
+      "mode_used": "dense",
+      "degraded": false,
+      "embedding_model_id": "qwen3-embedding-0.6b-q8",
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 15.07,
+        "dense": 187.64,
+        "fusion": 0.35,
+        "total": 203.13
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "视距与等效地球半径"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:itu-p530-19:p47-6",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 47, chunk 6",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.333333,
+            "dense": 0.493568,
+            "fused": 0.030886,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:itu-p530-19:p43-4",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 43, chunk 4",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.277372,
+            "dense": 0.547376,
+            "fused": 0.02895,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:itu-p530-19:p23-5",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 23, chunk 5",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.290957,
+            "dense": 0.494839,
+            "fused": 0.028405,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:itu-p530-19:p47-6",
+        "doc:itu-p530-19:p43-4",
+        "doc:itu-p530-19:p23-5"
+      ],
+      "mode_requested": "hybrid",
+      "mode_used": "hybrid",
+      "degraded": false,
+      "embedding_model_id": "qwen3-embedding-0.6b-q8",
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 11.71,
+        "dense": 84.69,
+        "fusion": 0.71,
+        "total": 97.17
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "视距与等效地球半径"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:itu-p530-19:p44-1",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 44, chunk 1",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.198715,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:itu-p530-19:p7-2",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 7, chunk 2",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.154876,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:itu-p530-19:p42-2",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 42, chunk 2",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.1476,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:itu-p530-19:p44-1",
+        "doc:itu-p530-19:p7-2",
+        "doc:itu-p530-19:p42-2"
+      ],
+      "mode_requested": "lexical",
+      "mode_used": "lexical",
+      "degraded": false,
+      "embedding_model_id": null,
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 10.12,
+        "fusion": 0.28,
+        "total": 10.45
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "k 因子取值"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:itu-p530-19:p44-1",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 44, chunk 1",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.198715,
+            "dense": 0.542379,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:itu-p530-19:p62-2",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 62, chunk 2",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.099136,
+            "dense": 0.518435,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:itu-p530-19:p9-1",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 9, chunk 1",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.06656,
+            "dense": 0.518193,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:itu-p530-19:p44-1",
+        "doc:itu-p530-19:p62-2",
+        "doc:itu-p530-19:p9-1"
+      ],
+      "mode_requested": "dense",
+      "mode_used": "dense",
+      "degraded": false,
+      "embedding_model_id": "qwen3-embedding-0.6b-q8",
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 10.41,
+        "dense": 220.69,
+        "fusion": 0.3,
+        "total": 231.49
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "k 因子取值"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:itu-p530-19:p44-1",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 44, chunk 1",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.198715,
+            "dense": 0.542551,
+            "fused": 0.032787,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:itu-p530-19:p62-2",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 62, chunk 2",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.099136,
+            "dense": 0.518524,
+            "fused": 0.030835,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:itu-p530-19:p11-3",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 11, chunk 3",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.097029,
+            "dense": 0.499357,
+            "fused": 0.029911,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:itu-p530-19:p44-1",
+        "doc:itu-p530-19:p62-2",
+        "doc:itu-p530-19:p11-3"
+      ],
+      "mode_requested": "hybrid",
+      "mode_used": "hybrid",
+      "degraded": false,
+      "embedding_model_id": "qwen3-embedding-0.6b-q8",
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 12.23,
+        "dense": 73.45,
+        "fusion": 0.83,
+        "total": 86.59
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "k 因子取值"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:itu-p530-19:p10-3",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 10, chunk 3",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.137199,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:itu-p530-19:p53-3",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 53, chunk 3",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.134067,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:itu-p530-19:p42-3",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 42, chunk 3",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.122769,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:itu-p530-19:p10-3",
+        "doc:itu-p530-19:p53-3",
+        "doc:itu-p530-19:p42-3"
+      ],
+      "mode_requested": "lexical",
+      "mode_used": "lexical",
+      "degraded": false,
+      "embedding_model_id": null,
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 10.0,
+        "fusion": 0.23,
+        "total": 10.27
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "海面反射与多径衰落"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:itu-p530-19:p45-3",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 45, chunk 3",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.053403,
+            "dense": 0.647341,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:itu-p530-19:p53-3",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 53, chunk 3",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.134067,
+            "dense": 0.62117,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:itu-p530-19:p54-4",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 54, chunk 4",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.079845,
+            "dense": 0.619447,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:itu-p530-19:p45-3",
+        "doc:itu-p530-19:p53-3",
+        "doc:itu-p530-19:p54-4"
+      ],
+      "mode_requested": "dense",
+      "mode_used": "dense",
+      "degraded": false,
+      "embedding_model_id": "qwen3-embedding-0.6b-q8",
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 10.21,
+        "dense": 210.0,
+        "fusion": 0.36,
+        "total": 220.67
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "海面反射与多径衰落"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:itu-p530-19:p53-3",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 53, chunk 3",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.134067,
+            "dense": 0.621006,
+            "fused": 0.032258,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:itu-p530-19:p10-5",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 10, chunk 5",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.122474,
+            "dense": 0.599155,
+            "fused": 0.030118,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:itu-p530-19:p54-5",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 54, chunk 5",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.08969,
+            "dense": 0.609032,
+            "fused": 0.030118,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:itu-p530-19:p53-3",
+        "doc:itu-p530-19:p10-5",
+        "doc:itu-p530-19:p54-5"
+      ],
+      "mode_requested": "hybrid",
+      "mode_used": "hybrid",
+      "degraded": false,
+      "embedding_model_id": "qwen3-embedding-0.6b-q8",
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 19.71,
+        "dense": 85.43,
+        "fusion": 0.99,
+        "total": 106.23
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "海面反射与多径衰落"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:itu-p530-19:p50-5",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 50, chunk 5",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.157135,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:itu-p530-19:p16-3",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 16, chunk 3",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.125093,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:itu-p530-19:p39-2",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 39, chunk 2",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.120247,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:itu-p530-19:p50-5",
+        "doc:itu-p530-19:p16-3",
+        "doc:itu-p530-19:p39-2"
+      ],
+      "mode_requested": "lexical",
+      "mode_used": "lexical",
+      "degraded": false,
+      "embedding_model_id": null,
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 16.28,
+        "fusion": 0.39,
+        "total": 16.75
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "衰落余量"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:itu-p530-19:p62-1",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 62, chunk 1",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.0354,
+            "dense": 0.556213,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:itu-p530-19:p16-3",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 16, chunk 3",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.125093,
+            "dense": 0.555381,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:itu-p530-19:p12-4",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 12, chunk 4",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.058926,
+            "dense": 0.554839,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:itu-p530-19:p62-1",
+        "doc:itu-p530-19:p16-3",
+        "doc:itu-p530-19:p12-4"
+      ],
+      "mode_requested": "dense",
+      "mode_used": "dense",
+      "degraded": false,
+      "embedding_model_id": "qwen3-embedding-0.6b-q8",
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 14.71,
+        "dense": 184.32,
+        "fusion": 0.38,
+        "total": 199.52
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "衰落余量"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:itu-p530-19:p16-3",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 16, chunk 3",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.125093,
+            "dense": 0.556653,
+            "fused": 0.032258,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:itu-p530-19:p50-5",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 50, chunk 5",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.157135,
+            "dense": 0.512481,
+            "fused": 0.030092,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:itu-p530-19:p12-4",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 12, chunk 4",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.058926,
+            "dense": 0.555683,
+            "fused": 0.029387,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:itu-p530-19:p16-3",
+        "doc:itu-p530-19:p50-5",
+        "doc:itu-p530-19:p12-4"
+      ],
+      "mode_requested": "hybrid",
+      "mode_used": "hybrid",
+      "degraded": false,
+      "embedding_model_id": "qwen3-embedding-0.6b-q8",
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 21.18,
+        "dense": 88.82,
+        "fusion": 0.85,
+        "total": 110.95
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "衰落余量"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:sim-sites:s2-1",
+          "source_type": "document_chunk",
+          "title": "站址表",
+          "source": {
+            "title": "站址表",
+            "uri": "knowledge/documents/simulated/站址表.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-sites",
+            "locator": "站址表（模拟） / 表 1：WGS84 站点资料, chunk 1",
+            "sha256": "2b776c0d45d1773baf28c34c2f44ac02d94b799fd56ad2cc5db922b0245cd0e8",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.175224,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:itu-p530-19:p13-2",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 13, chunk 2",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.173916,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:itu-p530-19:p21-3",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 21, chunk 3",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.163075,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:sim-sites:s2-1",
+        "doc:itu-p530-19:p13-2",
+        "doc:itu-p530-19:p21-3"
+      ],
+      "mode_requested": "lexical",
+      "mode_used": "lexical",
+      "degraded": false,
+      "embedding_model_id": null,
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 16.09,
+        "fusion": 0.42,
+        "total": 16.78
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "A站坐标与天线高度"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:sim-sites:s2-1",
+          "source_type": "document_chunk",
+          "title": "站址表",
+          "source": {
+            "title": "站址表",
+            "uri": "knowledge/documents/simulated/站址表.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-sites",
+            "locator": "站址表（模拟） / 表 1：WGS84 站点资料, chunk 1",
+            "sha256": "2b776c0d45d1773baf28c34c2f44ac02d94b799fd56ad2cc5db922b0245cd0e8",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.175224,
+            "dense": 0.688702,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:sim-sites:s0-1",
+          "source_type": "document_chunk",
+          "title": "站址表",
+          "source": {
+            "title": "站址表",
+            "uri": "knowledge/documents/simulated/站址表.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-sites",
+            "locator": "正文, chunk 1",
+            "sha256": "2b776c0d45d1773baf28c34c2f44ac02d94b799fd56ad2cc5db922b0245cd0e8",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.124035,
+            "dense": 0.623602,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:itu-p530-19:p43-4",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 43, chunk 4",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.0,
+            "dense": 0.510384,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:sim-sites:s2-1",
+        "doc:sim-sites:s0-1",
+        "doc:itu-p530-19:p43-4"
+      ],
+      "mode_requested": "dense",
+      "mode_used": "dense",
+      "degraded": false,
+      "embedding_model_id": "qwen3-embedding-0.6b-q8",
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 17.39,
+        "dense": 201.36,
+        "fusion": 0.36,
+        "total": 219.23
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "A站坐标与天线高度"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:sim-sites:s2-1",
+          "source_type": "document_chunk",
+          "title": "站址表",
+          "source": {
+            "title": "站址表",
+            "uri": "knowledge/documents/simulated/站址表.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-sites",
+            "locator": "站址表（模拟） / 表 1：WGS84 站点资料, chunk 1",
+            "sha256": "2b776c0d45d1773baf28c34c2f44ac02d94b799fd56ad2cc5db922b0245cd0e8",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.175224,
+            "dense": 0.689113,
+            "fused": 0.032787,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:sim-sites:s0-1",
+          "source_type": "document_chunk",
+          "title": "站址表",
+          "source": {
+            "title": "站址表",
+            "uri": "knowledge/documents/simulated/站址表.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-sites",
+            "locator": "正文, chunk 1",
+            "sha256": "2b776c0d45d1773baf28c34c2f44ac02d94b799fd56ad2cc5db922b0245cd0e8",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.124035,
+            "dense": 0.624348,
+            "fused": 0.031281,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:itu-p530-19:p54-3",
+          "source_type": "document_chunk",
+          "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+          "source": {
+            "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+            "version": "P.530-19",
+            "doc_id": "itu-p530-19",
+            "locator": "page 54, chunk 3",
+            "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+            "simulated": false
+          },
+          "scores": {
+            "lexical": 0.106362,
+            "dense": 0.442124,
+            "fused": 0.027783,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:sim-sites:s2-1",
+        "doc:sim-sites:s0-1",
+        "doc:itu-p530-19:p54-3"
+      ],
+      "mode_requested": "hybrid",
+      "mode_used": "hybrid",
+      "degraded": false,
+      "embedding_model_id": "qwen3-embedding-0.6b-q8",
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 13.4,
+        "dense": 94.74,
+        "fusion": 0.93,
+        "total": 109.15
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "A站坐标与天线高度"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:sim-xx100:s1-1",
+          "source_type": "document_chunk",
+          "title": "XX-100 手册",
+          "source": {
+            "title": "XX-100 手册",
+            "uri": "knowledge/documents/simulated/XX-100 手册.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-xx100",
+            "locator": "XX-100 手册（模拟）, chunk 1",
+            "sha256": "74cd56505d040050e59ecaf9da5cdace04514984568780d0f90cdd1cef8c97c5",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.334497,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:sim-xx200:s2-1",
+          "source_type": "document_chunk",
+          "title": "XX-200 手册",
+          "source": {
+            "title": "XX-200 手册",
+            "uri": "knowledge/documents/simulated/XX-200 手册.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-xx200",
+            "locator": "XX-200 手册（模拟） / §1 规格表, chunk 1",
+            "sha256": "d79d0c9e04cfb09dcc2a0900e2432a4ac988373e2c457104e74a58d4e4b05953",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.275946,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:sim-xx100:s2-1",
+          "source_type": "document_chunk",
+          "title": "XX-100 手册",
+          "source": {
+            "title": "XX-100 手册",
+            "uri": "knowledge/documents/simulated/XX-100 手册.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-xx100",
+            "locator": "XX-100 手册（模拟） / §1 规格表, chunk 1",
+            "sha256": "74cd56505d040050e59ecaf9da5cdace04514984568780d0f90cdd1cef8c97c5",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.227251,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:sim-xx100:s1-1",
+        "doc:sim-xx200:s2-1",
+        "doc:sim-xx100:s2-1"
+      ],
+      "mode_requested": "lexical",
+      "mode_used": "lexical",
+      "degraded": false,
+      "embedding_model_id": null,
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 14.87,
+        "fusion": 0.47,
+        "total": 15.42
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "XX-100 发射功率"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:sim-xx100:s2-1",
+          "source_type": "document_chunk",
+          "title": "XX-100 手册",
+          "source": {
+            "title": "XX-100 手册",
+            "uri": "knowledge/documents/simulated/XX-100 手册.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-xx100",
+            "locator": "XX-100 手册（模拟） / §1 规格表, chunk 1",
+            "sha256": "74cd56505d040050e59ecaf9da5cdace04514984568780d0f90cdd1cef8c97c5",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.227251,
+            "dense": 0.823433,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:sim-xx200:s2-1",
+          "source_type": "document_chunk",
+          "title": "XX-200 手册",
+          "source": {
+            "title": "XX-200 手册",
+            "uri": "knowledge/documents/simulated/XX-200 手册.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-xx200",
+            "locator": "XX-200 手册（模拟） / §1 规格表, chunk 1",
+            "sha256": "d79d0c9e04cfb09dcc2a0900e2432a4ac988373e2c457104e74a58d4e4b05953",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.275946,
+            "dense": 0.705787,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:sim-xx100:s0-1",
+          "source_type": "document_chunk",
+          "title": "XX-100 手册",
+          "source": {
+            "title": "XX-100 手册",
+            "uri": "knowledge/documents/simulated/XX-100 手册.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-xx100",
+            "locator": "正文, chunk 1",
+            "sha256": "74cd56505d040050e59ecaf9da5cdace04514984568780d0f90cdd1cef8c97c5",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.209946,
+            "dense": 0.617959,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:sim-xx100:s2-1",
+        "doc:sim-xx200:s2-1",
+        "doc:sim-xx100:s0-1"
+      ],
+      "mode_requested": "dense",
+      "mode_used": "dense",
+      "degraded": false,
+      "embedding_model_id": "qwen3-embedding-0.6b-q8",
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 17.5,
+        "dense": 220.22,
+        "fusion": 0.58,
+        "total": 238.44
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "XX-100 发射功率"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:sim-xx100:s2-1",
+          "source_type": "document_chunk",
+          "title": "XX-100 手册",
+          "source": {
+            "title": "XX-100 手册",
+            "uri": "knowledge/documents/simulated/XX-100 手册.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-xx100",
+            "locator": "XX-100 手册（模拟） / §1 规格表, chunk 1",
+            "sha256": "74cd56505d040050e59ecaf9da5cdace04514984568780d0f90cdd1cef8c97c5",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.227251,
+            "dense": 0.824185,
+            "fused": 0.032266,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:sim-xx200:s2-1",
+          "source_type": "document_chunk",
+          "title": "XX-200 手册",
+          "source": {
+            "title": "XX-200 手册",
+            "uri": "knowledge/documents/simulated/XX-200 手册.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-xx200",
+            "locator": "XX-200 手册（模拟） / §1 规格表, chunk 1",
+            "sha256": "d79d0c9e04cfb09dcc2a0900e2432a4ac988373e2c457104e74a58d4e4b05953",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.275946,
+            "dense": 0.705571,
+            "fused": 0.032258,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:sim-xx100:s1-1",
+          "source_type": "document_chunk",
+          "title": "XX-100 手册",
+          "source": {
+            "title": "XX-100 手册",
+            "uri": "knowledge/documents/simulated/XX-100 手册.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-xx100",
+            "locator": "XX-100 手册（模拟）, chunk 1",
+            "sha256": "74cd56505d040050e59ecaf9da5cdace04514984568780d0f90cdd1cef8c97c5",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.334497,
+            "dense": 0.612892,
+            "fused": 0.032018,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:sim-xx100:s2-1",
+        "doc:sim-xx200:s2-1",
+        "doc:sim-xx100:s1-1"
+      ],
+      "mode_requested": "hybrid",
+      "mode_used": "hybrid",
+      "degraded": false,
+      "embedding_model_id": "qwen3-embedding-0.6b-q8",
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 28.99,
+        "dense": 115.69,
+        "fusion": 1.19,
+        "total": 146.01
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "XX-100 发射功率"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:sim-xx200:s1-1",
+          "source_type": "document_chunk",
+          "title": "XX-200 手册",
+          "source": {
+            "title": "XX-200 手册",
+            "uri": "knowledge/documents/simulated/XX-200 手册.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-xx200",
+            "locator": "XX-200 手册（模拟）, chunk 1",
+            "sha256": "d79d0c9e04cfb09dcc2a0900e2432a4ac988373e2c457104e74a58d4e4b05953",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.3698,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:sim-xx200:s2-1",
+          "source_type": "document_chunk",
+          "title": "XX-200 手册",
+          "source": {
+            "title": "XX-200 手册",
+            "uri": "knowledge/documents/simulated/XX-200 手册.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-xx200",
+            "locator": "XX-200 手册（模拟） / §1 规格表, chunk 1",
+            "sha256": "d79d0c9e04cfb09dcc2a0900e2432a4ac988373e2c457104e74a58d4e4b05953",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.283279,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:sim-xx200:s0-1",
+          "source_type": "document_chunk",
+          "title": "XX-200 手册",
+          "source": {
+            "title": "XX-200 手册",
+            "uri": "knowledge/documents/simulated/XX-200 手册.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-xx200",
+            "locator": "正文, chunk 1",
+            "sha256": "d79d0c9e04cfb09dcc2a0900e2432a4ac988373e2c457104e74a58d4e4b05953",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.232104,
+            "dense": null,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:sim-xx200:s1-1",
+        "doc:sim-xx200:s2-1",
+        "doc:sim-xx200:s0-1"
+      ],
+      "mode_requested": "lexical",
+      "mode_used": "lexical",
+      "degraded": false,
+      "embedding_model_id": null,
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 14.05,
+        "fusion": 0.41,
+        "total": 14.53
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "XX-200 接收灵敏度"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:sim-xx200:s2-1",
+          "source_type": "document_chunk",
+          "title": "XX-200 手册",
+          "source": {
+            "title": "XX-200 手册",
+            "uri": "knowledge/documents/simulated/XX-200 手册.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-xx200",
+            "locator": "XX-200 手册（模拟） / §1 规格表, chunk 1",
+            "sha256": "d79d0c9e04cfb09dcc2a0900e2432a4ac988373e2c457104e74a58d4e4b05953",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.283279,
+            "dense": 0.803806,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:sim-xx100:s2-1",
+          "source_type": "document_chunk",
+          "title": "XX-100 手册",
+          "source": {
+            "title": "XX-100 手册",
+            "uri": "knowledge/documents/simulated/XX-100 手册.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-xx100",
+            "locator": "XX-100 手册（模拟） / §1 规格表, chunk 1",
+            "sha256": "74cd56505d040050e59ecaf9da5cdace04514984568780d0f90cdd1cef8c97c5",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.228396,
+            "dense": 0.707335,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:sim-xx200:s1-1",
+          "source_type": "document_chunk",
+          "title": "XX-200 手册",
+          "source": {
+            "title": "XX-200 手册",
+            "uri": "knowledge/documents/simulated/XX-200 手册.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-xx200",
+            "locator": "XX-200 手册（模拟）, chunk 1",
+            "sha256": "d79d0c9e04cfb09dcc2a0900e2432a4ac988373e2c457104e74a58d4e4b05953",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.3698,
+            "dense": 0.565475,
+            "fused": null,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:sim-xx200:s2-1",
+        "doc:sim-xx100:s2-1",
+        "doc:sim-xx200:s1-1"
+      ],
+      "mode_requested": "dense",
+      "mode_used": "dense",
+      "degraded": false,
+      "embedding_model_id": "qwen3-embedding-0.6b-q8",
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 14.0,
+        "dense": 203.67,
+        "fusion": 0.37,
+        "total": 218.13
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "XX-200 接收灵敏度"
+    },
+    {
+      "hits": [
+        {
+          "id": "doc:sim-xx200:s2-1",
+          "source_type": "document_chunk",
+          "title": "XX-200 手册",
+          "source": {
+            "title": "XX-200 手册",
+            "uri": "knowledge/documents/simulated/XX-200 手册.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-xx200",
+            "locator": "XX-200 手册（模拟） / §1 规格表, chunk 1",
+            "sha256": "d79d0c9e04cfb09dcc2a0900e2432a4ac988373e2c457104e74a58d4e4b05953",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.283279,
+            "dense": 0.804254,
+            "fused": 0.032522,
+            "rerank": null
+          },
+          "rank": 1
+        },
+        {
+          "id": "doc:sim-xx200:s1-1",
+          "source_type": "document_chunk",
+          "title": "XX-200 手册",
+          "source": {
+            "title": "XX-200 手册",
+            "uri": "knowledge/documents/simulated/XX-200 手册.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-xx200",
+            "locator": "XX-200 手册（模拟）, chunk 1",
+            "sha256": "d79d0c9e04cfb09dcc2a0900e2432a4ac988373e2c457104e74a58d4e4b05953",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.3698,
+            "dense": 0.565053,
+            "fused": 0.032266,
+            "rerank": null
+          },
+          "rank": 2
+        },
+        {
+          "id": "doc:sim-xx100:s2-1",
+          "source_type": "document_chunk",
+          "title": "XX-100 手册",
+          "source": {
+            "title": "XX-100 手册",
+            "uri": "knowledge/documents/simulated/XX-100 手册.md",
+            "version": "2026-09-25",
+            "doc_id": "sim-xx100",
+            "locator": "XX-100 手册（模拟） / §1 规格表, chunk 1",
+            "sha256": "74cd56505d040050e59ecaf9da5cdace04514984568780d0f90cdd1cef8c97c5",
+            "simulated": true
+          },
+          "scores": {
+            "lexical": 0.228396,
+            "dense": 0.707859,
+            "fused": 0.031754,
+            "rerank": null
+          },
+          "rank": 3
+        }
+      ],
+      "used": [
+        "doc:sim-xx200:s2-1",
+        "doc:sim-xx200:s1-1",
+        "doc:sim-xx100:s2-1"
+      ],
+      "mode_requested": "hybrid",
+      "mode_used": "hybrid",
+      "degraded": false,
+      "embedding_model_id": "qwen3-embedding-0.6b-q8",
+      "reranker_id": null,
+      "latency_ms": {
+        "lexical": 18.51,
+        "dense": 85.07,
+        "fusion": 0.8,
+        "total": 104.51
+      },
+      "corpus": {
+        "size": 318,
+        "version": "b04506a928d1"
+      },
+      "top_k": 3,
+      "top_n": 3,
+      "diagnostics": [],
+      "query": "XX-200 接收灵敏度"
+    }
+  ],
+  "cache_bytes": 14838070,
+  "passed": true
+}
