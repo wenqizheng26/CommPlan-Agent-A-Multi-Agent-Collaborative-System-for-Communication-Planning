@@ -54,7 +54,7 @@ def probe_registry(registry):
     A reachable service wins: it may run from an external asset root."""
     seen, result = {}, {}
     for m in registry.models.values():
-        if m['kind'] != 'chat':
+        if m['kind'] != 'chat' and m.get('runtime') != 'llama.cpp':
             continue
         key = (m['endpoint'].rstrip('/'), m['alias'])
         if key not in seen:

@@ -45,3 +45,20 @@ def model_command(asset_root, cpu=False, *, registry_root=None):
     if not cpu and runtime.get('device', 'Vulkan1'):
         command.extend(['--device', runtime.get('device', 'Vulkan1')])
     return command
+
+
+def embedding_command(asset_root, *, registry_root=None):
+    registry = Registry(Path(registry_root) if registry_root else Path(__file__).resolve().parent)
+    model = registry.models[registry.defaults['embedding']]
+    paths = model_paths(asset_root, model)
+    if paths is None:
+        raise FileNotFoundError('向量模型权重或 llama-server 不在资源目录中')
+    endpoint = urlparse(model['endpoint'])
+    if endpoint.hostname != '127.0.0.1' or endpoint.port is None:
+        raise ValueError('模型启动器需要 127.0.0.1 上的固定端口')
+    executable, weights = paths
+    return [str(executable), '-m', str(weights), '--alias', model['alias'],
+            '--host', endpoint.hostname, '--port', str(endpoint.port), '--embedding', '--pooling', 'last',
+            '-c', str(model['context']), '-b', str(model['context']), '-ub', str(model['context']),
+            '-np', '1', '-ngl', '0', '-t', '6', '--offline', '--no-webui',
+            '--cors-origins', 'http://127.0.0.1:18080', '--no-cors-credentials']

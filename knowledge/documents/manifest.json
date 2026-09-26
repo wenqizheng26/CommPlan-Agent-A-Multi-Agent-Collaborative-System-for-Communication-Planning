@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "documents": [
+    {
+      "doc_id": "itu-p525-5",
+      "title": "ITU-R P.525-5 Calculation of free-space attenuation",
+      "version": "P.525-5",
+      "language": "en",
+      "source": "https://www.itu.int/rec/R-REC-P.525-5-202411-I/en",
+      "local_path": "knowledge/sources/itu/P.525-5.pdf",
+      "sha256": "55ff9bf5bb4534b91863fd84d760fe689e2f969b91db0ea786717fd078df1da5",
+      "redistributable": false,
+      "simulated": false
+    },
+    {
+      "doc_id": "itu-p530-19",
+      "title": "ITU-R P.530-19 Propagation data and prediction methods required for the design of terrestrial line-of-sight systems",
+      "version": "P.530-19",
+      "language": "en",
+      "source": "https://www.itu.int/rec/R-REC-P.530-19-202509-I/en",
+      "local_path": "knowledge/sources/itu/P.530-19.pdf",
+      "sha256": "07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2",
+      "redistributable": false,
+      "simulated": false
+    },
+    {
+      "doc_id": "itu-p453-14",
+      "title": "ITU-R P.453-14 The radio refractive index: its formula and refractivity data",
+      "version": "P.453-14",
+      "language": "en",
+      "source": "https://www.itu.int/rec/R-REC-P.453-14-201908-I/en",
+      "local_path": "knowledge/sources/itu/P.453-14.pdf",
+      "sha256": "fd163ef75cb4fd03848d4fe1fc0a043cb78e0edc164ba29a6bb69209204c17a0",
+      "redistributable": false,
+      "simulated": false
+    },
+    {
+      "doc_id": "sim-sites",
+      "title": "站址表",
+      "version": "2026-09-25",
+      "language": "zh",
+      "source": "knowledge/documents/simulated/站址表.md",
+      "local_path": "knowledge/documents/simulated/站址表.md",
+      "sha256": "2b776c0d45d1773baf28c34c2f44ac02d94b799fd56ad2cc5db922b0245cd0e8",
+      "redistributable": true,
+      "simulated": true
+    },
+    {
+      "doc_id": "sim-xx100",
+      "title": "XX-100 手册",
+      "version": "2026-09-25",
+      "language": "zh",
+      "source": "knowledge/documents/simulated/XX-100 手册.md",
+      "local_path": "knowledge/documents/simulated/XX-100 手册.md",
+      "sha256": "74cd56505d040050e59ecaf9da5cdace04514984568780d0f90cdd1cef8c97c5",
+      "redistributable": true,
+      "simulated": true
+    },
+    {
+      "doc_id": "sim-xx200",
+      "title": "XX-200 手册",
+      "version": "2026-09-25",
+      "language": "zh",
+      "source": "knowledge/documents/simulated/XX-200 手册.md",
+      "local_path": "knowledge/documents/simulated/XX-200 手册.md",
+      "sha256": "d79d0c9e04cfb09dcc2a0900e2432a4ac988373e2c457104e74a58d4e4b05953",
+      "redistributable": true,
+      "simulated": true
+    }
+  ]
+}

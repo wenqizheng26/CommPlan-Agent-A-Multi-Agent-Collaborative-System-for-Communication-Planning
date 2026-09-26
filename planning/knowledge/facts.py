@@ -8,7 +8,9 @@ from pathlib import Path
 def fact_manifest(root):
     root = Path(root)
     paths = sorted((*root.glob('knowledge/facts/*.json'),
-                    *root.glob('knowledge/documents/simulated/*.md')))
+                    *root.glob('knowledge/documents/simulated/*.md'),
+                    *root.glob('knowledge/documents/manifest.json'),
+                    *root.glob('knowledge/documents/glossary.json')))
     return [{'path': p.relative_to(root).as_posix(),
              'sha256': hashlib.sha256(p.read_bytes()).hexdigest()} for p in paths]
 

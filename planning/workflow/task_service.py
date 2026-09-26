@@ -88,9 +88,15 @@ class TaskService:
         # Long-lived per embedding model so warm vectors survive between commands.
         with self._retrieval_lock:
             if embedding_id not in self._retrieval:
-                path=self.registry.models[embedding_id].get('path') if embedding_id else None
+                model=self.registry.models[embedding_id] if embedding_id else {}
+                path=model.get('weights') or model.get('path')
+                options={}
+                if model.get('runtime')=='llama.cpp':
+                    from planning.retrieval.http_encoder import HTTPEncoder
+                    options['remote_encoder']=True
+                    options['encoder_factory']=lambda path: HTTPEncoder(model, self.root/'runtime/embedding-cache')
                 self._retrieval[embedding_id]=DefaultRetrievalService(self.root,load_catalog(self.root),
-                    embedding_id=embedding_id,embedding_path=path)
+                    embedding_id=embedding_id,embedding_path=path,**options)
             return self._retrieval[embedding_id]
 
     def warm_retrieval(self, settings=None):

@@ -11,7 +11,7 @@ import urllib.error
 import urllib.request
 import webbrowser
 
-from launch import model_command, model_paths
+from launch import model_command, model_paths, embedding_command
 from planning.build_info import build_fingerprint
 from planning.providers.registry import Registry
 
@@ -115,6 +115,29 @@ def ensure_model(args):
     print('本机 Qwen 已就绪。', flush=True)
 
 
+def ensure_embedding(args):
+    registry = Registry(ROOT)
+    model = registry.models.get(registry.defaults.get('embedding'), {})
+    if model.get('runtime') != 'llama.cpp':
+        return
+    from planning.services.model_status import probe_model
+    base = model['endpoint'].rstrip('/')
+    ready = lambda: probe_model(base, model['alias'])['status'] == 'ready'
+    if ready():
+        print('复用已就绪的本机向量模型：' + base, flush=True)
+        return
+    if listening(int(base.rsplit(':', 1)[1])):
+        raise RuntimeError('向量端口已占用，但未确认目标模型；保留现有服务。')
+    asset_root=args.asset_root or os.environ.get('COMMPLAN_ASSET_ROOT')
+    roots = [Path(asset_root)] if asset_root else [ROOT, ROOT/'models/signal-formula-qwen3']
+    for root in roots:
+        if model_paths(root, model):
+            process = spawn(embedding_command(root, registry_root=ROOT), 'commplan-embedding', root)
+            wait_ready(ready, process, '向量模型')
+            return
+    print('向量模型未安装，文档检索将使用词项。', flush=True)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description='一键启动通信筹划工作台与本地模型（不下载资源）')
     parser.add_argument('--asset-root', type=Path, help='含模型与运行时的目录')
@@ -125,7 +148,10 @@ def main(argv=None):
     parser.add_argument('--db', type=Path, help='仅在新启动工作台时生效；不会更换已有服务的数据库')
     args = parser.parse_args(argv)
     model_port = int(default_model()['endpoint'].rsplit(':', 1)[1])
-    if not 1 <= args.port <= 65535 or args.port == model_port:
+    embedding = Registry(ROOT)
+    embedding = embedding.models.get(embedding.defaults.get('embedding'), {})
+    embedding_port = int(embedding['endpoint'].rsplit(':',1)[1]) if embedding.get('endpoint') else None
+    if not 1 <= args.port <= 65535 or args.port in (model_port, embedding_port):
         parser.error(f'工作台端口必须在 1–65535 之间，且不能占用模型端口 {model_port}。')
     address = f'http://127.0.0.1:{args.port}'
 
@@ -145,6 +171,10 @@ def main(argv=None):
             ensure_model(args)
         except (OSError, ValueError, KeyError, RuntimeError) as exc:
             print(f'模型未就绪：{exc}\n将打开工作台，请使用“确定性”模式。', flush=True)
+        try:
+            ensure_embedding(args)
+        except (OSError, ValueError, KeyError, RuntimeError) as exc:
+            print(f'向量模型未就绪：{exc}\n检索将降为词项。', flush=True)
     else:
         print('仅启动工作台；不启动或关闭模型服务。', flush=True)
     if existing:
