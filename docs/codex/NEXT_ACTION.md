@@ -1,5 +1,34 @@
 # CommPlan-Agent 当前交接（2026-09-26）
 
+## 当前状态（2026-09-26 夜）
+
+- **v0.1.0 已发布**：
+  - 标签 `v0.1.0` 指向 main `b9575a5`，[GitHub Release](https://github.com/wenqizheng26/CommPlan-Agent-A-Multi-Agent-Collaborative-System-for-Communication-Planning/releases/tag/v0.1.0) 附源码包（84 个文件，SHA-256 `058ffabb…a95c66`）。
+  - 独立审查由用户确认已完成。
+- **M1 目标档的内容经 PR 合入 main**（分支 `claude/calc-plans`，合并以 GitHub 为准）：
+  - 包含 C8–C14；专业计算 Agent 写计划与适用性评估；文档证据接入审查；GitHub main 在 v0.1.0 期间的补充判断修正。
+  - 不含第 4 周。
+- **自动测试**：
+  - Python 375 项通过（1 项跳过），Node 49 项通过，`pip check` 通过。
+  - 从提交导出的干净源码（无模型、无 ITU 原文）同样通过，冒烟 PASS。
+  - 源码包 105 个文件，解压后冒烟 PASS，全部模块可导入。
+- **C13**（真实 9B，最终代码，先跑再看）：
+  - 演示问题 12/12，变体 10/10，离线等价 6/6，硬规则 8/8；模型计划 18/18 与程序拼链一致。
+  - 有 6 条的审查因超时退回程序结论。原因是向量服务占用显存；启动器已改为向量服务只用 CPU。
+  - 见[最终运行](evidence/2026-09-26-M1-final-run.md)。
+- **浏览器**：内置浏览器复查见[浏览器复查](evidence/2026-09-26-M1-browser.md)；目标 Chrome 未验。
+- **第 4 周**（资料抽取、连续追问）：
+  - 用户决定不含在本次上传。
+  - Codex 的未提交改动原样留在 `CommPlan-Agent-M1-codex`，并另存为本地分支 `codex/m1-week4-wip`（`f17a890`，未推送）。
+
+### 下一步
+
+1. 停掉 C12 复核时（18:54）启动的向量服务（端口 18084），或用修正后的启动器重启全部服务。确认 9B 约 30 token/s 后重跑 C13，结果另记。
+2. 用户在目标 Chrome 上验收 M1 页面。
+3. 第 4 周：Codex 从 `codex/m1-week4-wip` 继续，先合入最新 main，再按任务拆成单独提交；Claude 审核。
+4. 文档切块：只有标题的块不送入审查。改切块规则后，重建 C12 检索记录。
+5. 2026-10-24 前演练。
+
 ## M1 第 2 周：模型主导（分支 `claude/calc-plans`）
 
 设计见 [AGENT_LED](../design/AGENT_LED.md)，验收见 [ACCEPTANCE_M1](../design/ACCEPTANCE_M1.md)。v0.1.0 发布之前，不要把该分支合入 `codex/model-eval-integration` 或 `main`。
@@ -197,14 +226,19 @@
 
 唯一实施规格：[V4](DEMO_HANDOFF_V4.md)。当前交付范围仍是 FSPL-stage Planning Workbench；后端确认、checkpoint、revision 与确定性数值合同保持冻结。验收证据见 [VALIDATION](../demo/VALIDATION.md) 和 [C5/C6 记录](evidence/2026-09-24-C5-C6.md)。
 
-## 当前候选
+## v0.1.0 候选（已发布，2026-09-26）
+
+以下为发布前的记录。
+
 
 - `codex/model-eval-integration` 将 `claude/model-retrieval` 的模型注册表、设置、检索和计时 UI，与已合并 GitHub `main` 的旧网页清理及 C5 评测合并。C5 提交 `41d18b0`；合并提交 `7771c2c`。旧应用 `app.py`、根目录 `web/`、对应脚本/测试已删除，工作台所依赖的 `formula_rag/` 保留。
 - C5 的 30 条固定案例已运行确定性基线及两个本地 Qwen 档案。模型 27 次实际尝试中，两个档案各 25 次结构化成功、2 个案例降级；参数和状态 30/30 包含程序回退，不能说成模型独立 30/30。
 - C6 合并后 Python 251 项 OK（1 项系统权限 skip）、Node 33 项 PASS、`pip check` PASS。真实 Qwen、快速失败审查档案、BGE 混合检索、离线降级已在独立数据库上验证；三个任务均完成并得到 98.42059991327963 dB。正常运行的审查角色曾因结构化失败降级；混合检索运行的 BGE 状态为 `ready`，三个模型角色均完成；离线运行三个模型角色均记录 `offline`，随后模型已重启并通过健康检查。
 - C6 的干净源码 ZIP 已完成构建与解压 smoke；全新解压目录的 `setup_planning.cmd`、`pip check` 和 HTTP 创建/确认/重启恢复也通过。首次 GitHub CI 暴露了评测单测依赖本机模型文件的假设；`e301ecc` 已修复，此后 [最终代码 CI](https://github.com/wenqizheng26/CommPlan-Agent-A-Multi-Agent-Collaborative-System-for-Communication-Planning/actions/runs/35948954929) 和 [验收记录 CI](https://github.com/wenqizheng26/CommPlan-Agent-A-Multi-Agent-Collaborative-System-for-Communication-Planning/actions/runs/35949403530) 两个作业均 PASS。用户已确认新候选在目标 Chrome 的七项及附加检查通过。后续提交的状态以 [分支 CI 列表](https://github.com/wenqizheng26/CommPlan-Agent-A-Multi-Agent-Collaborative-System-for-Communication-Planning/actions?query=branch%3Acodex%2Fmodel-eval-integration) 为准；发布门禁尚缺实施团队外独立审查。
 
-## 下一步
+## v0.1.0 发布前的下一步（已完成）
+
+用户 2026-09-26 确认独立审查已完成；随后打标签 `v0.1.0` 并发布 Release。原计划如下：
 
 1. 请实施团队外的 Reviewer 独立审查最终候选，范围为 GitHub `main` 与包含 C8 本地提交的 `codex/model-eval-integration` 的差异，重点核对模型评测口径、检索证据门禁、设置与状态快照、活动语义、启动身份、发布包排除项及 C8 补充判断提示词与证据。此前实施者和子智能体的自审不计入。
 2. 独立审查通过后，才继续 V4 Stage 5：PR、接受到 `main`、从被接受的 `main` 重建/验收 ZIP、tag。此前不声明 `CommPlan-Agent Demo Release Ready`。
