@@ -19,7 +19,7 @@ SOLVE_UNKNOWNS = {'tx_power_dbm'}
 ORIGIN_KINDS = {'user_text', 'manual_form', 'site', 'device', 'default'}
 PLAN_FIELDS = 'plan_id task_id revision objective steps required_parameters selected_model assumptions evidence_ids plan_hash'
 # Only plans that need them carry these.
-PLAN_OPTIONAL = {'checks', 'requirement', 'solve_if_unmet', 'assumed'}
+PLAN_OPTIONAL = {'checks', 'requirement', 'solve_if_unmet', 'assumed', 'origin', 'origin_note', 'assessment'}
 
 
 def strict_json(text):
@@ -115,7 +115,8 @@ def validate_request(value, *, expected_revision=None):
 
 def validate_report(value, request):
     request = validate_request(request)
-    obj(value, REPORT_FIELDS); json_value(value); identity(value)
+    require(type(value) is dict and set(REPORT_FIELDS.split())<=set(value)<=set(REPORT_FIELDS.split())|{'planning_role'},'SCHEMA_FIELDS: report')
+    json_value(value); identity(value)
     require(value['profile'] == PROFILE, 'PROFILE')
     for key in ('task_id', 'revision', 'request_id'):
         require(value[key] == request[key], 'REPORT_IDENTITY_MISMATCH')
@@ -228,7 +229,8 @@ def validate_report(value, request):
         require(type(plan['steps']) is list and bool(plan['steps']), 'PLAN_STEPS')
         seen = set()
         for step in plan['steps']:
-            obj(step, 'step_id tool_id inputs expected_unit dependencies required_conditions')
+            obj({k:v for k,v in step.items() if k!='why'}, 'step_id tool_id inputs expected_unit dependencies required_conditions')
+            if 'why' in step:string(step['why'])
             string(step['step_id']); string(step['tool_id']); string(step['expected_unit'])
             strings(step['dependencies']); strings(step['required_conditions'])
             require(step['step_id'] not in seen and set(step['dependencies']) <= seen, 'PLAN_DAG')

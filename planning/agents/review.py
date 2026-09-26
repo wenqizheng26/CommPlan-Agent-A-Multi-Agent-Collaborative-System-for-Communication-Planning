@@ -34,7 +34,9 @@ PROMPT = (
     '（例如余量为负或接近门限、结论依赖某个假设值、问题里有一部分这次没有算）；not_applicable 表示用户问的是自由空间基准回答不了的问题'
     '（例如要求评估真实海面、地形或降雨的影响），这次的结果不能作答。\n'
     'answer：用中文直接回答用户的问题，不超过 100 字：先给结论，再给与结论直接相关的 2 到 3 个数值，不逐项罗列输入。\n'
-    'opinions：0 到 3 条审查意见，kind 取 risk（风险）、assumption（假设的影响）或 suggestion（调整建议），'
+    'opinions：0 到 3 条审查意见，只写由这次计算结果得出的新判断；plan_assessment 是用户确认前已经看过的提示'
+    '（如自由空间未计海面反射或地形遮挡、馈线损耗是假设值），不再写成意见。'
+    'kind 取 risk（风险）、assumption（假设的影响）或 suggestion（调整建议），'
     '每条不超过 80 字，refs 写支持它的事实 id。caution 和 not_applicable 至少写 1 条；没有值得提的就不写，pass 时通常 0 到 1 条。'
     '只写会影响结论或用户决定的内容，'
     '例如余量离门限有多近、哪个输入或假设值对结论影响最大、可以调整哪个参数；不复述通用免责声明，'
@@ -116,7 +118,14 @@ def facts_for(result, snapshot, validations):
         checks=dict(id='checks', passed=sum(v['passed'] for v in validations), total=len(validations)),
         assumptions=[dict(id=f'as:{i}', text=t) for i, t in enumerate(dict.fromkeys(notes), 1)],
         scope=dict(id='scope', conditions=report['conditions']),
-        **goal_facts(result, params))
+        **goal_facts(result, params),
+        **plan_assessment(plan))
+
+
+def plan_assessment(plan):
+    """The applicability notes the user saw before confirming, so the review does not repeat them."""
+    notes = [n['text'] for n in (plan.get('assessment') or {}).get('notes', []) if n.get('text')]
+    return {'plan_assessment': notes} if notes else {}
 
 
 def goal_facts(result, params):

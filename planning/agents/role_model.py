@@ -6,7 +6,7 @@ from formula_rag.model_transport import chat, parse_output, ModelResponseError, 
 from planning.workflow.activity import observe
 
 # Output budget per role; the reviewer writes the answer and the review opinions.
-MAX_TOKENS = {'validator_agent': 900}
+MAX_TOKENS = {'validator_agent': 900, 'compute_agent': 1600}
 
 
 class Rewrite(ValueError):
@@ -56,13 +56,14 @@ class LocalRoleSelector:
                     usage=envelope.get('usage', {}), latency_ms=envelope.get('latency_ms'))
 
 
-def suggest(role, prompt, view, schema, fallback, validate, selector=False, observer=None):
-    """Two structural attempts maximum; transport failure falls back immediately."""
+def suggest(role, prompt, view, schema, fallback, validate, selector=False, observer=None, retain_rewrite_on_unavailable=False):
+    """Two attempts maximum; callers may keep checked content when its rewrite goes offline or fails."""
     if selector is False:
         return dict(proposal=copy.deepcopy(fallback), mode='deterministic', attempts=0, diagnostics=[])
     caller = LocalRoleSelector() if selector is None else selector
     binding = getattr(caller, 'binding', None)
     diagnostics = []
+    retained = None
     for attempt in range(1, 3):
         observe(observer, 'llm', 'started', caller=role, purpose=role, attempt=attempt, **call_details(binding))
         envelope={}
@@ -76,6 +77,9 @@ def suggest(role, prompt, view, schema, fallback, validate, selector=False, obse
                         attempts=attempt, diagnostics=diagnostics, model=envelope.get('model'), usage=envelope.get('usage', {}),
                         **({'model_id': binding.model_id} if binding else {}))
         except Rewrite as exc:
+            retained = dict(proposal=copy.deepcopy(exc.kept), mode='llm' if isinstance(caller, LocalRoleSelector) else 'stub',
+                model=envelope.get('model'), usage=envelope.get('usage', {}),
+                **({'model_id': binding.model_id} if binding else {}))
             diagnostics.append(dict(code=str(exc), reason=exc.hint[:300],
                                     model_output=str(envelope.get('raw_output', ''))[:4000], attempt=attempt))
             if attempt == 2:
@@ -89,14 +93,18 @@ def suggest(role, prompt, view, schema, fallback, validate, selector=False, obse
             view = dict(view, correction=exc.hint)
         except ModelResponseError as exc:
             diagnostics.append(dict(code=exc.code,reason=str(exc),model_output=exc.raw_output,attempt=attempt))
-            observe(observer,'llm','failed',caller=role,purpose=role,fallback=True,reason=failure_reason(exc),
+            observe(observer,'llm','failed',caller=role,purpose=role,fallback=not (retain_rewrite_on_unavailable and retained is not None),reason=failure_reason(exc),
                     **call_details(binding))
             if not exc.retryable:
+                if retain_rewrite_on_unavailable and retained:
+                    return dict(retained,attempts=attempt,diagnostics=diagnostics)
                 break
         except (OSError, TimeoutError) as exc:
             diagnostics.append(dict(code='MODEL_UNAVAILABLE', exception=type(exc).__name__, attempt=attempt))
-            observe(observer, 'llm', 'failed', caller=role, purpose=role, fallback=True, reason=failure_reason(exc),
+            observe(observer, 'llm', 'failed', caller=role, purpose=role, fallback=not (retain_rewrite_on_unavailable and retained is not None), reason=failure_reason(exc),
                     **call_details(binding))
+            if retain_rewrite_on_unavailable and retained:
+                return dict(retained,attempts=attempt,diagnostics=diagnostics)
             break
         except (ValueError, KeyError, TypeError, IndexError) as exc:
             if str(exc) == 'OPERATION_CANCELLED':
@@ -104,6 +112,8 @@ def suggest(role, prompt, view, schema, fallback, validate, selector=False, obse
             diagnostics.append(dict(code='MODEL_OUTPUT_INVALID', exception=type(exc).__name__, reason=str(exc)[:300], model_output=str(envelope.get('raw_output',''))[:4000], attempt=attempt))
             observe(observer, 'llm', 'failed', caller=role, purpose=role, attempt=attempt, reason='structure',
                     **call_details(binding))
-            view = dict(view, correction='前次输出未通过合同核验，请严格引用当前候选和身份，不添加字段。')
+            view = dict(view, correction='前次输出未通过合同核验：'+str(exc)[:200]+'。请根据失败原因修改，只引用当前候选和身份。')
+    if retain_rewrite_on_unavailable and retained:
+        return dict(retained, attempts=attempt, diagnostics=diagnostics)  # the rewrite broke what had passed
     return dict(proposal=copy.deepcopy(fallback), mode='deterministic_fallback', attempts=attempt,
                 diagnostics=diagnostics)

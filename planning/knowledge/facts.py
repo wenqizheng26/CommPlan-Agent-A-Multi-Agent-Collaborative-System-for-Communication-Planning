@@ -84,6 +84,20 @@ class FactService:
     def find_device(self, name):
         return self._find('device', name)
 
+    def public_records(self):
+        """Read-only presentation data; no local paths or unreviewed records."""
+        import copy
+        rows=[]
+        for kind, records in self._records.items():
+            for record in records:
+                fields=('position',) if kind=='site' else ('model','tx_power_dbm','antenna_gain_dbi','rx_sensitivity_dbm','band_ghz')
+                rows.append(dict(id=record['id'],type=kind,names=list(record['names']),
+                    simulated=record.get('simulated',False),
+                    **({'environment':record.get('environment','未记录')} if kind=='site' else {}),
+                    source={k:record['source'][k] for k in ('title','version','locator')},
+                    **{k:copy.deepcopy(record[k]) for k in fields}))
+        return dict(records=rows,version=self.describe()['version'])
+
     def describe(self):
         manifest = fact_manifest(self.root)
         payload = json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
