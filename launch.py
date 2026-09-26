@@ -57,8 +57,10 @@ def embedding_command(asset_root, *, registry_root=None):
     if endpoint.hostname != '127.0.0.1' or endpoint.port is None:
         raise ValueError('模型启动器需要 127.0.0.1 上的固定端口')
     executable, weights = paths
+    # CPU only. With -ngl 0 alone llama.cpp still offloads large batches to the GPU, and its buffers
+    # push the chat model's weights out of an 8 GB card: the 9B then generates about 4x slower.
     return [str(executable), '-m', str(weights), '--alias', model['alias'],
             '--host', endpoint.hostname, '--port', str(endpoint.port), '--embedding', '--pooling', 'last',
             '-c', str(model['context']), '-b', str(model['context']), '-ub', str(model['context']),
-            '-np', '1', '-ngl', '0', '-t', '6', '--offline', '--no-webui',
+            '-np', '1', '-ngl', '0', '--device', 'none', '-t', '6', '--offline', '--no-webui',
             '--cors-origins', 'http://127.0.0.1:18080', '--no-cors-credentials']

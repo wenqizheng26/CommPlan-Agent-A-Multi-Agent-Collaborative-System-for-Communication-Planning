@@ -90,6 +90,8 @@ class HTTPEmbeddingTests(unittest.TestCase):
         for option in ('-c','-b','-ub'):
             self.assertGreaterEqual(int(command[command.index(option)+1]),2048)
         self.assertEqual(command[command.index('-ngl')+1],'0')
+        # No GPU at all: batch offload would take memory the chat model needs.
+        self.assertEqual(command[command.index('--device')+1],'none')
         self.assertEqual(command[command.index('--pooling')+1],'last')
         self.assertEqual(command[command.index('--port')+1],'18084')
 
