@@ -1,4 +1,4 @@
-# CommPlan-Agent 当前交接（2026-09-25）
+# CommPlan-Agent 当前交接（2026-09-26）
 
 ## M1 第 2 周：模型主导（分支 `claude/calc-plans`）
 
@@ -75,12 +75,12 @@
 - A3 站点、设备接入参数来源：同名、缺项、冲突走原有提问面板。**已完成（同日）**：查库取坐标、天线高度与电台参数，缺项取卡片假设值随确认一起确认；同名可选、缺天线高度可填、原文与库值冲突由用户选定。
 - 第 3 周的“审查与解释”提前完成：模型写结论、答复、审查意见与逐步说明，数字过 H4。真实 9B 跑通演示问题 A→B、A→C、A→F。见 [A2/A3 与审查记录](evidence/2026-09-25-A2-A3-review.md)。Python 333 项、Node 41 项通过。
 - 页面规格已与用户确认（2026-09-25），写成 C14。
-- 下一步（Claude）：专业计算 Agent 写计划与适用性评估，设计已定（[AGENT_LED](../design/AGENT_LED.md) §2a，用户 2026-09-26 确认，展示细节交 Claude）；站点记录加“环境”。完成后在 C13 补“可以运行”。
+- 专业计算 Agent 写计划与适用性评估（[AGENT_LED](../design/AGENT_LED.md) §2a）**已完成（2026-09-26）**：经用户确认由 Codex 实现、Claude 调中文提示词并审核；提交 bb71b40，合入 e1c5aa2；站点记录已加“环境”。真实 9B 9 个案例都一次通过，与程序拼链一致，每次 9–15 s。见 [调校记录](evidence/2026-09-26-plan-prompt-9b.md)。合并后 Python 352 项（1 跳过）、Node 41 项通过。
 
 ## M1 第 3 周：Codex 任务单（C8–C11 合入后开始）
 
 - **工作区**：C8–C11 已合入 `claude/calc-plans`（2026-09-25，合并提交 aa9ec5d）。Claude 已删除旧工作区，并从合入后的分支新建同名工作区 `CommPlan-Agent-M1-codex`，分支 `codex/m1-week3`。开始前在 cmd 中建两个目录联接：`mklink /J models E:\codex\项目\信号与AI\CommPlan-Agent\models` 与 `mklink /J knowledge\sources E:\codex\项目\信号与AI\CommPlan-Agent\knowledge\sources`（后者的目标目录不存在时先建）；两者都被 git 忽略。其余约定同第 2 周（不推送、不合并、每个任务单独提交、证据与状态行）。例外（用户 2026-09-26 安排）：开始前把 `claude/calc-plans` 推到 GitHub 远端 `commplan`（`git push -u commplan claude/calc-plans`；`origin` 是旧的 signal-formula-rag 仓库），只推这个分支，不开 PR，不合入 `main` 或 `codex/model-eval-integration`。
-- **顺序**：C12 → C13 第 1–4 步 → C14（页面）。C13 第 5 步等 Claude 通知。
+- **顺序**：C12 → C13 第 1–4 步 → C14（页面）。C13 第 5 步已可运行（2026-09-26）。
 - 报告合同没有升版：新字段都是可选的，旧任务照常读取；AGENT_LED §8 的“升一版”不再单独做。
 
 ### Codex 任务 C12：文档库与混合检索
@@ -139,11 +139,12 @@
 > 4. 离线等价：6 条参数写全的请求（路径损耗、接收电平、链路余量各 2 条），模型离线时规则算出的正式数值与在线逐位相同。
 > 5. 运行脚本 `scripts/eval_m1.py --models <id>`：通过 `TaskService` 逐条创建任务，按期望回答追问或做选择，确认，取结果；逐条输出是否通过、不通过的原因、耗时、模型调用次数，汇总写入 `outputs/eval/`。确定性基线只跑硬规则与离线等价两类。
 > **开始条件**：第 1–4 步只写用例与格式测试，可以随时做；第 5 步要等 Claude 完成第 3 周的模型接入（A2、A3 已完成），届时本任务单补一行“可以运行”。
+> **可以运行（2026-09-26）**：模型接入已完成（§2a，合入 e1c5aa2），第 5 步可以用本机 9B 运行；证据写明所用提交。
 > **完成标准**：用例文件通过格式测试；第一次正式运行的结果原样写入证据，之后的修正另行记录，不覆盖第一次的数字。
 
 ### Codex 任务 C14：页面——模型答复、查库来源、假设值与反求
 
-> **目标**：按 [WORKBENCH_UI](../design/WORKBENCH_UI.md) “M1 第 3 周”一节（用户 2026-09-25 确认，计划卡 2026-09-26 更新）实现页面。结果区与来源的后端字段已由 Claude 实现；计划来源、适用性评估、每步理由与站点“环境”由 Claude 另行实现（AGENT_LED §2a），开始 C14 时若还没合入，先按规格用替身数据做。
+> **目标**：按 [WORKBENCH_UI](../design/WORKBENCH_UI.md) “M1 第 3 周”一节（用户 2026-09-25 确认，计划卡 2026-09-26 更新）实现页面。结果区与来源的后端字段已由 Claude 实现；计划来源、适用性评估、每步理由与站点“环境”已实现（AGENT_LED §2a，bb71b40）。
 > **范围**：`planning/web/`、`planning/web_server.py`（只加一个只读接口）、测试、证据。不改 `planning/agents`、`planning/services` 的业务逻辑；发现后端字段不够用，记录下来交给 Claude。
 > **步骤**：
 > 1. 只读接口 `GET /api/facts`：返回 `FactService` 的站点与设备记录（id、名称、`simulated`、来源标题与定位，站点带位置与环境，设备带参数）和 `describe()` 的版本；安全要求与 `/api/formula-cards` 相同。加 Python 测试。
