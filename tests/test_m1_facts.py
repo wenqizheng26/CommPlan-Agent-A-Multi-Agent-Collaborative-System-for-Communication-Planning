@@ -52,6 +52,7 @@ class M1FactTests(unittest.TestCase):
         for site in self.service._records['site']:
             cells = table[site['id']]
             self.assertEqual(cells[1:3], [site['names'][0], site['names'][1] if len(site['names']) > 1 else '—'])
+            self.assertEqual(cells[7],site['environment'])
             pos = site['position']
             self.assertEqual([float(cells[3]), float(cells[4]), float(cells[5])],
                              [pos['lat'], pos['lon'], pos['ground_m']])

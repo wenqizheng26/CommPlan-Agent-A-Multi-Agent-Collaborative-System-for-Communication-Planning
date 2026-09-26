@@ -9,6 +9,9 @@ from planning.services import calculation
 from planning.agents.calculation import CalculationAgent
 from planning.agents.review import ReviewAgent, validate_assessment, DECISIONS, PUBLISHABLE, SUMMARY
 from planning.agents.role_model import LocalRoleSelector
+from planning.agents.planner import PlanningAgent
+from planning.services.requirement_validation import check_report
+from formula_rag.model import LocalSelector as ModelSelector
 from planning.agents.orchestrator import decide, MAX_CALCULATIONS
 from planning.workflow.requirements_graph import run_requirements, stamp
 from planning.workflow.activity import observe
@@ -55,8 +58,11 @@ def role_selector(agent, bindings, role):
 
 
 def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(), calculation_agent=None, review_agent=None,
-                         review_context=None, bindings=None):
-    calculation_agent = calculation_agent or CalculationAgent(role_selector(agent, bindings, 'compute_agent'))
+                         review_context=None, bindings=None, planning_agent=None):
+    # Confirmed plans execute directly. The model's calculation work happens before confirmation.
+    calculation_agent = calculation_agent or CalculationAgent(False)
+    selector=role_selector(agent,bindings,'compute_agent') if isinstance(getattr(agent,'selector',None),ModelSelector) else False
+    planning_agent=planning_agent or PlanningAgent(selector,getattr(agent,'root',None))
     review_agent = review_agent or ReviewAgent(role_selector(agent, bindings, 'validator_agent'), context=review_context)
     def propose(state):
         observe(observer,'requirements','started',caller='orchestrator')
@@ -65,6 +71,11 @@ def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(
         if pending_questions and report and status!='FAILED':
             report['questions']=list(dict.fromkeys(report['questions']+list(pending_questions)))
             status=report['execution_status']='AWAITING_INPUT'
+        if status=='AWAITING_CONFIRMATION':
+            report['calculation_plan_proposal'],report['planning_role']=planning_agent.run(state['request'],report,cards,observer)
+            if report['planning_role']['mode']=='deterministic_fallback':
+                report['runtime_health']='degraded'
+            check_report(report,state['request'],cards,agent.root)
         observe(observer,'requirements','failed' if status=='FAILED' else 'completed',status=status,caller='orchestrator')
         if status in {'AWAITING_INPUT','NEEDS_MODEL'}:
             observe(observer,'supplement' if status=='AWAITING_INPUT' else 'gap','waiting',status=status)
