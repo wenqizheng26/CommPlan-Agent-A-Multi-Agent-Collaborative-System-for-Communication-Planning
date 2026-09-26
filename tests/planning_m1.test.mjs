@@ -65,3 +65,11 @@ test('assessment hides only withheld text and skips when no note is visible',()=
  assert.equal(presentation.assessment,null);
  assert.equal(presentation.skipped,true);
 });
+
+test('a web document links out and a simulated one names its local file',async()=>{
+ const {documentSource}=await import('../planning/web/m1.mjs');
+ assert.deepEqual(documentSource({uri:'https://www.itu.int/rec/R-REC-P.525-5-202411-I/en',doc_id:'itu-p525-5'}),
+  {source_url:'https://www.itu.int/rec/R-REC-P.525-5-202411-I/en',source_id:'itu-p525-5'});
+ assert.deepEqual(documentSource({uri:'knowledge/documents/simulated/XX-100 手册.md',doc_id:'sim-xx100'}),
+  {source_id:'knowledge/documents/simulated/XX-100 手册.md'});
+});

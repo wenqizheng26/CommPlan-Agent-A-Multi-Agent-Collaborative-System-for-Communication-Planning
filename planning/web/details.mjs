@@ -5,7 +5,7 @@ import {nodes,statusText,nodeStates} from './flow.mjs';
 import {roleModeNames,reviewDecisionNames} from './roles.mjs';
 import {provenance,settingsDrift,RETRIEVAL} from './settings.mjs';
 import {fmt} from './timing.mjs';
-import {assessmentNoteText,planPresentation,originLabel,answerPresentation,horizonPresentation,renderSolve} from './m1.mjs';
+import {assessmentNoteText,planPresentation,originLabel,answerPresentation,horizonPresentation,renderSolve,documentSource} from './m1.mjs';
 export const parameterNames={frequency_ghz:'载波频率',distance_km:'路径距离',tx_power_dbm:'发射功率',tx_gain_dbi:'发射天线增益',rx_gain_dbi:'接收天线增益',
  tx_loss_db:'发射馈线损耗',rx_loss_db:'接收馈线损耗',path_loss_db:'路径损耗',extra_loss_db:'额外损耗',rx_power_dbm:'接收信号电平',rx_threshold_dbm:'接收门限',reserve_db:'预留余量',link_margin_db:'链路余量'};
 export const symbols={frequency_ghz:'f',distance_km:'d',tx_power_dbm:'Pt',tx_gain_dbi:'Gt',rx_gain_dbi:'Gr',tx_loss_db:'Lt',rx_loss_db:'Lr',path_loss_db:'L',extra_loss_db:'La',rx_power_dbm:'Pr',rx_threshold_dbm:'Pth',reserve_db:'M₀',link_margin_db:'M'};
@@ -270,7 +270,7 @@ function evidenceView(host,ctx){
   for(const hit of found.hits.filter(h=>found.used.includes(h.id))){
    const b=block(hit.title,hit.excerpt,'document-evidence');
    b.append(el('p',`${hit.source.locator}${hit.source.simulated?' · 模拟数据':''}`,'hint'),
-    sourceLink({source_url:hit.source.uri,source_id:hit.source.doc_id}));host.append(b);
+    sourceLink(documentSource(hit.source)));host.append(b);
   }
  }
  if(!r.evidence_refs.length){host.append(block('暂无可用依据','检索为空时不推定公式适用。','warning'));return;}

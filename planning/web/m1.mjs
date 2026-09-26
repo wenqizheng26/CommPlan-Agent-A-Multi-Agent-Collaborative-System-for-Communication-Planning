@@ -81,3 +81,8 @@ export function planPresentation(state){
 }
 
 export function assessmentNoteText(note){return note.withheld?'该条未通过数字核对':note.text;}
+
+// A web source opens as a link; a simulated document's source is its local path.
+export function documentSource(source){
+ return /^https?:\/\//.test(source?.uri||'')?{source_url:source.uri,source_id:source.doc_id}:{source_id:source?.uri||source?.doc_id};
+}
