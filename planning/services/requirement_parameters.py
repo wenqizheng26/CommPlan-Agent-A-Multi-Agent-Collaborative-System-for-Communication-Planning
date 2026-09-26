@@ -41,7 +41,7 @@ def collect_parameters(request, parsed, required, labeled=(), sources=None):
         field = domain['field']
         observations.setdefault(field, []).append(dict(kind='user_text', source_ref=request['request_id'] + ':raw_text',
             span=domain['span'], value=domain['value'], unit=domain['unit']))
-        prefix=re.split(r'[，,。；;\n]',request['raw_text'][:start])[-1]
+        prefix=re.split(r'[，,。；;\n？?！!]',request['raw_text'][:start])[-1]
         suffix=request['raw_text'][end:end+2]
         if re.search(r'不要|不是|并非|不采用|如果|假如|可能|也可以|大约|大概|约|近似|差不多',prefix) or suffix in {'左右','上下'}:
             diagnostics.append(diagnostic('SOURCE_AMBIGUOUS','区间或候选尚未明确采用，请重新说明。',field=field,excerpt=domain['excerpt'],span=domain['span']))
@@ -52,7 +52,7 @@ def collect_parameters(request, parsed, required, labeled=(), sources=None):
         diagnostics.append(diagnostic('PARAMETER_APPROXIMATE', '近似表达没有明确误差范围，请指定区间或明确采用单值。',
             field=field_for(match.group()), excerpt=match.group(), span=list(match.span())))
     normalized_text = unicodedata.normalize('NFKC', ''.join(masked))
-    alternatives = rf'{NUMBER}\s*(?:{UNITS})?\s*(?:或者|或|、|至|到|~|～|±)\s*{NUMBER}\s*{UNITS}'
+    alternatives = rf'(?<![A-Za-z0-9_.+-]){NUMBER}\s*(?:{UNITS})?\s*(?:或者|或|、|至|到|~|～|±)\s*{NUMBER}\s*{UNITS}'
     for match in re.finditer(alternatives, normalized_text, re.I):
         diagnostics.append(diagnostic('INPUT_PARSE_ISSUE', '发现范围或多个候选值，不能自动选取其中一个。',
                                       excerpt=match.group(), next_action='请明确本次采用的单个频率和距离。'))
@@ -112,7 +112,7 @@ def collect_parameters(request, parsed, required, labeled=(), sources=None):
     # Every explicitly labelled numeric fragment must be accounted for. A second
     # unitless/negative expression cannot silently disappear behind a valid value.
     labels = r'载波频率|工作频率|频率|载频|路径距离|通信距离|链路距离|距离|相距'
-    for match in re.finditer(rf'(?:{labels})(?:(?!(?:{labels})|[，,。；;\n]).)*', request['raw_text']):
+    for match in re.finditer(rf'(?:{labels})(?:(?!(?:{labels})|[，,。；;\n？?！!]).)*', request['raw_text']):
         fragment = match.group()
         if not re.search(r'\d', fragment):
             continue

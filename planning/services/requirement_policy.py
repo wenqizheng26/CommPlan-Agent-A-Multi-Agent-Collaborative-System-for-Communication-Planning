@@ -11,9 +11,11 @@ FEASIBILITY = r'能(?:不能)?通|能否(?:打)?通|通不通|够不够|够用|�
 
 def validate_target_semantics(model):
     for target in model.get('targets', []):
+        require(not re.fullmatch(r'\s*(?:解释|介绍|什么是|定义|说明什么是|解释什么是).*(?:余量|损耗|功率|电平)[。？?]?\s*',target['evidence']),'MODEL_TARGET_CONCEPT')
         parsed = extract_request(target['evidence'])
         feasible = target['id'] == 'link_margin' and re.search(FEASIBILITY, target['evidence'])
-        require(target['id'] in TARGETS and (parsed['targets'] == [target['id']] or bool(feasible))
+        margin_goal=(target['id']=='link_margin' and bool(re.search(r'(?:要求|需要|希望|至少|不低于|要留|留出|得有).{0,18}余量|余量.{0,18}(?:要求|需要|至少|不低于|达到|达标|[0-9]+\s*dB)',target['evidence'],re.I)))
+        require(target['id'] in TARGETS and (parsed['targets'] == [target['id']] or bool(feasible) or margin_goal)
                 and not parsed['unsupported_targets'], 'MODEL_TARGET_SEMANTICS')
 
 

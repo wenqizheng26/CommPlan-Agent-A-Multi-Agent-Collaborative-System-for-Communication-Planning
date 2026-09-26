@@ -19,8 +19,8 @@ SOLVE_UNKNOWNS = ['tx_power_dbm']
 # "10个dB" is spoken Chinese for 10 dB; the value and unit are still read from the text.
 QUANTITY = re.compile(rf'(?P<value>{NUMBER})\s*(?:个\s*)?(?P<unit>{UNITS})(?![A-Za-z/\d])', re.I)
 # Contexts in which extract_request refuses to read a value; the model gets no say there either.
-UNCERTAIN = re.compile(r'不是|不为|不用|不要用|不能用|未知|不确定|不知道|是否|例如|假如|如果')
-RANGE = re.compile(rf'{NUMBER}\s*(?:{UNITS})?\s*(?:~|～|至|到|—|–|/|±|或者|或|、)\s*{NUMBER}\s*{UNITS}'
+UNCERTAIN = re.compile(r'不是|不为|不用|不要用|不能用|未知|不确定|不知道|是否(?!满足|达标|达成|够用|可行|能通)|例如|假如|如果')
+RANGE = re.compile(rf'(?<![A-Za-z0-9_.+-]){NUMBER}\s*(?:{UNITS})?\s*(?:~|～|至|到|—|–|/|±|或者|或|、)\s*{NUMBER}\s*{UNITS}'
                    rf'|(?:{NUMBER}\s*[×*x]\s*)?10\s*\^\s*{NUMBER}\s*{UNITS}|\d+(?:,\d{{3}})+\s*{UNITS}', re.I)
 AT_LEAST = re.compile(r'(?:>=|≥|至少|不少于|不低于|不小于|最少|起码)\s*$')
 AT_MOST = re.compile(r'(?:<=|≤|至多|不超过|不高于|不大于|最多)\s*$')
