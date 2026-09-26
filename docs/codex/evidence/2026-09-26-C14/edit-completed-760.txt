@@ -1,0 +1,178 @@
+Browser tab: 2, Title: "通信筹划 · Planning Workbench", URL: "http://127.0.0.1:18085/?check=v2edit760#f52e52b7-5de7-49ee-a8da-20b1f0268144".
+1 AXWebArea 通信筹划 · Planning Workbench, URL: 127.0.0.1:18085/?check=v2edit760#f52e52b7-5de7-49ee-a8da-20b1f0268144
+	2 container
+		3 text ↗ 通信筹划 多智能体 · 本机离线
+		4 heading 当前任务, Value: 1
+			5 text 当前任务
+		448 text 按自由空间基准，A 站到 B 站用 XX-100 电台、2 GHz，要留 10 dB 余量，能通吗？不能的话发射功率至少要多大？
+		7 pop up button Qwen3.5 9B · 词项检索, ID: model-badge
+			8 text Qwen3.5 9B · 词项检索
+		9 pop up button 历史任务, ID: open-history
+		10 pop up button (collapsed) Description: 更多操作, ID: more, Secondary Actions: Expand
+		11 button ＋ 新建任务, ID: new
+	12 container
+		13 container workspace
+			14 container 对话
+				15 heading 对话, Value: 2
+					16 text 对话
+				104 container thread
+					105 container original-card
+						449 text 需求原文
+						450 button 编辑原文
+						451 text 按自由空间基准，A 站到 B 站用 XX-100 电台、2 GHz，要留 10 dB 余量，能通吗？不能的话发射功率至少要多大？
+						452 text 手工 · 发射馈线损耗 3 dB
+					110 container conversation-log
+						453 button (collapsed) 最初输入, Secondary Actions: Expand
+							454 text 最初输入
+						455 container
+							456 button (expanded) 第 1 条 · 编辑, Secondary Actions: Collapse
+								457 text 第 1 条 · 编辑
+							458 text 按自由空间基准，A 站到 B 站用 XX-100 电台、2 GHz，要留 10 dB 余量，能通吗？不能的话发射功率至少要多大？ 直接编辑
+							459 button (collapsed) 修改前后, Secondary Actions: Expand
+								460 text 修改前后
+				21 container supplement-form
+					22 text 补充或修改
+					23 text entry area (settable) 补充或修改, ID: supplement-message
+					24 button 提交, ID: supplement-submit
+			25 container 流程
+				26 heading 流程, Value: 2
+					27 text 流程
+				28 content list Description: 阶段, ID: task-progress
+					461 container 需求理解 · 已完成
+						462 text ✓ 需求理解 78.26 s
+					463 container 参数确认 · 已完成
+						464 text ✓ 参数确认
+					465 container 专业计算 · 已完成
+						466 text ✓ 专业计算 510 ms
+					467 container 结果审查 · 已完成
+						468 text ✓ 结果审查 60.35 s
+					469 container 结果生成 · 已完成
+						470 text ✓ 结果生成 33 ms
+				39 text 任务流转 / 调度 能力调用 / 返回 状态读写 未接入 运行中 完成 待处理 调用已降级 失败
+				471 container 总体协同架构
+					472 text LangGraph 编排与状态
+					473 text 共享能力
+					474 image 连线表示观测到的运行活动与责任关系，不表示 LangGraph 的直接调用链。
+					475 image 连线表示观测到的运行活动与责任关系，不表示 LangGraph 的直接调用链。
+					476 image 连线表示观测到的运行活动与责任关系，不表示 LangGraph 的直接调用链。
+					477 image 连线表示观测到的运行活动与责任关系，不表示 LangGraph 的直接调用链。
+					478 image 连线表示观测到的运行活动与责任关系，不表示 LangGraph 的直接调用链。
+					479 text 用户核对
+					480 image 连线表示观测到的运行活动与责任关系，不表示 LangGraph 的直接调用链。
+					481 image 连线表示观测到的运行活动与责任关系，不表示 LangGraph 的直接调用链。
+					482 image 连线表示观测到的运行活动与责任关系，不表示 LangGraph 的直接调用链。
+					483 text 参数 / 损耗
+					484 image 连线表示观测到的运行活动与责任关系，不表示 LangGraph 的直接调用链。
+					485 image 连线表示观测到的运行活动与责任关系，不表示 LangGraph 的直接调用链。
+					486 image 连线表示观测到的运行活动与责任关系，不表示 LangGraph 的直接调用链。
+					487 text 写计划与评估
+					488 image 连线表示观测到的运行活动与责任关系，不表示 LangGraph 的直接调用链。
+					489 text 未接入
+					490 image 连线表示观测到的运行活动与责任关系，不表示 LangGraph 的直接调用链。
+					491 image 连线表示观测到的运行活动与责任关系，不表示 LangGraph 的直接调用链。
+					492 image 连线表示观测到的运行活动与责任关系，不表示 LangGraph 的直接调用链。
+					493 image 连线表示观测到的运行活动与责任关系，不表示 LangGraph 的直接调用链。
+					494 text 知识增强过程
+					495 text 公式 · 站点 · 设备 · 文档
+					496 checkbox Description: 用户输入通信需求，已完成, Value: 0
+						497 text 用户输入通信需求
+					498 checkbox Description: 总控 Agent，已完成, Value: 0
+						499 text 总控 Agent
+						500 text 部分接入
+					501 checkbox Description: 需求与规划 Agent，已完成, Value: 0
+						502 text 需求与规划 Agent
+						503 text 78.26 s
+					504 checkbox Description: 专业计算 Agent，已完成, Value: 0
+						505 text 专业计算 Agent
+						506 text 510 ms
+					507 checkbox Description: 验证与解释 Agent，已完成, Value: 0
+						508 text 验证与解释 Agent
+						509 text 解释与审查已接入
+						510 text 60.35 s
+					511 checkbox Description: 参数核对与确认，已完成, Value: 0
+						512 text 参数核对与确认
+					513 checkbox Description: 链路损耗计算模型，已完成, Value: 0
+						514 text 链路损耗计算模型
+						515 text 21 ms
+					516 checkbox Description: 结果与证据报告，已完成, Value: 0
+						517 text 结果与证据报告
+						518 text 33 ms
+					519 checkbox Description: 共享状态／检查点，已完成, Value: 0
+						520 text 共享状态／检查点
+					521 checkbox Description: 共享大模型 LLM，调用已降级, Value: 0
+						522 text 共享大模型 LLM
+						523 text 部分调用已降级
+						524 text 137.72 s
+						525 text 可选
+					526 checkbox Description: RAG 检索服务，已完成, Value: 0
+						527 text RAG 检索服务
+						528 text 文档与公式检索
+						529 text 26 ms
+					530 checkbox Description: 专业知识库，已完成, Value: 0
+						531 text 专业知识库
+						532 text 149 ms
+					533 text 三个专业 Agent 平级；确认后计算。连线按运行活动高亮，不表示直接调用链。
+			94 container 计划与结果
+				447 container headline
+					534 text 完成 · 11/11 校验通过
+					535 text 本次 62.48 s，其中模型 96%，模型调用失败 1 次。
+				99 button 展开, ID: expand-detail
+				189 container detail-content
+					536 container
+						537 text 链路余量 4.93 dB 要求 ≥ 10 dB · 不满足 按已确认自由空间条件，链路余量 4.93 dB（扣除预留余量后高于门限），低于要求的 10 dB；发射功率至少需 42.07 dBm 才能满足，超过所选电台的额定发射功率 37 dBm。
+					538 container
+						539 heading 反求发射功率, Value: 3
+							540 text 反求发射功率
+						541 text 发射功率至少 42.07 dBm 超过所选电台的额定发射功率 37 dBm 左侧：42.066567 dBm → 9.999958 dB · 不满足 右侧：42.066651 dBm → 10.000042 dB · 满足 32 次迭代 · 残差 -4.05e-9 dB
+						542 container 发射功率与链路余量曲线，含要求线和解
+					543 content list
+						544 button (collapsed) ① 直线距离 NGA Geomatics 34.06 km 站点库 ×8, Secondary Actions: Expand
+							545 text ①
+							546 text 直线距离
+							547 text NGA Geomatics
+							548 text 34.06 km
+							549 text 站点库 ×8
+						550 button (collapsed) ② 无线电视距 ITU-R §3.3 43.17 km 站点库 ×2, Secondary Actions: Expand
+							551 text ②
+							552 text 无线电视距
+							553 text ITU-R §3.3
+							554 text 43.17 km
+							555 text 站点库 ×2
+						556 text 视距检查通过：直线距离不超过视距
+						557 button (collapsed) ③ 自由空间损耗 ITU-R P.525-5 式(6) 129.07 dB 原文 · 上一步, Secondary Actions: Expand
+							558 text ③
+							559 text 自由空间损耗
+							560 text ITU-R P.525-5 式(6)
+							561 text 129.07 dB
+							562 text 原文 · 上一步
+						563 button (collapsed) ④ 接收电平 NASA SST-SOA §11.3.1 -87.07 dBm 手填 · 设备库 ×3 · 假设 ×2 · 上一步, Secondary Actions: Expand
+							564 text ④
+							565 text 接收电平
+							566 text NASA SST-SOA §11.3.1
+							567 text -87.07 dBm
+							568 text 手填 · 设备库 ×3 · 假设 ×2 · 上一步
+						569 button (collapsed) ⑤ 链路余量 TI SWRA479A §2.4 4.93 dB 设备库 · 假设 · 上一步, Secondary Actions: Expand
+							570 text ⑤
+							571 text 链路余量
+							572 text TI SWRA479A §2.4
+							573 text 4.93 dB
+							574 text 设备库 · 假设 · 上一步
+					575 button (collapsed) 11/11 校验通过, Secondary Actions: Expand
+						576 text 11/11 校验通过
+					577 container
+						578 heading 适用范围, Value: 3
+							579 text 适用范围
+						580 text 两端站点 A站、B站 的坐标与天线高度取自站址表（模拟）。
+						581 button (collapsed) 其余 15 条, Secondary Actions: Expand
+							582 text 其余 15 条
+					583 button (collapsed) 记录与配置, Secondary Actions: Expand
+						584 text 记录与配置
+					585 container
+						586 button 参数溯源
+						587 button 公式
+						588 button 依据
+		101 button (collapsed) 执行时间线 57 条记录, Secondary Actions: Expand
+			102 text 执行时间线
+			589 text 57 条记录
+
+The focused UI element is 1 AXWebArea 通信筹划 · Planning Workbench, URL: 127.0.0.1:18085/?check=v2edit760#f52e52b7-5de7-49ee-a8da-20b1f0268144

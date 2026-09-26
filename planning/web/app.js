@@ -3,6 +3,7 @@ import {serviceText} from './model-status.mjs';
 import {nodes,renderFlow,relevantEvents,activityFresh,openRun} from './flow.mjs';
 import {renderRight,nodeCard,el,labels,parameterNames,conditionNames,targetNames} from './details.mjs';
 import {formatDomain} from './values.mjs';
+import {assumptionEdit} from './m1.mjs';
 import {renderConversation} from './conversation.mjs';
 import {renderQuestions,openQuestions} from './questions.mjs';
 import {summary,factorySettings,renderSettingsForm} from './settings.mjs';
@@ -53,17 +54,18 @@ function syncButtons(){
  for(const id of ['new','restore','refresh','history','refresh-tasks'])$(id).disabled=busy||(['history','refresh'].includes(id)&&!current);
  $('export').disabled=busy||!shown();
 }
-function readInput(){const p={};for(const[id,name]of [['frequency','frequency_ghz'],['distance','distance_km']])if($(id).value!==''){const value=Number($(id).value);if(!Number.isFinite(value))throw new Error('手工参数必须是有限数值。');p[name]={value,unit:$(id+'-unit').value};}return {raw_text:$('raw-text').value,manual_parameters:p,condition:$('condition').value||null,target:$('target').value||null};}
+function readInput(){const p={...current?.request?.manual_parameters};delete p.frequency_ghz;delete p.distance_km;for(const[id,name]of [['frequency','frequency_ghz'],['distance','distance_km']])if($(id).value!==''){const value=Number($(id).value);if(!Number.isFinite(value))throw new Error('手工参数必须是有限数值。');p[name]={value,unit:$(id+'-unit').value};}return {raw_text:$('raw-text').value,manual_parameters:p,condition:$('condition').value||null,target:$('target').value||null};}
 function fillInput(s){$('raw-text').value=s.request.raw_text;$('condition').value=s.request.condition||'';$('target').value=s.request.target||'';for(const[id,name]of [['frequency','frequency_ghz'],['distance','distance_km']]){const p=s.request.manual_parameters[name];$(id).value=p?p.value:'';if(p)$(id+'-unit').value=p.unit;}$('manual-details').open=Object.keys(s.request.manual_parameters).length>0||!!s.request.condition||!!s.request.target;}
 // Registered cards for the formula view, verified against the task's evidence hashes when shown.
-const cards={};let cardsLoading=false;
+const cards={},facts={};let cardsLoading=false;
 async function ensureCards(){
  const s=shown(),plan=(s?.review?.report||s?.report)?.calculation_plan_proposal;if(!plan||cardsLoading)return;
- const ids=[...new Set(plan.steps.map(x=>x.tool_id))].filter(id=>id!==s.review?.model?.id&&!(id in cards));if(!ids.length)return;
+ const ids=[...new Set(plan.steps.map(x=>x.tool_id))].filter(id=>!(id in cards));if(!ids.length)return;
  cardsLoading=true;
- try{const data=await api('/api/formula-cards?ids='+ids.join(','));for(const c of data.cards)cards[c.id]=c;for(const id of data.missing)cards[id]=null;}
+ let loaded=false;
+ try{const data=await api('/api/formula-cards?ids='+ids.join(','));for(const c of data.cards)cards[c.id]=c;for(const id of data.missing)cards[id]=null;loaded=true;}
  catch(e){notice('公式卡读取失败：'+e.message,true);}
- finally{cardsLoading=false;if(view==='formula')drawRight();}
+ finally{cardsLoading=false;if(loaded)drawRight();}
 }
 function setView(next){view=next;popover=null;if(next==='main')focusParameter=null;if(next==='formula')ensureCards();if(!matchMedia('(min-width: 1350px)').matches)sideChoice='plan';draw();$('detail-content').scrollTop=0;}
 function chooseParameter(name){focusParameter=name;setView('parameters');}
@@ -143,13 +145,14 @@ function drawRight(){
  const s=shown(),relevant=relevantEvents(s,activity);
  const h=headline(s,{busy,action:busyAction,editing,historical:!!historical,modelLabel:modelLabel(),ran:historical?'':runSummary(relevant)});
  $('headline-text').textContent=h.text;$('headline-sub').textContent=h.sub||'';$('headline').className='headline '+h.tone;
- if(view==='formula')ensureCards();
- renderRight($('detail-content'),{state:s,view,focusParameter,historical:!!historical,activeContext:!!activeContext,modelService,settings:settings?.settings,models,open:folds,cards,
-  onView:setView,onParameter:chooseParameter,onMissing:focusQuestion,onReparse:()=>submit('edit').catch(e=>notice(e.message,true))});
+ ensureCards();
+ renderRight($('detail-content'),{state:s,view,focusParameter,historical:!!historical,disabled:busy||dirty||editing,activeContext:!!activeContext,modelService,settings:settings?.settings,models,open:folds,cards,facts,
+  onView:setView,onParameter:chooseParameter,onMissing:focusQuestion,onReparse:()=>submit('edit').catch(e=>notice(e.message,true)),
+  onAssumption:(name,value)=>{try{const input=assumptionEdit(current,name,value);submit('edit',null,input).catch(e=>notice(e.message,true));}catch(e){notice(e.message,true);}}});
  const n=openQuestions(s).length;
  $('pending-bar').hidden=!n||!!historical||busy||editing;$('pending-bar').textContent=`${h.text} · 去处理`;
 }
-function autoSide(){const s=shown();return !s||editing||['AWAITING_INPUT','NEEDS_MODEL'].includes(s.status)?'chat':'plan';}
+function autoSide(){const s=shown();return !s||editing||s.status==='AWAITING_INPUT'||(s.status==='NEEDS_MODEL'&&s.failure?.code!=='BEYOND_LINE_OF_SIGHT')?'chat':'plan';}
 function drawSide(){
  const s=shown(),key=[s?.task_id,s?.revision,s?.status,editing].join('|');
  if(key!==sideKey){sideKey=key;sideChoice=null;}
@@ -191,10 +194,10 @@ function afterCommand(action){
  if(!questions.hidden)reveal(questions);
  else thread.scrollTop=['supplement','answer'].includes(action)?thread.scrollHeight:0;
 }
-async function submit(action,answers=null){
+async function submit(action,answers=null,inputOverride=null){
  if(busy||historical)return;
  const c={action,task_id:current?.task_id||(pendingCommand?.action==='create'?pendingCommand.task_id:crypto.randomUUID()),event_id:crypto.randomUUID(),expected_revision:current?.revision||0,expected_state_version:current?.state_version||0};
- if(['create','edit'].includes(action)){c.input=readInput();c.mode=$('mode').value;}if(action==='supplement'){c.message=$('supplement-message').value.trim();c.mode=$('mode').value;if(!c.message||dirty||editing)return;}if(action==='confirm')c.review_hash=current.review.review_hash;
+ if(['create','edit'].includes(action)){c.input=inputOverride||readInput();c.mode=$('mode').value;}if(action==='supplement'){c.message=$('supplement-message').value.trim();c.mode=$('mode').value;if(!c.message||dirty||editing)return;}if(action==='confirm')c.review_hash=current.review.review_hash;
  if(action==='answer'){if(dirty||editing||!answers)return;c.answers=answers;c.mode=$('mode').value;}
  if(pendingCommand){const comparable=x=>JSON.stringify({...x,event_id:''});if(comparable(pendingCommand)===comparable(c))c.event_id=pendingCommand.event_id;}
  clearError();pendingCommand=c;busy=true;busyAction=action;historical=null;popover=null;view='main';const generation=++pollGeneration;
@@ -264,7 +267,10 @@ function showSummary(){
  if(settings)$('mode').value=settings.settings.mode_default;
 }
 async function loadSettings(){
- try{[settings,models]=await Promise.all([api('/api/settings'),api('/api/models')]);}catch(e){notice('模型与检索设置载入失败：'+e.message,true);}
+ const results=await Promise.allSettled([api('/api/settings'),api('/api/models')]);
+ if(results[0].status==='fulfilled')settings=results[0].value;
+ if(results[1].status==='fulfilled')models=results[1].value;
+ const failed=results.find(r=>r.status==='rejected');if(failed)notice('部分模型与检索状态载入失败：'+failed.reason.message,true);
  showSummary();
 }
 function drawSettings(){renderSettingsForm($('settings-form'),{draft,models,status:models?.status,corpus:models?.corpus,el,onChange:next=>{draft=next;drawSettings();}});}
@@ -355,4 +361,4 @@ $('history').addEventListener('click',async()=>{
 $('export').addEventListener('click',()=>{toggleMenu(false);const s=shown();if(!s||busy)return;const blob=new Blob([JSON.stringify(s,null,2)],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob);const a=el('a');a.href=url;a.download=`planning-${s.task_id}-r${s.revision}-v${s.state_version}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
 draw();
 checkModel();
-(async()=>{try{token=(await api('/api/session')).token;await loadSettings();draw();await recentTasks();const id=location.hash.slice(1)||localStorage.getItem('planning-task');if(id)await restore(id);}catch(e){notice('无法连接本地服务：'+e.message,true);}})();
+(async()=>{try{token=(await api('/api/session')).token;const data=await api('/api/facts');for(const record of data.records)facts[record.id]=record;await loadSettings();draw();await recentTasks();const id=location.hash.slice(1)||localStorage.getItem('planning-task');if(id)await restore(id);}catch(e){notice('无法连接本地服务：'+e.message,true);}})();

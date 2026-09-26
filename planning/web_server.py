@@ -49,7 +49,7 @@ def create_server(root, db_path=None, port=18082):
     build=build_fingerprint(root)
     assets={'/':('index.html','text/html'),'/app.js':('app.js','text/javascript'),
             '/text.mjs':('text.mjs','text/javascript'),'/flow.mjs':('flow.mjs','text/javascript'),
-            '/details.mjs':('details.mjs','text/javascript'),'/conversation.mjs':('conversation.mjs','text/javascript'),
+            '/details.mjs':('details.mjs','text/javascript'),'/m1.mjs':('m1.mjs','text/javascript'),'/conversation.mjs':('conversation.mjs','text/javascript'),
             '/roles.mjs':('roles.mjs','text/javascript'),
             '/model-status.mjs':('model-status.mjs','text/javascript'),
             '/drafts.mjs':('drafts.mjs','text/javascript'),
@@ -109,6 +109,9 @@ def create_server(root, db_path=None, port=18082):
                 self.respond(200,service.settings.get())
             elif path=='/api/metrics':
                 self.respond(200,service.activity.metrics())
+            elif path=='/api/facts':
+                from planning.knowledge.facts import FactService
+                self.respond(200,FactService(service.root).public_records())
             elif path=='/api/formula-cards':
                 # Read-only registered cards. content_hash uses the same digest as task evidence,
                 # so the page shows a formula only when it is the card the task actually used.

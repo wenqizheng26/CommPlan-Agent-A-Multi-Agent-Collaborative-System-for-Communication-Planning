@@ -11,6 +11,17 @@ from test_planning_loop import ROOT, command
 
 
 class PlanningWebTests(unittest.TestCase):
+    def test_facts_are_read_only_reviewed_and_same_origin(self):
+        code, data=self.call('/api/facts')
+        self.assertEqual(code,200)
+        self.assertEqual(len(data['records']),9)
+        self.assertEqual(len(data['version']),64)
+        for row in data['records']:
+            self.assertTrue(row['simulated'])
+            self.assertEqual(set(row['source']),{'title','version','locator'})
+        self.assertEqual(self.call('/api/facts',headers={'Origin':'https://evil.example'})[0],403)
+        self.assertNotEqual(self.call('/api/facts',body={})[0],200)
+
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)

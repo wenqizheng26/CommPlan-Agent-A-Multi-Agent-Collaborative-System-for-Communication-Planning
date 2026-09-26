@@ -460,3 +460,5 @@ td.num,span.num{text-align:right;font-variant-numeric:tabular-nums}
 .metrics-bar{position:absolute;left:0;top:0;height:8px;min-width:3px;border-radius:4px}
 .num.alert{color:var(--bad);font-weight:600}
 @media(max-width:899px){.sheet{top:auto;left:8px;right:8px;bottom:8px;width:auto;max-height:85vh}.waterfall-row,.metrics-row{grid-template-columns:120px minmax(0,1fr) 64px}.metrics-row span:nth-child(n+4){display:none}}
+
+.assumption-edit{display:flex;gap:6px;align-items:center;grid-column:1/-1}.assumption-edit input{width:7em;min-width:0}.model-answer{border-left:3px solid #176e8f;padding:12px;background:#eef7fa}.model-answer p{font-size:16px;line-height:1.7}.solve svg{display:block;width:100%;height:auto;margin-top:12px}.solve svg text{font-size:12px;fill:currentColor}.step-note,.horizon-check{font-size:13px;line-height:1.7;padding:8px 12px;color:#47566a}.tag.site,.tag.device{background:#edf4ee}.tag.default{background:#fff4d7}.warn-text{color:#a43324}

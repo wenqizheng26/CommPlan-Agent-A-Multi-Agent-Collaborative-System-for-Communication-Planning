@@ -15,7 +15,7 @@ const report={parameters_proposal:[param('frequency_ghz',2,'GHz'),param('distanc
 test('each plan input names its source: text, manual, missing or an earlier step',()=>{
  const [first,second]=planSteps(plan,report,null);
  assert.equal(first.title,'自由空间损耗');assert.equal(first.value,null);assert.equal(first.out,null);
- assert.deepEqual(first.inputs.map(x=>[x.value,x.tag]),[['2 GHz','原文'],['10 km','手工']]);
+ assert.deepEqual(first.inputs.map(x=>[x.value,x.tag]),[['2 GHz','原文'],['10 km','手填']]);
  assert.deepEqual(second.inputs.map(x=>[x.label,x.kind,x.tag]),[['接收信号电平','step','上一步'],['预留余量','missing','待补充']]);
  assert.equal(second.inputs[0].ref,1);
 });
