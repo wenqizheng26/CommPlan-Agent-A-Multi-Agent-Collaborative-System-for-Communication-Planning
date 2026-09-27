@@ -1,19 +1,16 @@
 """Start the planning workbench and optional local Qwen, without downloads."""
 import argparse
-import json
 import os
 from pathlib import Path
-import socket
 import subprocess
 import sys
 import time
-import urllib.error
-import urllib.request
 import webbrowser
 
 from launch import model_command, model_paths, embedding_command
 from planning.build_info import build_fingerprint
 from planning.providers.registry import Registry
+from stop_commplan import PROFILE, listening, read_json, stop_workbench
 
 ROOT = Path(__file__).resolve().parent
 
@@ -23,21 +20,24 @@ def default_model():
     return registry.models[registry.defaults['chat']]
 
 
-def read_json(url):
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    try:
-        with opener.open(url, timeout=2) as response:
-            return json.load(response)
-    except (urllib.error.URLError, OSError, ValueError):
-        return None
+def chrome():
+    """Chrome is the target browser; the system default is only a fallback."""
+    for base in (os.environ.get('ProgramFiles'), os.environ.get('ProgramFiles(x86)'), os.environ.get('LOCALAPPDATA')):
+        if base and (Path(base) / 'Google/Chrome/Application/chrome.exe').is_file():
+            return Path(base) / 'Google/Chrome/Application/chrome.exe'
+    return None
 
 
-def listening(port):
-    try:
-        with socket.create_connection(('127.0.0.1', port), timeout=1):
+def open_browser(address):
+    path = chrome()
+    if path is not None:
+        try:
+            subprocess.Popen([str(path), address], stdin=subprocess.DEVNULL,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             return True
-    except OSError:
-        return False
+        except OSError:
+            pass
+    return webbrowser.open(address)
 
 
 def model_ready():
@@ -157,13 +157,16 @@ def main(argv=None):
 
     def workbench_ready():
         data = read_json(address + '/api/session')
-        return isinstance(data, dict) and data.get('profile') == 'confirmed-fspl-loop-v1'
+        return isinstance(data, dict) and data.get('profile') == PROFILE
 
-    existing = workbench_ready()
-    if existing and read_json(address+'/api/session').get('build') != build_fingerprint(ROOT):
-        raise RuntimeError('该端口运行的是旧版工作台。请停止旧工作台进程后重新启动，或用 --port 选择空闲端口；模型服务可继续复用。')
-    if not existing and listening(args.port):
-        raise RuntimeError(f'{args.port} 端口已被其他服务占用，请使用 --port 指定其他端口。')
+    session = read_json(address + '/api/session')
+    existing = isinstance(session, dict) and session.get('profile') == PROFILE
+    if existing and session.get('build') != build_fingerprint(ROOT) or not existing and listening(args.port):
+        # An older CommPlan build holds the port: replace it. Anything else there is left alone.
+        if not stop_workbench(args.port):
+            raise RuntimeError(f'{args.port} 端口已被其他程序占用，请使用 --port 指定其他端口。')
+        print('已停止旧版工作台，启动当前版本。', flush=True)
+        existing = False
     if existing and args.db is not None:
         raise RuntimeError('指定了 --db，但该端口已有工作台。请使用空闲的 --port 启动独立数据库。')
     if not args.without_model:
@@ -187,8 +190,8 @@ def main(argv=None):
         process = spawn(command, f'commplan-web-{args.port}', ROOT)
         wait_ready(workbench_ready, process, '工作台', timeout=60)
     print('工作台已就绪：' + address, flush=True)
-    print('页面默认使用确定性模式；模型就绪后可选择“本机 Qwen”。后台服务在关闭本窗口后继续运行。', flush=True)
-    if not args.no_browser and not webbrowser.open(address):
+    print('页面默认使用确定性模式；模型就绪后可选择“本机 Qwen”。关闭本窗口后服务仍在后台运行，用“停止服务”关闭。', flush=True)
+    if not args.no_browser and not open_browser(address):
         print('未能自动打开浏览器，请手动打开上述地址。', flush=True)
     return 0
 

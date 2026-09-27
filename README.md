@@ -27,7 +27,7 @@ setup_planning.cmd
 
 脚本创建 `.venv`，安装 `requirements-planning.txt`，执行 `pip check`。若 `py` 或 `python` 未在 PATH，可先将 `COMMPLAN_PYTHON` 设置为 Python 3.12 的 `python.exe` 完整路径再运行。此最小 Planning 环境无需 Torch、模型权重或 llama runtime；正常确定性模式也无需模型服务。
 
-日常双击 `start.cmd`（ASCII 文件名）或 `启动.cmd`。启动器默认尝试项目内 `models/signal-formula-qwen3/` 的本地模型；未找到模型时仍打开确定性工作台。页面默认选“确定性规则”；进入高级设置才可选择本机 Qwen。只启工作台：
+日常双击 `start.cmd`（ASCII 文件名）或 `启动.cmd`。启动器默认尝试项目内 `models/signal-formula-qwen3/` 的本地模型；未找到模型时仍打开确定性工作台。页面默认选“确定性规则”；进入高级设置才可选择本机 Qwen。端口上若是旧版本的工作台，启动器会先停掉它再启动当前版本；已安装 Chrome 时用 Chrome 打开。只启工作台：
 
 ```bat
 start.cmd --without-model
@@ -37,7 +37,7 @@ start.cmd --without-model
 
 **source Demo ZIP 不含模型、llama 二进制、Python、虚拟环境或用户任务数据。** 若自行准备本地模型，保持 `runtime_config.json` 中 `generation.path` 和 `generation.executable` 相对资源根目录有效。项目内资源目录被 `.gitignore` 排除，不应提交或上传。可用 `--without-model` 完全跳过模型启动。
 
-关闭 CMD 窗口不会停止启动器在后台创建的服务。需要停服务时，先查看 `runtime/commplan-web-<port>.pid` 和 `runtime/commplan-model.pid` 对应进程的命令行/可执行路径，确认属于本目录和本次实例后再停止对应 PID；不要按进程名批量结束，也不要停止只是被启动器复用的外部模型服务。前台 `planning/run_planning.cmd` 可在其窗口按 Ctrl+C 结束。任务保存在 `outputs/planning.sqlite`；该目录不进 source ZIP。
+关闭 CMD 窗口不会停止启动器在后台创建的服务。双击 `停止服务.cmd` 关闭工作台与本地模型：它逐个核对端口上的服务身份（模型看登记的别名，工作台看 `/api/session`），只停本项目的服务，其他程序不动。前台 `planning/run_planning.cmd` 可在其窗口按 Ctrl+C 结束。任务保存在 `outputs/planning.sqlite`；该目录不进 source ZIP。
 
 ## 使用
 
