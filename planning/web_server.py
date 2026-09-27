@@ -55,7 +55,7 @@ def create_server(root, db_path=None, port=18082):
             '/drafts.mjs':('drafts.mjs','text/javascript'),
             '/progress.mjs':('progress.mjs','text/javascript'),
             '/settings.mjs':('settings.mjs','text/javascript'),
-            '/timing.mjs':('timing.mjs','text/javascript'),
+            '/timing.mjs':('timing.mjs','text/javascript'),'/marquee.mjs':('marquee.mjs','text/javascript'),
             '/questions.mjs':('questions.mjs','text/javascript'),'/values.mjs':('values.mjs','text/javascript'),
             '/app.css':('app.css','text/css')}
 

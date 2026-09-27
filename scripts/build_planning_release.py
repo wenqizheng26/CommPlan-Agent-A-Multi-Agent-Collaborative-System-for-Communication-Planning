@@ -56,7 +56,7 @@ planning/web/app.js planning/web/conversation.mjs planning/web/details.mjs
 planning/web/m1.mjs
 planning/web/drafts.mjs planning/web/flow.mjs planning/web/index.html
 planning/web/model-status.mjs planning/web/progress.mjs planning/web/settings.mjs planning/web/timing.mjs planning/web/questions.mjs
-planning/web/roles.mjs planning/web/text.mjs planning/web/values.mjs
+planning/web/roles.mjs planning/web/text.mjs planning/web/values.mjs planning/web/marquee.mjs
 planning/workflow/__init__.py planning/workflow/activity.py
 planning/workflow/planning_graph.py planning/workflow/requirements_graph.py
 planning/workflow/task_service.py planning/workflow/task_store.py

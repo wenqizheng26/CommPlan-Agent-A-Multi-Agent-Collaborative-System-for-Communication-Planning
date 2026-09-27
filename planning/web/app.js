@@ -8,6 +8,7 @@ import {renderConversation} from './conversation.mjs';
 import {renderQuestions,openQuestions} from './questions.mjs';
 import {summary,factorySettings,renderSettingsForm} from './settings.mjs';
 import {nodeLatency,stepTimes,runSummary,renderWaterfall,miniWaterfall,renderMetrics} from './timing.mjs';
+import {headerText,setMarquee,fitMarquee} from './marquee.mjs';
 const $=id=>document.getElementById(id);
 const narrow=()=>window.matchMedia('(max-width: 899px)').matches;
 let current=null, historical=null, activeContext=null, activity=[], token='', dirty=false, editing=false, busy=false, busyAction=null, pendingCommand=null;
@@ -176,7 +177,7 @@ function draw(){
  // Each status is a new reading: steps open while checking, closed once computed.
  const s=shown(),key=s?`${s.task_id}:${s.revision}:${s.status}:${historical?'h':''}`:'';
  if(key!==foldKey){foldKey=key;folds.clear();originalOpen=false;}
- const text=activeContext?'正在处理':s?.request?.raw_text?.trim()||'未开始';$('task-meta').textContent=text;$('task-meta').title=text;
+ setMarquee($('task-meta'),headerText(activeContext,historical||current));
  drawSide();drawLeft();drawFlow();drawRight();drawTimeline();syncButtons();
 }
 function acceptState(s){$('history-list').replaceChildren();if(current?.task_id!==s.task_id)activity=[];current=s;historical=null;activeContext=null;dirty=false;editing=false;$('accept').checked=false;fillInput(s);$('task-id').value=s.task_id;localStorage.setItem('planning-task',s.task_id);history.replaceState(null,'','#'+s.task_id);}
@@ -225,7 +226,7 @@ async function restore(id){
   if(!saved&&!running)throw new Error('未找到已保存任务；该次操作可能未提交。');
   if(running){
    const restoreDeadline=Date.now()+125000;
-   if(!saved||running.revision!==saved.revision)activeContext={task_id:id,revision:running.revision,state_version:0,status:'RUNNING',request:{raw_text:'正在恢复运行观察，原文以提交后的记录为准。',manual_parameters:{}},report:null,trace:[]};
+   if(!saved||running.revision!==saved.revision)activeContext={task_id:id,revision:running.revision,state_version:0,status:'RUNNING',placeholder:true,request:{raw_text:'正在恢复运行观察，原文以提交后的记录为准。',manual_parameters:{}},report:null,trace:[]};
    notice('检测到仍在执行的操作，正在恢复观察');draw();
    while(running&&generation===pollGeneration){
     if(Date.now()>restoreDeadline)throw new Error('运行观察超过两分钟，请刷新保存状态；该提示不表示后端已停止。');
@@ -360,5 +361,6 @@ $('history').addEventListener('click',async()=>{
 });
 $('export').addEventListener('click',()=>{toggleMenu(false);const s=shown();if(!s||busy)return;const blob=new Blob([JSON.stringify(s,null,2)],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob);const a=el('a');a.href=url;a.download=`planning-${s.task_id}-r${s.revision}-v${s.state_version}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
 draw();
+new ResizeObserver(()=>fitMarquee($('task-meta'))).observe($('task-meta').parentElement);
 checkModel();
 (async()=>{try{token=(await api('/api/session')).token;const data=await api('/api/facts');for(const record of data.records)facts[record.id]=record;await loadSettings();draw();await recentTasks();const id=location.hash.slice(1)||localStorage.getItem('planning-task');if(id)await restore(id);}catch(e){notice('无法连接本地服务：'+e.message,true);}})();

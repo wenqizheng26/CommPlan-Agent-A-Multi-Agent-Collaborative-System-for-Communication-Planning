@@ -84,7 +84,13 @@ header{position:sticky;top:0;z-index:30;height:56px;padding:0 24px;display:flex;
 .brand-sub{display:block;font-size:10px;font-weight:500;letter-spacing:.04em;color:var(--text-3);margin-top:1px}
 .header-task{display:flex;align-items:baseline;gap:10px;flex:1;min-width:0;padding-left:20px;border-left:1px solid var(--hairline)}
 .header-task h1{font-size:12px;font-weight:500;color:var(--text-3);white-space:nowrap}
-#task-meta{margin:0;font-size:13px;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#task-meta{margin:0;font-size:13px;color:var(--text);min-width:0;overflow:hidden;white-space:nowrap}
+#task-meta .marquee-track{display:inline-flex;gap:48px}
+/* Scrolls only when the question does not fit; pauses under the pointer. */
+#task-meta.scrolling{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent)}
+#task-meta.scrolling .marquee-track{animation:task-marquee var(--marquee-time,12s) linear 1.5s infinite}
+#task-meta.scrolling:hover .marquee-track{animation-play-state:paused}
+@keyframes task-marquee{to{transform:translateX(var(--marquee-shift,0))}}
 .task-tools{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .task-tools button{white-space:nowrap}
 .more{padding:6px 12px;font-size:15px;line-height:1}
@@ -347,7 +353,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;padding:12px;bord
 
 @keyframes flow{to{stroke-dashoffset:-24}}
 @keyframes pulse{50%{opacity:.35}}
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}#task-meta.scrolling{-webkit-mask-image:none;mask-image:none}#task-meta.scrolling .marquee-track{display:block;overflow:hidden;text-overflow:ellipsis}#task-meta.scrolling .marquee-track>span+span{display:none}}
 
 /* ---------- fixed-height workbench from 900 px: panels scroll inside, the page does not ---------- */
 @media(min-width:900px){
