@@ -1,6 +1,18 @@
-# CommPlan-Agent 当前交接（2026-09-26）
+# CommPlan-Agent 当前交接（2026-09-27）
 
-## 当前状态（2026-09-26 夜）
+## 当前状态（2026-09-27）
+
+- **main**：`6dd412e`，由 PR #6 合入，main 上的 CI 通过。
+- **目标 Chrome**：用户 2026-09-27 验收 M1 页面通过。
+- **第 4 周**（加分档）：由 Claude 负责，范围与顺序见 [M1_WEEK4](../design/M1_WEEK4.md)；Codex Astra 只做最终审查及其中的修改。
+- **一键启动**：
+  - 仓库里新增 `停止服务.cmd`（`stop_commplan.py`）。它按端口核对服务身份，只停本项目的工作台与模型：模型看登记的别名，工作台看 `/api/session`。
+  - 启动器遇到旧版工作台时会先停掉它，已安装 Chrome 时用 Chrome 打开。
+  - 父目录的 `启动 CommPlan.cmd` / `关闭 CommPlan.cmd` 指向本文件夹。
+- **ITU 原文**：本文件夹原先缺少 `knowledge/sources/itu/`（被忽略的目录），2026-09-26 的最终运行因此只检索到模拟文档。已从主工作区复制，哈希与清单一致。
+- **C13 重跑**（显卡空闲，ITU 原文就位）：28/28，硬规则 8/8；审查 20/20 由模型完成（昨晚 14/20）。见[重跑记录](evidence/2026-09-27-M1-rerun.md)。
+
+## 2026-09-26 夜的状态
 
 - **v0.1.0 已发布**：
   - 标签 `v0.1.0` 指向 main `b9575a5`，[GitHub Release](https://github.com/wenqizheng26/CommPlan-Agent-A-Multi-Agent-Collaborative-System-for-Communication-Planning/releases/tag/v0.1.0) 附源码包（84 个文件，SHA-256 `058ffabb…a95c66`）。
@@ -21,13 +33,13 @@
   - 用户决定不含在本次上传。
   - Codex 的未提交改动原样留在 `CommPlan-Agent-M1-codex`，并另存为本地分支 `codex/m1-week4-wip`（`f17a890`，未推送）。
 
-### 下一步
+### 当时的下一步（2026-09-27 处理情况）
 
-1. 停掉 C12 复核时（18:54）启动的向量服务（端口 18084），或用修正后的启动器重启全部服务。确认 9B 约 30 token/s 后重跑 C13，结果另记。
-2. 用户在目标 Chrome 上验收 M1 页面。
-3. 第 4 周：Codex 从 `codex/m1-week4-wip` 继续，先合入最新 main，再按任务拆成单独提交；Claude 审核。
-4. 文档切块：只有标题的块不送入审查。改切块规则后，重建 C12 检索记录。
-5. 2026-10-24 前演练。
+1. 在正常速度下重跑 C13：2026-09-27 完成，28/28，审查 20/20 由模型完成，见[重跑记录](evidence/2026-09-27-M1-rerun.md)。
+2. 目标 Chrome 验收：用户 2026-09-27 确认通过。
+3. 第 4 周：改由 Claude 负责，见 [M1_WEEK4](../design/M1_WEEK4.md)。
+4. 文档切块：只有标题的块不再单独成块，已列入第 4 周。
+5. 2026-10-24 前演练：不变。
 
 ## M1 第 2 周：模型主导（分支 `claude/calc-plans`）
 
