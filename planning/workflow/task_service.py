@@ -18,6 +18,8 @@ from planning.workflow.activity import ActivityStore, observe
 from planning.services.supplement import merge_supplement, conversation_of, edited_conversation
 from planning.services.clarification import apply_answers, attach_issues
 from planning.services.supplement import LocalSupplementSelector
+from planning.services.entity_followup import replace_entities
+from planning.agents.role_model import LocalRoleSelector
 from planning.providers.registry import Registry
 from planning.providers.settings import SettingsStore
 from planning.retrieval import DefaultRetrievalService
@@ -215,8 +217,15 @@ class TaskService:
                 next_input,conversation=apply_answers(current,c['answers'],event_id)
             elif action=='supplement':
                 observe(observer,'requirements','started',caller='orchestrator',purpose='supplement')
-                next_input,conversation=merge_supplement(current,c['message'],event_id,mode,observer=observer,
-                    selector=LocalSupplementSelector(bindings['supplement']) if bindings else None)
+                # A swap of the radio or one site ("换 XX-200 呢") is checked against the reviewed library;
+                # any other message is merged as a parameter supplement.
+                followup=replace_entities(current,c['message'],event_id,self.root,observer=observer,
+                    selector=LocalRoleSelector(bindings['supplement']) if bindings else False)
+                if followup is not None:
+                    next_input,conversation=followup
+                else:
+                    next_input,conversation=merge_supplement(current,c['message'],event_id,mode,observer=observer,
+                        selector=LocalSupplementSelector(bindings['supplement']) if bindings else None)
             elif action in {'create','edit'}:
                 next_input=c['input']
                 conversation=edited_conversation(current,next_input,event_id) if current else dict(

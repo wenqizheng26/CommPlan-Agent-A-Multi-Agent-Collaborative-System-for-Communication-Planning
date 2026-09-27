@@ -6,7 +6,7 @@ from formula_rag.model_transport import chat, parse_output, ModelResponseError, 
 from planning.workflow.activity import observe
 
 # Output budget per role; the reviewer writes the answer and the review opinions.
-MAX_TOKENS = {'validator_agent': 900, 'compute_agent': 1600}
+MAX_TOKENS = {'validator_agent': 900, 'compute_agent': 1600, 'extraction': 1800}
 
 
 class Rewrite(ValueError):

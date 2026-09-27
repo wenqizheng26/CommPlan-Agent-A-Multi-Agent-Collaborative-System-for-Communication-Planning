@@ -35,7 +35,28 @@ MESSAGES={
     'STALE_SETTINGS':'设置已被其他页面修改。已载入最新设置，请核对后再保存。',
     'SETTINGS_MODEL_NOT_STRUCTURED':'该模型不支持严格结构化输出，不能用于这个角色。',
     'SETTINGS_TOP_N':'送入模型的条数不能超过召回数。',
+    'DOCUMENT_FORMAT':'只支持 PDF、Word（docx）、Excel（xlsx、xls）、PowerPoint（pptx）、HTML、Markdown 和纯文本文件。',
+    'DOCUMENT_SIZE':'文件为空或超过 20 MB。',
+    'DOCUMENT_NAME':'文件名无效。',
+    'DOCUMENT_EXISTS':'这份文件已经在资料库里。',
+    'DOCUMENT_CONVERTER_MISSING':'缺少文档转换组件。请在项目环境中安装 requirements-docs.txt。',
+    'DOCUMENT_UNREADABLE':'文件无法读取，可能已损坏或加密。',
+    'DOCUMENT_PDF_UNREADABLE':'PDF 无法读取，可能已损坏或加密。',
+    'DOCUMENT_EMPTY':'文件里没有可读取的文字；扫描件需要先做文字识别。',
+    'DOCUMENT_NOT_FOUND':'资料库里没有这份文档。',
+    'EXTRACTION_CHUNKS':'请选择 1–6 个片段。',
+    'EXTRACTION_ONE_DOCUMENT':'一次只能从同一份文档抽取。',
+    'DRAFT_KIND':'请选择站点、设备或公式。',
+    'DRAFT_ID':'草稿不存在。',
+    'DRAFT_CHANGED':'草稿文件已被改动，不能审核。',
+    'DRAFT_STALE_REVIEW':'草稿内容已变化，请刷新后再审核。',
+    'DRAFT_NOT_APPROVABLE':'草稿未通过核对，不能入库：',
+    'DRAFT_ALREADY_REVIEWED':'这份草稿已经审核过。',
+    'DRAFT_REVIEWER':'请填写审核人（不超过 40 字）。',
+    'DRAFT_REASON':'驳回时请写明原因（不超过 500 字）。',
 }
+# These codes carry a detail after ': ' that the page shows.
+DETAILED={'DRAFT_NOT_APPROVABLE'}
 
 
 def create_server(root, db_path=None, port=18082):
@@ -56,6 +77,7 @@ def create_server(root, db_path=None, port=18082):
             '/progress.mjs':('progress.mjs','text/javascript'),
             '/settings.mjs':('settings.mjs','text/javascript'),
             '/timing.mjs':('timing.mjs','text/javascript'),'/marquee.mjs':('marquee.mjs','text/javascript'),
+            '/library.mjs':('library.mjs','text/javascript'),'/compare.mjs':('compare.mjs','text/javascript'),
             '/questions.mjs':('questions.mjs','text/javascript'),'/values.mjs':('values.mjs','text/javascript'),
             '/app.css':('app.css','text/css')}
 
@@ -75,7 +97,11 @@ def create_server(root, db_path=None, port=18082):
             self.wfile.write(payload)
 
         def error(self,status,code):
-            self.respond(status,{'error':{'code':code,'message':MESSAGES.get(code,'请求格式或内容无效，请核对输入后重新提交。')}})
+            base,_,detail=code.partition(': ')
+            message=MESSAGES.get(code) or MESSAGES.get(base,'请求格式或内容无效，请核对输入后重新提交。')
+            if base in DETAILED and detail:
+                message+=detail
+            self.respond(status,{'error':{'code':code,'message':message}})
 
         def allowed(self,write=False):
             host=self.headers.get('Host','')
@@ -112,6 +138,8 @@ def create_server(root, db_path=None, port=18082):
             elif path=='/api/facts':
                 from planning.knowledge.facts import FactService
                 self.respond(200,FactService(service.root).public_records())
+            elif path=='/api/documents' or path.startswith('/api/documents/') or path=='/api/drafts':
+                self.knowledge(path)
             elif path=='/api/formula-cards':
                 # Read-only registered cards. content_hash uses the same digest as task evidence,
                 # so the page shows a formula only when it is the card the task actually used.
@@ -143,10 +171,74 @@ def create_server(root, db_path=None, port=18082):
             else:
                 self.error(404,'NOT_FOUND')
 
+        def knowledge(self,path):
+            """Documents, their sections and the extraction drafts (the 资料 page)."""
+            from planning.knowledge import sources
+            from planning.knowledge.drafts import DraftStore
+            try:
+                if path=='/api/documents':
+                    self.respond(200,sources.describe(root))
+                elif path=='/api/drafts':
+                    self.respond(200,{'drafts':DraftStore(root).views()})
+                else:
+                    self.respond(200,{'sections':sources.sections(root,path[len('/api/documents/'):])})
+            except ValueError as exc:
+                self.error(404 if str(exc)=='DOCUMENT_NOT_FOUND' else 400,str(exc))
+            except Exception as exc:
+                print('knowledge request failed:',type(exc).__name__,flush=True)
+                self.error(500,'SERVER_ERROR')
+
+        def drain(self,size,limit):
+            # Read a bounded rejected body so Windows delivers the error instead of a reset.
+            if 0<size<=limit:
+                self.connection.settimeout(5)
+                try:
+                    self.rfile.read(size)
+                except (OSError,TimeoutError):
+                    pass
+
+        def upload(self,query):
+            from planning.knowledge.sources import add_document, describe, MAX_BYTES
+            try:
+                size=int(self.headers.get('Content-Length','0'))
+            except ValueError:
+                size=-1
+            if self.headers.get_content_type()!='application/octet-stream':
+                self.drain(size,MAX_BYTES); self.error(400,'INVALID_REQUEST'); return
+            if not 0<size<=MAX_BYTES:
+                self.drain(size,3*MAX_BYTES); self.error(413,'DOCUMENT_SIZE'); return
+            data=self.rfile.read(size)
+            try:
+                record=add_document(root,query.get('name',[''])[0],data,query.get('title',[''])[0])
+                self.respond(200,{'document':record,'library':describe(root)})
+            except ImportError:
+                self.error(400,'DOCUMENT_CONVERTER_MISSING')
+            except ValueError as exc:
+                self.error(409 if str(exc)=='DOCUMENT_EXISTS' else 400,str(exc))
+            except Exception as exc:
+                print('document upload failed:',type(exc).__name__,flush=True)
+                self.error(500,'SERVER_ERROR')
+
+        def draft_command(self,payload):
+            from planning.knowledge.drafts import DraftStore
+            if self.path=='/api/drafts/extract':
+                if type(payload) is not dict or set(payload)!={'kind','chunk_ids'}:
+                    raise ValueError('INVALID_REQUEST')
+                from planning.agents.extraction import extract
+                from planning.agents.role_model import LocalRoleSelector
+                binding=service.settings.bindings(service.settings.get()['settings'])['requirements']
+                return extract(root,payload['kind'],payload['chunk_ids'],LocalRoleSelector(binding))
+            if type(payload) is not dict or set(payload)!={'id','decision','reviewer','reason','content_hash'}:
+                raise ValueError('INVALID_REQUEST')
+            return {'draft':DraftStore(root).review(payload['id'],payload['reviewer'],payload['content_hash'],
+                                                    payload['decision'],payload['reason'])}
+
         def do_POST(self):
             if not self.allowed(write=True):
                 return
-            if self.path not in {'/api/commands','/api/cancel-operation','/api/settings'}:
+            if urlsplit(self.path).path=='/api/documents':
+                self.upload(parse_qs(urlsplit(self.path).query)); return
+            if self.path not in {'/api/commands','/api/cancel-operation','/api/settings','/api/drafts/extract','/api/drafts/review'}:
                 self.error(404,'NOT_FOUND'); return
             if self.headers.get_content_type()!='application/json':
                 self.error(400,'JSON_REQUIRED'); return
@@ -171,13 +263,16 @@ def create_server(root, db_path=None, port=18082):
                     if type(payload) is not dict or set(payload)!={'task_id','event_id'}:
                         raise ValueError('INVALID_REQUEST')
                     result=service.cancel_operation(payload['task_id'],payload['event_id'])
+                elif self.path.startswith('/api/drafts/'):
+                    result=self.draft_command(payload)
                 else:
                     result=service.apply(payload)
                 self.respond(200,result)
             except (ValueError,TypeError,KeyError,OverflowError) as exc:
                 code=str(exc) if isinstance(exc,ValueError) and not isinstance(exc,UnicodeError) else 'INVALID_REQUEST'
                 status=409 if code in {'STALE_SETTINGS','STALE_REVISION','STALE_STATE_VERSION','REVIEW_HASH_MISMATCH','KNOWLEDGE_CHANGED',
-                    'TASK_EXISTS','NOT_CONFIRMABLE','NOT_CANCELLABLE','IDEMPOTENCY_CONFLICT','CHECKPOINT_STATE_MISMATCH'} else 400
+                    'TASK_EXISTS','NOT_CONFIRMABLE','NOT_CANCELLABLE','IDEMPOTENCY_CONFLICT','CHECKPOINT_STATE_MISMATCH',
+                    'DRAFT_STALE_REVIEW','DRAFT_ALREADY_REVIEWED'} or code.startswith('DRAFT_NOT_APPROVABLE') else 400
                 self.error(status,code)
             except sqlite3.OperationalError:
                 self.error(503,'DATABASE_BUSY')

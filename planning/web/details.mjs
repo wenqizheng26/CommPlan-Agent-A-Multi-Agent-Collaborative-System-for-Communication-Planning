@@ -158,7 +158,7 @@ function knownView(host,state,ctx={}){
   row.append(el('span',parameterNames[p.canonical_name]||p.canonical_name,'in-name'),el('span',`${formatDomain(p.value)} ${p.unit}${approx.has(p.canonical_name)?'（近似）':''}`,'in-value'),el('span',label.tag,'tag '+label.kind));ul.append(row);}
  box.append(ul);host.append(box);
 }
-function answer(host,state){
+function answer(host,state,comparison=null){
  const sec=el('section',undefined,'answer'),outs=state.result.outputs;
  const presentation=answerPresentation(state.final_report);
  if(presentation.caution)host.append(block('审查提示需要核对',presentation.opinions,'warning'));
@@ -170,6 +170,7 @@ function answer(host,state){
   if(value.inputs)sec.append(el('p',Object.entries(value.inputs).map(([k,v])=>`${parameterNames[k]||k} ${formatDomain(v)} ${{frequency_ghz:'GHz',distance_km:'km'}[k]||''}`).join('；'),'hint'));
  }
  const req=state.final_report.requirement;if(req)sec.append(el('p',`要求 ≥ ${formatDomain(req.value)} dB · ${req.met?'满足':'不满足'}`,req.met?'ok':'warn-text'));
+ if(comparison)sec.append(el('p',comparison,'compare-line'));
  sec.append(el('p',(presentation.show?'程序结论：':'')+state.final_report.conclusion,presentation.show?'hint':'conclusion'));host.append(sec);
  if(!presentation.caution&&presentation.opinions.length)host.append(block('审查意见',presentation.opinions));
  renderSolve(host,state.final_report.solve,el);
@@ -183,7 +184,7 @@ function recordsContent(host,ctx){
  const ds=diagnosticMessages(state.report?.diagnostics);if(ds.length)host.append(block('处理说明',ds),jsonDetails('逐次诊断',state.report.diagnostics));
 }
 function resultView(host,ctx){
- const {state}=ctx;answer(host,state);
+ const {state}=ctx;answer(host,state,ctx.comparison);
  const drift=ctx.historical?[]:settingsDrift(state,ctx.settings);
  if(drift.length){const p=el('p',`默认设置已变：${drift.join('；')}。本结果不变。`,'drift');if(ctx.onReparse)p.append(button('按新设置重新解析',ctx.onReparse));host.append(p);}
  const r=state.review?.report||state.report,plan=r?.calculation_plan_proposal;

@@ -24,10 +24,21 @@ def _normal(name):
     return value[:-1] if value.endswith('站') else value
 
 
+def registered(root, source):
+    """The approved record's document is in the manifest with the same hash (the original may be
+    kept only on the machine that added it: added originals are ignored by Git)."""
+    path = Path(root) / 'knowledge/documents/manifest.json'
+    if not source.get('sha256') or not path.is_file():
+        return False
+    documents = json.loads(path.read_text(encoding='utf-8')).get('documents', [])
+    return any(d.get('local_path') == source['path'] and d.get('sha256') == source['sha256'] for d in documents)
+
+
 class FactService:
     def __init__(self, root):
         self.root = Path(root)
         self._records = {}
+        self.stale = []  # approved records whose source document has changed since review
         for kind, filename in (('site', 'sites.json'), ('device', 'devices.json')):
             path = self.root / 'knowledge' / 'facts' / filename
             records = json.loads(path.read_text(encoding='utf-8-sig'))
@@ -44,9 +55,15 @@ class FactService:
                 if not isinstance(source, dict) or any(not isinstance(source.get(k), str) or not source[k].strip() for k in ('title', 'path', 'version', 'locator')):
                     raise ValueError('FACT_CATALOG_INVALID')
                 source_path = self.root / source['path']
-                if not source_path.resolve().is_relative_to(self.root.resolve()) or not source_path.is_file():
+                if not source_path.resolve().is_relative_to(self.root.resolve()):
                     raise ValueError('FACT_SOURCE_INVALID')
-                if source['locator'].startswith('表 1 行 ') and source['locator'].split()[-1] not in source_path.read_text(encoding='utf-8'):
+                if not source_path.is_file():
+                    if not registered(self.root, source):
+                        raise ValueError('FACT_SOURCE_INVALID')
+                elif source.get('sha256') and hashlib.sha256(source_path.read_bytes()).hexdigest() != source['sha256']:
+                    self.stale.append(record['id'])
+                if (source_path.is_file() and source['locator'].startswith('表 1 行 ')
+                        and source['locator'].split()[-1] not in source_path.read_text(encoding='utf-8')):
                     raise ValueError('FACT_SOURCE_INVALID')
                 if kind == 'site':
                     pos = record.get('position')
@@ -61,7 +78,8 @@ class FactService:
                         any(not _finite(record.get(k)) for k in ('tx_power_dbm', 'antenna_gain_dbi', 'rx_sensitivity_dbm')) or
                         not isinstance(band, list) or len(band) != 2 or not all(_finite(x) for x in band) or not 0 < band[0] < band[1]):
                         raise ValueError('FACT_CATALOG_INVALID')
-            self._records[kind] = sorted((r for r in records if r.get('status') == 'verified'), key=lambda r: r['id'])
+            self._records[kind] = sorted((r for r in records if r.get('status') == 'verified' and r['id'] not in self.stale),
+                                         key=lambda r: r['id'])
 
     def _find(self, kind, name):
         if not isinstance(name, str) or not name.strip() or len(name) > 50:
@@ -79,6 +97,11 @@ class FactService:
                 return {'query': query, 'match_method': method,
                         'candidates': [{'record': r, 'source': r['source'], 'match_method': method} for r in matches]}
         return {'query': query, 'match_method': None, 'candidates': []}
+
+    def records(self):
+        """Every reviewed site and device record, for matching names in a message."""
+        import copy
+        return copy.deepcopy(self._records['site'] + self._records['device'])
 
     def find_site(self, name):
         return self._find('site', name)

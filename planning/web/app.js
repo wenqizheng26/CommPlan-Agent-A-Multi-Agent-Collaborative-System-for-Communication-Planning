@@ -9,6 +9,8 @@ import {renderQuestions,openQuestions} from './questions.mjs';
 import {summary,factorySettings,renderSettingsForm} from './settings.mjs';
 import {nodeLatency,stepTimes,runSummary,renderWaterfall,miniWaterfall,renderMetrics} from './timing.mjs';
 import {headerText,setMarquee,fitMarquee} from './marquee.mjs';
+import {renderLibrary,draftTitle,MAX_CHUNKS} from './library.mjs';
+import {lastSwap,previousVersion,comparisonLine} from './compare.mjs';
 const $=id=>document.getElementById(id);
 const narrow=()=>window.matchMedia('(max-width: 899px)').matches;
 let current=null, historical=null, activeContext=null, activity=[], token='', dirty=false, editing=false, busy=false, busyAction=null, pendingCommand=null;
@@ -38,7 +40,8 @@ function notice(text,error=false){
  if(text)toastTimer=setTimeout(()=>{if(toast.textContent===text)toast.hidden=true;},4000);
 }
 const clearError=()=>notice('',true);
-async function api(path,body){const r=await fetch(path,{signal:AbortSignal.timeout(path==='/api/commands'?125000:10000),method:body?'POST':'GET',headers:body?{'Content-Type':'application/json','X-Planning-Token':token}:{},body:body?JSON.stringify(body):undefined});const data=await r.json();if(!r.ok){const err=new Error(data.error.message+' ['+data.error.code+']');err.status=r.status;throw err;}return data;}
+const TIMEOUTS={'/api/commands':125000,'/api/drafts/extract':200000,'/api/drafts/review':30000,'/api/documents':30000};
+async function api(path,body){const r=await fetch(path,{signal:AbortSignal.timeout(TIMEOUTS[path]||(path.startsWith('/api/documents/')?30000:10000)),method:body?'POST':'GET',headers:body?{'Content-Type':'application/json','X-Planning-Token':token}:{},body:body?JSON.stringify(body):undefined});const data=await r.json();if(!r.ok){const err=new Error(data.error.message+' ['+data.error.code+']');err.status=r.status;throw err;}return data;}
 function syncButtons(){
  document.querySelectorAll('#request-form input,#request-form textarea,#request-form select,#request-form button').forEach(n=>n.disabled=busy||!!historical);
  for(const id of ['supplement-message','supplement-submit'])$(id).disabled=busy||!!historical||!current||dirty||editing;
@@ -125,6 +128,72 @@ function drawFlow(){
   if(['running','waiting'].includes(step.status))row.setAttribute('aria-current','step');return row;}));
  renderNodeCard();
 }
+// The version before the last follow-up swap, for one line under the result.
+const comparisons=new Map();
+async function ensureComparison(){
+ const s=shown();if(!s||s.status!=='COMPLETED'||!lastSwap(s))return;
+ const key=`${s.task_id}:${s.revision}`;if(comparisons.has(key))return;
+ comparisons.set(key,null);
+ try{const data=await api('/api/tasks/'+encodeURIComponent(s.task_id)+'/history');comparisons.set(key,comparisonLine(s,previousVersion(s,data.history)));drawRight();}
+ catch{comparisons.delete(key);}
+}
+// The 资料 page: documents, sections, extraction and review.
+const lib={library:null,selectedDoc:null,sections:null,chosen:new Set(),kind:'device',extracting:null,message:'',drafts:null,reviewer:'',reason:'',rejecting:null,busy:false,uploading:false};
+try{lib.reviewer=localStorage.getItem('planning-reviewer')||'';}catch{}
+function drawLibrary(){
+ renderLibrary($('library-body'),{...lib,onSelectDoc:selectDoc,onToggleChunk:toggleChunk,onKind:k=>{lib.kind=k;drawLibrary();},onExtract:extractDraft,
+  onUpload:uploadDocument,onReview:reviewDraft,onReason:v=>{lib.reason=v;},onRejectToggle:id=>{lib.rejecting=lib.rejecting===id?null:id;lib.reason='';drawLibrary();},
+  onReviewer:v=>{lib.reviewer=v.trim();try{localStorage.setItem('planning-reviewer',lib.reviewer);}catch{}}});
+}
+async function loadLibrary(){
+ const [docs,drafts]=await Promise.allSettled([api('/api/documents'),api('/api/drafts')]);
+ if(docs.status==='fulfilled')lib.library=docs.value;else lib.message='文档读取失败：'+docs.reason.message;
+ if(drafts.status==='fulfilled')lib.drafts=drafts.value.drafts;else lib.message='草稿读取失败：'+drafts.reason.message;
+ drawLibrary();
+}
+function openLibrary(){openSheet('library-sheet');drawLibrary();loadLibrary();}
+async function selectDoc(id){
+ if(lib.selectedDoc===id||lib.busy)return;lib.selectedDoc=id;lib.sections=null;lib.chosen=new Set();lib.message='';drawLibrary();
+ try{const data=await api('/api/documents/'+encodeURIComponent(id));if(lib.selectedDoc===id)lib.sections=data.sections;}catch(e){lib.message=e.message;}
+ drawLibrary();
+}
+function toggleChunk(id){if(lib.chosen.has(id))lib.chosen.delete(id);else if(lib.chosen.size<MAX_CHUNKS)lib.chosen.add(id);drawLibrary();}
+async function extractDraft(){
+ if(lib.busy||!lib.chosen.size)return;
+ lib.busy=true;lib.message='';lib.extracting=0;drawLibrary();const started=Date.now();
+ // Only the button text changes each second, so a half-typed reason is not redrawn away.
+ const timer=setInterval(()=>{lib.extracting=Math.round((Date.now()-started)/1000);const b=$('extract-draft');if(b)b.textContent=`抽取中 · ${lib.extracting} s`;},1000);
+ try{const data=await api('/api/drafts/extract',{kind:lib.kind,chunk_ids:[...lib.chosen]});
+  lib.message=`${data.message}（${Math.round((Date.now()-started)/1000)} s）`;
+  if(data.draft)lib.drafts=[data.draft,...(lib.drafts||[]).filter(d=>d.id!==data.draft.id)];}
+ catch(e){lib.message='抽取失败：'+e.message;}
+ finally{clearInterval(timer);lib.busy=false;lib.extracting=null;drawLibrary();}
+}
+async function uploadDocument(file){
+ if(lib.uploading||lib.busy)return;
+ if(file.size>(lib.library?.max_bytes||20*1024*1024)){lib.message='文件超过 20 MB。';drawLibrary();return;}
+ lib.uploading=true;lib.message='';drawLibrary();
+ try{
+  const r=await fetch('/api/documents?name='+encodeURIComponent(file.name),{method:'POST',body:file,signal:AbortSignal.timeout(120000),
+   headers:{'Content-Type':'application/octet-stream','X-Planning-Token':token}});
+  const data=await r.json();if(!r.ok)throw new Error(data.error.message);
+  lib.library=data.library;lib.message=`已添加：${data.document.title}`;lib.uploading=false;await selectDoc(data.document.doc_id);
+ }catch(e){lib.message='添加失败：'+e.message;}
+ finally{lib.uploading=false;drawLibrary();}
+}
+async function reviewDraft(draft,decision,reason){
+ if(lib.busy)return;
+ if(!lib.reviewer){lib.message='请先填写审核人。';drawLibrary();document.querySelector('#library-body .reviewer')?.focus();return;}
+ if(decision==='reject'&&!(reason||lib.reason).trim()){lib.message='驳回时请写明原因。';drawLibrary();return;}
+ lib.busy=true;lib.message='';drawLibrary();
+ try{
+  const data=await api('/api/drafts/review',{id:draft.id,decision,reviewer:lib.reviewer,reason:decision==='reject'?(reason||lib.reason).trim():'',content_hash:draft.content_hash});
+  lib.rejecting=null;lib.reason='';notice(decision==='approve'?'已入库：'+draftTitle(draft):'已驳回：'+draftTitle(draft));
+  lib.drafts=(await api('/api/drafts')).drafts;  // other drafts may now name a record already in the library
+  if(decision==='approve'){const f=await api('/api/facts');for(const record of f.records)facts[record.id]=record;}
+ }catch(e){lib.message=e.message;}
+ finally{lib.busy=false;drawLibrary();}
+}
 function openNodeCard(id){popover=popover?.id===id?null:{id};drawFlow();}
 function renderNodeCard(){
  const card=$('node-card');
@@ -146,8 +215,8 @@ function drawRight(){
  const s=shown(),relevant=relevantEvents(s,activity);
  const h=headline(s,{busy,action:busyAction,editing,historical:!!historical,modelLabel:modelLabel(),ran:historical?'':runSummary(relevant)});
  $('headline-text').textContent=h.text;$('headline-sub').textContent=h.sub||'';$('headline').className='headline '+h.tone;
- ensureCards();
- renderRight($('detail-content'),{state:s,view,focusParameter,historical:!!historical,disabled:busy||dirty||editing,activeContext:!!activeContext,modelService,settings:settings?.settings,models,open:folds,cards,facts,
+ ensureCards();ensureComparison();
+ renderRight($('detail-content'),{state:s,view,focusParameter,historical:!!historical,comparison:s?comparisons.get(`${s.task_id}:${s.revision}`):null,disabled:busy||dirty||editing,activeContext:!!activeContext,modelService,settings:settings?.settings,models,open:folds,cards,facts,
   onView:setView,onParameter:chooseParameter,onMissing:focusQuestion,onReparse:()=>submit('edit').catch(e=>notice(e.message,true)),
   onAssumption:(name,value)=>{try{const input=assumptionEdit(current,name,value);submit('edit',null,input).catch(e=>notice(e.message,true));}catch(e){notice(e.message,true);}}});
  const n=openQuestions(s).length;
@@ -276,7 +345,7 @@ async function loadSettings(){
 }
 function drawSettings(){renderSettingsForm($('settings-form'),{draft,models,status:models?.status,corpus:models?.corpus,el,onChange:next=>{draft=next;drawSettings();}});}
 let sheetReturn=null;
-const SHEETS=['settings-sheet','metrics-panel','history-sheet'];
+const SHEETS=['settings-sheet','metrics-panel','history-sheet','library-sheet'];
 function openSheet(id){toggleMenu(false);sheetReturn=document.activeElement;$('sheet-scrim').hidden=false;$(id).hidden=false;$(id).querySelector('.icon-button').focus();}
 function closeSheets(){for(const id of SHEETS)$(id).hidden=true;$('sheet-scrim').hidden=true;sheetReturn?.focus?.();}
 async function openSettings(){
@@ -298,7 +367,7 @@ async function openMetrics(){
 function openHistory(focusId=false){openSheet('history-sheet');recentTasks();if(focusId)$('task-id').focus();}
 function toggleMenu(open){const menu=$('more-menu'),show=open??menu.hidden;menu.hidden=!show;$('more').setAttribute('aria-expanded',String(show));if(show)menu.querySelector('button:not([hidden]):not(:disabled)')?.focus();}
 $('model-badge').addEventListener('click',openSettings);
-$('close-settings').addEventListener('click',closeSheets);$('close-metrics').addEventListener('click',closeSheets);$('close-history').addEventListener('click',closeSheets);$('sheet-scrim').addEventListener('click',closeSheets);
+$('close-settings').addEventListener('click',closeSheets);$('close-library').addEventListener('click',closeSheets);$('open-library').addEventListener('click',openLibrary);$('close-metrics').addEventListener('click',closeSheets);$('close-history').addEventListener('click',closeSheets);$('sheet-scrim').addEventListener('click',closeSheets);
 $('save-settings').addEventListener('click',saveSettings);
 $('reset-settings').addEventListener('click',()=>{if(!models)return;draft=factorySettings(models);drawSettings();});
 $('open-history').addEventListener('click',()=>openHistory());

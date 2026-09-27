@@ -25,7 +25,7 @@ ROOT_FILES = {
     "knowledge/facts/sites.json", "knowledge/facts/devices.json",
     "knowledge/documents/manifest.json", "knowledge/documents/glossary.json",
     "knowledge/documents/simulated/站址表.md", "knowledge/documents/simulated/XX-100 手册.md",
-    "knowledge/documents/simulated/XX-200 手册.md",
+    "knowledge/documents/simulated/XX-200 手册.md", "knowledge/documents/simulated/XX-300 手册.md",
 }
 SOURCE_FILES = set("""
 formula_rag/__init__.py formula_rag/applicability.py formula_rag/catalog.py
@@ -57,6 +57,9 @@ planning/web/m1.mjs
 planning/web/drafts.mjs planning/web/flow.mjs planning/web/index.html
 planning/web/model-status.mjs planning/web/progress.mjs planning/web/settings.mjs planning/web/timing.mjs planning/web/questions.mjs
 planning/web/roles.mjs planning/web/text.mjs planning/web/values.mjs planning/web/marquee.mjs
+planning/web/library.mjs planning/web/compare.mjs
+planning/agents/extraction.py planning/knowledge/drafts.py planning/knowledge/sources.py
+planning/services/entity_followup.py
 planning/workflow/__init__.py planning/workflow/activity.py
 planning/workflow/planning_graph.py planning/workflow/requirements_graph.py
 planning/workflow/task_service.py planning/workflow/task_store.py
