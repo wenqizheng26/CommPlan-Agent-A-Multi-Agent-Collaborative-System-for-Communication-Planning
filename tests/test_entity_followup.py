@@ -58,14 +58,15 @@ class FollowupTests(unittest.TestCase):
     def ask_again(self, state, message):
         return self.apply('supplement', state, message=message, mode='llm')
 
-    def swap(self, device='', site_from='', site_to=''):
-        return dict(action='apply', device=device, site_from=site_from, site_to=site_to)
+    def swap(self, device='', replaced='', new=''):
+        return dict(action='apply', new_device=device, replaced_site=replaced, new_site=new)
 
     def test_swapping_the_radio_is_a_new_revision_to_confirm(self):
         first = self.create()
         first = self.apply('confirm', first, review_hash=first['review']['review_hash'])
         self.assertEqual(first['status'], 'COMPLETED')
-        self.followup = self.swap(device='device:sim-xx200')
+        # A site replaced by itself is no site change.
+        self.followup = self.swap(device='device:sim-xx200', replaced='site:sim-b', new='site:sim-b')
         state = self.ask_again(first, '换 XX-200 呢')
         self.assertEqual(state['revision'], first['revision'] + 1)
         self.assertIn('用 XX-200 电台', state['request']['raw_text'])
@@ -82,7 +83,8 @@ class FollowupTests(unittest.TestCase):
         asked = self.ask_again(state, '换成 C 站呢')
         self.assertEqual(asked['request']['raw_text'], state['request']['raw_text'])
         self.assertIn('要把哪一端换成 C站？当前两端是 A站、B站', asked['conversation']['pending'][-1]['question'])
-        self.followup = self.swap(site_from='site:sim-b', site_to='site:sim-c')
+        # The model may repeat the radio already in use; that is no radio change.
+        self.followup = self.swap(device='device:sim-xx100', replaced='site:sim-b', new='site:sim-c')
         swapped = self.ask_again(asked, 'B 站换成 C 站呢')
         self.assertIn('A 站到 C站用 XX-100', swapped['request']['raw_text'])
         self.assertEqual(swapped['conversation']['pending'], [])  # the clear swap answers the open question
@@ -91,7 +93,7 @@ class FollowupTests(unittest.TestCase):
     def test_hedged_or_disputed_swaps_leave_the_task_unchanged(self):
         state = self.create()
         for message, answer in (('要不换 XX-200 呢', self.swap(device='device:sim-xx200')),
-                                ('换 XX-200 呢', dict(action='clarify', device='', site_from='', site_to='')),
+                                ('换 XX-200 呢', dict(action='clarify', new_device='', replaced_site='', new_site='')),
                                 ('换 XX-200 呢', self.swap(device='device:sim-xx100'))):
             with self.subTest(message=message, answer=answer):
                 self.followup = answer
@@ -99,6 +101,10 @@ class FollowupTests(unittest.TestCase):
                 self.assertEqual(asked['request']['raw_text'], state['request']['raw_text'])
                 self.assertFalse(asked['conversation']['turns'][-1]['applied'])
                 state = asked
+        # The model's different reading is kept for review and said in words on the turn.
+        turn = state['conversation']['turns'][-1]
+        self.assertEqual(turn['reading']['new_device'], 'device:sim-xx100')
+        self.assertEqual(turn['diagnostics'], ['模型读作：换用 XX-100，与规则判断不一致，没有修改任务。'])
         # An open question keeps the task waiting for input: this version cannot be confirmed yet.
         self.assertEqual(state['status'], 'AWAITING_INPUT')
         with self.assertRaisesRegex(ValueError, 'NOT_CONFIRMABLE'):

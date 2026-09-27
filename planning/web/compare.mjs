@@ -3,6 +3,11 @@ const NAMES={fspl_ghz:'路径损耗',received_power:'接收信号电平',link_ma
 export function lastSwap(state){
  return [...(state?.conversation?.turns||[])].reverse().find(t=>t.followup&&t.applied)||null;
 }
+// Two inputs are the same task when the text and the explicit parameters match.
+function sameInput(a,b){
+ const key=x=>JSON.stringify([x?.raw_text,x?.condition??null,x?.target??null,Object.entries(x?.manual_parameters||{}).sort()]);
+ return key(a)===key(b);
+}
 export function previousVersion(state,history){
  const swap=lastSwap(state);
  if(!swap||state.status!=='COMPLETED'||!state.final_report)return null;
@@ -11,7 +16,8 @@ export function previousVersion(state,history){
  if(!made.length)return null;
  const before=history.filter(h=>h.revision<Math.min(...made)&&h.state?.status==='COMPLETED'&&h.state.final_report&&h.state.result)
   .sort((a,b)=>b.revision-a.revision||b.state_version-a.state_version)[0];
- return before?{state:before.state,swap}:null;
+ // Only the result of the very input the swap changed: an older result differs in more than the swap.
+ return before&&sameInput(before.state.request,swap.before)?{state:before.state,swap}:null;
 }
 function outcome(state){
  const out=state.result?.outputs?.[0];if(!out||typeof out.value!=='number')return null;
@@ -21,7 +27,7 @@ function outcome(state){
 export function comparisonLine(state,previous){
  if(!previous)return null;
  const before=outcome(previous.state),after=outcome(state);if(!before||!after)return null;
- const change=previous.swap.changes?.[0];if(!change)return null;
- const name=NAMES[state.result?.model_id]||'结果';
- return `上一版（${change.before}）${name} ${before} → 本版（${change.after}）${after}`;
+ const changes=previous.swap.changes||[];if(!changes.length)return null;
+ const name=NAMES[state.result?.model_id]||'结果',side=key=>changes.map(c=>c[key]).join('、');
+ return `上一版（${side('before')}）${name} ${before} → 本版（${side('after')}）${after}`;
 }
