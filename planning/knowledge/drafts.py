@@ -21,7 +21,7 @@ import uuid
 from formula_rag.catalog import load_catalog, validate_card
 from formula_rag.core import evaluate
 from planning.requirements_contract import require, strict_json
-from planning.retrieval.documents import DocumentStore
+from planning.retrieval.documents import DocumentStore, TABLE_RULE
 
 KINDS = ('site', 'device', 'formula')
 ENVIRONMENTS = ('海岸', '海岛', '港口', '内陆', '未记录')
@@ -150,6 +150,19 @@ def fields(kind, record):
     return rows
 
 
+def table_header(text, quote):
+    """The header row of the Markdown table a quoted row sits in, so the reviewer sees its columns."""
+    lines = text.split('\n')
+    for i, line in enumerate(lines):
+        if quote in line and line.lstrip().startswith('|'):
+            top = i
+            while top > 0 and lines[top - 1].lstrip().startswith('|'):
+                top -= 1
+            if top + 1 < i and TABLE_RULE.fullmatch(lines[top + 1].strip()):
+                return lines[top].strip()
+    return None
+
+
 def quotes_for(field, evidence):
     """A field's quotes; a quote given for a whole group (examples.0.inputs) covers its members."""
     return [e['quote'] for e in evidence
@@ -199,10 +212,12 @@ class DraftStore:
             else:
                 status = 'manual' if quotes else 'missing'
             require(status != 'missing' or field in ('applicability.notes', 'title'), 'DRAFT_EVIDENCE_MISSING: ' + field)
+            shown = {(e['chunk_id'], e['quote']): e for e in evidence
+                     if e['field'] == field or field.startswith(e['field'] + '.')}
             rows.append(dict(field=field, value=copy.deepcopy(value), status=status,
-                             quotes=[dict(chunk_id=e['chunk_id'], quote=e['quote'],
-                                          locator=by_id[e['chunk_id']]['sources'][0]['locator'])
-                                     for e in evidence if e['quote'] in quotes]))
+                             quotes=[dict(chunk_id=c, quote=q, locator=by_id[c]['sources'][0]['locator'],
+                                          header=table_header(by_id[c]['description'], q))
+                                     for c, q in shown]))
         return rows
 
     def example_check(self, record, evidence):

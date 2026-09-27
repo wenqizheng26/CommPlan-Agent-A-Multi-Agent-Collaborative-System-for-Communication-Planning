@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {fieldLabel,shownValue,draftTitle,exampleLine} from '../planning/web/library.mjs';
+import {fieldLabel,shownValue,draftTitle,exampleLine,preview} from '../planning/web/library.mjs';
 import {lastSwap,previousVersion,comparisonLine} from '../planning/web/compare.mjs';
 
 test('draft fields read as names a reviewer knows',()=>{
@@ -20,6 +20,11 @@ test('the formula example line shows the computed and the written result',()=>{
  assert.equal(line.passed,true);
  assert.equal(exampleLine(null),null);
  assert.equal(exampleLine({inputs:{},expected:1,value:null,unit:'dB',passed:false}).text,'算例： → 无法计算；原文 1 dB');
+});
+
+test('a section preview starts at its own text, not the headings the locator names',()=>{
+ assert.equal(preview('# XX-300 手册（模拟）\n## §1 规格表\n| 型号 | 功率 |\n| --- | ---: |\n\n\n\n额定发射功率'),'| 型号 | 功率 |\n| --- | ---: |\n\n额定发射功率');
+ assert.equal(preview('<!-- page 3 -->\n正文'),'正文');
 });
 
 function saved(revision,status,{turns=[],value=5.93,met=false}={}){

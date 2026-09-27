@@ -58,6 +58,10 @@ class DraftTests(unittest.TestCase):
         draft = result['draft']
         self.assertEqual((draft['status'], draft['approvable'], draft['problems']), ('draft', True, []))
         self.assertEqual({row['field']: row['status'] for row in draft['checks']}['band_ghz.1'], 'match')
+        # Each field shows its quote once, under the table header that names the column.
+        power = next(row for row in draft['checks'] if row['field'] == 'tx_power_dbm')
+        self.assertEqual([(q['quote'], q['header']) for q in power['quotes']],
+                         [(TABLE, '| 型号 | 额定发射功率 dBm | 天线增益 dBi | 接收灵敏度 dBm | 工作频段 GHz |')])
         self.assertEqual(FactService(self.root).find_device('XX-300')['candidates'], [])
         before = fact_manifest(self.root)
         with self.assertRaisesRegex(ValueError, 'DRAFT_STALE_REVIEW'):

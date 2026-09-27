@@ -31,6 +31,10 @@ export function exampleLine(example){
  const value=example.value===null?'无法计算':`${Number(example.value.toFixed(6))} ${example.unit}`;
  return {text:`算例：${inputs} → ${value}；原文 ${example.expected} ${example.unit}`,passed:example.passed};
 }
+// The locator already names the headings; the preview starts at the section's own text.
+export function preview(text){
+ return text.split('\n').filter(line=>!/^#{1,6}\s/.test(line)&&!/^<!--.*-->$/.test(line.trim())).join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
 function button(text,fn,cls='secondary compact'){const b=el('button',text,cls);b.type='button';b.addEventListener('click',fn);return b;}
 function documentList(host,ctx){
  const lib=ctx.library;
@@ -38,9 +42,9 @@ function documentList(host,ctx){
  const pick=el('input');pick.type='file';pick.hidden=true;pick.accept=(lib?.formats||[]).join(',');
  pick.addEventListener('change',()=>{const file=pick.files[0];pick.value='';if(file)ctx.onUpload(file);});
  const add=button(ctx.uploading?'正在转换…':'添加文档',()=>pick.click());add.disabled=!!ctx.uploading||!!ctx.busy;head.append(add,pick);host.append(head);
- host.append(el('p',lib?.converter?'支持 PDF、Word、Excel、PPT、HTML、Markdown、文本，单个不超过 20 MB。原文只存本机，清单进 Git。'
-  :'PDF、Markdown、文本可直接添加；Word、Excel、PPT、HTML 需先安装 requirements-docs.txt。','hint'));
  if(!lib){host.append(el('p','正在读取…','hint'));return;}
+ host.append(el('p',lib.converter?'支持 PDF、Word、Excel、PPT、HTML、Markdown、文本，单个不超过 20 MB。原文只存本机，清单进 Git。'
+  :'PDF、Markdown、文本可直接添加；Word、Excel、PPT、HTML 需先安装 requirements-docs.txt。','hint'));
  const list=el('div',undefined,'doc-list');
  for(const d of lib.documents){
   const row=button('',()=>ctx.onSelectDoc(d.doc_id),'doc-row'+(d.doc_id===ctx.selectedDoc?' selected':''));
@@ -65,7 +69,7 @@ function sectionList(host,ctx){
   const row=el('label',undefined,'section-row'),box=el('input');box.type='checkbox';box.checked=ctx.chosen.has(s.id);
   box.disabled=!!ctx.busy||(!box.checked&&ctx.chosen.size>=MAX_CHUNKS);
   box.addEventListener('change',()=>ctx.onToggleChunk(s.id));
-  const text=el('span',undefined,'section-text');text.append(el('span',s.locator.replace(/, chunk (\d+)$/,' · 第 $1 块'),'section-loc'),el('span',s.text,'section-excerpt'));
+  const text=el('span',undefined,'section-text');text.append(el('span',s.locator.replace(/, chunk (\d+)$/,' · 第 $1 块'),'section-loc'),el('span',preview(s.text),'section-excerpt'));
   row.append(box,text);list.append(row);
  }
  host.append(list);
@@ -82,7 +86,7 @@ function checkTable(draft){
   const [text,tone]=CHECKS[row.status]||[row.status,''];
   table.append(el('span',fieldLabel(row.field),'draft-name'),el('span',shownValue(row.value),'draft-value'+(row.field==='expression'?' mono':'')));
   const quotes=el('span',undefined,'draft-quote');
-  for(const q of row.quotes){const b=el('blockquote',q.quote);b.title=q.locator;quotes.append(b);}
+  for(const q of row.quotes){const b=el('blockquote');if(q.header)b.append(el('span',q.header,'quote-head'));b.append(el('span',q.quote));b.title=q.locator;quotes.append(b);}
   if(!row.quotes.length)quotes.append(el('span','—','muted'));
   table.append(quotes,el('span',text,'chip '+tone));
  }
