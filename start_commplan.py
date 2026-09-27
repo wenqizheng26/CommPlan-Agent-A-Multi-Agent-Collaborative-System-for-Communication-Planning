@@ -132,8 +132,10 @@ def ensure_embedding(args):
     roots = [Path(asset_root)] if asset_root else [ROOT, ROOT/'models/signal-formula-qwen3']
     for root in roots:
         if model_paths(root, model):
+            print('启动本机向量模型（只用 CPU）…', flush=True)
             process = spawn(embedding_command(root, registry_root=ROOT), 'commplan-embedding', root)
             wait_ready(ready, process, '向量模型')
+            print('本机向量模型已就绪。', flush=True)
             return
     print('向量模型未安装，文档检索将使用词项。', flush=True)
 
