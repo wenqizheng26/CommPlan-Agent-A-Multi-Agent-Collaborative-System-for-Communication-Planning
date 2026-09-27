@@ -35,11 +35,25 @@ class DocumentRetrievalTests(unittest.TestCase):
     def test_chunks_are_deterministic_bounded_and_located(self):
         first = DocumentStore(self.root).chunks
         self.assertEqual(first, DocumentStore(self.root).chunks)
-        self.assertIn('Reflection', first[1]['sources'][0]['locator'])
-        self.assertEqual(first[1]['sources'][0]['sha256'], self.record['sha256'])
+        # The title has no text of its own, so it opens the first section instead of a chunk.
+        self.assertEqual([c['sources'][0]['locator'] for c in first],
+                         ['Local guide / Reflection, chunk 1', 'Local guide / Rain, chunk 1'])
+        self.assertTrue(first[0]['description'].startswith('# Local guide'))
+        self.assertEqual(first[0]['sources'][0]['sha256'], self.record['sha256'])
         parts = list(split_text('a'*1900+'\n\n'+'b'*200))
         self.assertTrue(all(len(p)<=800 for p in parts))
         self.assertEqual(''.join(parts).replace('\n',''), 'a'*1900+'b'*200)
+
+    def test_long_paragraphs_break_at_lines_and_tables_keep_their_header(self):
+        lines = [f'line {i} ' + 'x'*60 for i in range(30)]
+        parts = list(split_text('\n'.join(lines)))
+        self.assertGreater(len(parts), 1)
+        self.assertEqual('\n'.join(parts).split('\n'), lines)  # no line is cut
+        rows = ['| model | power |', '| --- | ---: |'] + [f'| XX-{i:03d} | {i} dBm {"."*40} |' for i in range(40)]
+        parts = list(split_text('\n'.join(rows)))
+        self.assertGreater(len(parts), 1)
+        self.assertTrue(all(p.startswith('| model | power |\n| --- | ---: |') and len(p) <= 800 for p in parts))
+        self.assertEqual([r for p in parts for r in p.split('\n')[2:]], rows[2:])
 
     def test_missing_and_changed_documents_never_enter_index(self):
         self.save_manifest([self.record, dict(self.record,doc_id='missing',local_path='knowledge/sources/missing.pdf',simulated=False,redistributable=False)])

@@ -23,4 +23,4 @@ Qwen3-Embedding-0.6B-GGUF（Q8_0）来自 Qwen 官方仓库，revision
 ITU-R P.525-5、P.530-19、P.453-14 的英文原文来自 ITU 官方网站，仅保存在被忽略的
 `knowledge/sources/itu`。仓库保留文档清单、来源 URL、版本与 SHA256，不再分发 ITU PDF 或提取全文。
 模拟站址表与设备手册由本项目编写，清单明确标记为模拟数据，可随源码包分发。
-PDF 文本解析使用 pypdf 6.1.1（BSD-3-Clause）。
+PDF 文本解析使用 pypdf 6.1.1（BSD-3-Clause）。Word、Excel、PowerPoint、HTML 与文本文件经 MarkItDown 0.1.8（MIT）转换，依赖固定于可选的 `requirements-docs.txt`，不随源码包分发；PDF 用本项目按页的转换器，不用 MarkItDown 自带的 PDF 转换。转换结果只保存在被忽略的 `knowledge/sources/converted`。

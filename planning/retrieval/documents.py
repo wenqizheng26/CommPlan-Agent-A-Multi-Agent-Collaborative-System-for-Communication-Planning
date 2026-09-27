@@ -5,19 +5,22 @@ from functools import lru_cache
 import json
 from pathlib import Path, PurePosixPath
 import re
+from planning.retrieval.convert import PAGE, convert, converted
 
 CHUNK_LIMIT = 800
+TABLE_RULE = re.compile(r'\|?(\s*:?-+:?\s*\|)+\s*(:?-+:?\s*)?')
+SLIDE = re.compile(r'^<!-- Slide number: (\d+) -->$')
+COMMENT = re.compile(r'<!--.*-->')
 
 
 def split_text(text):
-    """Stable paragraph packing, bounded even for a PDF page without line breaks."""
+    """Stable packing: whole paragraphs, else whole lines; only an overlong line is cut."""
     current = ''
     for paragraph in re.split(r'\n\s*\n', text.replace('\r\n', '\n')):
         paragraph = paragraph.strip()
         if not paragraph:
             continue
-        for start in range(0, len(paragraph), CHUNK_LIMIT):
-            piece = paragraph[start:start + CHUNK_LIMIT]
+        for piece in pieces(paragraph):
             if current and len(current) + len(piece) + 2 > CHUNK_LIMIT:
                 yield current
                 current = ''
@@ -26,36 +29,72 @@ def split_text(text):
         yield current
 
 
-def chunks(path, record):
-    sections = []
-    if path.suffix.lower() == '.pdf':
-        from pypdf import PdfReader
-        from pypdf.errors import PyPdfError
-        try:
-            for page, item in enumerate(PdfReader(path).pages, 1):
-                sections.append((f'p{page}', f'page {page}', item.extract_text() or ''))
-        except PyPdfError as exc:
-            raise ValueError('DOCUMENT_PDF_UNREADABLE') from exc
-    elif path.suffix.lower() == '.md':
-        headings, lines, sequence = [], [], 0
-        locator = '正文'
-        for line in path.read_text(encoding='utf-8').splitlines():
-            match = re.match(r'^(#{1,6})\s+(.+)$', line)
-            if match:
-                if lines:
-                    sections.append((f's{sequence}', locator, '\n'.join(lines)))
-                sequence += 1
-                level = len(match[1])
-                headings = headings[:level-1] + [match[2].strip()]
-                locator, lines = ' / '.join(headings), []
-            lines.append(line)
-        if lines:
-            sections.append((f's{sequence}', locator, '\n'.join(lines)))
-    else:
-        raise ValueError('DOCUMENT_FORMAT')
+def pieces(paragraph):
+    """A long paragraph is cut at line ends. A table cut in two repeats its header row."""
+    if len(paragraph) <= CHUNK_LIMIT:
+        yield paragraph
+        return
+    lines = paragraph.split('\n')
+    header = ''
+    if (len(lines) > 2 and lines[0].startswith('|') and TABLE_RULE.fullmatch(lines[1])
+            and len(lines[0]) + len(lines[1]) < CHUNK_LIMIT // 2):
+        header = lines[0] + '\n' + lines[1]
+    width = CHUNK_LIMIT - (len(header) + 1 if header else 0)
+    current = header
+    for line in lines[2:] if header else lines:
+        for start in range(0, max(len(line), 1), width):
+            part = line[start:start + width]
+            if current and current != header and len(current) + len(part) + 1 > CHUNK_LIMIT:
+                yield current
+                current = header
+            current = current + '\n' + part if current else part
+    if current and current != header:
+        yield current
+
+
+def markdown_sections(text):
+    """Sections under headings. A heading with no text of its own joins the next section."""
+    sections, headings, lines, sequence = [], [], [], 0
+    locator = '正文'
+
+    def has_body():
+        return any(line.strip() and not re.match(r'^#{1,6}\s', line) and not COMMENT.fullmatch(line.strip())
+                   for line in lines)
+
+    for line in text.splitlines():
+        heading = re.match(r'^(#{1,6})\s+(.+)$', line)
+        slide = SLIDE.match(line.strip())
+        if heading or slide:
+            if has_body():
+                sections.append((f's{sequence}', locator, '\n'.join(lines)))
+                lines = []
+            sequence += 1
+            if slide:
+                headings = [f'幻灯片 {slide[1]}']
+            else:
+                # Headings inside a slide rank below the slide itself.
+                level = len(heading[1]) + (1 if headings and headings[0].startswith('幻灯片 ') else 0)
+                headings = headings[:level-1] + [heading[2].strip()]
+            locator = ' / '.join(headings)
+        lines.append(line)
+    if lines and (has_body() or not sections):
+        sections.append((f's{sequence}', locator, '\n'.join(lines)))
+    return sections
+
+
+def sections_of(text, paged):
+    if paged:
+        parts = PAGE.split(text)
+        return [(f'p{page}', f'page {page}', body) for page, body in zip(parts[1::2], parts[2::2])]
+    return markdown_sections(text)
+
+
+def chunks(path, record, root=None):
+    path = Path(path)
+    text = convert(path) if root is None else converted(root, record)
     result = []
-    for prefix, locator, text in sections:
-        for index, excerpt in enumerate(split_text(text), 1):
+    for prefix, locator, section in sections_of(text, path.suffix.lower() == '.pdf'):
+        for index, excerpt in enumerate(split_text(section), 1):
             result.append(dict(id=f"doc:{record['doc_id']}:{prefix}-{index}",
                 source_type='document_chunk', doc_id=record['doc_id'], title=record['title'],
                 description=excerpt, version=record['version'],
@@ -87,11 +126,11 @@ class DocumentStore:
                     item['status'] = 'changed'
                 else:
                     try:
-                        parts = copy.deepcopy(cached_chunks(str(file.resolve()), json.dumps(record,sort_keys=True)))
+                        parts = copy.deepcopy(cached_chunks(str(self.root.resolve()), json.dumps(record,sort_keys=True)))
                         self.chunks.extend(parts)
                         item.update(status='ready', chunks=len(parts))
                     except (ImportError, ValueError, OSError) as exc:
-                        item.update(status='unreadable', error=type(exc).__name__)
+                        item.update(status='unreadable', error=type(exc).__name__, code=str(exc)[:80])
             self.status.append(item)
 
     @staticmethod
@@ -120,6 +159,7 @@ def expand_query(root, query):
 
 
 @lru_cache(maxsize=32)
-def cached_chunks(path, record_json):
+def cached_chunks(root, record_json):
     # Caller rechecks bytes against the record SHA before using this parse cache.
-    return chunks(Path(path), json.loads(record_json))
+    record = json.loads(record_json)
+    return chunks(Path(root) / record['local_path'], record, Path(root))

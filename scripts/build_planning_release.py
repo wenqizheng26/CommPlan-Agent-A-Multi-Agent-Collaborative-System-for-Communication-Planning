@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 VERSION = "0.1.0-demo"
 VALIDATION_RECORD = "docs/demo/VALIDATION.md"
 ROOT_FILES = {
-    "LICENSE", "README.md", "THIRD_PARTY.md", "requirements-planning.txt",
+    "LICENSE", "README.md", "THIRD_PARTY.md", "requirements-planning.txt", "requirements-docs.txt",
     "runtime_config.json", "setup_planning.cmd", "启动.cmd", "start.cmd",
     "start_commplan.py", "stop_commplan.py", "停止服务.cmd", "launch.py",
     "knowledge/formulas.json", "config/models.json", "planning/README.md", VALIDATION_RECORD,
@@ -38,7 +38,7 @@ planning/agents/orchestrator.py planning/agents/requirements.py planning/agents/
 planning/agents/role_model.py planning/build_info.py planning/demo.py
 planning/agents/planner.py
 planning/knowledge/__init__.py planning/knowledge/facts.py
-planning/retrieval/documents.py planning/retrieval/http_encoder.py
+planning/retrieval/convert.py planning/retrieval/documents.py planning/retrieval/http_encoder.py
 planning/services/fact_fields.py planning/services/number_check.py
 planning/services/requirement_facts.py planning/services/requirement_quantities.py planning/services/solve.py
 planning/examples/complete.json planning/examples/conflict.json planning/examples/missing.json
