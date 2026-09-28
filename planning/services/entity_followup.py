@@ -194,6 +194,8 @@ def replace_entities(current, message, event_id, root, selector=False, observer=
                                                                   evidence=change['after'])
     else:
         question = f'第{number}条补充尚未合并：{question}或输入“撤回第{number}条补充”。'
+        # A newer question about the radio or a site replaces the older one: it reflects the current library.
+        conversation['pending'] = [p for p in conversation['pending'] if not field or p.get('field') != field]
         conversation['pending'].append(dict(turn_id=event_id, number=number, field=field, question=question))
     conversation['turns'].append(dict(turn_id=event_id, number=number, kind='supplement', message=message,
         before=before, after=copy.deepcopy(request), changes=applied, questions=[] if applied else [question],

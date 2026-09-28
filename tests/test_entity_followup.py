@@ -123,6 +123,7 @@ class FollowupTests(unittest.TestCase):
                                 ('names', 'model', 'tx_power_dbm', 'antenna_gain_dbi', 'rx_sensitivity_dbm', 'band_ghz')])
         draft = extract(self.root, 'device', [chunk], model(output))['draft']
         waiting = self.ask_again(asked, '换 XX-300 呢')
+        self.assertEqual([p['number'] for p in waiting['conversation']['pending']], [2])  # the newer question replaces the older
         self.assertIn('只有未审核的草稿', waiting['conversation']['pending'][-1]['question'])
         DraftStore(self.root).review(draft['id'], '审核人', draft['content_hash'], 'approve')
         swapped = self.ask_again(waiting, '换 XX-300 呢')
