@@ -9,6 +9,8 @@ from planning.services.supplement import input_of, conversation_of
 from planning.services.fact_fields import FACT_FIELDS
 
 NAMES={'frequency_ghz':'载波频率','distance_km':'路径距离'}
+APPROX_BEFORE=re.compile(r'(?:大约|大概|差不多|近似|约)\s*$')
+APPROX_AFTER=re.compile(r'\s*(?:左右|上下)')
 # Link-budget inputs: one confirmed scalar each, any sign; card bounds are checked by planning.
 BUDGET={'tx_power_dbm':'发射功率','tx_gain_dbi':'发射天线增益','rx_gain_dbi':'接收天线增益',
         'tx_loss_db':'发射馈线损耗','rx_loss_db':'接收馈线损耗','extra_loss_db':'额外损耗',
@@ -61,6 +63,8 @@ def issues_for(state):
             choices=[dict(value='free_space_reference',label='是，只计算自由空间基准'),dict(value='non_free_space',label='否，需要实际环境传播评估')])
     params={p['canonical_name']:p for p in report.get('parameters_proposal',[])}
     approx={d['details'].get('field'):d['details'] for d in diagnostics if d['code']=='PARAMETER_APPROXIMATE'}
+    # While a shared site name is open, the distance is not asked: the chosen site's coordinates give it.
+    site_choice=any(d['code']=='ENTITY_AMBIGUOUS' and d['details'].get('kind')=='site' for d in diagnostics)
     for field,p in params.items():
         if field not in NAMES:
             continue
@@ -70,7 +74,8 @@ def issues_for(state):
         elif field in approx:
             add('clarification',field,NAMES[field]+'的近似范围是什么？','填写明确范围（例如 2±0.1GHz），或明确按单值计算（例如 2GHz）。',excerpt=approx[field]['excerpt'])
         elif p['status']=='missing':
-            add('missing',field,'请补充'+NAMES[field],'可输入单值、区间或离散候选，必须包含单位。')
+            if not (field=='distance_km' and site_choice):
+                add('missing',field,'请补充'+NAMES[field],'可输入单值、区间或离散候选，必须包含单位。')
         elif min(numbers(p['value']))<=0:
             add('invalid',field,NAMES[field]+'必须大于零','区间的所有端点与候选都必须大于零。')
     # Link-budget inputs are answered one field at a time, like frequency and distance.
@@ -166,8 +171,19 @@ def strip_labelled(request, report, fields):
                 spans.append(a['span'])
     text = request['raw_text']
     for a, b in sorted(spans, reverse=True):
+        a, b = with_approximation(text, a, b)
+        # Do not leave two separators side by side ("用XX-100，，得留").
+        if 0 < a and b < len(text) and text[a-1] in '，,' and text[b] in '，,。':
+            a -= 1
         text = text[:a] + text[b:]
     request['raw_text'] = text
+
+
+def with_approximation(text, start, end):
+    """Widen a value span over the approximation words around it, as in "大概2GHz左右"."""
+    before = APPROX_BEFORE.search(text, 0, start)
+    after = APPROX_AFTER.match(text, end)
+    return (before.start() if before else start), (after.end() if after else end)
 
 
 def replace_parameter(request, report, field, answer):
@@ -214,7 +230,7 @@ def replace_parameter(request, report, field, answer):
         if d['code']=='PARAMETER_APPROXIMATE' and d['details'].get('field')==field:
             remove.append(d['details']['span'])
     merged=[]
-    for start,end in sorted(remove):
+    for start,end in sorted(with_approximation(text,*span) for span in remove):
         if merged and start <= merged[-1][1]:
             merged[-1][1]=max(end,merged[-1][1])
         else:
