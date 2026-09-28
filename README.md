@@ -14,6 +14,10 @@
 - **答复**：模型写答复和审查意见，其中的数字必须能在本次输入和结果里找到，否则隐藏。专业数值始终由登记公式计算。
 - **文档库**：ITU-R P.525、P.530、P.453 的原文只放在本机被忽略的目录，仓库只存清单与哈希。审查可以引用检索到的段落。
 - **模型**：默认 Qwen3.5-9B（Q4_K_M，本机 llama.cpp，离线）；向量模型 Qwen3-Embedding-0.6B 可选。模型不可用时，参数写全的请求仍可用确定性规则计算。
+- **资料**（开发中，第 4 周）：页眉“资料”打开文档库。
+  - 选文档片段，由模型抽取站点、设备或公式草稿；每个字段对照原文核对，审核人通过后入库。未审核的草稿不能参与计算。
+  - 可以添加 PDF、Markdown、文本；Word、Excel、PPT、HTML 需要另装 `requirements-docs.txt`（MarkItDown）。原文只存本机。
+- **追问**（开发中，第 4 周）：“换 XX-200 呢”“B 站换成 C 站呢”生成新版本，确认后重新计算；结果下方对比上一版。说法含糊或没说换哪一端时反问。
 
 设计与验收见 [ACCEPTANCE_M1](docs/design/ACCEPTANCE_M1.md)，进度见 [NEXT_ACTION](docs/codex/NEXT_ACTION.md)。
 
@@ -26,6 +30,12 @@ setup_planning.cmd
 ```
 
 脚本创建 `.venv`，安装 `requirements-planning.txt`，执行 `pip check`。若 `py` 或 `python` 未在 PATH，可先将 `COMMPLAN_PYTHON` 设置为 Python 3.12 的 `python.exe` 完整路径再运行。此最小 Planning 环境无需 Torch、模型权重或 llama runtime；正常确定性模式也无需模型服务。
+
+资料页要转换 Word、Excel、PPT、HTML 时，另装文档转换依赖（约 60 MB）：
+
+```bat
+.venv\Scripts\python -m pip install -r requirements-docs.txt
+```
 
 日常双击 `start.cmd`（ASCII 文件名）或 `启动.cmd`。启动器默认尝试项目内 `models/signal-formula-qwen3/` 的本地模型；未找到模型时仍打开确定性工作台。页面默认选“确定性规则”；进入高级设置才可选择本机 Qwen。端口上若是旧版本的工作台，启动器会先停掉它再启动当前版本；已安装 Chrome 时用 Chrome 打开。只启工作台：
 
