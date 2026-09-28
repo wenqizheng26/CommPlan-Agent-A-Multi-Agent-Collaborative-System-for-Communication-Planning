@@ -19,7 +19,7 @@ def evidence_spans(text):
 
 
 class LocalSelector:
-    def __init__(self, url='http://127.0.0.1:18081/v1/chat/completions', *, model='signal-formula-qwen3',
+    def __init__(self, url='http://127.0.0.1:18081/v1/chat/completions', *, model=None,
                  temperature=0, timeout=30, context=4096):
         parsed = urlparse(url)
         if parsed.scheme != 'http' or not ipaddress.ip_address(parsed.hostname).is_loopback:

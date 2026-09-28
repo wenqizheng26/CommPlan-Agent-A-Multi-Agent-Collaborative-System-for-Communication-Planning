@@ -6,7 +6,7 @@ import {formatDomain} from './values.mjs';
 import {assumptionEdit} from './m1.mjs';
 import {renderConversation} from './conversation.mjs';
 import {renderQuestions,openQuestions} from './questions.mjs';
-import {summary,factorySettings,renderSettingsForm} from './settings.mjs';
+import {summary,factorySettings,renderSettingsForm,switchView} from './settings.mjs';
 import {nodeLatency,stepTimes,runSummary,renderWaterfall,miniWaterfall,renderMetrics} from './timing.mjs';
 import {headerText,setMarquee,fitMarquee} from './marquee.mjs';
 import {renderLibrary,draftTitle,MAX_CHUNKS} from './library.mjs';
@@ -15,7 +15,8 @@ const $=id=>document.getElementById(id);
 const narrow=()=>window.matchMedia('(max-width: 899px)').matches;
 let current=null, historical=null, activeContext=null, activity=[], token='', dirty=false, editing=false, busy=false, busyAction=null, pendingCommand=null;
 let modelService=null, checkingModel=false;
-let settings=null, models=null, draft=null, savingSettings=false;
+let settings=null, models=null, draft=null, savingSettings=false, switcher=null, switchTimer=null;
+const switching=()=>switcher?.state==='switching';
 let view='main', focusParameter=null, pollGeneration=0, popover=null, sideChoice=null, sideKey='', foldKey='', originalOpen=false;
 const folds=new Map();
 // Event nodes that are not drawn map onto the architecture node that owns them.
@@ -43,13 +44,15 @@ const clearError=()=>notice('',true);
 const TIMEOUTS={'/api/commands':125000,'/api/drafts/extract':200000,'/api/drafts/review':30000,'/api/documents':30000};
 async function api(path,body){const r=await fetch(path,{signal:AbortSignal.timeout(TIMEOUTS[path]||(path.startsWith('/api/documents/')?30000:10000)),method:body?'POST':'GET',headers:body?{'Content-Type':'application/json','X-Planning-Token':token}:{},body:body?JSON.stringify(body):undefined});const data=await r.json();if(!r.ok){const err=new Error(data.error.message+' ['+data.error.code+']');err.status=r.status;throw err;}return data;}
 function syncButtons(){
- document.querySelectorAll('#request-form input,#request-form textarea,#request-form select,#request-form button').forEach(n=>n.disabled=busy||!!historical);
- for(const id of ['supplement-message','supplement-submit'])$(id).disabled=busy||!!historical||!current||dirty||editing;
- document.querySelectorAll('#clarification-panel input,#clarification-panel select,#clarification-panel button').forEach(n=>n.disabled=busy||dirty||editing||!!historical);
+ // A model switch holds every command that may call a model; cancelling a task still works.
+ const hold=busy||switching();
+ document.querySelectorAll('#request-form input,#request-form textarea,#request-form select,#request-form button').forEach(n=>n.disabled=hold||!!historical);
+ for(const id of ['supplement-message','supplement-submit'])$(id).disabled=hold||!!historical||!current||dirty||editing;
+ document.querySelectorAll('#clarification-panel input,#clarification-panel select,#clarification-panel button').forEach(n=>n.disabled=hold||dirty||editing||!!historical);
  const can=current?.status==='AWAITING_CONFIRMATION'&&!historical&&!activeContext;
  $('actions').hidden=!can;
- $('confirm').disabled=busy||dirty||editing||!can||!$('accept').checked;
- $('accept').disabled=busy||dirty||editing||!can;
+ $('confirm').disabled=hold||dirty||editing||!can||!$('accept').checked;
+ $('accept').disabled=hold||dirty||editing||!can;
  $('cancel').disabled=busy||!can;
  $('stop-operation').hidden=!busy;$('stop-operation').disabled=!busy;
  $('return-current').hidden=!historical;
@@ -160,6 +163,7 @@ async function selectDoc(id){
 function toggleChunk(id){if(lib.chosen.has(id))lib.chosen.delete(id);else if(lib.chosen.size<MAX_CHUNKS)lib.chosen.add(id);drawLibrary();}
 async function extractDraft(){
  if(lib.busy||!lib.chosen.size)return;
+ if(switching()){lib.message='正在切换模型，完成后再抽取。';drawLibrary();return;}
  lib.busy=true;lib.message='';lib.extracting=0;drawLibrary();const started=Date.now();
  // Only the button text changes each second, so a half-typed reason is not redrawn away.
  const timer=setInterval(()=>{lib.extracting=Math.round((Date.now()-started)/1000);const b=$('extract-draft');if(b)b.textContent=`抽取中 · ${lib.extracting} s`;},1000);
@@ -266,6 +270,7 @@ function afterCommand(action){
 }
 async function submit(action,answers=null,inputOverride=null){
  if(busy||historical)return;
+ if(switching()&&action!=='cancel'){notice('正在切换模型，完成后再提交。',true);return;}
  const c={action,task_id:current?.task_id||(pendingCommand?.action==='create'?pendingCommand.task_id:crypto.randomUUID()),event_id:crypto.randomUUID(),expected_revision:current?.revision||0,expected_state_version:current?.state_version||0};
  if(['create','edit'].includes(action)){c.input=inputOverride||readInput();c.mode=$('mode').value;}if(action==='supplement'){c.message=$('supplement-message').value.trim();c.mode=$('mode').value;if(!c.message||dirty||editing)return;}if(action==='confirm')c.review_hash=current.review.review_hash;
  if(action==='answer'){if(dirty||editing||!answers)return;c.answers=answers;c.mode=$('mode').value;}
@@ -331,19 +336,46 @@ $('stop-operation').addEventListener('click',async()=>{
 $('check-model').addEventListener('click',checkModel);
 
 function showSummary(){
+ if(settings)$('mode').value=settings.settings.mode_default;
+ if(switching()){$('model-badge-text').textContent=`切换模型 · ${Math.round((switcher.elapsed_ms||0)/1000)} s`;$('model-dot').className='dot run';return;}
  const text=summary(settings?.settings,models);$('model-badge-text').textContent=text.badge;
  const st=models?.status?.[settings?.settings?.chat?.default];
  $('model-dot').className='dot '+(settings?.settings?.mode_default!=='llm'?'':st==='ready'?'ok':st==='loading'?'run':'off');
- if(settings)$('mode').value=settings.settings.mode_default;
 }
 async function loadSettings(){
- const results=await Promise.allSettled([api('/api/settings'),api('/api/models')]);
+ const results=await Promise.allSettled([api('/api/settings'),api('/api/models'),api('/api/model-switch')]);
  if(results[0].status==='fulfilled')settings=results[0].value;
  if(results[1].status==='fulfilled')models=results[1].value;
+ if(results[2].status==='fulfilled')switcher=results[2].value;
  const failed=results.find(r=>r.status==='rejected');if(failed)notice('部分模型与检索状态载入失败：'+failed.reason.message,true);
  showSummary();
+ if(switching()&&!switchTimer)tickSwitch();
 }
-function drawSettings(){renderSettingsForm($('settings-form'),{draft,models,status:models?.status,corpus:models?.corpus,el,onChange:next=>{draft=next;drawSettings();}});}
+function switchLock(){return busy?'正在处理任务，完成后才能切换。':lib.busy?'正在抽取资料，完成后才能切换。':'';}
+function drawSettings(){renderSettingsForm($('settings-form'),{draft,models,status:models?.status,corpus:models?.corpus,el,switcher,locked:switchLock(),onSwitch:startSwitch,onChange:next=>{draft=next;drawSettings();}});}
+async function startSwitch(modelId){
+ if(switching()||switchLock())return;
+ try{switcher=await api('/api/model-switch',{model_id:modelId});}
+ catch(e){notice(e.message,true);return;}
+ clearError();showSummary();syncButtons();if(!$('settings-sheet').hidden)drawSettings();tickSwitch();
+}
+// One poll a second while a switch runs: only the waiting time changes until it ends.
+function tickSwitch(){
+ clearTimeout(switchTimer);
+ switchTimer=setTimeout(async()=>{
+  try{switcher=await api('/api/model-switch');}catch{}
+  if(switching()){
+   const line=document.querySelector('#settings-form .switch-status'),view=switchView({draft,models,status:models?.status,switcher});
+   if(line&&view)line.textContent=view.text;
+   showSummary();tickSwitch();return;
+  }
+  switchTimer=null;await loadSettings();
+  if(draft)draft.chat=structuredClone(settings.settings.chat);
+  if(switcher?.message)notice(switcher.message,switcher.state==='failed');
+  if(!$('settings-sheet').hidden)drawSettings();
+  checkModel();draw();
+ },1000);
+}
 let sheetReturn=null;
 const SHEETS=['settings-sheet','metrics-panel','history-sheet','library-sheet'];
 function openSheet(id){toggleMenu(false);sheetReturn=document.activeElement;$('sheet-scrim').hidden=false;$(id).hidden=false;$(id).querySelector('.icon-button').focus();}

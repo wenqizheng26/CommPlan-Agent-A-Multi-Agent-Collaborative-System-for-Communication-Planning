@@ -70,6 +70,21 @@ class AssetRootTests(unittest.TestCase):
             start_commplan.asset_root(Path(self.temp.name) / "missing")
 
 
+class SavedModelTests(unittest.TestCase):
+    def test_launcher_starts_the_model_the_settings_chose(self):
+        from planning.providers.registry import Registry
+        from planning.providers.settings import SettingsStore
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / 'planning.sqlite'
+            self.assertEqual(start_commplan.saved_model(db)['id'], 'qwen35-9b-q4')  # no database yet
+            self.assertFalse(db.exists())  # reading never creates it
+            store = SettingsStore(db, Registry(start_commplan.ROOT))
+            settings = store.get()['settings']
+            settings['chat']['default'] = 'qwen3-4b-q4'
+            store.put(settings, 0)
+            self.assertEqual(start_commplan.saved_model(db)['id'], 'qwen3-4b-q4')
+
+
 class WithoutModelTests(unittest.TestCase):
     def test_starts_workbench_without_touching_model_assets_or_service(self):
         ready = {"profile": "confirmed-fspl-loop-v1"}

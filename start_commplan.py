@@ -1,7 +1,10 @@
 """Start the planning workbench and optional local Qwen, without downloads."""
 import argparse
+from contextlib import closing
+import json
 import os
 from pathlib import Path
+import sqlite3
 import subprocess
 import sys
 import time
@@ -18,6 +21,19 @@ ROOT = Path(__file__).resolve().parent
 def default_model():
     registry = Registry(ROOT)
     return registry.models[registry.defaults['chat']]
+
+
+def saved_model(db=None):
+    """The chat model the workbench settings chose (a model switch saves it), else the registry default."""
+    from planning.providers.settings import validate
+    registry = Registry(ROOT)
+    path = Path(db or ROOT / 'outputs/planning.sqlite')
+    try:
+        with closing(sqlite3.connect(path.resolve().as_uri() + '?mode=ro', uri=True, timeout=5)) as conn:
+            row = conn.execute('SELECT body FROM settings WHERE id=1').fetchone()
+        return registry.models[validate(json.loads(row[0]), registry)['chat']['default']]
+    except (sqlite3.Error, OSError, ValueError, TypeError, KeyError):
+        return default_model()
 
 
 def chrome():
@@ -40,8 +56,8 @@ def open_browser(address):
     return webbrowser.open(address)
 
 
-def model_ready():
-    model = default_model()
+def model_ready(model=None):
+    model = model or default_model()
     base = model['endpoint'].rstrip('/')
     data = read_json(base + '/v1/models')
     health = read_json(base + '/health')
@@ -51,8 +67,8 @@ def model_ready():
                     for item in data.get('data', [])))
 
 
-def asset_root(explicit=None):
-    model = default_model()
+def asset_root(explicit=None, model=None):
+    model = model or default_model()
     configured = explicit or os.environ.get('COMMPLAN_ASSET_ROOT')
     candidates = [Path(configured)] if configured else [
         ROOT / 'models' / 'signal-formula-qwen3', ROOT,
@@ -62,7 +78,7 @@ def asset_root(explicit=None):
     for root in candidates:
         if model_paths(root, model):
             return root.resolve()
-    raise RuntimeError('未找到默认模型权重和 llama-server。请用 --asset-root 指向资源目录，或使用 --without-model。')
+    raise RuntimeError(f"未找到模型 {model['id']} 的权重和 llama-server。请用 --asset-root 指向资源目录，或使用 --without-model。")
 
 
 def spawn(command, name, cwd):
@@ -100,19 +116,19 @@ def wait_ready(check, process, label, timeout=180):
 
 
 def ensure_model(args):
-    model = default_model()
+    model = saved_model(args.db)
     base = model['endpoint'].rstrip('/')
     port = int(base.rsplit(':', 1)[1])
-    if model_ready():
-        print('复用已就绪的本机 Qwen：' + base, flush=True)
+    if model_ready(model):
+        print(f"复用已就绪的本机模型 {model['display_name']}：{base}", flush=True)
         return
     if listening(port):
-        raise RuntimeError(f'{port} 端口已占用，但未确认目标 Qwen 就绪；未重复启动或关闭已有服务。')
-    root = asset_root(args.asset_root)
-    print(f'启动本机 Qwen，资源目录：{root}', flush=True)
-    process = spawn(model_command(root, args.cpu), 'commplan-model', root)
-    wait_ready(model_ready, process, '本机 Qwen')
-    print('本机 Qwen 已就绪。', flush=True)
+        raise RuntimeError(f"{port} 端口已占用，但未确认 {model['display_name']} 就绪；未重复启动或关闭已有服务。可在工作台设置里切换模型。")
+    root = asset_root(args.asset_root, model)
+    print(f"启动本机模型 {model['display_name']}，资源目录：{root}", flush=True)
+    process = spawn(model_command(root, args.cpu, model_id=model['id']), 'commplan-model', root)
+    wait_ready(lambda: model_ready(model), process, '本机模型')
+    print('本机模型已就绪。', flush=True)
 
 
 def ensure_embedding(args):

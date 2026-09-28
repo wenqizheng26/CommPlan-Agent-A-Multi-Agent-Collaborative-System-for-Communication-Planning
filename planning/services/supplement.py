@@ -70,7 +70,7 @@ class LocalSupplementSelector:
                       required=['action','quantities'], additionalProperties=False)
         table = '；'.join(f"{q['id']}={q['text']}" for q in quantities) or '无'
         b = self.binding
-        payload = dict(model=b.alias if b else 'signal-formula-qwen3', temperature=b.temperature if b else 0, max_tokens=400,
+        payload = dict(model=b.alias if b else None, temperature=b.temperature if b else 0, max_tokens=400,
             chat_template_kwargs={'enable_thinking':False},
             response_format={'type':'json_schema','json_schema':{'name':'supplement_labels','strict':True,'schema':schema}},
             messages=[{'role':'system','content':

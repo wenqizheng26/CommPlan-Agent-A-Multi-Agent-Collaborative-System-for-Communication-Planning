@@ -35,7 +35,9 @@ def chat(payload, url='http://127.0.0.1:18081/v1/chat/completions', *, timeout=3
         raise ModelResponseError('MODEL_TIME_BUDGET', '本次操作的模型调用时间预算已用尽。')
     if estimate_tokens(payload)>context:
         raise ModelResponseError('MODEL_CONTEXT_LIMIT', f'输入和输出预算可能超过本机 {context} token 上下文，请缩短当前描述。')
-    request=urllib.request.Request(url,json.dumps(payload,ensure_ascii=False).encode(),{'Content-Type':'application/json'})
+    # A request that names no model is answered by whichever model is loaded.
+    body={k:v for k,v in payload.items() if not (k=='model' and v is None)}
+    request=urllib.request.Request(url,json.dumps(body,ensure_ascii=False).encode(),{'Content-Type':'application/json'})
     opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
     started=time.perf_counter()
     try:
@@ -54,6 +56,11 @@ def chat(payload, url='http://127.0.0.1:18081/v1/chat/completions', *, timeout=3
             raise ValueError('empty content')
     except (ValueError,KeyError,TypeError,IndexError) as exc:
         raise ModelResponseError('MODEL_OUTPUT_INVALID','模型返回的响应缺少有效 choices/message/content。',raw,True) from exc
+    # llama-server answers with whatever model it loaded, whatever the request names;
+    # a named model must be the one that answered, or the record would name the wrong model.
+    served,wanted=envelope.get('model'),payload.get('model')
+    if wanted and isinstance(served,str) and served!=wanted:
+        raise ModelResponseError('MODEL_NOT_LOADED',f'本机运行的是 {served}，不是所选的 {wanted}。请在设置里切换模型。')
     envelope['latency_ms']=round((time.perf_counter()-started)*1000)
     return envelope,content
 

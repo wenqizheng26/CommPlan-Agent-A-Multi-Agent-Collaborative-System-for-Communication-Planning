@@ -227,7 +227,7 @@ class RequirementsAgent:
         if self.selector and candidates and not known_unsupported:
             called = mode in {'llm','stub'}
             last = next((d['code'] for d in reversed(diagnostics) if d['code'].startswith('MODEL_')), None)
-            reason = {'MODEL_UNAVAILABLE':'offline','MODEL_TIME_BUDGET':'timeout','MODEL_REQUEST_REJECTED':'rejected',
+            reason = {'MODEL_UNAVAILABLE':'offline','MODEL_NOT_LOADED':'offline','MODEL_TIME_BUDGET':'timeout','MODEL_REQUEST_REJECTED':'rejected',
                       'MODEL_CONTEXT_LIMIT':'rejected'}.get(last,'structure')
             observe(observer,'llm','completed' if called else 'failed',
                     caller='requirements',purpose='intent',mode=mode,health=health,

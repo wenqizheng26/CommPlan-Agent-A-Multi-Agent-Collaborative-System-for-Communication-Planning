@@ -427,6 +427,10 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;padding:12px;bord
 .model-option input{width:16px;height:16px;margin:0;accent-color:var(--accent);box-shadow:none}
 .model-text{flex:1;min-width:0}.model-text strong{display:block;font-size:14px;font-weight:600}
 .model-text small{display:block;font-size:12px;color:var(--text-2);margin-top:2px}
+.switch-line .switch-text{display:flex;align-items:center;gap:10px;margin:10px 0 0;font-size:13px}
+.switch-line .switch-status{flex:1;min-width:0}
+.switch-text.run{color:var(--run)}.switch-text.ok{color:var(--ok)}.switch-text.err{color:var(--bad)}
+.switch-line .hint{margin:4px 0 0;font-size:12px}
 .sheet-details{margin-top:10px}
 .role-row{display:flex;align-items:center;gap:12px;margin:8px 0 0;font-weight:400}
 .role-row span{width:84px;flex-shrink:0}.role-row select{flex:1;padding:7px 10px}

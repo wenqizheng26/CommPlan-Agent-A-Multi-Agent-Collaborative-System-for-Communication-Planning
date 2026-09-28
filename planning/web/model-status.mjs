@@ -5,7 +5,7 @@ export function serviceText(service){
 export function callSummary(state){
  const report=state?.report, diagnostics=report?.diagnostics||[];
  const invalid=diagnostics.filter(d=>d.code==='MODEL_OUTPUT_INVALID').length;
- const rejected=diagnostics.find(d=>['MODEL_CONTEXT_LIMIT','MODEL_REQUEST_REJECTED','MODEL_TIME_BUDGET'].includes(d.code));
+ const rejected=diagnostics.find(d=>['MODEL_CONTEXT_LIMIT','MODEL_REQUEST_REJECTED','MODEL_TIME_BUDGET','MODEL_NOT_LOADED'].includes(d.code));
  const unavailable=diagnostics.some(d=>d.code==='MODEL_UNAVAILABLE');
  const mode=report?.component_modes?.interpretation;
  const rows=[];

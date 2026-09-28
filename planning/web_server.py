@@ -1,5 +1,6 @@
 """Local-only confirmation UI. The task service owns every state transition."""
 import argparse
+from contextlib import nullcontext
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
@@ -11,6 +12,7 @@ from formula_rag.catalog import load_catalog
 from planning.requirements_contract import strict_json, digest
 from planning.workflow.task_service import TaskService, identifier
 from planning.services.model_status import probe_model, probe_registry
+from planning.services.model_switch import Gate, ModelSwitcher
 from planning.build_info import build_fingerprint
 
 MESSAGES={
@@ -35,6 +37,11 @@ MESSAGES={
     'STALE_SETTINGS':'设置已被其他页面修改。已载入最新设置，请核对后再保存。',
     'SETTINGS_MODEL_NOT_STRUCTURED':'该模型不支持严格结构化输出，不能用于这个角色。',
     'SETTINGS_TOP_N':'送入模型的条数不能超过召回数。',
+    'SETTINGS_UNKNOWN_MODEL':'模型未登记。',
+    'MODEL_SWITCHING':'正在切换模型，完成后再提交。',
+    'MODEL_SWITCH_BUSY':'正在处理任务，完成后才能切换模型。',
+    'MODEL_SWITCH_RUNNING':'已有一次模型切换在进行。',
+    'MODEL_NOT_INSTALLED':'本机没有该模型的权重，不能切换。',
     'DOCUMENT_FORMAT':'只支持 PDF、Word（docx）、Excel（xlsx、xls）、PowerPoint（pptx）、HTML、Markdown 和纯文本文件。',
     'DOCUMENT_SIZE':'文件为空或超过 20 MB。',
     'DOCUMENT_NAME':'文件名无效。',
@@ -68,6 +75,8 @@ def create_server(root, db_path=None, port=18082):
         pass
     token=secrets.token_urlsafe(32)
     build=build_fingerprint(root)
+    gate=Gate()
+    switcher=ModelSwitcher(service,gate)
     assets={'/':('index.html','text/html'),'/app.js':('app.js','text/javascript'),
             '/text.mjs':('text.mjs','text/javascript'),'/flow.mjs':('flow.mjs','text/javascript'),
             '/details.mjs':('details.mjs','text/javascript'),'/m1.mjs':('m1.mjs','text/javascript'),'/conversation.mjs':('conversation.mjs','text/javascript'),
@@ -125,7 +134,10 @@ def create_server(root, db_path=None, port=18082):
             elif path=='/api/tasks':
                 self.respond(200,{'tasks':service.store.recent()})
             elif path=='/api/model-status':
-                self.respond(200,probe_model())
+                model=service.registry.models[service.settings.get()['settings']['chat']['default']]
+                self.respond(200,probe_model(model['endpoint'].rstrip('/'),model['alias']))
+            elif path=='/api/model-switch':
+                self.respond(200,switcher.status())
             elif path=='/api/models':
                 embeddings={e:service.retrieval_for(e).describe()['embedding'] for e,m in service.registry.models.items()
                             if m['kind']=='embedding'}
@@ -238,7 +250,7 @@ def create_server(root, db_path=None, port=18082):
                 return
             if urlsplit(self.path).path=='/api/documents':
                 self.upload(parse_qs(urlsplit(self.path).query)); return
-            if self.path not in {'/api/commands','/api/cancel-operation','/api/settings','/api/drafts/extract','/api/drafts/review'}:
+            if self.path not in {'/api/commands','/api/cancel-operation','/api/settings','/api/drafts/extract','/api/drafts/review','/api/model-switch'}:
                 self.error(404,'NOT_FOUND'); return
             if self.headers.get_content_type()!='application/json':
                 self.error(400,'JSON_REQUIRED'); return
@@ -263,16 +275,23 @@ def create_server(root, db_path=None, port=18082):
                     if type(payload) is not dict or set(payload)!={'task_id','event_id'}:
                         raise ValueError('INVALID_REQUEST')
                     result=service.cancel_operation(payload['task_id'],payload['event_id'])
+                elif self.path=='/api/model-switch':
+                    if type(payload) is not dict or set(payload)!={'model_id'}:
+                        raise ValueError('INVALID_REQUEST')
+                    result=switcher.start(payload['model_id'])
                 elif self.path.startswith('/api/drafts/'):
-                    result=self.draft_command(payload)
+                    # Extraction calls the model: it and a model switch exclude each other.
+                    with gate.command() if self.path=='/api/drafts/extract' else nullcontext():
+                        result=self.draft_command(payload)
                 else:
-                    result=service.apply(payload)
+                    with nullcontext() if type(payload) is dict and payload.get('action')=='cancel' else gate.command():
+                        result=service.apply(payload)
                 self.respond(200,result)
             except (ValueError,TypeError,KeyError,OverflowError) as exc:
                 code=str(exc) if isinstance(exc,ValueError) and not isinstance(exc,UnicodeError) else 'INVALID_REQUEST'
                 status=409 if code in {'STALE_SETTINGS','STALE_REVISION','STALE_STATE_VERSION','REVIEW_HASH_MISMATCH','KNOWLEDGE_CHANGED',
                     'TASK_EXISTS','NOT_CONFIRMABLE','NOT_CANCELLABLE','IDEMPOTENCY_CONFLICT','CHECKPOINT_STATE_MISMATCH',
-                    'DRAFT_STALE_REVIEW','DRAFT_ALREADY_REVIEWED'} or code.startswith('DRAFT_NOT_APPROVABLE') else 400
+                    'DRAFT_STALE_REVIEW','DRAFT_ALREADY_REVIEWED','MODEL_SWITCHING','MODEL_SWITCH_BUSY','MODEL_SWITCH_RUNNING'} or code.startswith('DRAFT_NOT_APPROVABLE') else 400
                 self.error(status,code)
             except sqlite3.OperationalError:
                 self.error(503,'DATABASE_BUSY')

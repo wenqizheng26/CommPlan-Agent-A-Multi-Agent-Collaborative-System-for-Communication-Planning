@@ -22,7 +22,7 @@ class Rewrite(ValueError):
 def failure_reason(exc):
     """Coarse cause for statistics: offline, timeout, rejected or structure."""
     if isinstance(exc, ModelResponseError):
-        return {'MODEL_TIME_BUDGET': 'timeout', 'MODEL_REQUEST_REJECTED': 'rejected',
+        return {'MODEL_TIME_BUDGET': 'timeout', 'MODEL_REQUEST_REJECTED': 'rejected', 'MODEL_NOT_LOADED': 'offline',
                 'MODEL_CONTEXT_LIMIT': 'rejected'}.get(exc.code, 'structure')
     if isinstance(exc, TimeoutError) or isinstance(getattr(exc, 'reason', None), TimeoutError):
         return 'timeout'
@@ -44,7 +44,7 @@ class LocalRoleSelector:
 
     def __call__(self, role, prompt, view, schema):
         b = self.binding
-        payload = dict(model=b.alias if b else 'signal-formula-qwen3', temperature=b.temperature if b else 0,
+        payload = dict(model=b.alias if b else None, temperature=b.temperature if b else 0,
             max_tokens=MAX_TOKENS.get(role, 700), chat_template_kwargs={'enable_thinking': False},
             response_format={'type': 'json_schema', 'json_schema': {
                 'name': role, 'strict': True, 'schema': schema}},
