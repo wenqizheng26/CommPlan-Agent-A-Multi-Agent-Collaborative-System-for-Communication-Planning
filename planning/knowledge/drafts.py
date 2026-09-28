@@ -198,9 +198,12 @@ class DraftStore:
             if source_hashes is not None:
                 require(source_hashes.get(e['chunk_id']) == chunk['sources'][0]['sha256'], 'DRAFT_SOURCE_CHANGED')
         require(len({by_id[e['chunk_id']]['doc_id'] for e in evidence}) == 1, 'DRAFT_MIXED_DOCUMENTS')
-        rows = []
+        rows, missing = [], []
         for field, value, rule in fields(kind, record):
             quotes = quotes_for(field, evidence)
+            if not quotes and field not in ('applicability.notes', 'title'):
+                missing.append(field)
+                continue
             if rule == 'number':
                 require(number_found(value, quotes), 'DRAFT_NUMBER_UNGROUNDED: ' + field)
                 status = 'match'
@@ -211,13 +214,14 @@ class DraftStore:
                 status = 'match' if found else ('manual' if quotes else 'missing')
             else:
                 status = 'manual' if quotes else 'missing'
-            require(status != 'missing' or field in ('applicability.notes', 'title'), 'DRAFT_EVIDENCE_MISSING: ' + field)
-            shown = {(e['chunk_id'], e['quote']): e for e in evidence
+            shown ={(e['chunk_id'], e['quote']): e for e in evidence
                      if e['field'] == field or field.startswith(e['field'] + '.')}
             rows.append(dict(field=field, value=copy.deepcopy(value), status=status,
                              quotes=[dict(chunk_id=c, quote=q, locator=by_id[c]['sources'][0]['locator'],
                                           header=table_header(by_id[c]['description'], q))
                                      for c, q in shown]))
+        # Every field without a quote at once, so one retry can supply them all.
+        require(not missing, 'DRAFT_EVIDENCE_MISSING: ' + '、'.join(missing))
         return rows
 
     def example_check(self, record, evidence):

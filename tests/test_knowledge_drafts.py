@@ -118,6 +118,13 @@ class DraftTests(unittest.TestCase):
         failed = extract(self.root, 'formula', [self.eirp], model(wrong))
         self.assertIsNone(failed['draft'])
         self.assertIn('EXTRACTION_EXAMPLE_FAILED', failed['diagnostics'][-1]['reason'])
+        # Every field without a quote is named at once, so one retry can supply them all.
+        partial = dict(self.formula, evidence=[e for e in self.formula['evidence']
+                                               if e['field'] not in ('description', 'output.unit', 'examples.0.expected')])
+        unquoted = extract(self.root, 'formula', [self.eirp], model(partial))
+        self.assertIsNone(unquoted['draft'])
+        self.assertIn('DRAFT_EVIDENCE_MISSING: description、output.unit、examples.0.expected',
+                      unquoted['diagnostics'][0]['reason'])
         self.store.review(draft['id'], '审核人', draft['content_hash'], 'approve')
         card = next(c for c in load_catalog(self.root) if c['id'] == 'eirp_dbm')
         self.assertEqual((card['status'], card['sources'][0]['locator'], card['examples'][0]['expected']),

@@ -26,7 +26,9 @@ KIND_PROMPTS = {
              'environment 取原文写明的环境，否则为“未记录”。'),
     'formula': ('id 用小写英文字母、数字和下划线（如 eirp_dbm）；expression 用参数名写成可计算的表达式，只用 + - * / ** 和 log10、sqrt 等函数，'
                 '不写程序；同一物理量的参数名沿用 parameter_names 里的名字；output_name 为结果的参数名，output_unit 为结果单位；'
-                'example_inputs 和 example_expected 取原文算例的数值；notes 为原文写明的适用条件。')}
+                'example_inputs 和 example_expected 取原文算例的数值；notes 为原文写明的适用条件。'
+                'evidence 至少为 description、expression、output.unit、parameters、examples.0.inputs、examples.0.expected '
+                '各给一条，同一句原文可以用于多个字段。')}
 EVIDENCE_FIELDS = {
     'device': ['names', 'model', 'tx_power_dbm', 'antenna_gain_dbi', 'rx_sensitivity_dbm', 'band_ghz'],
     'site': ['names', 'environment', 'position.lat', 'position.lon', 'position.ground_m', 'position.antenna_m',
