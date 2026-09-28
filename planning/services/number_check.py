@@ -27,7 +27,11 @@ NOT_QUANTITY = re.compile(
     r'\d{4}\s*年(?:\s*\d{1,2}\s*月)?(?:\s*\d{1,2}\s*日)?|\d{1,2}\s*月\s*\d{1,2}\s*日|\d{4}-\d{1,2}-\d{1,2}'
     r'|[(（]\s*\d{1,2}\s*/\s*\d{4}\s*[)）]'
     r'|第\s*\d+(?:\.\d+)*\s*(?:步|项|条|点|个|段|种|次|节|章|页|式|部分)|步骤\s*\d+|§\s*\d+(?:\.\d+)*'
-    r'|^\s*\d+\s*[.、)）](?!\d)|[(（]\s*\d+\s*[)）]', re.M)
+    r'|^\s*\d+\s*[.、)）](?!\d)|[(（]\s*\d+\s*[)）]'
+    # The same ordinals and dates in English text.
+    r'|(?i:\b(?:step|item|point|section|page|equation|eq\.|table|annex|figure|fig\.|part|row|column|option|case|version)s?\s*\d+(?:\.\d+)*)'
+    r'|(?i:\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{1,2}(?:\s*,\s*\d{4})?)'
+    r'|(?i:\b(?:in|since|of)\s+(?:19|20)\d{2}\b)', re.M)
 DIGIT = '零一二两三四五六七八九十'
 CHINESE_NUMERAL = re.compile(rf'[{DIGIT}百千万]*[{DIGIT}][{DIGIT}百千万]*(?:点[{DIGIT}]+)?\s*(?:个\s*)?'
                              r'(?:分贝|dBm|dBi|dB|千米|公里|米|毫瓦|瓦|千兆赫|吉赫|兆赫)')

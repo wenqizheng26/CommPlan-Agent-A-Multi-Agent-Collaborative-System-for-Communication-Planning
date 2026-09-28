@@ -54,6 +54,8 @@ export function planSteps(plan,report,result,facts={},cards={}){
  });
 }
 export function el(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
+// User words and document text: shown as written in either page language.
+export function raw(tag,text,cls){const n=el(tag,text,cls);n.translate=false;return n;}
 function button(text,fn,cls='text-button'){const b=el('button',text,cls);b.type='button';b.addEventListener('click',fn);return b;}
 function block(title,text,cls=''){const b=el('section',undefined,'detail-block '+cls);if(title)b.append(el('h3',title));if(Array.isArray(text)){const ul=el('ul');text.forEach(t=>ul.append(el('li',t)));b.append(ul);}else if(text)b.append(el('p',text));return b;}
 function jsonDetails(label,data){const d=el('details');d.append(el('summary',label),el('pre',JSON.stringify(data,null,2)));return d;}
@@ -211,7 +213,7 @@ function mainView(host,ctx){
 
 function paramsView(host,ctx){
  const {state,focusParameter,onParameter}=ctx,r=state.report,text=state.request.raw_text;
- const quote=el('p',undefined,'source-quote');
+ const quote=raw('p',undefined,'source-quote');
  const p=r.parameters_proposal.find(p=>p.canonical_name===focusParameter),origin=p?.origins.find(o=>o.kind==='user_text'&&o.span);
  if(origin){const chars=Array.from(text);quote.append(document.createTextNode(chars.slice(0,origin.span[0]).join('')),el('mark',sourceExcerpt(text,origin.span)),document.createTextNode(chars.slice(origin.span[1]).join('')));}else quote.textContent=text;
  const raw=el('section',undefined,'detail-block');raw.append(el('h3','原文'),quote);host.append(raw);
@@ -221,7 +223,9 @@ function paramsView(host,ctx){
   cell.append(button(`${parameterNames[name]||name}${symbols[name]?' · '+symbols[name]:''}`,()=>onParameter(name)));
   row.append(cell,el('td',param.value===null?(param.status==='conflicting'?'冲突':'缺失'):`${formatDomain(param.value)} ${param.unit}`,'num'));
   const sources=el('td');
-  for(const o of param.origins){const label=originLabel({...param,origins:[o]},ctx.facts,ctx.cards);sources.append(el('small',`${label.tag} · ${formatDomain(o.value)} ${o.unit}`+(o.kind==='user_text'&&o.span?` · “${sourceExcerpt(text,o.span)}”`:'')+(label.source?` · ${label.source.title} ${label.source.locator}`:'')));}
+  for(const o of param.origins){const label=originLabel({...param,origins:[o]},ctx.facts,ctx.cards),line=el('small',`${label.tag} · ${formatDomain(o.value)} ${o.unit}`);
+   if(o.kind==='user_text'&&o.span)line.append(' · “',raw('span',sourceExcerpt(text,o.span)),'”');
+   if(label.source)line.append(` · ${label.source.title} ${label.source.locator}`);sources.append(line);}
   const turn=state.conversation?.field_sources?.[name];if(turn)sources.append(el('small',`第 ${turn.number} 条补充`));
   if(!param.origins.length)sources.append(el('small','待补充'));
   row.append(sources);body.append(row);
@@ -269,7 +273,7 @@ function evidenceView(host,ctx){
   const found=r.document_retrieval;
   host.append(block('文档依据',found.degraded?'向量未就绪，按词项检索；文档不作为本次计算数值来源。':'检索原文用于解释与审查，不作为本次计算数值来源。','hint'));
   for(const hit of found.hits.filter(h=>found.used.includes(h.id))){
-   const b=block(hit.title,hit.excerpt,'document-evidence');
+   const b=block(hit.title,undefined,'document-evidence');if(hit.excerpt)b.append(raw('p',hit.excerpt));
    b.append(el('p',`${hit.source.locator}${hit.source.simulated?' · 模拟数据':''}`,'hint'),
     sourceLink(documentSource(hit.source)));host.append(b);
   }
@@ -279,7 +283,7 @@ function evidenceView(host,ctx){
   const b=block(citation(ref)||`依据 ${i+1}`);
   b.append(el('p',ref.source_title,'hint'),el('p','定位：'+(ref.locator==='formula card source metadata'?'仅有卡片元数据':ref.locator||'未提供')),
    el('p',`公式卡 ${ref.catalog_id} · v${ref.card_version} · ${ref.status==='verified'?'已核验':ref.status}`,'hint'));
-  if(ref.excerpt)b.append(el('p',ref.excerpt,'excerpt'));
+  if(ref.excerpt)b.append(raw('p',ref.excerpt,'excerpt'));
   const source=model?.sources?.find(x=>x.title===ref.source_title);if(source?.derivation)b.append(block('原式与换算',source.derivation));
   b.append(sourceLink(ref),jsonDetails('证据快照',ref));host.append(b);
  }
@@ -308,8 +312,9 @@ const NODE_VIEW={input:['parameters','参数溯源'],requirements:['parameters',
 export function nodeCard(id,{state=null,events=[],latency={},modelService=null}={}){
  const [title,role]=nodes[id]||[id,''],status=nodeStates(state,events)[id]||'idle';
  const r=state?.report,plan=r?.calculation_plan_proposal,v=state?.validations||[],lines=[role];
+ let quote=null;// the user's words, shown as written
  if(state)switch(id){
-  case 'input':lines.push(state.request?.raw_text?.slice(0,40)+((state.request?.raw_text?.length||0)>40?'…':''));break;
+  case 'input':{const text=state.request?.raw_text||'';quote=text?text.slice(0,40)+(text.length>40?'…':''):null;break;}
   case 'orchestrator':if(state.routing_decisions?.length)lines.push(`调度 ${state.routing_decisions.length} 次`);break;
   case 'requirements':if(r){const ps=r.parameters_proposal||[];lines.push(`解析：${r.component_modes?.interpretation==='llm'?'本机大模型':'确定性规则'}`,`目标：${plan?.objective||'待明确'}`,`参数：${ps.filter(p=>p.value!==null).length}/${ps.length}`);}break;
   case 'compute_agent':if(state.calculation_role)lines.push(`${roleModeNames[state.calculation_role.mode]||state.calculation_role.mode} · 计算 ${state.calculation_attempts||1} 次`);if(plan)lines.push(`计算链 ${plan.steps.length} 步`);break;
@@ -324,5 +329,5 @@ export function nodeCard(id,{state=null,events=[],latency={},modelService=null}=
  }
  if(id==='llm')lines.splice(1,0,serviceText(modelService));
  const [view,label]=NODE_VIEW[id]||[];
- return {title,tone:status,status:(statusText[status]||status)+(latency[id]?` · ${latency[id]}`:''),lines:lines.filter(Boolean),link:view&&(view!=='main'||state?.final_report)?{view,label}:null};
+ return {title,tone:status,status:(statusText[status]||status)+(latency[id]?` · ${latency[id]}`:''),lines:lines.filter(Boolean),quote,link:view&&(view!=='main'||state?.final_report)?{view,label}:null};
 }

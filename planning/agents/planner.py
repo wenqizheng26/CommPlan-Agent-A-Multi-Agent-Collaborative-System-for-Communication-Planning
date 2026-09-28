@@ -5,13 +5,20 @@ notes. The program binds every input from the sources it already checked (H3) an
 reordering of its own chain. Every number the model writes must quote a fact it was shown (H4).
 """
 import copy
-from planning.agents.role_model import Rewrite, suggest
+from planning.agents.role_model import Rewrite, suggest, english, for_language, language_hint
 from planning.requirements_contract import require, digest, obj
 from planning.services.fact_fields import field_label
 from planning.services.plans import SUPPORTED, MAX_STEPS
 
 # Grammar caps; the prompt asks for 16 and 45 characters, so a text that reaches its cap was cut off.
 WHY_LIMIT, NOTE_LIMIT = 20, 60
+# English asks for 6 and 18 words. Replays of a stored plan accept either language.
+EN_WHY_LIMIT, EN_NOTE_LIMIT = 60, 160
+EN_LIMITS = 'why 不超过 6 个英文词，assessment 每条 text 不超过 18 个英文词'
+
+
+def caps():
+    return (EN_WHY_LIMIT, EN_NOTE_LIMIT) if english() else (WHY_LIMIT, NOTE_LIMIT)
 NOTE_KINDS = ('goal', 'applicability', 'assumption')
 
 PROMPT = (
@@ -32,6 +39,9 @@ PROMPT = (
     'verdict：通常为 ready（可以确认）。只有计划没有回答原文的问题，或某个输入与站点、电台记录不一致'
     '（如发射功率高于电台额定值、频率不在电台频段内）时才用 review（建议核对）；适用性和假设的一般提示不算。\n'
     '数字规则：只照抄 facts 里已有的数值和单位，不做计算；损耗、余量、距离等还没有计算，不写结果或结论；型号和标准编号照原样写。')
+# The Chinese example and character counts made the model answer in Chinese on the English page.
+EN_SWAPS = (('不超过 16 字，不写数字，例如“由两站经纬度与高程算直线距离”', '不超过 6 个英文词，不写数字，例如“Slant range from site coordinates”'),
+            ('每条 text 不超过 45 字', '每条 text 不超过 18 个英文词'))
 CONDITION_NAMES = {'free_space': '自由空间模型', 'free_space_reference': '自由空间基准', 'non_free_space': '实际非自由空间环境',
                    'maximum_doppler': '最大多普勒频移', 'two_way': '双程'}
 ORIGIN_NAMES = {'user_text': '原文', 'manual_form': '手填', 'site': '站点库', 'device': '设备库', 'default': '假设（卡片默认值）'}
@@ -113,7 +123,7 @@ def validate_assessment(value,report,stored=False,check_numbers=True,facts=None)
         require(note['kind'] in {'goal','applicability','assumption'},'ASSESSMENT_KIND')
         hidden=stored and note.get('withheld') is True
         if stored and 'withheld' in note:require(type(note['withheld']) is bool,'ASSESSMENT_WITHHELD')
-        require(note['text'] is None if hidden else type(note['text']) is str and 1<=len(note['text'])<=60,'ASSESSMENT_TEXT')
+        require(note['text'] is None if hidden else type(note['text']) is str and 1<=len(note['text'])<=EN_NOTE_LIMIT,'ASSESSMENT_TEXT')
         require(type(note['refs']) is list and 1<=len(note['refs'])<=5 and all(type(r) is str and r in refs for r in note['refs']),'ASSESSMENT_REFS')
         if check_numbers and not hidden:
             require(not unquoted(note['text'],allowed_values(report,facts)),'ASSESSMENT_NUMBERS')
@@ -141,7 +151,7 @@ def compile_proposal(proposal, report, cards, facts=None):
         card=by_id.get(selected['card'])
         require(card is not None and card['id'] in SUPPORTED and card['status']=='verified','MODEL_NOT_VERIFIED: 只用 cards 里的公式卡')
         require(card['id'] in available,'PLAN_UNUSED_STEP: 有用不到的步骤，inputs 里已有的量不再用公式算')
-        require(type(selected['why']) is str and 1<=len(selected['why'])<WHY_LIMIT,'PLAN_REASON: 步骤理由太长被截断，每条不超过 16 字')
+        require(type(selected['why']) is str and 1<=len(selected['why'])<EN_WHY_LIMIT,'PLAN_REASON: 步骤理由太长，每条不超过 16 字')
         require(not unquoted(selected['why'],allowed_values(report,facts)),'PLAN_REASON_NUMBERS: 步骤理由不写数字')
         steps.append(copy.deepcopy(available[card['id']]))
     require(identifiers[-1]==expected['steps'][-1]['tool_id'],'PLAN_TARGET: 最后一步要输出 target 要的量')
@@ -189,8 +199,8 @@ def accept_assessment(proposal,report,facts=None):
         if numbers:
             bad.extend(numbers)
             note.update(withheld=True,text=None)
-        elif len(note['text'])>=NOTE_LIMIT:
-            bad.append('有一条太长被截断，每条不超过 45 字')
+        elif len(note['text'])>=caps()[1]:
+            bad.append('有一条太长被截断，每条不超过 '+('18 个英文词' if english() else '45 字'))
             note.update(withheld=True,text=None)
     if bad:
         raise Rewrite('ASSESSMENT_INVALID',kept,
@@ -314,16 +324,30 @@ class PlanningAgent:
         facts=planning_view(request,report,available,self.root)
         string=lambda values:dict(type='string',enum=values)
         object_schema=lambda properties:dict(type='object',properties=properties,required=list(properties),additionalProperties=False)
-        note=lambda:object_schema(dict(text=dict(type='string',minLength=1,maxLength=NOTE_LIMIT),
+        why_cap,note_cap=caps()
+        note=lambda:object_schema(dict(text=dict(type='string',minLength=1,maxLength=note_cap),
             refs=dict(type='array',minItems=1,maxItems=3,items=string(ref_ids(report)))))
         schema=object_schema(dict(steps=dict(type='array',minItems=1,maxItems=MAX_STEPS,
-            items=object_schema(dict(card=string([c['id'] for c in available]),why=dict(type='string',minLength=1,maxLength=WHY_LIMIT)))),
+            items=object_schema(dict(card=string([c['id'] for c in available]),why=dict(type='string',minLength=1,maxLength=why_cap)))),
             assessment=object_schema(dict(verdict=string(['ready','review']),**{kind:note() for kind in note_kinds(facts)}))))
         def validate(output):
             proposal=dict(output,assessment=as_notes(output.get('assessment'))) if type(output) is dict else output
             compile_proposal(proposal,report,cards,facts)
-            return accept_assessment(proposal,report,facts)
-        role=suggest('compute_agent',PROMPT,dict(facts=facts),schema,proposal_for(report),validate,self.selector,observer,retain_rewrite_on_unavailable=True)
+            # A reason that reaches the grammar cap of this language was cut off.
+            require(all(len(s['why'])<why_cap for s in proposal['steps']),
+                    'PLAN_REASON: 步骤理由太长被截断，每条不超过 '+('6 个英文词' if english() else '16 字'))
+            texts=lambda p:[s['why'] for s in p['steps']]+[n.get('text') for n in p['assessment']['notes']]
+            try:
+                kept=accept_assessment(proposal,report,facts)
+            except Rewrite as exc:
+                exc.hint+=language_hint(texts(exc.kept))
+                raise
+            # Chinese text on the English page is asked for once more, then kept as written.
+            hint=language_hint(texts(kept))
+            if hint:
+                raise Rewrite('PLAN_LANGUAGE',kept,hint,'language')
+            return kept
+        role=suggest('compute_agent',for_language(PROMPT,EN_LIMITS,EN_SWAPS),dict(facts=facts),schema,proposal_for(report),validate,self.selector,observer,retain_rewrite_on_unavailable=True)
         plan=compile_proposal(role['proposal'],report,cards,facts)
         role=dict(role,origin='model' if role['mode'] in {'llm','stub'} else 'program',
             agrees_with_program=plan['plan_hash']==report['calculation_plan_proposal']['plan_hash'])

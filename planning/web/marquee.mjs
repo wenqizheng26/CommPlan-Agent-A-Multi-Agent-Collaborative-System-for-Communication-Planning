@@ -1,15 +1,18 @@
+import {t} from './i18n.mjs';
 // Header "current task": one line that scrolls only when the question does not fit.
 const GAP=48,SPEED=40; // px between the two copies; px per second
 
+// The question is shown as written; only the labels follow the page language.
 export function headerText(active,state){
  const question=text=>(text||'').trim().replace(/\s+/g,' ');
  // A restore placeholder is not the question; show the saved one instead.
- if(active)return ['处理中',question(active.placeholder?state?.request?.raw_text:active.request?.raw_text)].filter(Boolean).join(' · ');
- return question(state?.request?.raw_text)||'未开始';
+ if(active)return [t('处理中'),question(active.placeholder?state?.request?.raw_text:active.request?.raw_text)].filter(Boolean).join(' · ');
+ return question(state?.request?.raw_text)||t('未开始');
 }
 
 // Rebuilt only when the text changes, so redraws while polling do not restart the scroll.
 export function setMarquee(host,text){
+ host.translate=false;
  if(host.dataset.text!==text){
   host.dataset.text=text;host.title=text;
   const track=document.createElement('span'),first=document.createElement('span');

@@ -19,7 +19,7 @@ from planning.services.supplement import merge_supplement, conversation_of, edit
 from planning.services.clarification import apply_answers, attach_issues
 from planning.services.supplement import LocalSupplementSelector
 from planning.services.entity_followup import replace_entities
-from planning.agents.role_model import LocalRoleSelector
+from planning.agents.role_model import LocalRoleSelector, output_language
 from planning.providers.registry import Registry
 from planning.providers.settings import SettingsStore
 from planning.retrieval import DefaultRetrievalService
@@ -52,7 +52,10 @@ def validate_command(command):
         fields+=' review_hash'
     if action=='supplement':
         fields+=' message mode'
+    if 'lang' in command:
+        fields+=' lang'
     obj(command,fields)
+    require(command.get('lang','zh') in ('zh','en'),'INVALID_LANG')
     identifier(command['task_id']); identifier(command['event_id'])
     revision(command['expected_revision']); revision(command['expected_state_version'])
     if action in {'create','edit'}:
@@ -151,11 +154,14 @@ class TaskService:
             self._running.append(running)
         deadline_token=operation_deadline.set(time.monotonic()+90)
         cancel_token=operation_cancel.set(running['cancel'])
+        # Text the models write for the user follows the page language of this command.
+        language_token=output_language.set(c.get('lang','zh'))
         try:
             return self._apply_observed(c,running)
         finally:
             operation_deadline.reset(deadline_token)
             operation_cancel.reset(cancel_token)
+            output_language.reset(language_token)
             with self._running_lock:
                 self._running.remove(running)
 

@@ -19,6 +19,7 @@
   - 选文档片段，由模型抽取站点、设备或公式草稿；每个字段对照原文核对，审核人通过后入库。未审核的草稿不能参与计算。
   - 可以添加 PDF、Markdown、文本；Word、Excel、PPT、HTML 需要另装 `requirements-docs.txt`（MarkItDown）。原文只存本机。
 - **追问**（开发中，第 4 周）：“换 XX-200 呢”“B 站换成 C 站呢”生成新版本，确认后重新计算；结果下方对比上一版。说法含糊或没说换哪一端时反问。
+- **界面语言**（开发中，第 4 周）：页眉“EN / 中文”切换。英文界面下，模型写的答复、审查意见与说明也用英文；用户原文和文档摘录不翻译。
 
 设计与验收见 [ACCEPTANCE_M1](docs/design/ACCEPTANCE_M1.md)，进度见 [NEXT_ACTION](docs/codex/NEXT_ACTION.md)。
 

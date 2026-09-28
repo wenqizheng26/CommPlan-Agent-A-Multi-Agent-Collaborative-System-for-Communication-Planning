@@ -11,6 +11,9 @@ import {nodeLatency,stepTimes,runSummary,renderWaterfall,miniWaterfall,renderMet
 import {headerText,setMarquee,fitMarquee} from './marquee.mjs';
 import {renderLibrary,draftTitle,MAX_CHUNKS} from './library.mjs';
 import {lastSwap,previousVersion,comparisonLine} from './compare.mjs';
+import {lang,setLang,install,watch} from './i18n.mjs';
+// English swaps rendered text through the dictionary; Chinese needs nothing loaded.
+if(lang()==='en'){install(await import('./i18n-en.mjs'));watch(document.body);}
 const $=id=>document.getElementById(id);
 const narrow=()=>window.matchMedia('(max-width: 899px)').matches;
 let current=null, historical=null, activeContext=null, activity=[], token='', dirty=false, editing=false, busy=false, busyAction=null, pendingCommand=null;
@@ -34,11 +37,11 @@ async function checkModel(){
  }
 }
 function shown(){return historical||activeContext||current;}
-let toastTimer;
+let toastTimer,toastCount=0;
 function notice(text,error=false){
  if(error){$('notice').textContent=text;$('notice').hidden=!text;return;}
- clearTimeout(toastTimer);const toast=$('toast');toast.textContent=text;toast.hidden=!text;
- if(text)toastTimer=setTimeout(()=>{if(toast.textContent===text)toast.hidden=true;},4000);
+ clearTimeout(toastTimer);const toast=$('toast'),shown=++toastCount;toast.textContent=text;toast.hidden=!text;
+ if(text)toastTimer=setTimeout(()=>{if(toastCount===shown)toast.hidden=true;},4000);
 }
 const clearError=()=>notice('',true);
 const TIMEOUTS={'/api/commands':125000,'/api/drafts/extract':200000,'/api/drafts/review':30000,'/api/documents':30000};
@@ -94,7 +97,7 @@ function renderOriginal(s){
  const card=$('original-card'),text=s.request?.raw_text||'',req=s.request||{};card.replaceChildren();
  const head=el('div',undefined,'card-head');head.append(el('span','需求原文','eyebrow'));
  if(current&&!historical&&!activeContext){const b=el('button','编辑原文','text-button');b.type='button';b.disabled=busy;b.addEventListener('click',startEdit);head.append(b);}
- const body=el('p',text,'original-text');card.append(head,body);
+ const body=el('p',text,'original-text');body.translate=false;card.append(head,body);
  if(text.split('\n').length>3||text.length>90){
   if(!originalOpen)body.classList.add('clamp');
   const more=el('button',originalOpen?'收起':'展开','text-button more-toggle');more.type='button';
@@ -206,6 +209,7 @@ function renderNodeCard(){
  const head=el('div',undefined,'node-card-head'),close=el('button','✕','icon-button');close.type='button';close.setAttribute('aria-label','关闭');close.addEventListener('click',()=>{popover=null;drawFlow();});
  head.append(el('strong',info.title),close);
  card.replaceChildren(head,el('p',info.status,'node-card-status '+info.tone),...info.lines.map(line=>el('p',line)));
+ if(info.quote){const q=el('p',info.quote);q.translate=false;card.append(q);}
  if(info.link&&s?.report){const b=el('button',info.link.label+' →','text-button');b.type='button';b.addEventListener('click',()=>setView(info.link.view));card.append(b);}
  card.hidden=false;
  const g=$('flow-canvas').querySelector(`[data-node="${popover.id}"]`);if(!g)return;
@@ -271,7 +275,7 @@ function afterCommand(action){
 async function submit(action,answers=null,inputOverride=null){
  if(busy||historical)return;
  if(switching()&&action!=='cancel'){notice('正在切换模型，完成后再提交。',true);return;}
- const c={action,task_id:current?.task_id||(pendingCommand?.action==='create'?pendingCommand.task_id:crypto.randomUUID()),event_id:crypto.randomUUID(),expected_revision:current?.revision||0,expected_state_version:current?.state_version||0};
+ const c={action,task_id:current?.task_id||(pendingCommand?.action==='create'?pendingCommand.task_id:crypto.randomUUID()),event_id:crypto.randomUUID(),expected_revision:current?.revision||0,expected_state_version:current?.state_version||0,lang:lang()};
  if(['create','edit'].includes(action)){c.input=inputOverride||readInput();c.mode=$('mode').value;}if(action==='supplement'){c.message=$('supplement-message').value.trim();c.mode=$('mode').value;if(!c.message||dirty||editing)return;}if(action==='confirm')c.review_hash=current.review.review_hash;
  if(action==='answer'){if(dirty||editing||!answers)return;c.answers=answers;c.mode=$('mode').value;}
  if(pendingCommand){const comparable=x=>JSON.stringify({...x,event_id:''});if(comparable(pendingCommand)===comparable(c))c.event_id=pendingCommand.event_id;}
@@ -321,7 +325,7 @@ async function recentTasks(){
   if(!data.tasks.length)list.append(el('p','暂无保存的任务','hint'));
   for(const task of data.tasks){
    const row=el('button',undefined,'recent-row'+(task.task_id===current?.task_id?' current':''));row.type='button';
-   row.append(el('span',labels[task.status]||task.status,'chip '+({COMPLETED:'ok',AWAITING_CONFIRMATION:'run',AWAITING_INPUT:'warn',NEEDS_MODEL:'warn'}[task.status]||'')),el('span',task.description||'未填写描述','recent-text'),el('small',task.task_id.slice(0,8)));
+   row.append(el('span',labels[task.status]||task.status,'chip '+({COMPLETED:'ok',AWAITING_CONFIRMATION:'run',AWAITING_INPUT:'warn',NEEDS_MODEL:'warn'}[task.status]||'')),el('span',task.description||'未填写描述','recent-text'),el('small',task.task_id.slice(0,8)));row.children[1].translate=!task.description;
    row.addEventListener('click',()=>{closeSheets();restore(task.task_id);});list.append(row);
   }
  }catch(e){notice('任务列表加载失败：'+e.message,true);}
@@ -399,6 +403,8 @@ async function openMetrics(){
 function openHistory(focusId=false){openSheet('history-sheet');recentTasks();if(focusId)$('task-id').focus();}
 function toggleMenu(open){const menu=$('more-menu'),show=open??menu.hidden;menu.hidden=!show;$('more').setAttribute('aria-expanded',String(show));if(show)menu.querySelector('button:not([hidden]):not(:disabled)')?.focus();}
 $('model-badge').addEventListener('click',openSettings);
+$('lang-toggle').textContent=lang()==='en'?'中文':'EN';
+$('lang-toggle').addEventListener('click',()=>{setLang(lang()==='en'?'zh':'en');location.reload();});
 $('close-settings').addEventListener('click',closeSheets);$('close-library').addEventListener('click',closeSheets);$('open-library').addEventListener('click',openLibrary);$('close-metrics').addEventListener('click',closeSheets);$('close-history').addEventListener('click',closeSheets);$('sheet-scrim').addEventListener('click',closeSheets);
 $('save-settings').addEventListener('click',saveSettings);
 $('reset-settings').addEventListener('click',()=>{if(!models)return;draft=factorySettings(models);drawSettings();});

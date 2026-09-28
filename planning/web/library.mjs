@@ -1,4 +1,4 @@
-import {el,parameterNames} from './details.mjs';
+import {el,raw,parameterNames} from './details.mjs';
 // The 资料 page: documents, sections to extract from, and drafts waiting for review.
 export const KINDS=[['device','设备'],['site','站点'],['formula','公式']];
 export const MAX_CHUNKS=6;
@@ -69,7 +69,7 @@ function sectionList(host,ctx){
   const row=el('label',undefined,'section-row'),box=el('input');box.type='checkbox';box.checked=ctx.chosen.has(s.id);
   box.disabled=!!ctx.busy||(!box.checked&&ctx.chosen.size>=MAX_CHUNKS);
   box.addEventListener('change',()=>ctx.onToggleChunk(s.id));
-  const text=el('span',undefined,'section-text');text.append(el('span',s.locator.replace(/, chunk (\d+)$/,' · 第 $1 块'),'section-loc'),el('span',preview(s.text),'section-excerpt'));
+  const text=el('span',undefined,'section-text');text.append(el('span',s.locator.replace(/, chunk (\d+)$/,' · 第 $1 块'),'section-loc'),raw('span',preview(s.text),'section-excerpt'));
   row.append(box,text);list.append(row);
  }
  host.append(list);
@@ -84,9 +84,9 @@ function checkTable(draft){
  for(const text of ['字段','值','原文','核对'])table.append(el('span',text,'draft-th'));
  for(const row of draft.checks){
   const [text,tone]=CHECKS[row.status]||[row.status,''];
-  table.append(el('span',fieldLabel(row.field),'draft-name'),el('span',shownValue(row.value),'draft-value'+(row.field==='expression'?' mono':'')));
+  table.append(el('span',fieldLabel(row.field),'draft-name'),(row.value==null?el:raw)('span',shownValue(row.value),'draft-value'+(row.field==='expression'?' mono':'')));
   const quotes=el('span',undefined,'draft-quote');
-  for(const q of row.quotes){const b=el('blockquote');if(q.header)b.append(el('span',q.header,'quote-head'));b.append(el('span',q.quote));b.title=q.locator;quotes.append(b);}
+  for(const q of row.quotes){const b=raw('blockquote');if(q.header)b.append(el('span',q.header,'quote-head'));b.append(el('span',q.quote));b.title=q.locator;quotes.append(b);}
   if(!row.quotes.length)quotes.append(el('span','—','muted'));
   table.append(quotes,el('span',text,'chip '+tone));
  }

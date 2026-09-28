@@ -1,4 +1,4 @@
-import {el} from './details.mjs';
+import {el,raw} from './details.mjs';
 
 import {draftStore} from './drafts.mjs';
 let storage;try{storage=globalThis.localStorage;}catch{}
@@ -19,7 +19,7 @@ export function renderQuestions(host,state,{disabled=false,onSubmit,onEdit}={}){
   const simple=q.kind==='missing'&&q.field!=='task',row=el('div',undefined,`q-row ${simple?'simple':'wide'} kind-${q.kind}`);
   const label=el('label',q.title.replace(/^请补充/,''));label.htmlFor='answer-'+q.id;row.append(label);
   if(!simple&&q.detail)row.append(el('p',q.detail,'hint'));
-  if(q.excerpt&&!q.excerpt.startsWith('issue-')&&q.kind!=='pending')row.append(el('blockquote',q.excerpt));
+  if(q.excerpt&&!q.excerpt.startsWith('issue-')&&q.kind!=='pending')row.append(raw('blockquote',q.excerpt));
   if(q.field==='task'){const b=el('button','编辑原文','secondary compact');b.type='button';b.disabled=disabled;b.addEventListener('click',onEdit);row.append(b);}
   else{
    const input=el(q.choices.length?'select':'input');input.id='answer-'+q.id;input.dataset.field=q.field;input.disabled=disabled;

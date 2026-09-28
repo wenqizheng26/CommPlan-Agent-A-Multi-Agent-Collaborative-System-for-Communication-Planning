@@ -1,3 +1,4 @@
+import {t} from './i18n.mjs';
 // Catalog labels refer to the two-page source Visio; status is runtime evidence.
 export const nodes = {
  input:['任务输入','原文与补充条件','overview'],
@@ -179,7 +180,7 @@ export function renderFlow(host,{view,state,events,selected,onSelect,latency={}}
    // Measured duration of this node's last run in this version (observation data).
    if(pill){const bw=time.length*6.6+14;g.append(svgEl('path',{d:box(w-bw-10,titleY+6,bw,18,9),class:'latency-chip'}),svgEl('text',{x:w-10-bw/2,y:titleY+19,'text-anchor':'middle',class:'latency-text'},time));}
   }
-  if(integration[id]){const cw=integration[id].length*11+14;g.append(...chip(integration[id],w-cw-8,8,cw));}
+  if(integration[id]){const text=t(integration[id]),cw=[...text].reduce((n,c)=>n+(/[㐀-鿿]/.test(c)?11:6),14);g.append(...chip(text,w-cw-8,8,cw));}
   const activate=()=>onSelect(id);g.addEventListener('click',activate);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();activate();}});svg.append(g);
  }
  svg.append(svgEl('text',{x:10,y:486,class:'flow-footnote'},'三个专业 Agent 平级；确认后计算。连线按运行活动高亮，不表示直接调用链。'));
