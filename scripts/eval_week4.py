@@ -170,19 +170,22 @@ def main():
                 result['followups'].append(dict(row, stage='after_review'))
                 print(json.dumps({k: row[k] for k in ('message', 'passed', 'got')}, ensure_ascii=False), flush=True)
 
-        # One saved chain: confirm, swap the radio, confirm the new version.
-        chain, state = [], base
-        for action, extra in (('confirm', lambda s: dict(review_hash=s['review']['review_hash'])),
+        # One saved chain: ask, confirm, swap the radio, confirm the new version. The task is created after
+        # the review above, because a plan made before a library change cannot be confirmed (KNOWLEDGE_CHANGED).
+        chain, state = [], None
+        for action, extra in (('create', lambda s: dict(input=dict(raw_text=TASK, manual_parameters={}, condition=None,
+                                                                   target=None), mode='llm')),
+                              ('confirm', lambda s: dict(review_hash=s['review']['review_hash'])),
                               ('supplement', lambda s: dict(message='换 XX-200 呢', mode='llm')),
                               ('confirm', lambda s: dict(review_hash=s['review']['review_hash']))):
             start = time.monotonic()
             state = service.apply(command(action, state, **extra(state)))['state']
             chain.append(dict(action=action, status=state['status'], revision=state['revision'],
                               seconds=round(time.monotonic() - start, 2), margin_db=margin(state)))
-        first, last = chain[0]['margin_db'], chain[-1]['margin_db']
+        first, last = chain[1]['margin_db'], chain[-1]['margin_db']
         swap = state['conversation']['turns'][-1]
         result['chain'] = dict(steps=chain, swap=swap.get('changes'), passed=(
-            chain[0]['status'] == chain[-1]['status'] == 'COMPLETED' and swap.get('applied') is True
+            chain[1]['status'] == chain[-1]['status'] == 'COMPLETED' and swap.get('applied') is True
             and first is not None and last is not None and abs(first - 5.9334) < 0.01 and abs(last - 20.9334) < 0.01))
 
         rows = result['extraction'] + result['followups']
