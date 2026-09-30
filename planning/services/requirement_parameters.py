@@ -132,6 +132,16 @@ def collect_parameters(request, parsed, required, labeled=(), sources=None):
     for field, item in request['manual_parameters'].items():
         observations.setdefault(field, []).append(dict(kind='manual_form', source_ref=request['request_id'] + ':manual_parameters/' + field,
             span=None, value=item['value'], unit=item['unit']))
+    # A second English labelled value without a unit cannot disappear behind a
+    # valid first value. Check the original text, keeping all provenance offsets.
+    from formula_rag.parsing import EN_FIELDS
+    for field in ('frequency_ghz', 'distance_km'):
+        labels = '|'.join(re.escape(a) for a in sorted(EN_FIELDS[field], key=len, reverse=True))
+        pattern = rf'(?<![A-Za-z_])(?:{labels})(?![A-Za-z_]| from| to)\s*(?:is|of|at|[:=])?\s*(?P<value>{NUMBER})\s*(?P<unit>{UNITS})?(?![A-Za-z/\d])'
+        for match in re.finditer(pattern, request['raw_text'], re.I):
+            if not match['unit']:
+                diagnostics.append(diagnostic('INPUT_PARSE_ISSUE', '该参数缺少单位，请重新填写完整表达。',
+                                              field=field, excerpt=match.group(), span=list(match.span())))
     for field, origins in (sources or {}).items():
         observations.setdefault(field, []).extend(dict(o) for o in origins)
     parameters, conflicts = [], []

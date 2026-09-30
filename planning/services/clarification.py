@@ -23,9 +23,9 @@ LABELS=NAMES|BUDGET
 
 def label_pattern(field):
     if field=='frequency_ghz':
-        return r'载波频率|工作频率|频率|载频'
+        return r'载波频率|工作频率|频率|载频|'+'|'.join(re.escape(a) for a in FIELDS[field][2])
     if field=='distance_km':
-        return r'路径距离|通信距离|链路距离|距离|相距'
+        return r'路径距离|通信距离|链路距离|距离|相距|'+'|'.join(re.escape(a) for a in FIELDS[field][2])
     return '|'.join(re.escape(a) for a in sorted(FIELDS[field][2]+[BUDGET[field]],key=len,reverse=True))
 
 
@@ -244,7 +244,9 @@ def replace_parameter(request, report, field, answer):
     numeric=answer[slice(*spans[0])].strip()
     if field in BUDGET:  # the span may include the label; keep only the value and unit
         numeric=re.search(rf'{NUMBER}\s*(?:{UNITS})(?![A-Za-z/\d])',numeric,re.I).group()
-    replacement=LABELS[field]+numeric
+    from formula_rag.parsing import EN_FIELDS
+    label=EN_FIELDS.get(field,[LABELS[field]])[0]+' ' if not re.search(r'[\u3400-\u9fff]',request['raw_text']) else LABELS[field]
+    replacement=label+numeric
     if merged:
         for i,(start,end) in reversed(list(enumerate(merged))):
             text=text[:start]+(replacement if i==0 else '')+text[end:]

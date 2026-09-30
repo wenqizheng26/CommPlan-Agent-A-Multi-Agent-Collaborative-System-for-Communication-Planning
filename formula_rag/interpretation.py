@@ -34,13 +34,13 @@ def merge_interpretation(request, model, candidate_ids, manual_target=None, manu
             continue
         enclosing = [c for c in clauses if item['evidence'] in c]
         # "能不能通""够不够" ask a question; they are not negations.
-        if any(re.search(r'不(?:是|要|用|必|想|需)|不能|并非|无需', re.sub(r'(.)不\1', '', c)) for c in enclosing):
+        if any(re.search(r'不(?:是|要|用|必|想|需)|不能|并非|无需|\bnot\b|do(?:es)?n.t', re.sub(r'(.)不\1', '', c), re.I) for c in enclosing):
             info['rejected'].append({'kind': 'target', 'reason': '目标证据处于否定语境'})
             continue
         if request.get('unsupported_targets'):
             info['rejected'].append({'kind': 'target', 'reason': '不能用相似公式替代未支持的待求量'})
             continue
-        if not re.search(r'计算|求|算|多大|多少|多强|够不够|够用|能否|能通|通不通|行不行|可行|满足|还剩|还有|上界|损耗|余量|功率|频移|底噪', item['evidence']):
+        if not re.search(r'计算|求|算|多大|多少|多强|够不够|够用|能否|能通|通不通|行不行|可行|满足|还剩|还有|上界|损耗|余量|功率|频移|底噪|calculate|compute|find|determine|what is|can.{0,12}link|margin|loss|power|radius|diffraction', item['evidence'], re.I):
             info['rejected'].append({'kind': 'target', 'reason': '证据未明确计算意图'})
             continue
         targets.append(item)

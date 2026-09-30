@@ -33,7 +33,7 @@ def check_labels(text, labels):
             a0, b0 = a['span']
             require(0 <= a0 < b0 <= len(text), 'LABEL_NOT_GROUNDED')
             if a['kind'] == 'solve':
-                require(a['unknown'] in SOLVE_UNKNOWNS and re.search(r'功率|发射电平', text[a0:b0]), 'LABEL_NOT_GROUNDED')
+                require(a['unknown'] in SOLVE_UNKNOWNS and re.search(r'功率|发射电平|transmit power|tx power', text[a0:b0], re.I), 'LABEL_NOT_GROUNDED')
             else:
                 require(text[a0:b0] == a['mention'], 'LABEL_NOT_GROUNDED')
 from planning.services.plans import SUPPORTED, TARGETS, chain, final_target, plan_for, requires_free_space, bound_issues
@@ -49,7 +49,10 @@ def check_source_labels(parameters, text):
     """
     labels={'frequency_ghz':r'载波频率|工作频率|频率|载频',
             'distance_km':r'路径距离|通信距离|链路距离|距离|相距',
-            'other':r'带宽|高度|海拔|波长|半径|宽度'}
+            'other':r'带宽|高度|海拔|波长|半径|宽度|bandwidth|height|altitude|wavelength|radius|width'}
+    from formula_rag.parsing import EN_FIELDS
+    for key in ('frequency_ghz','distance_km'):
+        labels[key] += '|' + '|'.join(re.escape(a) for a in EN_FIELDS[key])
     for p in parameters:
         field=p['canonical_name']
         if field not in {'frequency_ghz','distance_km'}:continue
@@ -59,7 +62,7 @@ def check_source_labels(parameters, text):
             require(0<=start<end<=len(text),'SOURCE_SPAN_INVALID')
             clause_start=max([0]+[m.end() for m in re.finditer(r'[，,。；;\n]',text[:start])])
             fragment=text[clause_start:end]
-            occurrences=[(m.start(),kind) for kind,pattern in labels.items() for m in re.finditer(pattern,fragment)]
+            occurrences=[(m.start(),kind) for kind,pattern in labels.items() for m in re.finditer(pattern,fragment,re.I)]
             if occurrences:
                 require(max(occurrences)[1]==field,'SOURCE_LABEL_MISMATCH')
 

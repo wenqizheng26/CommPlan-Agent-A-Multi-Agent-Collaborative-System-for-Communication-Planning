@@ -1,5 +1,6 @@
 """Single requirements/planning agent. All outputs are proposals, never results."""
 import copy
+import re
 from pathlib import Path
 from formula_rag.catalog import load_catalog
 from formula_rag.parsing import extract_request
@@ -130,7 +131,13 @@ class RequirementsAgent:
         observe(observer,'retrieval','started')
         observe(observer,'rag','started',caller='requirements')
         observe(observer,'knowledge','started',caller='rag',operation='search_cards')
-        found = self.retrieval.search(request['raw_text'], **self.retrieval_params)
+        query = request['raw_text']
+        # The catalog is Chinese. Expand explicitly requested English outputs
+        # with their registered Chinese titles, while keeping retrieval and its
+        # positive lexical evidence gate authoritative for admission.
+        if parsed['target_origin'] == 'explicit_text' and not re.search(r'[\u3400-\u9fff]', query):
+            query += '\n' + ' '.join(by_id[i]['title'] for i in parsed['targets'] if i in TARGETS and i in by_id)
+        found = self.retrieval.search(query, **self.retrieval_params)
         self.last_retrieval = found.to_dict()
         observe(observer,'knowledge','completed',caller='rag',operation='search_cards')
         observe(observer,'rag','completed',caller='requirements',mode=found.mode_used,degraded=found.degraded,
