@@ -1,4 +1,175 @@
-# CommPlan-Agent 当前交接（2026-09-28）
+# CommPlan-Agent 当前交接（2026-09-30）
+
+## 当前状态（2026-09-30）
+
+- **分支**：`claude/calc-plans`（本文件夹），未推送。
+- **第 4 周**（[M1_WEEK4](../design/M1_WEEK4.md) 的顺序）：
+  - 第 1–4 项已完成。
+  - 第 5 项：界面语言已完成（`cadd706`）；英文资料与英文需求未做。
+  - 第 6 项未开始。
+  - 第 7 项的公式卡交给 Codex（W4-1）。
+- **自动测试**（`e3df595`）：Python 426 项通过（1 项跳过），Node 63 项通过。
+- **Codex 任务**（用户 2026-09-30 安排）：W4-1 公式卡，W4-2 英文资料检索基线，见下一节。
+- **Claude 同期**：
+  - 英文需求。
+  - 附件输入（先向用户问清界面）。
+  - W4-1 的卡接入计算规划。
+  - 第 8 项的 PR。
+
+## M1 第 4 周：Codex 任务单（2026-09-30）
+
+- **工作区**：`CommPlan-Agent-M1-codex`。
+  - 现在的分支 `codex/m1-week4-review`（`7ad73d0`）留给第 8 项审查，不删不改。
+  - 开始前执行：`git switch -c codex/m1-week4-tasks claude/calc-plans`（分支含本任务单）。
+  - `models` 联接、`knowledge/sources/itu/` 三份原文、`knowledge/sources/converted/` 转换缓存都已在，不需要再建。
+- **Python**：`E:/codex/项目/信号与AI/CommPlan-Agent/.venv/Scripts/python.exe`。
+- **约定**：
+  - 不推送、不合并、不开 PR。
+  - 每个任务单独提交。
+  - 证据写进 `docs/codex/evidence/`。
+  - 每个任务做完，在该任务末尾加一行状态（提交号、测试数）。
+  - 下载任何文件前先问用户，说明文件名、来源、大小。
+  - 端口上已在运行的模型和工作台照常使用，不要停掉。
+- **顺序**：W4-1 → W4-2，互不依赖。W4-2 只检索文档块，不受新卡影响。
+
+### Codex 任务 W4-1：跨海视距补充的公式卡（A3、A4、D2）
+
+> **目标**：把调研选中的 A3（第一菲涅耳区半径）、A4（单刃形绕射，ν 与 J(ν) 两张）、D2（海面反射两径）写成 4 张登记公式卡。卡片进入公式库、检索和公式页。这次不接入计算规划，由 Claude 另做。
+>
+> **范围**：
+> - 可改：
+>   - `knowledge/formulas.json`：只在末尾追加 4 张，不改已有卡。
+>   - `formula_rag/tools.py`：加一个白名单工具。
+>   - `planning/web/i18n-en.mjs`：只在 `KNOWLEDGE` 里加这 4 张卡的英文。
+>   - 测试、证据。
+> - 不改：
+>   - `planning/services/plans.py` 的 TARGETS、GEOMETRY、SUPPORTED；
+>   - `reference_models.py`、需求与计划逻辑；
+>   - `formula_rag/core.py` 的函数白名单；
+>   - `glossary.json`。
+>
+> **卡片**：id、输出名、参数名是接入计划时要用的，照写。
+>
+> | id（类型） | 输出 | 参数 | 计算 | 出处 |
+> | --- | --- | --- | --- | --- |
+> | `fresnel_radius`（表达式） | `fresnel_radius_m`，m | `frequency_ghz`（GHz，>0）；`d1_km`、`d2_km`（km，>0，两端到障碍物的距离） | `17.3*sqrt(d1_km*d2_km/(frequency_ghz*(d1_km+d2_km)))` | ITU-R P.530-19 §2.2.1 式 (3)（PDF 第 7 页，印刷页 5），本机有原文 |
+> | `knife_edge_nu`（表达式） | `knife_edge_nu`，单位 `1` | `obstacle_height_m`（m，不设界：障碍物顶端高出两端天线连线为正，低于为负）；`d1_km`、`d2_km`（km，>0）；`frequency_ghz`（GHz，>0） | ν = h·√(2/λ·(1/d1+1/d2))，λ = 0.299792458/f m，d 换成 m | ITU-R P.526-16 §4.1 |
+> | `knife_edge_loss`（表达式） | `knife_edge_loss_db`，dB | `knife_edge_nu`（单位 1，`exclusive_min` −0.78） | `6.9+20*log10(sqrt((knife_edge_nu-0.1)**2+1)+knife_edge_nu-0.1)` | ITU-R P.526-16 §4.1 式 (31) |
+> | `sea_reflection_two_ray`（python_tool） | `sea_reflection_loss_db`，dB。相对自由空间的附加损耗，负值为增强，最小约 −6.02 | `frequency_ghz`、`distance_km`（>0）；`height1_above_sea_m`、`height2_above_sea_m`（m，>0，天线高出海面，已含站址高程）；`k_factor`（单位 1，>0，声明默认值 4/3，写法同 `received_power` 的 `tx_loss_db`） | 见下 | ITU-R P.530-19 §6.1.2.3 步骤 3–4，式 (121)–(126)（PDF 第 44–45 页，印刷页 42–43），本机有原文 |
+>
+> **D2 算法**：写进卡的 `algorithm`，实现在 `formula_rag/tools.py`。
+> 1. 反射点（光滑球面地球，式 (121)–(125)）：
+>    - a_e = k·6375 km；
+>    - m = d²/(4·a_e·(h1+h2))·10³；
+>    - c = (h1−h2)/(h1+h2)；
+>    - b = 2·√((m+1)/(3m))·cos(π/3 + arccos((3c/2)·√(3m/(m+1)³))/3)；
+>    - d1 = d(1+b)/2，d2 = d(1−b)/2。
+> 2. 反射点处的等效高度：h1′ = h1 − d1²/(12.74k)，h2′ = h2 − d2²/(12.74k)。任一 ≤ 0 时抛 ValueError（反射点不在两端视线内）。
+> 3. 路径差（以波长计，式 (126)）：τ = (2f/0.3)·h1′·h2′·10⁻³/d。
+> 4. 反射系数取 −1：
+>    - 合成场与直射场之比为 |1 − e^(−j2πτ)| = 2|sin(πτ)|；
+>    - L = −20·log10(2|sin(πτ)|)；
+>    - 2|sin(πτ)| < 0.1（L > 20 dB）时抛 ValueError（接近干涉零点，反射系数取 −1 时深度没有上限）。
+>
+> **D2 的适用条件**，写进 notes：
+> - 光滑海面，单一镜面反射点，只在视距内使用。
+> - 反射系数 −1 是水平极化、小掠射角下的近似，实际随海况与极化变化。同一建议书 §6.1.2.4：掠射角大于约 0.7° 时，垂直极化的反射比水平极化弱 2–17 dB。
+> - P.530 建议在 k 从 ke(99.9%) 到无穷大的范围内检查；此卡一次算一个 k。
+>
+> **为什么不用调研表里的平地面公式**：
+> - 在演示用的跨海路径上（30 km、天线 30/25 m、2 GHz、k = 4/3），反射点处地球凸起约 12–15 m。
+> - 平地面给出 −4.8 dB（增强）；计入曲率是 +5.1 dB（损耗）。两者相差约 10 dB，方向相反。
+> - k 取极大值时两者一致，由测试覆盖。
+>
+> **参考值**：Claude 按上述公式算出，并用独立方法验过：J(ν) 与菲涅耳积分精确值最多差 0.13 dB；D2 与球面几何精确解的 τ 相差不到 0.3%。测试另用独立方法复算，不要照抄这些数。
+>
+> | 卡 | 输入 | 值 |
+> | --- | --- | --- |
+> | fresnel_radius | 2 GHz，d1 = d2 = 15 km | 33.501 m |
+> | knife_edge_nu | h = 20 m，d1 = d2 = 15 km，2 GHz | 0.84357 |
+> | knife_edge_loss | ν = 0 / 0.84357 / 1 | 6.0329 / 12.876 / 13.926 dB |
+> | sea_reflection_two_ray | 2 GHz，30 km，30 m / 25 m，k = 4/3 | d1 = 15.92 km，τ = 0.08933，5.130 dB |
+> | 同上，改距离 | 10 km；5 km | τ = 0.8958，3.835 dB；τ = 1.9468，9.565 dB |
+> | 同上，k = 10⁹ | 30 km | τ = 0.33333，−4.771 dB（与平地面一致） |
+>
+> **步骤**：
+> 1. 写 4 张卡。
+>    - 字段与现有卡相同：title、description、version 1.0.0、status verified、output、parameters、applicability、sources、examples。
+>    - 每张卡 2–3 个算例。
+>    - sources 写标题、URL、locator（节、式号、页码）、checked_date、derivation（单位换算、λ 的写法、平地面与曲率的关系）。
+>    - 注明两处符号约定：`knife_edge_nu` 的 h 与 P.530 式 (2) 的 h 符号相反；A3 的 notes 写上 P.530 §2.2.2 的“余隙至少为第一菲涅耳区半径的 60%”。
+>    - P.526-16 本机没有原文：
+>      - locator 写到 §4.1 与式 (31)；
+>      - checked_date 写 2026-09-28（调研核对日）；
+>      - derivation 注明“本机无原文，按 2026-09-28 调研时在 ITU 官网核对的内容”；
+>      - 要下载原文核对式号时，先问用户。
+> 2. 在 `formula_rag/tools.py` 的 TOOLS 里加 `sea_reflection_two_ray`。参数越界、反射点在视线外、接近零点，都抛 ValueError，由 `core.evaluate` 报 `invalid_parameters`。
+> 3. 英文：在 `planning/web/i18n-en.mjs` 的 `KNOWLEDGE` 里，为 4 张卡在页面上会出现的每段中文加英文。包括 title、description、参数说明、notes、algorithm、derivation、默认值说明。
+> 4. 测试 `tests/test_week4_cards.py`：
+>    - **格式**：4 张卡都通过 `catalog.validate_card`；算例都在容差内；`formula_view` 能生成（表达式卡有公式显示，工具卡有 algorithm）。
+>    - **独立复算**：不经过卡的表达式或工具函数。
+>      - F1：用 √(λ·d1·d2/d)（精确光速），与卡相差不超过 0.1%（17.3 是舍入系数）。
+>      - ν：用 P.526 同节的等价式 ν = sign(h)·√(2·h·θ/λ)，θ = h/d1 + h/d2，相对误差不超过 1e-9。
+>      - J(ν)：与菲涅耳积分的精确值（纯 Python 数值积分）比较。ν 在 (−0.78, 5] 内相差不超过 0.2 dB；ν = 0 时精确值为 6.02 dB。
+>      - D2：用球面几何直接求镜面反射点（按程长最短搜索）和路径差。d1 相差不超过 0.01 km，τ 相差不超过 0.5%，再用这个 τ 与卡的附加损耗比较。k = 10⁹ 时与平地面公式一致。
+>    - **边界**：以下情况各给出 `invalid_parameters` 或 `missing_parameters`：
+>      - ν ≤ −0.78；
+>      - 高度为 0；
+>      - 反射点在视线外；
+>      - 接近零点；
+>      - 缺参数。
+>    - **回归**：
+>      - 对象：`tests/eval/m1_cases.jsonl` 里有 `text` 的用例。
+>      - 方法：确定性需求 Agent 分别在两种目录下运行，一种只有原来 9 张卡，一种另加 4 张新卡。两种目录下，最终目标、计算链与状态必须相同。
+>      - Claude 用草稿卡试过：新卡会挤进检索前 3 名，28 条里有 4 条的候选少一个，但最终目标仍在前 3 名。
+>      - 把候选的变化列进证据。最终目标、计算链或状态有任何变化时，停下报告，不改需求代码。
+>    - **Node**：在 `tests/planning_i18n.test.mjs` 加一条，检查 4 张卡的上述中文在英文界面下都能整句译出。
+> 5. 回归：Python、Node 全部通过。现有测试只允许改“卡片数量”一类的断言（改成按 id 判断）；其他断言失败时，停下报告。
+>
+> **完成标准**：
+> - 以上测试通过。
+> - 证据 `docs/codex/evidence/2026-09-30-W4-1-cards.md` 写明四项：各卡算例、独立复算结果、候选变化列表、测试数。
+
+### Codex 任务 W4-2：用中文和英文问法检索英文资料，建立评测基线
+
+> **目标**：量出现有检索用中文和英文问法找 ITU 英文原文时的命中率，词项、向量、混合三种方式分别测。结果作为以后加重排模型、改术语表时的对照基线。只测量，不改检索。
+>
+> **范围**：
+> - 新增：`tests/eval/retrieval_bilingual.jsonl`、`scripts/eval_retrieval_bilingual.py`、格式测试、证据。
+> - 不改：`planning/retrieval/`、`knowledge/documents/glossary.json`、`config/`。
+>
+> **独立性**：
+> - 先写问法与标准答案，第一次提交只含用例文件；之后才运行检索、看结果。
+> - 不参考 `scripts/eval_retrieval_m1.py` 的 8 条查询，也不参考 C12 证据里的命中结果。
+>
+> **步骤**：
+> 1. **知识点与问法**：
+>    - 从三份原文中选 24 个知识点：P.525-5 选 4 个，P.530-19 选 14 个，P.453-14 选 6 个。
+>    - 每个知识点写一条中文问法、一条英文问法，共 48 条。
+>    - 问法要像用户提问，不照抄原文句子。
+>    - 中文问法里要有 8 条口语化、不含标准术语（如“信号走海面会不会时强时弱”）。
+> 2. **标准答案**：
+>    - 逐条读原文（`knowledge/sources/converted/` 的转换缓存或 PDF），记下相关块的 id 与页码，每条 1–3 个，另写一句为什么相关。
+>    - 块 id 以 `DefaultRetrievalService` 实际建出的索引为准（现为 314 块）。
+>    - 文件头记录三份文档的 SHA-256 与块总数；切块有变化时，格式测试失败并提示重新标注。
+> 3. **运行脚本** `scripts/eval_retrieval_bilingual.py --output <path>`：
+>    - 输出文件已存在时拒绝覆盖，与 `eval_retrieval_m1.py` 相同。
+>    - 用 `filters={'doc_ids': ['itu-p525-5', 'itu-p530-19', 'itu-p453-14']}` 检索；三种方式各跑 48 条，top_k=10。
+>    - 指标：hit@1、hit@5、MRR@10、recall@5，按“方式 × 语言”汇总。另给按页算的 hit@5（命中同一页即算）作参考。
+>    - 记录延迟与是否降级。
+>    - 不存原文片段（ITU 原文不可再分发），只存块 id、页码、分数。
+> 4. **格式测试** `tests/test_retrieval_bilingual_cases.py`：字段齐全；中英成对；每条都有标准答案；块 id 存在于当前索引（ITU 文件缺失时 skip）。
+> 5. **真实模型运行**：
+>    - 向量服务是 Qwen3-Embedding 0.6B，端口 18084。没在运行时，用 `start_commplan.py` 的 `ensure_embedding` 拉起。
+>    - 第一次运行的结果原样写入证据 `docs/codex/evidence/2026-09-30-W4-2-retrieval.md`，内容包括：提交号、索引块数、各指标表、每条的前 5 名块 id 与是否命中。
+>    - 再列出失分最多的 10 条，并归类原因：术语没扩展、问法太口语、原文是公式或表格、切块把答案分开等。
+>    - 最后写建议（术语表该加什么、是否值得加重排模型），只写，不动手改。
+>
+> **完成标准**：
+> - 格式测试通过。
+> - 第一次正式运行的结果写入证据；之后的修正另行记录，不覆盖第一次的数字。
+> - Python 全部测试照常通过。
+> - `git ls-files knowledge/sources` 为空。
 
 ## 当前状态（2026-09-28）
 
