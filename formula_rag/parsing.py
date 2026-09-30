@@ -5,6 +5,13 @@ import unicodedata
 
 
 FIELDS = {
+    'd1_km': ('起点到障碍物距离', 'km', ['起点到障碍物距离', '发射端到障碍物距离', 'd1']),
+    'd2_km': ('终点到障碍物距离', 'km', ['终点到障碍物距离', '接收端到障碍物距离', 'd2']),
+    'obstacle_height_m': ('障碍物高出连线高度', 'm', ['障碍物高出连线高度', '障碍物相对高度']),
+    'height1_above_sea_m': ('起点天线海面高度', 'm', ['起点天线海面高度', '发射端天线海面高度']),
+    'height2_above_sea_m': ('终点天线海面高度', 'm', ['终点天线海面高度', '接收端天线海面高度']),
+    'knife_edge_nu': ('绕射参数', '1', ['绕射参数', 'knife_edge_nu', 'ν', 'nu']),
+    'k_factor': ('有效地球半径系数', '1', ['有效地球半径系数', 'k_factor', 'k系数']),
     'bit_rate_bps': ('比特速率', 'bit/s', ['比特速率', '数据比特率', '比特率']),
     'ebn0_db': ('解调门限 Eb/N0', 'dB', ['解调门限Eb/N0', '解调门限Eb/N0', 'Eb/N0', 'Eb/No', '解调门限']),
     'engineering_loss_db': ('工程损失', 'dB', ['工程损失', '实现损失']),
@@ -28,7 +35,7 @@ FIELDS = {
     'reserve_db': ('预留余量', 'dB', ['工程储备', '工程预留', '预留余量', '预留损耗', '储备余量']),
 }
 NUMBER = r'[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?'
-UNITS = r'(?:dBm/Hz|Mbit/s|kbit/s|bit/s|Mb/s|kb/s|Mbps|kbps|bps|km/h|m/s|千米每小时|公里每小时|米每秒|GHz|MHz|kHz|Hz|吉赫兹|兆赫兹|千赫兹|赫兹|dBm|dBi|dBd|dB|mW|W|毫瓦|瓦|km|千米|公里|m|米|℃|°C|摄氏度|K|开尔文)'
+UNITS = r'(?:1(?![0-9])|dBm/Hz|Mbit/s|kbit/s|bit/s|Mb/s|kb/s|Mbps|kbps|bps|km/h|m/s|千米每小时|公里每小时|米每秒|GHz|MHz|kHz|Hz|吉赫兹|兆赫兹|千赫兹|赫兹|dBm|dBi|dBd|dB|mW|W|毫瓦|瓦|km|千米|公里|m|米|℃|°C|摄氏度|K|开尔文)'
 QUANTITY = re.compile(rf'(?<![\w.])(?P<value>{NUMBER})\s*(?P<unit>{UNITS})(?![A-Za-z/\d])', re.I)
 ALIAS_UNIT = {'吉赫兹': 'ghz', '兆赫兹': 'mhz', '千赫兹': 'khz', '赫兹': 'hz',
               '公里': 'km', '千米': 'km', '米': 'm', '千米每小时': 'km/h',
@@ -50,7 +57,11 @@ def convert(field, value, unit):
         return value * frequency[unit] / 1e9
     if field == 'bandwidth_hz' and unit in frequency:
         return value * frequency[unit]
-    if field == 'distance_km' and unit in ('m', 'km'):
+    if field in ('knife_edge_nu', 'k_factor') and unit == '1':
+        return value
+    if field.endswith('_m') and unit in ('m', 'km'):
+        return value * 1000 if unit == 'km' else value
+    if field in ('distance_km', 'd1_km', 'd2_km') and unit in ('m', 'km'):
         return value / 1000 if unit == 'm' else value
     if field == 'speed_kmh' and unit in ('km/h', 'm/s'):
         return value * 3.6 if unit == 'm/s' else value
@@ -190,6 +201,12 @@ def extract_request(text, overrides=None, condition=None, target=None, field_spe
     for clause in clauses:
         if re.search(r'最大.{0,3}多普勒|多普勒.{0,3}(?:最大|上界)', clause) and not re.search(uncertain, clause):
             conditions.add('maximum_doppler')
+    for clause in clauses:
+        if not re.search(uncertain, clause):
+            if '单刃形' in clause:
+                conditions.add('single_knife_edge')
+            if '光滑海面' in clause and re.search(r'镜面反射|两径', clause):
+                conditions.add('smooth_sea')
     if condition:
         if condition not in ('free_space', 'free_space_reference', 'non_free_space'):
             raise ValueError('未知传播条件')
@@ -212,6 +229,15 @@ def extract_request(text, overrides=None, condition=None, target=None, field_spe
     explicit = '；'.join(intents)
     goal_text = explicit or text
     targets = []
+    # Supplementary outputs must not be read as generic path loss.
+    for identifier, pattern in [
+        ('fresnel_radius', r'第一菲涅耳区半径|菲涅耳半径'),
+        ('knife_edge_nu', r'绕射参数|knife_edge_nu|ν'),
+        ('knife_edge_loss', r'单刃形绕射损耗|刃形绕射损耗'),
+        ('sea_reflection_two_ray', r'海面反射附加损耗|海面两径附加损耗|海面反射两径损耗')]:
+        if re.search(pattern, goal_text, re.I):
+            targets.append(identifier)
+            goal_text = re.sub(pattern, '', goal_text, flags=re.I)
     for identifier, pattern in [('link_margin', r'余量|裕量'), ('received_power', r'接收(?:信号)?电平|接收功率|链路预算'),
                                 ('receiver_threshold', r'接收门限|接收灵敏度'),
                                 ('thermal_noise', r'热噪声|噪声功率'), ('doppler_max', r'多普勒'),

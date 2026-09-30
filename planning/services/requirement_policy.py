@@ -45,4 +45,5 @@ def outside_scope(text, parsed, targets, conditions):
             return True
         if re.search(r'双程|往返|雷达回波|双向雷达', clause):
             return True
-    return 'non_free_space' in conditions and 'free_space_reference' not in conditions
+    supplements = bool(targets) and set(targets) <= {'fresnel_radius', 'knife_edge_nu', 'knife_edge_loss', 'sea_reflection_two_ray'}
+    return not supplements and 'non_free_space' in conditions and 'free_space_reference' not in conditions

@@ -31,7 +31,8 @@ PROMPT = (
     'why 写这一步在链中的作用，不超过 16 字，不写数字，例如“由两站经纬度与高程算直线距离”。\n'
     'assessment 是确认前的适用性评估，只作提示。每条 text 不超过 45 字，refs 写支持它的 facts id（1 到 3 个，不重复）：\n'
     'goal（对题）：计划怎样回答原文的问题——算什么；有 requirement 时写与什么要求比较，有 solve 时写低于要求时反求什么；facts 里没有的不写，也不写计算步骤。\n'
-    'applicability（适用性）：自由空间模型对本任务是否适用，说明它没有计入哪些传播因素、对结果的影响方向，不给数值。'
+    'applicability（适用性）：所选公式模型对本任务是否适用，说明它没有计入哪些传播因素、对结果的影响方向，不给数值。'
+    '菲涅耳半径、单刃形绕射和海面两径是补充模型：按 cards 的适用性说明，不把两径附加损耗说成总路径损耗。'
     '有 sites 时按两端 environment 判断路径：有一端是海岛时跨海面（海面反射与多径）；'
     '两端都是海岸或港口时可能沿岸或跨海湾；有一端是内陆时以陆地为主（地形与地物遮挡）。\n'
     'assumption（假设，schema 里有才写）：原文或手填的值超出电台额定值或频段时，写这一点；否则点名 assumed 里最值得核对的假设值（照抄数值），'
@@ -47,6 +48,8 @@ CONDITION_NAMES = {'free_space': '自由空间模型', 'free_space_reference': '
 ORIGIN_NAMES = {'user_text': '原文', 'manual_form': '手填', 'site': '站点库', 'device': '设备库', 'default': '假设（卡片默认值）'}
 OUTPUT_NAMES = {'distance_km': '直线距离', 'radio_horizon_km': '视距', 'path_loss_db': '路径损耗',
                 'rx_power_dbm': '接收信号电平', 'link_margin_db': '链路余量'}
+
+OUTPUT_NAMES.update(fresnel_radius_m='第一菲涅耳区半径',knife_edge_nu='绕射参数',knife_edge_loss_db='单刃形绕射损耗',sea_reflection_loss_db='海面反射附加损耗')
 
 
 def equivalent_plan(plan, expected):

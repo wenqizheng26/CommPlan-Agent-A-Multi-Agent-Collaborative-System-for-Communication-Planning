@@ -13,7 +13,8 @@ OTHER = 'other'
 # Inputs of the plan-capable cards, in link order. Heights and sites come from the site store.
 LABEL_FIELDS = ['frequency_ghz', 'distance_km', 'tx_power_dbm', 'tx_gain_dbi', 'rx_gain_dbi', 'tx_loss_db',
                 'rx_loss_db', 'extra_loss_db', 'path_loss_db', 'rx_power_dbm', 'rx_threshold_dbm', 'reserve_db',
-                REQUIREMENT, OTHER]
+                'd1_km', 'd2_km', 'obstacle_height_m', 'height1_above_sea_m', 'height2_above_sea_m',
+                'knife_edge_nu', 'k_factor', REQUIREMENT, OTHER]
 SOLVE_UNKNOWNS = ['tx_power_dbm']
 
 # "10个dB" is spoken Chinese for 10 dB; the value and unit are still read from the text.

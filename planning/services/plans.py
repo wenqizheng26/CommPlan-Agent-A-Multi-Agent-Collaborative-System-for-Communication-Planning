@@ -9,14 +9,18 @@ from planning.requirements_contract import digest, require
 from planning.services.input_domains import numbers
 
 # What a user can ask for. Others stay retrievable only.
-TARGETS = ('fspl_ghz', 'received_power', 'link_margin')
+BUDGET_TARGETS = ('fspl_ghz', 'received_power', 'link_margin')
+COASTAL_TARGETS = ('fresnel_radius', 'knife_edge_nu', 'knife_edge_loss', 'sea_reflection_two_ray')
+TARGETS = BUDGET_TARGETS + COASTAL_TARGETS
 # Geometry from site records: the straight-line distance, and the radio horizon it must stay within.
 GEOMETRY = ('slant_range_wgs84', 'radio_horizon')
 # Cards that may appear in a plan in this version.
 SUPPORTED = TARGETS + GEOMETRY
 OBJECTIVES = {'fspl_ghz': '自由空间单链路损耗基准',
               'received_power': '接收信号电平（链路预算）',
-              'link_margin': '链路余量（链路预算）'}
+              'link_margin': '链路余量（链路预算）',
+              'fresnel_radius': '第一菲涅耳区半径', 'knife_edge_nu': '单刃形绕射参数',
+              'knife_edge_loss': '单刃形绕射损耗', 'sea_reflection_two_ray': '海面反射附加损耗（相对自由空间）'}
 MAX_STEPS = 8
 LINE_OF_SIGHT = dict(check_id='line-of-sight', kind='line_of_sight',
                      distance='slant_range_wgs84-step', horizon='radio_horizon-step')

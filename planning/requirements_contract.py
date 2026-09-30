@@ -11,7 +11,7 @@ from planning.services.input_domains import numbers, convert_domain
 VERSION = '1.0.0'
 PROFILE = 'requirements-slice-v1'
 STATUSES = {'AWAITING_INPUT', 'AWAITING_CONFIRMATION', 'NEEDS_MODEL', 'FAILED'}
-CONDITIONS = {'free_space', 'free_space_reference', 'non_free_space', 'maximum_doppler', 'two_way'}
+CONDITIONS = {'free_space', 'free_space_reference', 'non_free_space', 'maximum_doppler', 'two_way', 'single_knife_edge', 'smooth_sea'}
 REQUEST_FIELDS = 'schema_version task_id revision request_id raw_text manual_parameters condition target'
 REPORT_FIELDS = 'schema_version profile task_id revision request_id parameters_proposal conflicts missing_parameters candidate_models calculation_plan_proposal evidence_ids evidence_refs knowledge_snapshot questions assumptions conditions targets requirement solve entities execution_status component_modes runtime_health diagnostics'
 SOLVE_UNKNOWNS = {'tx_power_dbm'}

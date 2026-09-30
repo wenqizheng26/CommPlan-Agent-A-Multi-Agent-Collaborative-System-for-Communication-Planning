@@ -590,5 +590,17 @@ const KNOWLEDGE_PATTERNS=[
  [/^(.+?) 手册（模拟）$/,'$1 manual (simulated)'],[/^(.+?) 手册$/,'$1 manual'],[/^(.+?)（模拟）$/,'$1 (simulated)'],
 ];
 
-export const EXACT={...PAGE,...FLOW,...PROGRESS,...DETAILS,...SETTINGS,...CHAT,...LIBRARY,...SERVER,...KNOWLEDGE};
+const COASTAL={
+ '起点到障碍物距离':'Distance from transmitter to obstacle','终点到障碍物距离':'Distance from receiver to obstacle',
+ '障碍物高出连线高度':'Obstacle height above the antenna line','起点天线海面高度':'Transmitter antenna height above sea',
+ '终点天线海面高度':'Receiver antenna height above sea','有效地球半径系数':'Effective Earth-radius factor',
+ '绕射参数':'Diffraction parameter','单刃形绕射参数':'Single knife-edge diffraction parameter',
+ '单刃形绕射损耗':'Single knife-edge diffraction loss','海面反射附加损耗':'Additional sea-reflection loss',
+ '海面反射附加损耗（相对自由空间）':'Sea-reflection loss relative to free space',
+ '单刃形障碍物':'Single knife-edge obstacle','光滑海面单点镜面反射':'Smooth sea with one specular reflection',
+ '请声明补充模型的适用条件':'Declare the supplementary model conditions',
+ '补充模型的适用条件尚未声明。':'The supplementary model conditions have not been declared.',
+ '请在需求中写明采用单刃形障碍物模型，或光滑海面单点镜面反射两径模型。':'State in the request that you use a single knife-edge model or a smooth-sea, single-reflection two-ray model.'
+};
+export const EXACT={...PAGE,...FLOW,...PROGRESS,...DETAILS,...SETTINGS,...CHAT,...LIBRARY,...SERVER,...KNOWLEDGE,...COASTAL};
 export const PATTERNS=[...PAGE_PATTERNS,...PROGRESS_PATTERNS,...DETAILS_PATTERNS,...SETTINGS_PATTERNS,...CHAT_PATTERNS,...LIBRARY_PATTERNS,...SERVER_PATTERNS,...KNOWLEDGE_PATTERNS];

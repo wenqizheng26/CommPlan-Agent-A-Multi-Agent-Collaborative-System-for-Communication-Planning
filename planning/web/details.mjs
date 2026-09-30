@@ -8,6 +8,7 @@ import {fmt} from './timing.mjs';
 import {assessmentNoteText,planPresentation,originLabel,answerPresentation,horizonPresentation,renderSolve,documentSource} from './m1.mjs';
 export const parameterNames={frequency_ghz:'载波频率',distance_km:'路径距离',tx_power_dbm:'发射功率',tx_gain_dbi:'发射天线增益',rx_gain_dbi:'接收天线增益',
  tx_loss_db:'发射馈线损耗',rx_loss_db:'接收馈线损耗',path_loss_db:'路径损耗',extra_loss_db:'额外损耗',rx_power_dbm:'接收信号电平',rx_threshold_dbm:'接收门限',reserve_db:'预留余量',link_margin_db:'链路余量'};
+Object.assign(parameterNames,{d1_km:'起点到障碍物距离',d2_km:'终点到障碍物距离',obstacle_height_m:'障碍物高出连线高度',height1_above_sea_m:'起点天线海面高度',height2_above_sea_m:'终点天线海面高度',k_factor:'有效地球半径系数',knife_edge_nu:'绕射参数',fresnel_radius_m:'第一菲涅耳区半径',knife_edge_loss_db:'单刃形绕射损耗',sea_reflection_loss_db:'海面反射附加损耗'});
 export const symbols={frequency_ghz:'f',distance_km:'d',tx_power_dbm:'Pt',tx_gain_dbi:'Gt',rx_gain_dbi:'Gr',tx_loss_db:'Lt',rx_loss_db:'Lr',path_loss_db:'L',extra_loss_db:'La',rx_power_dbm:'Pr',rx_threshold_dbm:'Pth',reserve_db:'M₀',link_margin_db:'M'};
 Object.assign(parameterNames,{lat1_deg:'起点纬度',lon1_deg:'起点经度',ground1_m:'起点地面高程',antenna1_m:'起点天线高度',lat2_deg:'终点纬度',lon2_deg:'终点经度',ground2_m:'终点地面高程',antenna2_m:'终点天线高度',radio_horizon_km:'无线电视距'});
 // Registered expression written with symbols for reading; the program expression itself stays unchanged.
@@ -18,6 +19,9 @@ export function symbolic(model){
 export const toolNames={fspl_ghz:'自由空间损耗',received_power:'接收电平',link_margin:'链路余量',slant_range_wgs84:'直线距离',radio_horizon:'无线电视距'};
 export const conditionNames={free_space:'自由空间模型',free_space_reference:'自由空间基准',non_free_space:'非自由空间环境'};
 export const targetNames={fspl_ghz:'路径损耗',received_power:'接收信号电平',link_margin:'链路余量'};
+Object.assign(toolNames,{fresnel_radius:'第一菲涅耳区半径',knife_edge_nu:'绕射参数',knife_edge_loss:'单刃形绕射损耗',sea_reflection_two_ray:'海面反射附加损耗'});
+Object.assign(targetNames,toolNames);
+Object.assign(conditionNames,{single_knife_edge:'单刃形障碍物',smooth_sea:'光滑海面单点镜面反射'});
 export const labels={AWAITING_CONFIRMATION:'待确认',AWAITING_INPUT:'待补充',NEEDS_MODEL:'超出范围',FAILED:'失败',COMPLETED:'已完成',CANCELLED:'已取消',RUNNING:'处理中'};
 const checkNames={result_integrity:'结果完整',snapshot_identity:'快照一致',input_consistency:'输入一致',plan_identity:'计划一致',evidence_consistency:'证据链一致',
  model_identity:'公式版本一致',numeric_domain:'量纲单位',step_chain:'逐步代入',independent_magnitude:'独立复算',fspl_magnitude:'数量级复核'};

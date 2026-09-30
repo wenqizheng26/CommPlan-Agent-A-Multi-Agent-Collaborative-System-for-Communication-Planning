@@ -22,7 +22,8 @@ from planning.workflow.activity import observe
 
 ALLOWED_MODEL = 'fspl_ghz'
 REQUIRED = ['frequency_ghz', 'distance_km']
-TARGET_LABELS = {'fspl_ghz': '路径损耗', 'received_power': '接收信号电平', 'link_margin': '链路余量'}
+from planning.services.plans import OBJECTIVES
+TARGET_LABELS = OBJECTIVES
 
 
 OPTIONAL = ('quantities', 'solve', 'sites', 'devices')
@@ -138,8 +139,13 @@ class RequirementsAgent:
         # Limit eligible targets, not the whole catalog: retrievable, unplanned cards
         # must not consume the model's candidate slots. Stay inside returned top-k
         # and require lexical evidence even when dense ranking is requested.
-        eligible = [h for h in found.hits if h['id'] in TARGETS and h['id'] in by_id
-                    and h['scores']['lexical'] > 0][:found.top_n]
+        from planning.services.plans import COASTAL_TARGETS, BUDGET_TARGETS
+        requested = [request['target']] if request['target'] else parsed['targets']
+        admitted = TARGETS if set(requested) & set(COASTAL_TARGETS) else BUDGET_TARGETS
+        eligible = [h for h in found.hits if h['id'] in admitted and h['id'] in by_id
+                    and h['scores']['lexical'] > 0]
+        eligible.sort(key=lambda h: (h['id'] not in requested, h['rank']))
+        eligible = eligible[:found.top_n]
         self.last_retrieval['candidate_used'] = [h['id'] for h in eligible]
         usable = {h['id']: h['rank'] for h in eligible}
         # A manual target is a direct lookup, not a semantic retrieval claim.
@@ -317,6 +323,10 @@ class RequirementsAgent:
         if final and requires_free_space(order, self.cards) and 'free_space' not in conditions and not unsupported:
             questions.append('请明确采用自由空间模型或自由空间基准。')
             diagnostics.append(diagnostic('MISSING_CONDITION', '不能从视距、岸海或参数齐全推断自由空间条件。'))
+        from planning.services.coastal import missing_conditions
+        for condition in missing_conditions(order, conditions):
+            questions.append('请明确采用模型条件：' + condition + '。')
+            diagnostics.append(diagnostic('MISSING_COASTAL_CONDITION', '补充模型的适用条件尚未声明。', condition=condition))
         fspl_values = {k: values[k] for k in REQUIRED if k in values}
         scope = [issue for case in scenarios(fspl_values) for issue in scope_issues(ALLOWED_MODEL, case, parsed)] if ALLOWED_MODEL in order and not invalid else []
         if scope:

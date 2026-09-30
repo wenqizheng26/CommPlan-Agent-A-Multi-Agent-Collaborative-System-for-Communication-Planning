@@ -170,7 +170,9 @@ def check_report(report, request, cards, root=None):
             conditions.add('free_space')
     require(r['conditions']==sorted(conditions) and ('free_space' in conditions or not requires_free_space(order, cards)), 'CONDITION_MISMATCH')
     require(not outside_scope(request['raw_text'],parsed,target,conditions), 'UNSUPPORTED_SCOPE')
-    require('non_free_space' not in conditions or 'free_space_reference' in conditions, 'MODEL_NOT_APPLICABLE')
+    require(not outside_scope(request['raw_text'], parsed, target, conditions), 'MODEL_NOT_APPLICABLE')
+    from planning.services.coastal import missing_conditions
+    require(not missing_conditions(order, conditions), 'CONDITION_MISMATCH')
     require(not any(d['code'] in {'INPUT_PARSE_ISSUE','SOURCE_AMBIGUOUS','PARAMETER_APPROXIMATE','LABEL_CONFLICT'} for d in issues), 'INPUT_NOT_RESOLVED')
     values = {p['canonical_name']:p['value'] for p in parameters if p['value'] is not None}
     require(not facts['issues'] and not band_issues(facts['devices'], values), 'ENTITY_NOT_RESOLVED')

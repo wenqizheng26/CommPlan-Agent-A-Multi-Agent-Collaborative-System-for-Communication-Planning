@@ -164,7 +164,7 @@ def execute_plan(snapshot, cards, observer, attempt):
     output = dict(result_id=snapshot['snapshot_id']+':result'+('' if attempt==1 else f':attempt-{attempt}'), task_id=snapshot['task_id'],
                   revision=snapshot['revision'], snapshot_id=snapshot['snapshot_id'],
                   snapshot_hash=snapshot['content_hash'], plan_hash=plan['plan_hash'],
-                  model_id=final['id'], model_version=final['version'], formula=final['expression'],
+                  model_id=final['id'], model_version=final['version'], formula=final.get('expression', final.get('algorithm')),
                   normalized_inputs={k:parameters[k] for k in plan['required_parameters']},
                   outputs=[copy.deepcopy(steps[-1]['output'])], steps=steps, **extra,
                   evidence_ids=copy.deepcopy(report['evidence_ids']), runtime_mode='deterministic',
@@ -200,7 +200,7 @@ def validate_plan_result(result, snapshot, expected_inputs):
     numeric_ok = chain_ok and result['outputs']==[steps[-1]['output']] and result['outputs'][0]['name']==model['output']['name']
     return dict(
         model_identity=result['model_id']==model['id']==plan['steps'][-1]['tool_id'] and result['model_version']==model['version']
-            and result['formula']==model['expression'],
+            and result['formula']==model.get('expression', model.get('algorithm')),
         numeric_domain=numeric_ok, step_chain=chain_ok, independent_magnitude=magnitude_ok,
         plan_checks=chain_ok and all(done[c['distance']]['value'] <= done[c['horizon']]['value'] for c in plan.get('checks', [])),
         requirement_and_solve=numeric_ok and goal_ok(result, snapshot, expected_inputs))
@@ -291,7 +291,7 @@ def validate_result(result, snapshot):
         plan_identity=result['plan_hash']==report['calculation_plan_proposal']['plan_hash'],
         evidence_consistency=result['evidence_ids']==report['evidence_ids'],
         model_identity=result['model_id']==model['id']=='fspl_ghz' and result['model_version']==model['version']
-            and result['formula']==model['expression'],
+            and result['formula']==model.get('expression', model.get('algorithm')),
         numeric_domain=numeric_ok, fspl_magnitude=magnitude_ok)
     return [dict(validation_id=result['result_id']+':'+key, validator_id=key, severity='hard',
                  passed=bool(ok), target_hash=result['result_hash']) for key,ok in checks.items()]
@@ -324,7 +324,9 @@ def plan_conclusion(result):
     if result['model_id']=='link_margin':
         meaning = describe_result('link_margin', out['value'])['message'].split('，')[0]
         return text + f"链路余量 {out['value']:.2f} dB（{meaning}）" + goal_text(result) + '。'
-    label = {'received_power':'接收信号电平','fspl_ghz':'路径损耗'}.get(result['model_id'], out['name'])
+    label = {'received_power':'接收信号电平','fspl_ghz':'路径损耗','fresnel_radius':'第一菲涅耳区半径',
+             'knife_edge_nu':'绕射参数','knife_edge_loss':'单刃形绕射损耗',
+             'sea_reflection_two_ray':'海面反射附加损耗（相对自由空间）'}.get(result['model_id'], out['name'])
     return text + f"{label} {out['value']:.2f} {out['unit']}。"
 
 

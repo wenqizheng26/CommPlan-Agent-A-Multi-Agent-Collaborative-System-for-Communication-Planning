@@ -5,7 +5,7 @@ from .parsing import extract_request
 CONDITION_LABELS = {
     'free_space': '理想自由空间模型', 'free_space_reference': '自由空间基准',
     'non_free_space': '存在其他传播机制', 'maximum_doppler': '最大多普勒上界',
-    'two_way': '双程传播',
+    'two_way': '双程传播', 'single_knife_edge': '单刃形障碍物', 'smooth_sea': '光滑海面单点镜面反射',
 }
 
 
