@@ -29,4 +29,36 @@ def slant_range_wgs84(inputs):
     return math.dist(first, second) / 1000
 
 
-TOOLS = {'slant_range_wgs84': slant_range_wgs84}
+def sea_reflection_two_ray(inputs):
+    """P.530-19 spherical-Earth two-ray loss, for a visible smooth reflection."""
+    names = ('frequency_ghz', 'distance_km', 'height1_above_sea_m',
+             'height2_above_sea_m', 'k_factor')
+    try:
+        f, d, h1, h2, k = (inputs[name] for name in names)
+        if any(isinstance(x, bool) or not math.isfinite(x) or x <= 0
+               for x in (f, d, h1, h2, k)):
+            raise ValueError('all inputs must be finite and positive')
+        m = d * d * 1000 / (4 * k * 6375 * (h1 + h2))
+        c = (h1 - h2) / (h1 + h2)
+        arg = (3 * c / 2) * math.sqrt(3 * m / (m + 1)**3)
+        # Clamp only roundoff at the analytic arccos domain boundary.
+        b = 2 * math.sqrt((m + 1) / (3 * m)) * math.cos(
+            math.pi / 3 + math.acos(max(-1.0, min(1.0, arg))) / 3)
+        d1, d2 = d * (1 + b) / 2, d * (1 - b) / 2
+        hp1, hp2 = h1 - d1 * d1 / (12.74 * k), h2 - d2 * d2 / (12.74 * k)
+        if not (0 < d1 < d and 0 < d2 < d and hp1 > 0 and hp2 > 0):
+            raise ValueError('reflection point is outside antenna line of sight')
+        tau = (2 * f / 0.3) * hp1 * hp2 * 0.001 / d
+        amplitude = 2 * abs(math.sin(math.pi * tau))
+        if amplitude < 0.1:
+            raise ValueError('near an interference null (loss > 20 dB)')
+        result = -20 * math.log10(amplitude)
+        if not math.isfinite(result):
+            raise ValueError('nonfinite reflection loss')
+        return result
+    except (KeyError, TypeError, ArithmeticError) as exc:
+        raise ValueError('invalid two-ray parameters') from exc
+
+
+TOOLS = {'slant_range_wgs84': slant_range_wgs84,
+         'sea_reflection_two_ray': sea_reflection_two_ray}

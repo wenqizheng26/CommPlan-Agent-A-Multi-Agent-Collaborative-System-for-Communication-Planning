@@ -502,5 +502,304 @@
                   "lat2_deg": 29.9565, "lon2_deg": 122.1623, "ground2_m": 6, "antenna2_m": 15},
        "expected": 11.981648366331887, "tolerance": 1e-9}
     ]
+  },
+  {
+    "id": "fresnel_radius",
+    "title": "第一菲涅耳区半径",
+    "description": "按频率与障碍物到两端天线的距离计算第一菲涅耳区半径；不包含障碍物高度或地球曲率。",
+    "version": "1.0.0",
+    "status": "verified",
+    "output": {
+      "name": "fresnel_radius_m",
+      "unit": "m"
+    },
+    "parameters": {
+      "frequency_ghz": {
+        "unit": "GHz",
+        "description": "载波频率",
+        "exclusive_min": 0
+      },
+      "d1_km": {
+        "unit": "km",
+        "description": "第一端天线到障碍物的距离",
+        "exclusive_min": 0
+      },
+      "d2_km": {
+        "unit": "km",
+        "description": "第二端天线到障碍物的距离",
+        "exclusive_min": 0
+      }
+    },
+    "applicability": {
+      "requires": [],
+      "notes": [
+        "P.530 §2.2.2：余隙至少为第一菲涅耳区半径的 60%，以达到自由空间传播条件。"
+      ]
+    },
+    "sources": [
+      {
+        "title": "ITU-R P.530-19",
+        "url": "https://www.itu.int/rec/R-REC-P.530-19/en",
+        "locator": "§2.2.1, equation (3), PDF page 7 / printed page 5",
+        "checked_date": "2026-09-30",
+        "derivation": "由 sqrt(λ*d1*d2/(d1+d2)) 换算，频率 GHz、距离 km、输出 m；17.3 是舍入系数，λ 使用精确光速时系数约为 17.3145。"
+      }
+    ],
+    "examples": [
+      {
+        "inputs": {
+          "frequency_ghz": 2,
+          "d1_km": 15,
+          "d2_km": 15
+        },
+        "expected": 33.50130594469416,
+        "tolerance": 1e-09
+      },
+      {
+        "inputs": {
+          "frequency_ghz": 6,
+          "d1_km": 4,
+          "d2_km": 8
+        },
+        "expected": 11.533333333333333,
+        "tolerance": 1e-09
+      }
+    ],
+    "expression": "17.3*sqrt(d1_km*d2_km/(frequency_ghz*(d1_km+d2_km)))"
+  },
+  {
+    "id": "knife_edge_nu",
+    "title": "单刃形绕射参数 ν",
+    "description": "计算障碍物相对两端天线连线高度对应的无量纲绕射参数。",
+    "version": "1.0.0",
+    "status": "verified",
+    "output": {
+      "name": "knife_edge_nu",
+      "unit": "1"
+    },
+    "parameters": {
+      "obstacle_height_m": {
+        "unit": "m",
+        "description": "障碍物顶端高出两端天线连线为正，低于为负"
+      },
+      "d1_km": {
+        "unit": "km",
+        "description": "第一端天线到障碍物的距离",
+        "exclusive_min": 0
+      },
+      "d2_km": {
+        "unit": "km",
+        "description": "第二端天线到障碍物的距离",
+        "exclusive_min": 0
+      },
+      "frequency_ghz": {
+        "unit": "GHz",
+        "description": "载波频率",
+        "exclusive_min": 0
+      }
+    },
+    "applicability": {
+      "requires": [],
+      "notes": [
+        "此处 h 为障碍物高出连线的高度，与 P.530 式 (2) 中表示余隙的 h 符号相反。"
+      ]
+    },
+    "sources": [
+      {
+        "title": "ITU-R P.526-16",
+        "url": "https://www.itu.int/rec/R-REC-P.526-16/en",
+        "locator": "§4.1 (single knife-edge obstacle)",
+        "checked_date": "2026-09-28",
+        "derivation": "本机无原文，按 2026-09-28 调研时在 ITU 官网核对的内容；ν=h*sqrt((2/λ)*(1/d1+1/d2))，λ=0.299792458/f m，距离从 km 换成 m。"
+      }
+    ],
+    "examples": [
+      {
+        "inputs": {
+          "obstacle_height_m": 20,
+          "d1_km": 15,
+          "d2_km": 15,
+          "frequency_ghz": 2
+        },
+        "expected": 0.8435658854466503,
+        "tolerance": 1e-09
+      },
+      {
+        "inputs": {
+          "obstacle_height_m": -10,
+          "d1_km": 15,
+          "d2_km": 15,
+          "frequency_ghz": 2
+        },
+        "expected": -0.42178294272332517,
+        "tolerance": 1e-09
+      },
+      {
+        "inputs": {
+          "obstacle_height_m": 0,
+          "d1_km": 15,
+          "d2_km": 15,
+          "frequency_ghz": 2
+        },
+        "expected": 0.0,
+        "tolerance": 1e-09
+      }
+    ],
+    "expression": "obstacle_height_m*sqrt(2*frequency_ghz/0.299792458*(1/(1000*d1_km)+1/(1000*d2_km)))"
+  },
+  {
+    "id": "knife_edge_loss",
+    "title": "单刃形绕射附加损耗",
+    "description": "按 ν 估算单刃形绕射损耗；本近似式仅用于 ν > −0.78。",
+    "version": "1.0.0",
+    "status": "verified",
+    "output": {
+      "name": "knife_edge_loss_db",
+      "unit": "dB"
+    },
+    "parameters": {
+      "knife_edge_nu": {
+        "unit": "1",
+        "description": "无量纲单刃形绕射参数 ν",
+        "exclusive_min": -0.78
+      }
+    },
+    "applicability": {
+      "requires": [],
+      "notes": [
+        "只描述单个理想刃形障碍物，不代表多障碍物或圆滑障碍物的损耗。"
+      ]
+    },
+    "sources": [
+      {
+        "title": "ITU-R P.526-16",
+        "url": "https://www.itu.int/rec/R-REC-P.526-16/en",
+        "locator": "§4.1, equation (31)",
+        "checked_date": "2026-09-28",
+        "derivation": "本机无原文，按 2026-09-28 调研时在 ITU 官网核对的内容；直接使用 J(ν) 的 dB 近似式，输入无量纲。"
+      }
+    ],
+    "examples": [
+      {
+        "inputs": {
+          "knife_edge_nu": 0
+        },
+        "expected": 6.032852208563606,
+        "tolerance": 1e-09
+      },
+      {
+        "inputs": {
+          "knife_edge_nu": 0.84357
+        },
+        "expected": 12.87585073125791,
+        "tolerance": 1e-09
+      },
+      {
+        "inputs": {
+          "knife_edge_nu": 1
+        },
+        "expected": 13.925728934959924,
+        "tolerance": 1e-09
+      }
+    ],
+    "expression": "6.9+20*log10(sqrt((knife_edge_nu-0.1)**2+1)+knife_edge_nu-0.1)"
+  },
+  {
+    "id": "sea_reflection_two_ray",
+    "title": "光滑海面球面地球两径附加损耗",
+    "description": "计算海面镜面反射相对自由空间的附加损耗，负值为增强，最小约 −6.02 dB；计入等效地球曲率。",
+    "version": "1.0.0",
+    "status": "verified",
+    "output": {
+      "name": "sea_reflection_loss_db",
+      "unit": "dB"
+    },
+    "parameters": {
+      "frequency_ghz": {
+        "unit": "GHz",
+        "description": "载波频率",
+        "exclusive_min": 0
+      },
+      "distance_km": {
+        "unit": "km",
+        "description": "两端路径距离",
+        "exclusive_min": 0
+      },
+      "height1_above_sea_m": {
+        "unit": "m",
+        "description": "第一端天线高出海面的高度，已含站址高程",
+        "exclusive_min": 0
+      },
+      "height2_above_sea_m": {
+        "unit": "m",
+        "description": "第二端天线高出海面的高度，已含站址高程",
+        "exclusive_min": 0
+      },
+      "k_factor": {
+        "unit": "1",
+        "description": "等效地球半径系数 k",
+        "exclusive_min": 0,
+        "default": {
+          "value": 1.3333333333333333,
+          "unit": "1",
+          "note": "标准大气典型值；须显式输入或确认，不自动应用。"
+        }
+      }
+    },
+    "applicability": {
+      "requires": [],
+      "notes": [
+        "光滑海面、单一镜面反射点，只在视距内使用；反射点处等效高度必须大于 0。",
+        "反射系数 −1 是水平极化、小掠射角下的近似，实际随海况与极化变化；P.530 §6.1.2.4 指出掠射角大于约 0.7° 时，垂直极化的反射比水平极化弱 2–17 dB。",
+        "P.530 建议在 k 从 ke(99.9%) 到无穷大的范围内检查；此卡一次计算一个 k。",
+        "合成场比小于 0.1 时拒绝计算，避免反射系数 −1 时接近干涉零点的无界深衰落。"
+      ]
+    },
+    "sources": [
+      {
+        "title": "ITU-R P.530-19",
+        "url": "https://www.itu.int/rec/R-REC-P.530-19/en",
+        "locator": "§6.1.2.3 steps 3–4, equations (121)–(126), PDF pages 44–45 / printed pages 42–43; §6.1.2.4",
+        "checked_date": "2026-09-30",
+        "derivation": "采用球面地球反射点与曲率修正高度，f 为 GHz、d 为 km、h 为 m；式 (126) 使用 0.3 而非精确光速。k 趋向无穷大时回到平地面两径；30 km 演示路径不可忽略曲率。"
+      }
+    ],
+    "examples": [
+      {
+        "inputs": {
+          "frequency_ghz": 2,
+          "distance_km": 30,
+          "height1_above_sea_m": 30,
+          "height2_above_sea_m": 25,
+          "k_factor": 1.3333333333333333
+        },
+        "expected": 5.130388896249947,
+        "tolerance": 1e-09
+      },
+      {
+        "inputs": {
+          "frequency_ghz": 2,
+          "distance_km": 10,
+          "height1_above_sea_m": 30,
+          "height2_above_sea_m": 25,
+          "k_factor": 1.3333333333333333
+        },
+        "expected": 3.835304621149826,
+        "tolerance": 1e-09
+      },
+      {
+        "inputs": {
+          "frequency_ghz": 2,
+          "distance_km": 5,
+          "height1_above_sea_m": 30,
+          "height2_above_sea_m": 25,
+          "k_factor": 1.3333333333333333
+        },
+        "expected": 9.564669118096404,
+        "tolerance": 1e-09
+      }
+    ],
+    "kind": "python_tool",
+    "algorithm": "a_e=k*6375 km；m=d²*10³/(4*a_e*(h1+h2))，c=(h1−h2)/(h1+h2)，b=2*sqrt((m+1)/(3*m))*cos(π/3+acos((3*c/2)*sqrt(3*m/(m+1)³))/3)；d1=d*(1+b)/2，d2=d*(1−b)/2；h1′=h1−d1²/(12.74*k)，h2′=h2−d2²/(12.74*k)，任一 ≤0 时拒绝；τ=(2*f/0.3)*h1′*h2′*10⁻³/d；场比 A=2*abs(sin(π*τ))，A<0.1 时拒绝；L=−20*log10(A) dB。"
   }
 ]

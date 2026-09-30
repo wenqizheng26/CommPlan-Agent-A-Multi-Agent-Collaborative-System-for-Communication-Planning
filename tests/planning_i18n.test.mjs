@@ -2,6 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {install,t} from '../planning/web/i18n.mjs';
 import * as en from '../planning/web/i18n-en.mjs';
+import {readFileSync} from 'node:fs';
+
+test('all four W4 cards translate each displayed Chinese sentence in full',()=>{
+ install(en);
+ const ids=['fresnel_radius','knife_edge_nu','knife_edge_loss','sea_reflection_two_ray'];
+ const cards=JSON.parse(readFileSync(new URL('../knowledge/formulas.json',import.meta.url),'utf8')).filter(c=>ids.includes(c.id));
+ assert.equal(cards.length,4);
+ for(const c of cards){
+  const texts=[c.title,c.description,...Object.values(c.parameters).flatMap(p=>[p.description,p.default?.note]),
+   ...c.applicability.notes,c.algorithm,...c.sources.map(s=>s.derivation)].filter(Boolean);
+  for(const text of texts){
+   if(!/[\u3400-\u9fff]/u.test(text))continue;
+   assert.ok(Object.hasOwn(en.EXACT,text),`${c.id}: ${text}`);
+   assert.notEqual(t(text),text);
+   assert.doesNotMatch(t(text),/[\u3400-\u9fff]/u);
+  }
+ }
+});
 
 test('without a dictionary the Chinese source is shown as is',()=>{
  install({});

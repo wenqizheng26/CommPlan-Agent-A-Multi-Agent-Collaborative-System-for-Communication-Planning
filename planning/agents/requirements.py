@@ -135,9 +135,13 @@ class RequirementsAgent:
         observe(observer,'rag','completed',caller='requirements',mode=found.mode_used,degraded=found.degraded,
                 latency_ms=found.latency_ms.get('total'))
         observe(observer,'retrieval','completed',mode=found.mode_used,hits=len(found.hits),used=len(found.used))
-        # Only the top-n hits reach the model context, and a candidate still needs lexical
-        # evidence from the request text: vector similarity alone never admits a formula.
-        usable = {h['id']: h['rank'] for h in found.hits if h['id'] in found.used and h['scores']['lexical'] > 0}
+        # Limit eligible targets, not the whole catalog: retrievable, unplanned cards
+        # must not consume the model's candidate slots. Stay inside returned top-k
+        # and require lexical evidence even when dense ranking is requested.
+        eligible = [h for h in found.hits if h['id'] in TARGETS and h['id'] in by_id
+                    and h['scores']['lexical'] > 0][:found.top_n]
+        self.last_retrieval['candidate_used'] = [h['id'] for h in eligible]
+        usable = {h['id']: h['rank'] for h in eligible}
         # A manual target is a direct lookup, not a semantic retrieval claim.
         if request['target'] in TARGETS and request['target'] in by_id:
             usable[request['target']] = 1
