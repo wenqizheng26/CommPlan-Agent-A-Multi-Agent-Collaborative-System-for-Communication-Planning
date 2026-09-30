@@ -3,6 +3,8 @@
 
 // Page frame, header, chat panel and commands (index.html, app.js).
 const PAGE={
+ '添加附件':'Add attachment',
+ '附件进入资料库；抽取并审核后才能参与计算。':'Attachments enter the library. Extract and review them before using their data in calculations.',
  '通信筹划 · Planning Workbench':'CommPlan · Planning Workbench','通信筹划':'CommPlan','多智能体 · 本机离线':'Multi-agent · local, offline',
  '当前任务':'Current task','未开始':'Not started','设置载入中':'Loading settings','资料':'Library','历史任务':'Task history',
  '导出 JSON':'Export JSON','性能':'Performance','按编号恢复':'Restore by ID','取消任务':'Cancel task','＋ 新建任务':'+ New task',
@@ -60,6 +62,7 @@ const PAGE_PATTERNS=[
  [/^目标 · (.+)$/,'Target · $1'],[/^条件 · (.+)$/,'Condition · $1'],
  [/^文档读取失败：([\s\S]+)$/,'Could not read the documents: $1'],[/^草稿读取失败：([\s\S]+)$/,'Could not read the drafts: $1'],
  [/^抽取中 · (\d+) s$/,'Extracting · $1 s'],[/^抽取失败：([\s\S]+)$/,'Extraction failed: $1'],
+ [/^已添加：(.+)。请选择片段，抽取并核对草稿后填写审核人，通过后才能参与计算。$/,'Added: $=1. Select sections, extract and check the draft, then enter a reviewer. Only approved data can be used in calculations.'],
  [/^已添加：(.+)$/,'Added: $1'],[/^添加失败：([\s\S]+)$/,'Could not add: $1'],
  [/^已入库：(.+)$/,'Added to the library: $1'],[/^已驳回：(.+)$/,'Rejected: $1'],
  [/^(.+) · 去处理$/,'$1 · go to it'],[/^(\d+) 条记录$/,'$1 records'],
@@ -503,6 +506,7 @@ const SERVER_PATTERNS=[
  [/^按已确认自由空间条件，路径损耗 (\S+) dB。$/,'Under the confirmed free-space conditions, the path loss is $1 dB.'],
  [/^按已确认自由空间条件，接收信号电平 (\S+) dBm。$/,'Under the confirmed free-space conditions, the received signal level is $1 dBm.'],
  [/^按已确认输入，接收信号电平 (\S+) dBm。$/,'With the confirmed inputs, the received signal level is $1 dBm.'],
+ [/^按已确认输入，(.+) (\S+) (m|1|dB)。$/,'With the confirmed inputs, $1 is $2 $3.'],
  [/^按已确认自由空间条件，([\s\S]+)。$/,'Under the confirmed free-space conditions: $1.'],
  [/^满足不低于 (\S+) dB 的要求$/,'meets the requirement of at least $1 dB'],[/^低于要求的 (\S+) dB$/,'below the required $1 dB'],
  [/^发射功率至少需 (.+) 才能满足$/,'the transmit power must be at least $1'],[/^发射功率至多需 (.+) 才能满足$/,'the transmit power must be at most $1'],
@@ -591,6 +595,8 @@ const KNOWLEDGE_PATTERNS=[
 ];
 
 const COASTAL={
+ '支持：链路预算 · 菲涅耳半径 · 单刃形绕射 · 海面两径':'Supports: link budgets · Fresnel radius · knife-edge diffraction · sea two-ray',
+ '支持自由空间单链路预算、第一菲涅耳区半径、单刃形绕射及光滑海面两径附加损耗；须声明各模型条件，不代表真实海况下的可靠通信。':'Supports free-space link budgets, first Fresnel-zone radius, knife-edge diffraction and smooth-sea two-ray additional loss. Declare each model condition; these results do not guarantee reliable communication in real sea conditions.',
  '起点到障碍物距离':'Distance from transmitter to obstacle','终点到障碍物距离':'Distance from receiver to obstacle',
  '障碍物高出连线高度':'Obstacle height above the antenna line','起点天线海面高度':'Transmitter antenna height above sea',
  '终点天线海面高度':'Receiver antenna height above sea','有效地球半径系数':'Effective Earth-radius factor',

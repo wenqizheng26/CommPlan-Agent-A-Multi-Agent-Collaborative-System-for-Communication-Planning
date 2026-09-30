@@ -58,6 +58,8 @@ def issues_for(state):
     if not report.get('targets'):
         add('clarification','goal','你希望得到什么结果？','先明确目标，再判断能力与所需参数；选择不代表当前系统支持。',
             choices=[dict(value='fspl_ghz',label='路径损耗'),dict(value='received_power',label='接收信号电平'),dict(value='link_margin',label='链路余量'),
+                     dict(value='fresnel_radius',label='第一菲涅耳区半径'),dict(value='knife_edge_nu',label='绕射参数'),
+                     dict(value='knife_edge_loss',label='单刃形绕射损耗'),dict(value='sea_reflection_two_ray',label='海面反射附加损耗'),
                      dict(value='link_feasibility',label='判断能否通信'),dict(value='scheme_comparison',label='比较方案')])
         return issues
     if any(d['code']=='MISSING_CONDITION' for d in diagnostics):

@@ -47,7 +47,7 @@ export function headline(state,{busy=false,action=null,editing=false,historical=
   return {text:'解析中…',sub:modelLabel,tone:'run'};
  }
  if(editing)return {text:'编辑原文中',sub:'保存后需重新确认',tone:'wait'};
- if(!state)return {text:'输入需求开始',sub:'支持：路径损耗 · 接收电平 · 链路余量',tone:'idle'};
+ if(!state)return {text:'输入需求开始',sub:'支持：链路预算 · 菲涅耳半径 · 单刃形绕射 · 海面两径',tone:'idle'};
  const open=(state.input_issues||[]).filter(q=>q.status==='open'),n=open.length,kinds=new Set(open.map(q=>q.kind));
  const only=(...k)=>n&&[...kinds].every(x=>k.includes(x));
  switch(state.status){

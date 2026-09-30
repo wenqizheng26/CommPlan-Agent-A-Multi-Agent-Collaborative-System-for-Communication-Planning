@@ -48,7 +48,7 @@ const TIMEOUTS={'/api/commands':125000,'/api/drafts/extract':200000,'/api/drafts
 async function api(path,body){const r=await fetch(path,{signal:AbortSignal.timeout(TIMEOUTS[path]||(path.startsWith('/api/documents/')?30000:10000)),method:body?'POST':'GET',headers:body?{'Content-Type':'application/json','X-Planning-Token':token}:{},body:body?JSON.stringify(body):undefined});const data=await r.json();if(!r.ok){const err=new Error(data.error.message+' ['+data.error.code+']');err.status=r.status;throw err;}return data;}
 function syncButtons(){
  // A model switch holds every command that may call a model; cancelling a task still works.
- const hold=busy||switching();
+ const hold=busy||switching()||lib.uploading||lib.busy;
  document.querySelectorAll('#request-form input,#request-form textarea,#request-form select,#request-form button').forEach(n=>n.disabled=hold||!!historical);
  for(const id of ['supplement-message','supplement-submit'])$(id).disabled=hold||!!historical||!current||dirty||editing;
  document.querySelectorAll('#clarification-panel input,#clarification-panel select,#clarification-panel button').forEach(n=>n.disabled=hold||dirty||editing||!!historical);
@@ -150,6 +150,7 @@ function drawLibrary(){
  renderLibrary($('library-body'),{...lib,onSelectDoc:selectDoc,onToggleChunk:toggleChunk,onKind:k=>{lib.kind=k;drawLibrary();},onExtract:extractDraft,
   onUpload:uploadDocument,onReview:reviewDraft,onReason:v=>{lib.reason=v;},onRejectToggle:id=>{lib.rejecting=lib.rejecting===id?null:id;lib.reason='';drawLibrary();},
   onReviewer:v=>{lib.reviewer=v.trim();try{localStorage.setItem('planning-reviewer',lib.reviewer);}catch{}}});
+ syncButtons();
 }
 async function loadLibrary(){
  const [docs,drafts]=await Promise.allSettled([api('/api/documents'),api('/api/drafts')]);
@@ -177,16 +178,23 @@ async function extractDraft(){
  finally{clearInterval(timer);lib.busy=false;lib.extracting=null;drawLibrary();}
 }
 async function uploadDocument(file){
- if(lib.uploading||lib.busy)return;
+ if(lib.uploading||lib.busy||busy||switching())return;
  if(file.size>(lib.library?.max_bytes||20*1024*1024)){lib.message='文件超过 20 MB。';drawLibrary();return;}
  lib.uploading=true;lib.message='';drawLibrary();
  try{
   const r=await fetch('/api/documents?name='+encodeURIComponent(file.name),{method:'POST',body:file,signal:AbortSignal.timeout(120000),
    headers:{'Content-Type':'application/octet-stream','X-Planning-Token':token}});
   const data=await r.json();if(!r.ok)throw new Error(data.error.message);
-  lib.library=data.library;lib.message=`已添加：${data.document.title}`;lib.uploading=false;await selectDoc(data.document.doc_id);
+  lib.library=data.library;lib.uploading=false;await selectDoc(data.document.doc_id);
+  lib.message=`已添加：${data.document.title}。请选择片段，抽取并核对草稿后填写审核人，通过后才能参与计算。`;
  }catch(e){lib.message='添加失败：'+e.message;}
  finally{lib.uploading=false;drawLibrary();}
+}
+async function uploadAttachment(file){
+ if(busy||historical||switching()||lib.busy||lib.uploading)return;
+ openSheet('library-sheet');drawLibrary();
+ await loadLibrary();
+ await uploadDocument(file);
 }
 async function reviewDraft(draft,decision,reason){
  if(lib.busy)return;
@@ -406,6 +414,8 @@ $('model-badge').addEventListener('click',openSettings);
 $('lang-toggle').textContent=lang()==='en'?'中文':'EN';
 $('lang-toggle').addEventListener('click',()=>{setLang(lang()==='en'?'zh':'en');location.reload();});
 $('close-settings').addEventListener('click',closeSheets);$('close-library').addEventListener('click',closeSheets);$('open-library').addEventListener('click',openLibrary);$('close-metrics').addEventListener('click',closeSheets);$('close-history').addEventListener('click',closeSheets);$('sheet-scrim').addEventListener('click',closeSheets);
+$('add-attachment').addEventListener('click',()=>$('attachment-file').click());
+$('attachment-file').addEventListener('change',()=>{const file=$('attachment-file').files[0];$('attachment-file').value='';if(file)uploadAttachment(file);});
 $('save-settings').addEventListener('click',saveSettings);
 $('reset-settings').addEventListener('click',()=>{if(!models)return;draft=factorySettings(models);drawSettings();});
 $('open-history').addEventListener('click',()=>openHistory());
