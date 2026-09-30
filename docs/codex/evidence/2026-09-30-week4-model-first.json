@@ -1,0 +1,4667 @@
+{
+  "source_commit": "b9a09d0348ec0179be85dc15ebcf9c8ec81c65f5",
+  "tracked_dirty": true,
+  "model_id": "qwen35-9b-q4",
+  "cases": [
+    {
+      "id": "zh-budget",
+      "lang": "zh",
+      "text": "按自由空间基准计算链路余量，频率2GHz，距离10km，发射功率30dBm，发射天线增益5dBi，接收天线增益5dBi，接收门限-100dBm。",
+      "expected_target": "link_margin",
+      "create_status": "AWAITING_CONFIRMATION",
+      "requirements_mode": "llm",
+      "planning_mode": "llm",
+      "requirements_diagnostics": [
+        {
+          "code": "MODEL_CALL",
+          "message": "意图建议经原文核验。",
+          "details": {
+            "attempt": 1,
+            "model": "commplan-qwen35-9b",
+            "usage": {
+              "completion_tokens": 141,
+              "prompt_tokens": 1387,
+              "total_tokens": 1528,
+              "prompt_tokens_details": {
+                "cached_tokens": 0
+              }
+            },
+            "accepted": [
+              {
+                "kind": "condition",
+                "id": "free_space_reference",
+                "evidence": "按自由空间基准计算链路余量"
+              },
+              {
+                "kind": "quantity",
+                "span": [
+                  16,
+                  20
+                ],
+                "field": "frequency_ghz",
+                "value": 2.0,
+                "unit": "GHz"
+              },
+              {
+                "kind": "quantity",
+                "span": [
+                  23,
+                  27
+                ],
+                "field": "distance_km",
+                "value": 10.0,
+                "unit": "km"
+              },
+              {
+                "kind": "quantity",
+                "span": [
+                  32,
+                  37
+                ],
+                "field": "tx_power_dbm",
+                "value": 30.0,
+                "unit": "dBm"
+              },
+              {
+                "kind": "quantity",
+                "span": [
+                  44,
+                  48
+                ],
+                "field": "tx_gain_dbi",
+                "value": 5.0,
+                "unit": "dBi"
+              },
+              {
+                "kind": "quantity",
+                "span": [
+                  55,
+                  59
+                ],
+                "field": "rx_gain_dbi",
+                "value": 5.0,
+                "unit": "dBi"
+              },
+              {
+                "kind": "quantity",
+                "span": [
+                  64,
+                  71
+                ],
+                "field": "rx_threshold_dbm",
+                "value": -100.0,
+                "unit": "dBm"
+              }
+            ],
+            "latency_ms": 5682
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "frequency_ghz",
+            "excerpt": "频率2GHz",
+            "span": [
+              14,
+              20
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "distance_km",
+            "excerpt": "距离10km",
+            "span": [
+              21,
+              27
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "tx_power_dbm",
+            "excerpt": "发射功率30dBm",
+            "span": [
+              28,
+              37
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "tx_gain_dbi",
+            "excerpt": "发射天线增益5dBi",
+            "span": [
+              38,
+              48
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "rx_gain_dbi",
+            "excerpt": "接收天线增益5dBi",
+            "span": [
+              49,
+              59
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "rx_threshold_dbm",
+            "excerpt": "接收门限-100dBm",
+            "span": [
+              60,
+              71
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_REVIEW_LIMITATION",
+          "message": "来源状态来自库内登记，本次没有独立复核原始文献。",
+          "details": {}
+        }
+      ],
+      "status": "COMPLETED",
+      "targets": [
+        "link_margin"
+      ],
+      "calculation_mode": "deterministic",
+      "review_mode": "llm",
+      "validations": [
+        {
+          "validation_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:result_integrity",
+          "validator_id": "result_integrity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "621b2c7cfc6c20c2fdc17b5f3c951f79c52527d134c79a60ec17c857ddc78aa8"
+        },
+        {
+          "validation_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:snapshot_identity",
+          "validator_id": "snapshot_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "621b2c7cfc6c20c2fdc17b5f3c951f79c52527d134c79a60ec17c857ddc78aa8"
+        },
+        {
+          "validation_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:input_consistency",
+          "validator_id": "input_consistency",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "621b2c7cfc6c20c2fdc17b5f3c951f79c52527d134c79a60ec17c857ddc78aa8"
+        },
+        {
+          "validation_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:plan_identity",
+          "validator_id": "plan_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "621b2c7cfc6c20c2fdc17b5f3c951f79c52527d134c79a60ec17c857ddc78aa8"
+        },
+        {
+          "validation_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:evidence_consistency",
+          "validator_id": "evidence_consistency",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "621b2c7cfc6c20c2fdc17b5f3c951f79c52527d134c79a60ec17c857ddc78aa8"
+        },
+        {
+          "validation_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:model_identity",
+          "validator_id": "model_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "621b2c7cfc6c20c2fdc17b5f3c951f79c52527d134c79a60ec17c857ddc78aa8"
+        },
+        {
+          "validation_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:numeric_domain",
+          "validator_id": "numeric_domain",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "621b2c7cfc6c20c2fdc17b5f3c951f79c52527d134c79a60ec17c857ddc78aa8"
+        },
+        {
+          "validation_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:step_chain",
+          "validator_id": "step_chain",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "621b2c7cfc6c20c2fdc17b5f3c951f79c52527d134c79a60ec17c857ddc78aa8"
+        },
+        {
+          "validation_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:independent_magnitude",
+          "validator_id": "independent_magnitude",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "621b2c7cfc6c20c2fdc17b5f3c951f79c52527d134c79a60ec17c857ddc78aa8"
+        },
+        {
+          "validation_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:plan_checks",
+          "validator_id": "plan_checks",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "621b2c7cfc6c20c2fdc17b5f3c951f79c52527d134c79a60ec17c857ddc78aa8"
+        },
+        {
+          "validation_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:requirement_and_solve",
+          "validator_id": "requirement_and_solve",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "621b2c7cfc6c20c2fdc17b5f3c951f79c52527d134c79a60ec17c857ddc78aa8"
+        }
+      ],
+      "result": {
+        "result_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result",
+        "task_id": "9eec816e-4d93-455a-8f77-cedabf0a047b",
+        "revision": 0,
+        "snapshot_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed",
+        "snapshot_hash": "f4238eb62db54571b52bdae006ebb7bc5c7efa597babf9209f3f5e8026501ef8",
+        "plan_hash": "60ff81bf16dfc1ab44384844e8e4a008cf8517591b83aa67b6771ea3628013c1",
+        "model_id": "link_margin",
+        "model_version": "1.0.0",
+        "formula": "rx_power_dbm - rx_threshold_dbm - reserve_db",
+        "normalized_inputs": {
+          "frequency_ghz": 2.0,
+          "distance_km": 10.0,
+          "tx_power_dbm": 30.0,
+          "tx_gain_dbi": 5.0,
+          "rx_gain_dbi": 5.0,
+          "tx_loss_db": 2,
+          "rx_loss_db": 2,
+          "extra_loss_db": 0,
+          "rx_threshold_dbm": -100.0,
+          "reserve_db": 0
+        },
+        "outputs": [
+          {
+            "name": "link_margin_db",
+            "value": 17.57940008672037,
+            "unit": "dB"
+          }
+        ],
+        "steps": [
+          {
+            "step_id": "fspl-step",
+            "tool_id": "fspl_ghz",
+            "version": "1.0.0",
+            "inputs": {
+              "distance_km": 10.0,
+              "frequency_ghz": 2.0
+            },
+            "output": {
+              "name": "path_loss_db",
+              "value": 118.42059991327963,
+              "unit": "dB"
+            }
+          },
+          {
+            "step_id": "received_power-step",
+            "tool_id": "received_power",
+            "version": "1.0.0",
+            "inputs": {
+              "extra_loss_db": 0,
+              "path_loss_db": 118.42059991327963,
+              "rx_gain_dbi": 5.0,
+              "rx_loss_db": 2,
+              "tx_gain_dbi": 5.0,
+              "tx_loss_db": 2,
+              "tx_power_dbm": 30.0
+            },
+            "output": {
+              "name": "rx_power_dbm",
+              "value": -82.42059991327963,
+              "unit": "dBm"
+            }
+          },
+          {
+            "step_id": "link_margin-step",
+            "tool_id": "link_margin",
+            "version": "1.0.0",
+            "inputs": {
+              "reserve_db": 0,
+              "rx_power_dbm": -82.42059991327963,
+              "rx_threshold_dbm": -100.0
+            },
+            "output": {
+              "name": "link_margin_db",
+              "value": 17.57940008672037,
+              "unit": "dB"
+            }
+          }
+        ],
+        "evidence_ids": [
+          "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:fspl_ghz:0",
+          "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:received_power:0",
+          "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:link_margin:0"
+        ],
+        "runtime_mode": "deterministic",
+        "tool_version": "confirmed-plan-v1/p1-1.0.0",
+        "started_at": "2026-09-30T05:25:38.992889+00:00",
+        "finished_at": "2026-09-30T05:25:39.009171+00:00",
+        "result_hash": "621b2c7cfc6c20c2fdc17b5f3c951f79c52527d134c79a60ec17c857ddc78aa8"
+      },
+      "final_report": {
+        "report_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:report",
+        "result_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result",
+        "result_hash": "621b2c7cfc6c20c2fdc17b5f3c951f79c52527d134c79a60ec17c857ddc78aa8",
+        "snapshot_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed",
+        "snapshot_hash": "f4238eb62db54571b52bdae006ebb7bc5c7efa597babf9209f3f5e8026501ef8",
+        "task_id": "9eec816e-4d93-455a-8f77-cedabf0a047b",
+        "revision": 0,
+        "normalized_inputs": {
+          "frequency_ghz": 2.0,
+          "distance_km": 10.0,
+          "tx_power_dbm": 30.0,
+          "tx_gain_dbi": 5.0,
+          "rx_gain_dbi": 5.0,
+          "tx_loss_db": 2,
+          "rx_loss_db": 2,
+          "extra_loss_db": 0,
+          "rx_threshold_dbm": -100.0,
+          "reserve_db": 0
+        },
+        "outputs": [
+          {
+            "name": "link_margin_db",
+            "value": 17.57940008672037,
+            "unit": "dB"
+          }
+        ],
+        "steps": [
+          {
+            "step_id": "fspl-step",
+            "tool_id": "fspl_ghz",
+            "version": "1.0.0",
+            "inputs": {
+              "distance_km": 10.0,
+              "frequency_ghz": 2.0
+            },
+            "output": {
+              "name": "path_loss_db",
+              "value": 118.42059991327963,
+              "unit": "dB"
+            }
+          },
+          {
+            "step_id": "received_power-step",
+            "tool_id": "received_power",
+            "version": "1.0.0",
+            "inputs": {
+              "extra_loss_db": 0,
+              "path_loss_db": 118.42059991327963,
+              "rx_gain_dbi": 5.0,
+              "rx_loss_db": 2,
+              "tx_gain_dbi": 5.0,
+              "tx_loss_db": 2,
+              "tx_power_dbm": 30.0
+            },
+            "output": {
+              "name": "rx_power_dbm",
+              "value": -82.42059991327963,
+              "unit": "dBm"
+            }
+          },
+          {
+            "step_id": "link_margin-step",
+            "tool_id": "link_margin",
+            "version": "1.0.0",
+            "inputs": {
+              "reserve_db": 0,
+              "rx_power_dbm": -82.42059991327963,
+              "rx_threshold_dbm": -100.0
+            },
+            "output": {
+              "name": "link_margin_db",
+              "value": 17.57940008672037,
+              "unit": "dB"
+            }
+          }
+        ],
+        "model_id": "link_margin",
+        "model_version": "1.0.0",
+        "formula": "rx_power_dbm - rx_threshold_dbm - reserve_db",
+        "parameters": [
+          {
+            "canonical_name": "distance_km",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "km",
+            "original_value": 10.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:distance_km:origin:0",
+                "source_ref": "74b37065-079c-4fc5-bc86-d72560cd6e0b:raw_text",
+                "span": [
+                  21,
+                  27
+                ],
+                "unit": "km",
+                "value": 10.0
+              }
+            ],
+            "parameter_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:distance_km",
+            "status": "user_provided",
+            "unit": "km",
+            "value": 10.0
+          },
+          {
+            "canonical_name": "extra_loss_db",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "dB",
+            "original_value": 0,
+            "origins": [
+              {
+                "kind": "default",
+                "origin_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:extra_loss_db:origin:0",
+                "source_ref": "card:received_power#extra_loss_db",
+                "span": null,
+                "unit": "dB",
+                "value": 0
+              }
+            ],
+            "parameter_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:extra_loss_db",
+            "status": "user_provided",
+            "unit": "dB",
+            "value": 0
+          },
+          {
+            "canonical_name": "frequency_ghz",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "GHz",
+            "original_value": 2.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:frequency_ghz:origin:0",
+                "source_ref": "74b37065-079c-4fc5-bc86-d72560cd6e0b:raw_text",
+                "span": [
+                  14,
+                  20
+                ],
+                "unit": "GHz",
+                "value": 2.0
+              }
+            ],
+            "parameter_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:frequency_ghz",
+            "status": "user_provided",
+            "unit": "GHz",
+            "value": 2.0
+          },
+          {
+            "canonical_name": "reserve_db",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "dB",
+            "original_value": 0,
+            "origins": [
+              {
+                "kind": "default",
+                "origin_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:reserve_db:origin:0",
+                "source_ref": "card:link_margin#reserve_db",
+                "span": null,
+                "unit": "dB",
+                "value": 0
+              }
+            ],
+            "parameter_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:reserve_db",
+            "status": "user_provided",
+            "unit": "dB",
+            "value": 0
+          },
+          {
+            "canonical_name": "rx_gain_dbi",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "dBi",
+            "original_value": 5.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:rx_gain_dbi:origin:0",
+                "source_ref": "74b37065-079c-4fc5-bc86-d72560cd6e0b:raw_text",
+                "span": [
+                  49,
+                  59
+                ],
+                "unit": "dBi",
+                "value": 5.0
+              }
+            ],
+            "parameter_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:rx_gain_dbi",
+            "status": "user_provided",
+            "unit": "dBi",
+            "value": 5.0
+          },
+          {
+            "canonical_name": "rx_loss_db",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "dB",
+            "original_value": 2,
+            "origins": [
+              {
+                "kind": "default",
+                "origin_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:rx_loss_db:origin:0",
+                "source_ref": "card:received_power#rx_loss_db",
+                "span": null,
+                "unit": "dB",
+                "value": 2
+              }
+            ],
+            "parameter_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:rx_loss_db",
+            "status": "user_provided",
+            "unit": "dB",
+            "value": 2
+          },
+          {
+            "canonical_name": "rx_threshold_dbm",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "dBm",
+            "original_value": -100.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:rx_threshold_dbm:origin:0",
+                "source_ref": "74b37065-079c-4fc5-bc86-d72560cd6e0b:raw_text",
+                "span": [
+                  60,
+                  71
+                ],
+                "unit": "dBm",
+                "value": -100.0
+              }
+            ],
+            "parameter_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:rx_threshold_dbm",
+            "status": "user_provided",
+            "unit": "dBm",
+            "value": -100.0
+          },
+          {
+            "canonical_name": "tx_gain_dbi",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "dBi",
+            "original_value": 5.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:tx_gain_dbi:origin:0",
+                "source_ref": "74b37065-079c-4fc5-bc86-d72560cd6e0b:raw_text",
+                "span": [
+                  38,
+                  48
+                ],
+                "unit": "dBi",
+                "value": 5.0
+              }
+            ],
+            "parameter_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:tx_gain_dbi",
+            "status": "user_provided",
+            "unit": "dBi",
+            "value": 5.0
+          },
+          {
+            "canonical_name": "tx_loss_db",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "dB",
+            "original_value": 2,
+            "origins": [
+              {
+                "kind": "default",
+                "origin_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:tx_loss_db:origin:0",
+                "source_ref": "card:received_power#tx_loss_db",
+                "span": null,
+                "unit": "dB",
+                "value": 2
+              }
+            ],
+            "parameter_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:tx_loss_db",
+            "status": "user_provided",
+            "unit": "dB",
+            "value": 2
+          },
+          {
+            "canonical_name": "tx_power_dbm",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "dBm",
+            "original_value": 30.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:tx_power_dbm:origin:0",
+                "source_ref": "74b37065-079c-4fc5-bc86-d72560cd6e0b:raw_text",
+                "span": [
+                  28,
+                  37
+                ],
+                "unit": "dBm",
+                "value": 30.0
+              }
+            ],
+            "parameter_id": "74b37065-079c-4fc5-bc86-d72560cd6e0b:tx_power_dbm",
+            "status": "user_provided",
+            "unit": "dBm",
+            "value": 30.0
+          }
+        ],
+        "conditions": [
+          "free_space",
+          "free_space_reference"
+        ],
+        "validation_ids": [
+          "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:result_integrity",
+          "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:snapshot_identity",
+          "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:input_consistency",
+          "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:plan_identity",
+          "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:evidence_consistency",
+          "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:model_identity",
+          "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:numeric_domain",
+          "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:step_chain",
+          "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:independent_magnitude",
+          "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:plan_checks",
+          "74b37065-079c-4fc5-bc86-d72560cd6e0b:confirmed:result:requirement_and_solve"
+        ],
+        "conclusion": "按已确认自由空间条件，链路余量 17.58 dB（扣除预留余量后高于门限）。",
+        "limitations": [
+          "发馈线损耗按假设取 2 dB：工程假设，典型取值，非标准值；请按实际馈线修改。",
+          "收馈线损耗按假设取 2 dB：工程假设，典型取值，非标准值；请按实际馈线修改。",
+          "额外损耗按假设取 0 dB：按自由空间假设，不计其他损耗。",
+          "预留余量按假设取 0 dB：要求余量单独比较，不预先扣除。",
+          "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+          "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。",
+          "所有项必须属于同一条单程链路、同一频率和一致功率参考面。",
+          "本式只做功率收支，不由正接收功率或正余量推断现场可用率。",
+          "接收电平和门限必须使用同一输入参考面，避免把已经扣减的损耗再次作为预留量扣减。",
+          "reserve_db 是此项目显式扣除的预留量；来源中的基本余量为接收功率减灵敏度。",
+          "当前只检查了明显异常的距离/波长组合，未完整验证天线远场条件；结果仅用于所声明的自由空间基准。",
+          "路径损耗按自由空间基准计算，未估计真实海面反射、散射或遮挡。",
+          "余量只表示所填预算条件下与接收门限的关系，不保证现场可靠通信。"
+        ],
+        "evidence_refs": [
+          {
+            "card_version": "1.0.0",
+            "catalog_id": "fspl_ghz",
+            "content_hash": "2ed0e6930cf489981f389e87e7adcdb1af4b49eed9b495527ed2c5598898ba6d",
+            "evidence_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:fspl_ghz:0",
+            "excerpt": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。",
+            "kind": "formula_card",
+            "knowledge_snapshot_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c",
+            "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+            "parameter_names": [
+              "frequency_ghz",
+              "distance_km"
+            ],
+            "relevance_rank": 2,
+            "source_id": null,
+            "source_title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+            "source_url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+            "status": "verified"
+          },
+          {
+            "card_version": "1.0.0",
+            "catalog_id": "received_power",
+            "content_hash": "821fd133e0ce21c6ae15f6db03960cbc0da4b74c7fac1da041a639ba8b6525da",
+            "evidence_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:received_power:0",
+            "excerpt": "按发射功率加收发天线增益、减去馈线、路径及额外损耗计算接收功率。路径损耗必须来自适用模型、测量或用户明确提供；此式不会根据环境自动估出路径损耗。",
+            "kind": "formula_card",
+            "knowledge_snapshot_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c",
+            "locator": "11.3.1 Frequency Selection: Link Budget",
+            "parameter_names": [
+              "tx_power_dbm",
+              "tx_gain_dbi",
+              "rx_gain_dbi",
+              "tx_loss_db",
+              "rx_loss_db",
+              "path_loss_db",
+              "extra_loss_db"
+            ],
+            "relevance_rank": 1,
+            "source_id": null,
+            "source_title": "NASA, State-of-the-Art of Small Spacecraft Technology, Ground Data Systems and Mission Operations",
+            "source_url": "https://www.nasa.gov/smallsat-institute/sst-soa/ground-data-systems-and-mission-operations/",
+            "status": "verified"
+          },
+          {
+            "card_version": "1.0.0",
+            "catalog_id": "link_margin",
+            "content_hash": "2c81c3ffffc81a18ca2f0b5f66985f9ec91091e8a80433d935ed4fbd4af1c40a",
+            "evidence_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:link_margin:0",
+            "excerpt": "计算接收电平高于接收门限的余量，再扣除用户指定的工程预留量。接收门限必须对应同一调制、码率及误码或丢包要求；正余量不等于已经验证现场可靠度。",
+            "kind": "formula_card",
+            "knowledge_snapshot_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c",
+            "locator": "page 4, section 2.4: link margin definition",
+            "parameter_names": [
+              "rx_power_dbm",
+              "rx_threshold_dbm",
+              "reserve_db"
+            ],
+            "relevance_rank": 3,
+            "source_id": null,
+            "source_title": "Texas Instruments SWRA479A, Achieving Optimum Radio Range (2017)",
+            "source_url": "https://www.ti.com/lit/an/swra479a/swra479a.pdf",
+            "status": "verified"
+          }
+        ],
+        "component_modes": {
+          "interpretation": "llm",
+          "retrieval": "lexical_fallback",
+          "calculation": "deterministic",
+          "review": "llm",
+          "orchestrator": "bounded_policy"
+        },
+        "runtime_health": "ready",
+        "generated_at": "2026-09-30T05:25:48.668457+00:00",
+        "review": {
+          "assessment_hash": "f4038cc280aadd23c1b5edbf6b3dea54f7f2b671ac905f3bdfd829575ce1f51d",
+          "decision": "pass",
+          "label": "通过",
+          "mode": "llm",
+          "summary": "声明的自由空间基准结果通过校验；不据此推断真实链路可用。",
+          "opinions": [],
+          "withheld": []
+        },
+        "answer": {
+          "text": "链路余量为 17.58 dB，满足接收门限要求。接收电平为 -82.42 dBm，高于 -100 dBm 门限。路径损耗为 118.42 dB。",
+          "mode": "llm",
+          "withheld": false
+        },
+        "explanation": [
+          {
+            "id": "step:fspl-step",
+            "note": "依据 ITU-R P.525-5 计算 2GHz、10km 自由空间路径损耗为 118.42 dB。"
+          },
+          {
+            "id": "step:received_power-step",
+            "note": "结合收发增益、馈线损耗及路径损耗，计算接收信号电平为 -82.42 dBm。"
+          },
+          {
+            "id": "step:link_margin-step",
+            "note": "将接收电平与 -100 dBm 门限比较，得出扣除预留余量后的链路余量为 17.58 dB。"
+          }
+        ],
+        "document_evidence": [
+          {
+            "id": "doc:sim-xx300:s3-1",
+            "title": "XX-300 手册",
+            "excerpt": "## §2 等效全向辐射功率\n\n等效全向辐射功率（EIRP）是发射机输出功率加发射天线增益、减去发射馈线损耗，以各向同性天线为参考，单位 dBm：\n\nEIRP = Pt + Gt − Lt\n\n其中 Pt 为发射机输出功率（dBm），Gt 为发射天线沿对端方向的增益（dBi），Lt 为发射馈线损耗（dB）。\n\n适用条件：三项必须属于同一发射端、同一频率。EIRP 不含路径损耗，不能单独据此判断链路是否可用。\n\n算例：Pt = 40 dBm，Gt = 6 dBi，Lt = 2 dB 时，EIRP = 40 + 6 − 2 = 44 dBm。",
+            "source": {
+              "doc_id": "sim-xx300",
+              "locator": "XX-300 手册（模拟） / §2 等效全向辐射功率, chunk 1",
+              "sha256": "97629e5321637053df24d702a5dc9542c12fd053bc92e52934e1727b7115ad77",
+              "simulated": true,
+              "title": "XX-300 手册",
+              "uri": "knowledge/documents/simulated/XX-300 手册.md",
+              "version": "2026-09-27"
+            }
+          },
+          {
+            "id": "doc:sim-xx200:s2-1",
+            "title": "XX-200 手册",
+            "excerpt": "# XX-200 手册（模拟）\n\n## §1 规格表\n\n| 型号 | 额定发射功率 dBm | 天线增益 dBi | 接收灵敏度 dBm | 工作频段 GHz |\n| --- | ---: | ---: | ---: | --- |\n| XX-200 | 43 | 8 | -95 | 1.4–2.7 |\n\n额定发射功率为设备输出端功率。相较 XX-100，此模拟型号提供更高的发射功率和天线增益，但不能由此直接推断链路可用率。\n\n接收灵敏度是演示计算的门限输入；实际通信质量仍需匹配调制、码率及误码要求。频段数值只表示模拟设备支持范围。\n\n馈线损耗、额外损耗和预留量在公式卡中分别记录来源；本手册没有为它们提供设备实测值。",
+            "source": {
+              "doc_id": "sim-xx200",
+              "locator": "XX-200 手册（模拟） / §1 规格表, chunk 1",
+              "sha256": "d79d0c9e04cfb09dcc2a0900e2432a4ac988373e2c457104e74a58d4e4b05953",
+              "simulated": true,
+              "title": "XX-200 手册",
+              "uri": "knowledge/documents/simulated/XX-200 手册.md",
+              "version": "2026-09-25"
+            }
+          },
+          {
+            "id": "doc:sim-xx100:s2-1",
+            "title": "XX-100 手册",
+            "excerpt": "# XX-100 手册（模拟）\n\n## §1 规格表\n\n| 型号 | 额定发射功率 dBm | 天线增益 dBi | 接收灵敏度 dBm | 工作频段 GHz |\n| --- | ---: | ---: | ---: | --- |\n| XX-100 | 37 | 5 | -92 | 1.4–2.7 |\n\n额定发射功率为设备输出端功率，未计馈线损耗。两端各 2 dB 馈线损耗是演示时的工程假设，并非本设备的保证值。\n\n接收灵敏度是演示计算的门限输入；实际通信质量仍需匹配调制、码率及误码要求。频段数值只表示模拟设备支持范围。\n\n天线增益按沿对端方向的数值使用。站点视距、地形遮挡及菲涅耳区余隙需要另行检查。",
+            "source": {
+              "doc_id": "sim-xx100",
+              "locator": "XX-100 手册（模拟） / §1 规格表, chunk 1",
+              "sha256": "74cd56505d040050e59ecaf9da5cdace04514984568780d0f90cdd1cef8c97c5",
+              "simulated": true,
+              "title": "XX-100 手册",
+              "uri": "knowledge/documents/simulated/XX-100 手册.md",
+              "version": "2026-09-25"
+            }
+          }
+        ]
+      },
+      "failure": null,
+      "passed": true,
+      "latency_s": 27.734,
+      "all_roles_llm": false
+    },
+    {
+      "id": "zh-knife",
+      "lang": "zh",
+      "text": "采用单刃形障碍物模型，计算单刃形绕射损耗，频率2GHz，d1=15km，d2=15km，障碍物相对高度20m。",
+      "expected_target": "knife_edge_loss",
+      "create_status": "AWAITING_CONFIRMATION",
+      "requirements_mode": "deterministic",
+      "planning_mode": "llm",
+      "requirements_diagnostics": [
+        {
+          "code": "MODEL_OUTPUT_INVALID",
+          "message": "模型结构或原文证据不合法。",
+          "details": {
+            "attempt": 1,
+            "exception": "ValueError",
+            "reason": "MODEL_UNGROUNDED",
+            "stage": "source_grounding",
+            "rejected": [
+              {
+                "kind": "condition",
+                "id": "free_space_reference",
+                "reason": "原文不足以确认该传播假设"
+              }
+            ],
+            "model_output": "{\"selected_ids\":[\"knife_edge_loss\",\"knife_edge_nu\"],\"targets\":[{\"id\":\"knife_edge_loss\",\"evidence\":\"计算单刃形绕射损耗\"}],\"conditions\":[{\"id\":\"free_space_reference\",\"evidence\":\"采用单刃形障碍物模型\"}],\"quantities\":[{\"id\":\"q1\",\"field\":\"frequency_ghz\"},{\"id\":\"q2\",\"field\":\"distance_km\"},{\"id\":\"q3\",\"field\":\"distance_km\"},{\"id\":\"q4\",\"field\":\"height2_above_sea_m\"}],\"solve\":[],\"sites\":[],\"devices\":[]}",
+            "next_action": "查看逐次诊断记录；核对原文与用户选择，或采用确定性解析。"
+          }
+        },
+        {
+          "code": "MODEL_OUTPUT_INVALID",
+          "message": "模型结构或原文证据不合法。",
+          "details": {
+            "attempt": 2,
+            "exception": "ValueError",
+            "reason": "MODEL_UNGROUNDED",
+            "stage": "source_grounding",
+            "rejected": [
+              {
+                "kind": "condition",
+                "id": "free_space_reference",
+                "reason": "原文不足以确认该传播假设"
+              }
+            ],
+            "model_output": "{\"selected_ids\":[\"knife_edge_loss\",\"knife_edge_nu\"],\"targets\":[{\"id\":\"knife_edge_loss\",\"evidence\":\"计算单刃形绕射损耗\"}],\"conditions\":[{\"id\":\"free_space_reference\",\"evidence\":\"采用单刃形障碍物模型\"}],\"quantities\":[{\"id\":\"q1\",\"field\":\"frequency_ghz\"},{\"id\":\"q2\",\"field\":\"distance_km\"},{\"id\":\"q3\",\"field\":\"distance_km\"},{\"id\":\"q4\",\"field\":\"height1_above_sea_m\"}],\"solve\":[],\"sites\":[],\"devices\":[]}",
+            "next_action": "查看逐次诊断记录；核对原文与用户选择，或采用确定性解析。"
+          }
+        },
+        {
+          "code": "MODEL_OUTPUT_INVALID",
+          "message": "模型结构或原文证据不合法。",
+          "details": {
+            "attempt": 3,
+            "exception": "ValueError",
+            "reason": "MODEL_UNGROUNDED",
+            "stage": "source_grounding",
+            "rejected": [
+              {
+                "kind": "condition",
+                "id": "free_space_reference",
+                "reason": "原文不足以确认该传播假设"
+              }
+            ],
+            "model_output": "{\"selected_ids\":[\"knife_edge_loss\",\"knife_edge_nu\"],\"targets\":[{\"id\":\"knife_edge_loss\",\"evidence\":\"计算单刃形绕射损耗\"}],\"conditions\":[{\"id\":\"free_space_reference\",\"evidence\":\"采用单刃形障碍物模型\"}],\"quantities\":[{\"id\":\"q1\",\"field\":\"frequency_ghz\"},{\"id\":\"q2\",\"field\":\"distance_km\"},{\"id\":\"q3\",\"field\":\"distance_km\"},{\"id\":\"q4\",\"field\":\"height1_above_sea_m\"}],\"solve\":[],\"sites\":[],\"devices\":[]}",
+            "next_action": "查看逐次诊断记录；核对原文与用户选择，或采用确定性解析。"
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "d1_km",
+            "excerpt": "d1=15km",
+            "span": [
+              28,
+              35
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "d2_km",
+            "excerpt": "d2=15km",
+            "span": [
+              36,
+              43
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "obstacle_height_m",
+            "excerpt": "障碍物相对高度20m",
+            "span": [
+              44,
+              54
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "frequency_ghz",
+            "excerpt": "频率2GHz",
+            "span": [
+              21,
+              27
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_REVIEW_LIMITATION",
+          "message": "来源状态来自库内登记，本次没有独立复核原始文献。",
+          "details": {}
+        }
+      ],
+      "status": "COMPLETED",
+      "targets": [
+        "knife_edge_loss"
+      ],
+      "calculation_mode": "deterministic",
+      "review_mode": "llm",
+      "validations": [
+        {
+          "validation_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:result_integrity",
+          "validator_id": "result_integrity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "62739fb2c69c549b6dee231a725f2753fba0733d70a7bcbcabc6992d8f3801e6"
+        },
+        {
+          "validation_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:snapshot_identity",
+          "validator_id": "snapshot_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "62739fb2c69c549b6dee231a725f2753fba0733d70a7bcbcabc6992d8f3801e6"
+        },
+        {
+          "validation_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:input_consistency",
+          "validator_id": "input_consistency",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "62739fb2c69c549b6dee231a725f2753fba0733d70a7bcbcabc6992d8f3801e6"
+        },
+        {
+          "validation_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:plan_identity",
+          "validator_id": "plan_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "62739fb2c69c549b6dee231a725f2753fba0733d70a7bcbcabc6992d8f3801e6"
+        },
+        {
+          "validation_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:evidence_consistency",
+          "validator_id": "evidence_consistency",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "62739fb2c69c549b6dee231a725f2753fba0733d70a7bcbcabc6992d8f3801e6"
+        },
+        {
+          "validation_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:model_identity",
+          "validator_id": "model_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "62739fb2c69c549b6dee231a725f2753fba0733d70a7bcbcabc6992d8f3801e6"
+        },
+        {
+          "validation_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:numeric_domain",
+          "validator_id": "numeric_domain",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "62739fb2c69c549b6dee231a725f2753fba0733d70a7bcbcabc6992d8f3801e6"
+        },
+        {
+          "validation_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:step_chain",
+          "validator_id": "step_chain",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "62739fb2c69c549b6dee231a725f2753fba0733d70a7bcbcabc6992d8f3801e6"
+        },
+        {
+          "validation_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:independent_magnitude",
+          "validator_id": "independent_magnitude",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "62739fb2c69c549b6dee231a725f2753fba0733d70a7bcbcabc6992d8f3801e6"
+        },
+        {
+          "validation_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:plan_checks",
+          "validator_id": "plan_checks",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "62739fb2c69c549b6dee231a725f2753fba0733d70a7bcbcabc6992d8f3801e6"
+        },
+        {
+          "validation_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:requirement_and_solve",
+          "validator_id": "requirement_and_solve",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "62739fb2c69c549b6dee231a725f2753fba0733d70a7bcbcabc6992d8f3801e6"
+        }
+      ],
+      "result": {
+        "result_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result",
+        "task_id": "9c144c4d-a8e9-4158-860a-4643a7de0982",
+        "revision": 0,
+        "snapshot_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed",
+        "snapshot_hash": "a3f4e7ba134e9a181d0982d57b6fd98fcc8751ea196412ae11eaa6445239eaa2",
+        "plan_hash": "72a601a584c4b7357783b8cebf751d51136ed26a39577798f4ee23e0788ee232",
+        "model_id": "knife_edge_loss",
+        "model_version": "1.0.0",
+        "formula": "6.9+20*log10(sqrt((knife_edge_nu-0.1)**2+1)+knife_edge_nu-0.1)",
+        "normalized_inputs": {
+          "obstacle_height_m": 20.0,
+          "d1_km": 15.0,
+          "d2_km": 15.0,
+          "frequency_ghz": 2.0
+        },
+        "outputs": [
+          {
+            "name": "knife_edge_loss_db",
+            "value": 12.875822052112976,
+            "unit": "dB"
+          }
+        ],
+        "steps": [
+          {
+            "step_id": "knife_edge_nu-step",
+            "tool_id": "knife_edge_nu",
+            "version": "1.0.0",
+            "inputs": {
+              "d1_km": 15.0,
+              "d2_km": 15.0,
+              "frequency_ghz": 2.0,
+              "obstacle_height_m": 20.0
+            },
+            "output": {
+              "name": "knife_edge_nu",
+              "value": 0.8435658854466503,
+              "unit": "1"
+            }
+          },
+          {
+            "step_id": "knife_edge_loss-step",
+            "tool_id": "knife_edge_loss",
+            "version": "1.0.0",
+            "inputs": {
+              "knife_edge_nu": 0.8435658854466503
+            },
+            "output": {
+              "name": "knife_edge_loss_db",
+              "value": 12.875822052112976,
+              "unit": "dB"
+            }
+          }
+        ],
+        "evidence_ids": [
+          "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:knife_edge_nu:0",
+          "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:knife_edge_loss:0"
+        ],
+        "runtime_mode": "deterministic",
+        "tool_version": "confirmed-plan-v1/p1-1.0.0",
+        "started_at": "2026-09-30T05:26:13.388402+00:00",
+        "finished_at": "2026-09-30T05:26:13.415256+00:00",
+        "result_hash": "62739fb2c69c549b6dee231a725f2753fba0733d70a7bcbcabc6992d8f3801e6"
+      },
+      "final_report": {
+        "report_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:report",
+        "result_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result",
+        "result_hash": "62739fb2c69c549b6dee231a725f2753fba0733d70a7bcbcabc6992d8f3801e6",
+        "snapshot_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed",
+        "snapshot_hash": "a3f4e7ba134e9a181d0982d57b6fd98fcc8751ea196412ae11eaa6445239eaa2",
+        "task_id": "9c144c4d-a8e9-4158-860a-4643a7de0982",
+        "revision": 0,
+        "normalized_inputs": {
+          "obstacle_height_m": 20.0,
+          "d1_km": 15.0,
+          "d2_km": 15.0,
+          "frequency_ghz": 2.0
+        },
+        "outputs": [
+          {
+            "name": "knife_edge_loss_db",
+            "value": 12.875822052112976,
+            "unit": "dB"
+          }
+        ],
+        "steps": [
+          {
+            "step_id": "knife_edge_nu-step",
+            "tool_id": "knife_edge_nu",
+            "version": "1.0.0",
+            "inputs": {
+              "d1_km": 15.0,
+              "d2_km": 15.0,
+              "frequency_ghz": 2.0,
+              "obstacle_height_m": 20.0
+            },
+            "output": {
+              "name": "knife_edge_nu",
+              "value": 0.8435658854466503,
+              "unit": "1"
+            }
+          },
+          {
+            "step_id": "knife_edge_loss-step",
+            "tool_id": "knife_edge_loss",
+            "version": "1.0.0",
+            "inputs": {
+              "knife_edge_nu": 0.8435658854466503
+            },
+            "output": {
+              "name": "knife_edge_loss_db",
+              "value": 12.875822052112976,
+              "unit": "dB"
+            }
+          }
+        ],
+        "model_id": "knife_edge_loss",
+        "model_version": "1.0.0",
+        "formula": "6.9+20*log10(sqrt((knife_edge_nu-0.1)**2+1)+knife_edge_nu-0.1)",
+        "parameters": [
+          {
+            "canonical_name": "d1_km",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "km",
+            "original_value": 15.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:d1_km:origin:0",
+                "source_ref": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:raw_text",
+                "span": [
+                  28,
+                  35
+                ],
+                "unit": "km",
+                "value": 15.0
+              }
+            ],
+            "parameter_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:d1_km",
+            "status": "user_provided",
+            "unit": "km",
+            "value": 15.0
+          },
+          {
+            "canonical_name": "d2_km",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "km",
+            "original_value": 15.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:d2_km:origin:0",
+                "source_ref": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:raw_text",
+                "span": [
+                  36,
+                  43
+                ],
+                "unit": "km",
+                "value": 15.0
+              }
+            ],
+            "parameter_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:d2_km",
+            "status": "user_provided",
+            "unit": "km",
+            "value": 15.0
+          },
+          {
+            "canonical_name": "frequency_ghz",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "GHz",
+            "original_value": 2.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:frequency_ghz:origin:0",
+                "source_ref": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:raw_text",
+                "span": [
+                  21,
+                  27
+                ],
+                "unit": "GHz",
+                "value": 2.0
+              }
+            ],
+            "parameter_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:frequency_ghz",
+            "status": "user_provided",
+            "unit": "GHz",
+            "value": 2.0
+          },
+          {
+            "canonical_name": "obstacle_height_m",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "m",
+            "original_value": 20.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:obstacle_height_m:origin:0",
+                "source_ref": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:raw_text",
+                "span": [
+                  44,
+                  54
+                ],
+                "unit": "m",
+                "value": 20.0
+              }
+            ],
+            "parameter_id": "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:obstacle_height_m",
+            "status": "user_provided",
+            "unit": "m",
+            "value": 20.0
+          }
+        ],
+        "conditions": [
+          "non_free_space",
+          "single_knife_edge"
+        ],
+        "validation_ids": [
+          "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:result_integrity",
+          "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:snapshot_identity",
+          "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:input_consistency",
+          "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:plan_identity",
+          "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:evidence_consistency",
+          "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:model_identity",
+          "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:numeric_domain",
+          "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:step_chain",
+          "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:independent_magnitude",
+          "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:plan_checks",
+          "f92ae5cf-ffde-48c1-bf3f-38a884b01f36:confirmed:result:requirement_and_solve"
+        ],
+        "conclusion": "按已确认输入，单刃形绕射损耗 12.88 dB。",
+        "limitations": [
+          "此处 h 为障碍物高出连线的高度，与 P.530 式 (2) 中表示余隙的 h 符号相反。",
+          "只描述单个理想刃形障碍物，不代表多障碍物或圆滑障碍物的损耗。"
+        ],
+        "evidence_refs": [
+          {
+            "card_version": "1.0.0",
+            "catalog_id": "knife_edge_nu",
+            "content_hash": "a043bcd464871669412892559ddb8f10bcdde29b1042a40302bcf2911a061740",
+            "evidence_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:knife_edge_nu:0",
+            "excerpt": "计算障碍物相对两端天线连线高度对应的无量纲绕射参数。",
+            "kind": "formula_card",
+            "knowledge_snapshot_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c",
+            "locator": "§4.1 (single knife-edge obstacle)",
+            "parameter_names": [
+              "obstacle_height_m",
+              "d1_km",
+              "d2_km",
+              "frequency_ghz"
+            ],
+            "relevance_rank": 2,
+            "source_id": null,
+            "source_title": "ITU-R P.526-16",
+            "source_url": "https://www.itu.int/rec/R-REC-P.526-16/en",
+            "status": "verified"
+          },
+          {
+            "card_version": "1.0.0",
+            "catalog_id": "knife_edge_loss",
+            "content_hash": "944fe0b8554e821d81469f9172ee44259d57231ca9bce338928045f641ba1a0f",
+            "evidence_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:knife_edge_loss:0",
+            "excerpt": "按 ν 估算单刃形绕射损耗；本近似式仅用于 ν > −0.78。",
+            "kind": "formula_card",
+            "knowledge_snapshot_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c",
+            "locator": "§4.1, equation (31)",
+            "parameter_names": [
+              "knife_edge_nu"
+            ],
+            "relevance_rank": 1,
+            "source_id": null,
+            "source_title": "ITU-R P.526-16",
+            "source_url": "https://www.itu.int/rec/R-REC-P.526-16/en",
+            "status": "verified"
+          }
+        ],
+        "component_modes": {
+          "interpretation": "deterministic",
+          "retrieval": "lexical_fallback",
+          "calculation": "deterministic",
+          "review": "llm",
+          "orchestrator": "bounded_policy"
+        },
+        "runtime_health": "degraded",
+        "generated_at": "2026-09-30T05:26:22.197384+00:00",
+        "review": {
+          "assessment_hash": "26d11b168693282c3b6f01e2ca290c471fecbe68a69ddc1b67f57e907a0665e0",
+          "decision": "pass",
+          "label": "通过",
+          "mode": "llm",
+          "summary": "声明的自由空间基准结果通过校验；不据此推断真实链路可用。",
+          "opinions": [],
+          "withheld": []
+        },
+        "answer": {
+          "text": "单刃形绕射损耗为 12.88 dB。计算基于 2 GHz 频率、15 km 距离及 20 m 障碍物高度。该结果仅反映单刃形绕射影响，未包含多径、雨衰等其他因素。",
+          "mode": "llm",
+          "withheld": false
+        },
+        "explanation": [
+          {
+            "id": "step:knife_edge_nu-step",
+            "note": "依据 ITU-R P.526-16 计算绕射参数 nu，输入频率、距离及障碍物高度。"
+          },
+          {
+            "id": "step:knife_edge_loss-step",
+            "note": "依据 ITU-R P.526-16 公式 (31) 计算单刃形绕射损耗，结果为 12.88 dB。"
+          }
+        ],
+        "document_evidence": [
+          {
+            "id": "doc:sim-xx300:s3-1",
+            "title": "XX-300 手册",
+            "excerpt": "## §2 等效全向辐射功率\n\n等效全向辐射功率（EIRP）是发射机输出功率加发射天线增益、减去发射馈线损耗，以各向同性天线为参考，单位 dBm：\n\nEIRP = Pt + Gt − Lt\n\n其中 Pt 为发射机输出功率（dBm），Gt 为发射天线沿对端方向的增益（dBi），Lt 为发射馈线损耗（dB）。\n\n适用条件：三项必须属于同一发射端、同一频率。EIRP 不含路径损耗，不能单独据此判断链路是否可用。\n\n算例：Pt = 40 dBm，Gt = 6 dBi，Lt = 2 dB 时，EIRP = 40 + 6 − 2 = 44 dBm。",
+            "source": {
+              "doc_id": "sim-xx300",
+              "locator": "XX-300 手册（模拟） / §2 等效全向辐射功率, chunk 1",
+              "sha256": "97629e5321637053df24d702a5dc9542c12fd053bc92e52934e1727b7115ad77",
+              "simulated": true,
+              "title": "XX-300 手册",
+              "uri": "knowledge/documents/simulated/XX-300 手册.md",
+              "version": "2026-09-27"
+            }
+          },
+          {
+            "id": "doc:sim-xx100:s2-1",
+            "title": "XX-100 手册",
+            "excerpt": "# XX-100 手册（模拟）\n\n## §1 规格表\n\n| 型号 | 额定发射功率 dBm | 天线增益 dBi | 接收灵敏度 dBm | 工作频段 GHz |\n| --- | ---: | ---: | ---: | --- |\n| XX-100 | 37 | 5 | -92 | 1.4–2.7 |\n\n额定发射功率为设备输出端功率，未计馈线损耗。两端各 2 dB 馈线损耗是演示时的工程假设，并非本设备的保证值。\n\n接收灵敏度是演示计算的门限输入；实际通信质量仍需匹配调制、码率及误码要求。频段数值只表示模拟设备支持范围。\n\n天线增益按沿对端方向的数值使用。站点视距、地形遮挡及菲涅耳区余隙需要另行检查。",
+            "source": {
+              "doc_id": "sim-xx100",
+              "locator": "XX-100 手册（模拟） / §1 规格表, chunk 1",
+              "sha256": "74cd56505d040050e59ecaf9da5cdace04514984568780d0f90cdd1cef8c97c5",
+              "simulated": true,
+              "title": "XX-100 手册",
+              "uri": "knowledge/documents/simulated/XX-100 手册.md",
+              "version": "2026-09-25"
+            }
+          },
+          {
+            "id": "doc:sim-sites:s0-1",
+            "title": "站址表",
+            "excerpt": "模拟数据，仅供演示。以下名称、坐标和高度均为虚构，不是实测站址。",
+            "source": {
+              "doc_id": "sim-sites",
+              "locator": "正文, chunk 1",
+              "sha256": "2b776c0d45d1773baf28c34c2f44ac02d94b799fd56ad2cc5db922b0245cd0e8",
+              "simulated": true,
+              "title": "站址表",
+              "uri": "knowledge/documents/simulated/站址表.md",
+              "version": "2026-09-25"
+            }
+          }
+        ]
+      },
+      "failure": null,
+      "passed": true,
+      "latency_s": 33.625,
+      "all_roles_llm": false
+    },
+    {
+      "id": "zh-sea",
+      "lang": "zh",
+      "text": "采用光滑海面单点镜面反射两径模型，计算海面反射附加损耗，频率2GHz，距离30km，起点天线海面高度30m，终点天线海面高度25m。",
+      "expected_target": "sea_reflection_two_ray",
+      "create_status": "AWAITING_CONFIRMATION",
+      "requirements_mode": "deterministic",
+      "planning_mode": "llm",
+      "requirements_diagnostics": [
+        {
+          "code": "MODEL_OUTPUT_INVALID",
+          "message": "模型结构或原文证据不合法。",
+          "details": {
+            "attempt": 1,
+            "exception": "ValueError",
+            "reason": "MODEL_UNGROUNDED",
+            "stage": "source_grounding",
+            "rejected": [
+              {
+                "kind": "condition",
+                "id": "free_space_reference",
+                "reason": "原文不足以确认该传播假设"
+              },
+              {
+                "kind": "quantity",
+                "id": "q3",
+                "reason": "30m 的单位与发馈线损耗（dB）不符"
+              },
+              {
+                "kind": "quantity",
+                "id": "q4",
+                "reason": "25m 的单位与收馈线损耗（dB）不符"
+              }
+            ],
+            "model_output": "{\"selected_ids\":[\"sea_reflection_two_ray\"],\"targets\":[{\"id\":\"sea_reflection_two_ray\",\"evidence\":\"计算海面反射附加损耗\"}],\"conditions\":[{\"id\":\"free_space_reference\",\"evidence\":\"采用光滑海面单点镜面反射两径模型\"}],\"quantities\":[{\"id\":\"q1\",\"field\":\"frequency_ghz\"},{\"id\":\"q2\",\"field\":\"distance_km\"},{\"id\":\"q3\",\"field\":\"tx_loss_db\"},{\"id\":\"q4\",\"field\":\"rx_loss_db\"}],\"solve\":[],\"sites\":[],\"devices\":[]}",
+            "next_action": "查看逐次诊断记录；核对原文与用户选择，或采用确定性解析。"
+          }
+        },
+        {
+          "code": "MODEL_OUTPUT_INVALID",
+          "message": "模型结构或原文证据不合法。",
+          "details": {
+            "attempt": 2,
+            "exception": "ValueError",
+            "reason": "MODEL_UNGROUNDED",
+            "stage": "source_grounding",
+            "rejected": [
+              {
+                "kind": "condition",
+                "id": "free_space_reference",
+                "reason": "原文不足以确认该传播假设"
+              }
+            ],
+            "model_output": "{\"selected_ids\":[\"sea_reflection_two_ray\"],\"targets\":[{\"id\":\"sea_reflection_two_ray\",\"evidence\":\"计算海面反射附加损耗\"}],\"conditions\":[{\"id\":\"free_space_reference\",\"evidence\":\"采用光滑海面单点镜面反射两径模型\"}],\"quantities\":[{\"id\":\"q1\",\"field\":\"frequency_ghz\"},{\"id\":\"q2\",\"field\":\"distance_km\"},{\"id\":\"q3\",\"field\":\"other\"},{\"id\":\"q4\",\"field\":\"other\"}],\"solve\":[],\"sites\":[],\"devices\":[]}",
+            "next_action": "查看逐次诊断记录；核对原文与用户选择，或采用确定性解析。"
+          }
+        },
+        {
+          "code": "MODEL_OUTPUT_INVALID",
+          "message": "模型结构或原文证据不合法。",
+          "details": {
+            "attempt": 3,
+            "exception": "ValueError",
+            "reason": "MODEL_UNGROUNDED",
+            "stage": "source_grounding",
+            "rejected": [
+              {
+                "kind": "condition",
+                "id": "free_space_reference",
+                "reason": "原文不足以确认该传播假设"
+              },
+              {
+                "kind": "quantity",
+                "id": "q3",
+                "reason": "30m 的单位与发馈线损耗（dB）不符"
+              },
+              {
+                "kind": "quantity",
+                "id": "q4",
+                "reason": "25m 的单位与收馈线损耗（dB）不符"
+              }
+            ],
+            "model_output": "{\"selected_ids\":[\"sea_reflection_two_ray\"],\"targets\":[{\"id\":\"sea_reflection_two_ray\",\"evidence\":\"计算海面反射附加损耗\"}],\"conditions\":[{\"id\":\"free_space_reference\",\"evidence\":\"采用光滑海面单点镜面反射两径模型\"}],\"quantities\":[{\"id\":\"q1\",\"field\":\"frequency_ghz\"},{\"id\":\"q2\",\"field\":\"distance_km\"},{\"id\":\"q3\",\"field\":\"tx_loss_db\"},{\"id\":\"q4\",\"field\":\"rx_loss_db\"}],\"solve\":[],\"sites\":[],\"devices\":[]}",
+            "next_action": "查看逐次诊断记录；核对原文与用户选择，或采用确定性解析。"
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "height1_above_sea_m",
+            "excerpt": "起点天线海面高度30m",
+            "span": [
+              42,
+              53
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "height2_above_sea_m",
+            "excerpt": "终点天线海面高度25m",
+            "span": [
+              54,
+              65
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "frequency_ghz",
+            "excerpt": "频率2GHz",
+            "span": [
+              28,
+              34
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "distance_km",
+            "excerpt": "距离30km",
+            "span": [
+              35,
+              41
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_REVIEW_LIMITATION",
+          "message": "来源状态来自库内登记，本次没有独立复核原始文献。",
+          "details": {}
+        }
+      ],
+      "status": "COMPLETED",
+      "targets": [
+        "sea_reflection_two_ray"
+      ],
+      "calculation_mode": "deterministic",
+      "review_mode": "llm",
+      "validations": [
+        {
+          "validation_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:result_integrity",
+          "validator_id": "result_integrity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "3f0431055653bac334d5a4d17f9f326c1dfa946cd9c31e9c7edb957abe4bd3ac"
+        },
+        {
+          "validation_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:snapshot_identity",
+          "validator_id": "snapshot_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "3f0431055653bac334d5a4d17f9f326c1dfa946cd9c31e9c7edb957abe4bd3ac"
+        },
+        {
+          "validation_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:input_consistency",
+          "validator_id": "input_consistency",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "3f0431055653bac334d5a4d17f9f326c1dfa946cd9c31e9c7edb957abe4bd3ac"
+        },
+        {
+          "validation_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:plan_identity",
+          "validator_id": "plan_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "3f0431055653bac334d5a4d17f9f326c1dfa946cd9c31e9c7edb957abe4bd3ac"
+        },
+        {
+          "validation_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:evidence_consistency",
+          "validator_id": "evidence_consistency",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "3f0431055653bac334d5a4d17f9f326c1dfa946cd9c31e9c7edb957abe4bd3ac"
+        },
+        {
+          "validation_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:model_identity",
+          "validator_id": "model_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "3f0431055653bac334d5a4d17f9f326c1dfa946cd9c31e9c7edb957abe4bd3ac"
+        },
+        {
+          "validation_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:numeric_domain",
+          "validator_id": "numeric_domain",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "3f0431055653bac334d5a4d17f9f326c1dfa946cd9c31e9c7edb957abe4bd3ac"
+        },
+        {
+          "validation_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:step_chain",
+          "validator_id": "step_chain",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "3f0431055653bac334d5a4d17f9f326c1dfa946cd9c31e9c7edb957abe4bd3ac"
+        },
+        {
+          "validation_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:independent_magnitude",
+          "validator_id": "independent_magnitude",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "3f0431055653bac334d5a4d17f9f326c1dfa946cd9c31e9c7edb957abe4bd3ac"
+        },
+        {
+          "validation_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:plan_checks",
+          "validator_id": "plan_checks",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "3f0431055653bac334d5a4d17f9f326c1dfa946cd9c31e9c7edb957abe4bd3ac"
+        },
+        {
+          "validation_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:requirement_and_solve",
+          "validator_id": "requirement_and_solve",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "3f0431055653bac334d5a4d17f9f326c1dfa946cd9c31e9c7edb957abe4bd3ac"
+        }
+      ],
+      "result": {
+        "result_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result",
+        "task_id": "dc9ff0eb-82b9-4dee-9291-27f6e28f155b",
+        "revision": 0,
+        "snapshot_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed",
+        "snapshot_hash": "1cbe9165068858019699b5b067129f1f0e7ba762c2856bf08b7a1d7a4bb3eea0",
+        "plan_hash": "8e5874c64200cf2a0dc5b876cdbbe6f11fdcb14ac929bf2468519ce3d4baeee3",
+        "model_id": "sea_reflection_two_ray",
+        "model_version": "1.0.0",
+        "formula": "a_e=k*6375 km；m=d²*10³/(4*a_e*(h1+h2))，c=(h1−h2)/(h1+h2)，b=2*sqrt((m+1)/(3*m))*cos(π/3+acos((3*c/2)*sqrt(3*m/(m+1)³))/3)；d1=d*(1+b)/2，d2=d*(1−b)/2；h1′=h1−d1²/(12.74*k)，h2′=h2−d2²/(12.74*k)，任一 ≤0 时拒绝；τ=(2*f/0.3)*h1′*h2′*10⁻³/d；场比 A=2*abs(sin(π*τ))，A<0.1 时拒绝；L=−20*log10(A) dB。",
+        "normalized_inputs": {
+          "frequency_ghz": 2.0,
+          "distance_km": 30.0,
+          "height1_above_sea_m": 30.0,
+          "height2_above_sea_m": 25.0,
+          "k_factor": 1.3333333333333333
+        },
+        "outputs": [
+          {
+            "name": "sea_reflection_loss_db",
+            "value": 5.130388896249947,
+            "unit": "dB"
+          }
+        ],
+        "steps": [
+          {
+            "step_id": "sea_reflection_two_ray-step",
+            "tool_id": "sea_reflection_two_ray",
+            "version": "1.0.0",
+            "inputs": {
+              "distance_km": 30.0,
+              "frequency_ghz": 2.0,
+              "height1_above_sea_m": 30.0,
+              "height2_above_sea_m": 25.0,
+              "k_factor": 1.3333333333333333
+            },
+            "output": {
+              "name": "sea_reflection_loss_db",
+              "value": 5.130388896249947,
+              "unit": "dB"
+            }
+          }
+        ],
+        "evidence_ids": [
+          "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:sea_reflection_two_ray:0"
+        ],
+        "runtime_mode": "deterministic",
+        "tool_version": "confirmed-plan-v1/p1-1.0.0",
+        "started_at": "2026-09-30T05:26:47.934329+00:00",
+        "finished_at": "2026-09-30T05:26:47.966422+00:00",
+        "result_hash": "3f0431055653bac334d5a4d17f9f326c1dfa946cd9c31e9c7edb957abe4bd3ac"
+      },
+      "final_report": {
+        "report_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:report",
+        "result_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result",
+        "result_hash": "3f0431055653bac334d5a4d17f9f326c1dfa946cd9c31e9c7edb957abe4bd3ac",
+        "snapshot_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed",
+        "snapshot_hash": "1cbe9165068858019699b5b067129f1f0e7ba762c2856bf08b7a1d7a4bb3eea0",
+        "task_id": "dc9ff0eb-82b9-4dee-9291-27f6e28f155b",
+        "revision": 0,
+        "normalized_inputs": {
+          "frequency_ghz": 2.0,
+          "distance_km": 30.0,
+          "height1_above_sea_m": 30.0,
+          "height2_above_sea_m": 25.0,
+          "k_factor": 1.3333333333333333
+        },
+        "outputs": [
+          {
+            "name": "sea_reflection_loss_db",
+            "value": 5.130388896249947,
+            "unit": "dB"
+          }
+        ],
+        "steps": [
+          {
+            "step_id": "sea_reflection_two_ray-step",
+            "tool_id": "sea_reflection_two_ray",
+            "version": "1.0.0",
+            "inputs": {
+              "distance_km": 30.0,
+              "frequency_ghz": 2.0,
+              "height1_above_sea_m": 30.0,
+              "height2_above_sea_m": 25.0,
+              "k_factor": 1.3333333333333333
+            },
+            "output": {
+              "name": "sea_reflection_loss_db",
+              "value": 5.130388896249947,
+              "unit": "dB"
+            }
+          }
+        ],
+        "model_id": "sea_reflection_two_ray",
+        "model_version": "1.0.0",
+        "formula": "a_e=k*6375 km；m=d²*10³/(4*a_e*(h1+h2))，c=(h1−h2)/(h1+h2)，b=2*sqrt((m+1)/(3*m))*cos(π/3+acos((3*c/2)*sqrt(3*m/(m+1)³))/3)；d1=d*(1+b)/2，d2=d*(1−b)/2；h1′=h1−d1²/(12.74*k)，h2′=h2−d2²/(12.74*k)，任一 ≤0 时拒绝；τ=(2*f/0.3)*h1′*h2′*10⁻³/d；场比 A=2*abs(sin(π*τ))，A<0.1 时拒绝；L=−20*log10(A) dB。",
+        "parameters": [
+          {
+            "canonical_name": "distance_km",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "km",
+            "original_value": 30.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:distance_km:origin:0",
+                "source_ref": "c72fb324-3089-412b-a6c3-252ae8c550e8:raw_text",
+                "span": [
+                  35,
+                  41
+                ],
+                "unit": "km",
+                "value": 30.0
+              }
+            ],
+            "parameter_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:distance_km",
+            "status": "user_provided",
+            "unit": "km",
+            "value": 30.0
+          },
+          {
+            "canonical_name": "frequency_ghz",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "GHz",
+            "original_value": 2.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:frequency_ghz:origin:0",
+                "source_ref": "c72fb324-3089-412b-a6c3-252ae8c550e8:raw_text",
+                "span": [
+                  28,
+                  34
+                ],
+                "unit": "GHz",
+                "value": 2.0
+              }
+            ],
+            "parameter_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:frequency_ghz",
+            "status": "user_provided",
+            "unit": "GHz",
+            "value": 2.0
+          },
+          {
+            "canonical_name": "height1_above_sea_m",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "m",
+            "original_value": 30.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:height1_above_sea_m:origin:0",
+                "source_ref": "c72fb324-3089-412b-a6c3-252ae8c550e8:raw_text",
+                "span": [
+                  42,
+                  53
+                ],
+                "unit": "m",
+                "value": 30.0
+              }
+            ],
+            "parameter_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:height1_above_sea_m",
+            "status": "user_provided",
+            "unit": "m",
+            "value": 30.0
+          },
+          {
+            "canonical_name": "height2_above_sea_m",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "m",
+            "original_value": 25.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:height2_above_sea_m:origin:0",
+                "source_ref": "c72fb324-3089-412b-a6c3-252ae8c550e8:raw_text",
+                "span": [
+                  54,
+                  65
+                ],
+                "unit": "m",
+                "value": 25.0
+              }
+            ],
+            "parameter_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:height2_above_sea_m",
+            "status": "user_provided",
+            "unit": "m",
+            "value": 25.0
+          },
+          {
+            "canonical_name": "k_factor",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "1",
+            "original_value": 1.3333333333333333,
+            "origins": [
+              {
+                "kind": "default",
+                "origin_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:k_factor:origin:0",
+                "source_ref": "card:sea_reflection_two_ray#k_factor",
+                "span": null,
+                "unit": "1",
+                "value": 1.3333333333333333
+              }
+            ],
+            "parameter_id": "c72fb324-3089-412b-a6c3-252ae8c550e8:k_factor",
+            "status": "user_provided",
+            "unit": "1",
+            "value": 1.3333333333333333
+          }
+        ],
+        "conditions": [
+          "smooth_sea"
+        ],
+        "validation_ids": [
+          "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:result_integrity",
+          "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:snapshot_identity",
+          "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:input_consistency",
+          "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:plan_identity",
+          "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:evidence_consistency",
+          "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:model_identity",
+          "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:numeric_domain",
+          "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:step_chain",
+          "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:independent_magnitude",
+          "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:plan_checks",
+          "c72fb324-3089-412b-a6c3-252ae8c550e8:confirmed:result:requirement_and_solve"
+        ],
+        "conclusion": "按已确认输入，海面反射附加损耗（相对自由空间） 5.13 dB。",
+        "limitations": [
+          "有效地球半径系数按假设取 1.33333 1：标准大气典型值；须显式输入或确认，不自动应用。。",
+          "光滑海面、单一镜面反射点，只在视距内使用；反射点处等效高度必须大于 0。",
+          "反射系数 −1 是水平极化、小掠射角下的近似，实际随海况与极化变化；P.530 §6.1.2.4 指出掠射角大于约 0.7° 时，垂直极化的反射比水平极化弱 2–17 dB。",
+          "P.530 建议在 k 从 ke(99.9%) 到无穷大的范围内检查；此卡一次计算一个 k。",
+          "合成场比小于 0.1 时拒绝计算，避免反射系数 −1 时接近干涉零点的无界深衰落。"
+        ],
+        "evidence_refs": [
+          {
+            "card_version": "1.0.0",
+            "catalog_id": "sea_reflection_two_ray",
+            "content_hash": "abd9b585c446e5bc5bba26b6586df0e58668b7d7aa1d3b6b02656772788cb7a6",
+            "evidence_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:sea_reflection_two_ray:0",
+            "excerpt": "计算海面镜面反射相对自由空间的附加损耗，负值为增强，最小约 −6.02 dB；计入等效地球曲率。",
+            "kind": "formula_card",
+            "knowledge_snapshot_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c",
+            "locator": "§6.1.2.3 steps 3–4, equations (121)–(126), PDF pages 44–45 / printed pages 42–43; §6.1.2.4",
+            "parameter_names": [
+              "frequency_ghz",
+              "distance_km",
+              "height1_above_sea_m",
+              "height2_above_sea_m",
+              "k_factor"
+            ],
+            "relevance_rank": 1,
+            "source_id": null,
+            "source_title": "ITU-R P.530-19",
+            "source_url": "https://www.itu.int/rec/R-REC-P.530-19/en",
+            "status": "verified"
+          }
+        ],
+        "component_modes": {
+          "interpretation": "deterministic",
+          "retrieval": "lexical_fallback",
+          "calculation": "deterministic",
+          "review": "llm",
+          "orchestrator": "bounded_policy"
+        },
+        "runtime_health": "degraded",
+        "generated_at": "2026-09-30T05:26:54.946496+00:00",
+        "review": {
+          "assessment_hash": "a382b0aef6ff33dcdb3e686e7d0760e5829958c02397ece704d6cad9abbd5028",
+          "decision": "pass",
+          "label": "通过",
+          "mode": "llm",
+          "summary": "声明的自由空间基准结果通过校验；不据此推断真实链路可用。",
+          "opinions": [],
+          "withheld": []
+        },
+        "answer": {
+          "text": "海面反射附加损耗为 5.13 dB。该值为相对自由空间的损耗，正值表示衰减。计算基于光滑海面单点两径模型，未计地形遮挡或海面粗糙度影响。",
+          "mode": "llm",
+          "withheld": false
+        },
+        "explanation": [
+          {
+            "id": "step:sea_reflection_two_ray-step",
+            "note": "依据 ITU-R P.530-19 公式，代入频率 2GHz、距离 30km 及天线高度计算附加损耗。"
+          }
+        ],
+        "document_evidence": [
+          {
+            "id": "doc:sim-sites:s2-1",
+            "title": "站址表",
+            "excerpt": "# 站址表（模拟）\n\n## 表 1：WGS84 站点资料\n\n地面高程在演示公式中按 WGS84 椭球高处理；天线高度为离地高度，单位 m。D 站天线高度未知，保留空值并追问。\n\n| id | 名称 | 别名 | 纬度 deg | 经度 deg | 地面高程 m | 天线离地 m | 环境 |\n| --- | --- | --- | ---: | ---: | ---: | ---: | --- |\n| site:sim-a | A站 | A岸站 | 30.0500 | 122.1000 | 12 | 30 | 海岸 |\n| site:sim-b | B站 | B岛站 | 30.0229 | 122.4518 | 25 | 25 | 海岛 |\n| site:sim-c | C站 | — | 30.4300 | 122.8678 | 8 | 20 | 海岛 |\n| site:sim-d | D站 | — | 29.8810 | 122.0291 | 15 | 未知 | 海岸 |\n| site:sim-f | F站 | — | 29.9565 | 122.1623 | 6 | 15 | 内陆 |\n| site:sim-east | 东港站 | 港口站 | 30.2290 | 122.2740 | 5 | 20 | 港口 |\n| site:sim-west | 西港站 | 港口站 | 30.1488 | 121.9019 | 5 | 20 | 港口 |\n\n“港口站”同时指向东港站和西港站，使用前必须让用户选定。仅有两端坐标不能证明地形无遮挡。",
+            "source": {
+              "doc_id": "sim-sites",
+              "locator": "站址表（模拟） / 表 1：WGS84 站点资料, chunk 1",
+              "sha256": "2b776c0d45d1773baf28c34c2f44ac02d94b799fd56ad2cc5db922b0245cd0e8",
+              "simulated": true,
+              "title": "站址表",
+              "uri": "knowledge/documents/simulated/站址表.md",
+              "version": "2026-09-25"
+            }
+          },
+          {
+            "id": "doc:sim-xx300:s3-1",
+            "title": "XX-300 手册",
+            "excerpt": "## §2 等效全向辐射功率\n\n等效全向辐射功率（EIRP）是发射机输出功率加发射天线增益、减去发射馈线损耗，以各向同性天线为参考，单位 dBm：\n\nEIRP = Pt + Gt − Lt\n\n其中 Pt 为发射机输出功率（dBm），Gt 为发射天线沿对端方向的增益（dBi），Lt 为发射馈线损耗（dB）。\n\n适用条件：三项必须属于同一发射端、同一频率。EIRP 不含路径损耗，不能单独据此判断链路是否可用。\n\n算例：Pt = 40 dBm，Gt = 6 dBi，Lt = 2 dB 时，EIRP = 40 + 6 − 2 = 44 dBm。",
+            "source": {
+              "doc_id": "sim-xx300",
+              "locator": "XX-300 手册（模拟） / §2 等效全向辐射功率, chunk 1",
+              "sha256": "97629e5321637053df24d702a5dc9542c12fd053bc92e52934e1727b7115ad77",
+              "simulated": true,
+              "title": "XX-300 手册",
+              "uri": "knowledge/documents/simulated/XX-300 手册.md",
+              "version": "2026-09-27"
+            }
+          },
+          {
+            "id": "doc:sim-xx100:s2-1",
+            "title": "XX-100 手册",
+            "excerpt": "# XX-100 手册（模拟）\n\n## §1 规格表\n\n| 型号 | 额定发射功率 dBm | 天线增益 dBi | 接收灵敏度 dBm | 工作频段 GHz |\n| --- | ---: | ---: | ---: | --- |\n| XX-100 | 37 | 5 | -92 | 1.4–2.7 |\n\n额定发射功率为设备输出端功率，未计馈线损耗。两端各 2 dB 馈线损耗是演示时的工程假设，并非本设备的保证值。\n\n接收灵敏度是演示计算的门限输入；实际通信质量仍需匹配调制、码率及误码要求。频段数值只表示模拟设备支持范围。\n\n天线增益按沿对端方向的数值使用。站点视距、地形遮挡及菲涅耳区余隙需要另行检查。",
+            "source": {
+              "doc_id": "sim-xx100",
+              "locator": "XX-100 手册（模拟） / §1 规格表, chunk 1",
+              "sha256": "74cd56505d040050e59ecaf9da5cdace04514984568780d0f90cdd1cef8c97c5",
+              "simulated": true,
+              "title": "XX-100 手册",
+              "uri": "knowledge/documents/simulated/XX-100 手册.md",
+              "version": "2026-09-25"
+            }
+          }
+        ]
+      },
+      "failure": null,
+      "passed": true,
+      "latency_s": 32.781,
+      "all_roles_llm": false
+    },
+    {
+      "id": "en-fspl",
+      "lang": "en",
+      "text": "Use the free-space reference; frequency 2GHz; distance 1km; calculate path loss.",
+      "expected_target": "fspl_ghz",
+      "create_status": "AWAITING_CONFIRMATION",
+      "requirements_mode": "llm",
+      "planning_mode": "llm",
+      "requirements_diagnostics": [
+        {
+          "code": "MODEL_CALL",
+          "message": "意图建议经原文核验。",
+          "details": {
+            "attempt": 1,
+            "model": "commplan-qwen35-9b",
+            "usage": {
+              "completion_tokens": 83,
+              "prompt_tokens": 1326,
+              "total_tokens": 1409,
+              "prompt_tokens_details": {
+                "cached_tokens": 1027
+              }
+            },
+            "accepted": [
+              {
+                "kind": "condition",
+                "id": "free_space_reference",
+                "evidence": "Use the free-space reference"
+              },
+              {
+                "kind": "quantity",
+                "span": [
+                  40,
+                  44
+                ],
+                "field": "frequency_ghz",
+                "value": 2.0,
+                "unit": "GHz"
+              },
+              {
+                "kind": "quantity",
+                "span": [
+                  55,
+                  58
+                ],
+                "field": "distance_km",
+                "value": 1.0,
+                "unit": "km"
+              }
+            ],
+            "latency_ms": 3443
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "frequency_ghz",
+            "excerpt": "frequency 2GHz",
+            "span": [
+              30,
+              44
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "distance_km",
+            "excerpt": "distance 1km",
+            "span": [
+              46,
+              58
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_REVIEW_LIMITATION",
+          "message": "来源状态来自库内登记，本次没有独立复核原始文献。",
+          "details": {}
+        }
+      ],
+      "status": "COMPLETED",
+      "targets": [
+        "fspl_ghz"
+      ],
+      "calculation_mode": "deterministic",
+      "review_mode": "llm",
+      "validations": [
+        {
+          "validation_id": "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed:result:result_integrity",
+          "validator_id": "result_integrity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "866ab5141756da609eb05b47c17aa15565d6dc67ac6a476423d670991b4c2a61"
+        },
+        {
+          "validation_id": "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed:result:snapshot_identity",
+          "validator_id": "snapshot_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "866ab5141756da609eb05b47c17aa15565d6dc67ac6a476423d670991b4c2a61"
+        },
+        {
+          "validation_id": "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed:result:input_consistency",
+          "validator_id": "input_consistency",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "866ab5141756da609eb05b47c17aa15565d6dc67ac6a476423d670991b4c2a61"
+        },
+        {
+          "validation_id": "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed:result:plan_identity",
+          "validator_id": "plan_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "866ab5141756da609eb05b47c17aa15565d6dc67ac6a476423d670991b4c2a61"
+        },
+        {
+          "validation_id": "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed:result:evidence_consistency",
+          "validator_id": "evidence_consistency",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "866ab5141756da609eb05b47c17aa15565d6dc67ac6a476423d670991b4c2a61"
+        },
+        {
+          "validation_id": "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed:result:model_identity",
+          "validator_id": "model_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "866ab5141756da609eb05b47c17aa15565d6dc67ac6a476423d670991b4c2a61"
+        },
+        {
+          "validation_id": "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed:result:numeric_domain",
+          "validator_id": "numeric_domain",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "866ab5141756da609eb05b47c17aa15565d6dc67ac6a476423d670991b4c2a61"
+        },
+        {
+          "validation_id": "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed:result:fspl_magnitude",
+          "validator_id": "fspl_magnitude",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "866ab5141756da609eb05b47c17aa15565d6dc67ac6a476423d670991b4c2a61"
+        }
+      ],
+      "result": {
+        "result_id": "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed:result",
+        "task_id": "691808f6-32d7-4b9c-a317-d7edbdb62ffa",
+        "revision": 0,
+        "snapshot_id": "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed",
+        "snapshot_hash": "b3e45c0dc527183a50df25269b708fc104b1c54d8c40e6599cc69ea7dcdce4d0",
+        "plan_hash": "4fdfbcb34a0d0aa0e593c18bc9d602a7b2cac418cf49c097a85d890f2831dba0",
+        "model_id": "fspl_ghz",
+        "model_version": "1.0.0",
+        "formula": "92.4 + 20*log10(frequency_ghz) + 20*log10(distance_km)",
+        "normalized_inputs": {
+          "frequency_ghz": 2.0,
+          "distance_km": 1.0
+        },
+        "outputs": [
+          {
+            "name": "path_loss_db",
+            "value": 98.42059991327963,
+            "unit": "dB"
+          }
+        ],
+        "evidence_ids": [
+          "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:fspl_ghz:0"
+        ],
+        "runtime_mode": "deterministic",
+        "tool_version": "confirmed-fspl-v1/p1-1.0.0",
+        "started_at": "2026-09-30T05:27:09.317164+00:00",
+        "finished_at": "2026-09-30T05:27:09.345214+00:00",
+        "result_hash": "866ab5141756da609eb05b47c17aa15565d6dc67ac6a476423d670991b4c2a61"
+      },
+      "final_report": {
+        "report_id": "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed:result:report",
+        "result_id": "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed:result",
+        "result_hash": "866ab5141756da609eb05b47c17aa15565d6dc67ac6a476423d670991b4c2a61",
+        "snapshot_id": "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed",
+        "snapshot_hash": "b3e45c0dc527183a50df25269b708fc104b1c54d8c40e6599cc69ea7dcdce4d0",
+        "task_id": "691808f6-32d7-4b9c-a317-d7edbdb62ffa",
+        "revision": 0,
+        "normalized_inputs": {
+          "frequency_ghz": 2.0,
+          "distance_km": 1.0
+        },
+        "outputs": [
+          {
+            "name": "path_loss_db",
+            "value": 98.42059991327963,
+            "unit": "dB"
+          }
+        ],
+        "model_id": "fspl_ghz",
+        "model_version": "1.0.0",
+        "formula": "92.4 + 20*log10(frequency_ghz) + 20*log10(distance_km)",
+        "parameters": [
+          {
+            "canonical_name": "distance_km",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "km",
+            "original_value": 1.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "80d06207-edf1-4512-a223-97ae97ec78fe:distance_km:origin:0",
+                "source_ref": "80d06207-edf1-4512-a223-97ae97ec78fe:raw_text",
+                "span": [
+                  46,
+                  58
+                ],
+                "unit": "km",
+                "value": 1.0
+              }
+            ],
+            "parameter_id": "80d06207-edf1-4512-a223-97ae97ec78fe:distance_km",
+            "status": "user_provided",
+            "unit": "km",
+            "value": 1.0
+          },
+          {
+            "canonical_name": "frequency_ghz",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "GHz",
+            "original_value": 2.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "80d06207-edf1-4512-a223-97ae97ec78fe:frequency_ghz:origin:0",
+                "source_ref": "80d06207-edf1-4512-a223-97ae97ec78fe:raw_text",
+                "span": [
+                  30,
+                  44
+                ],
+                "unit": "GHz",
+                "value": 2.0
+              }
+            ],
+            "parameter_id": "80d06207-edf1-4512-a223-97ae97ec78fe:frequency_ghz",
+            "status": "user_provided",
+            "unit": "GHz",
+            "value": 2.0
+          }
+        ],
+        "conditions": [
+          "free_space",
+          "free_space_reference"
+        ],
+        "validation_ids": [
+          "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed:result:result_integrity",
+          "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed:result:snapshot_identity",
+          "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed:result:input_consistency",
+          "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed:result:plan_identity",
+          "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed:result:evidence_consistency",
+          "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed:result:model_identity",
+          "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed:result:numeric_domain",
+          "80d06207-edf1-4512-a223-97ae97ec78fe:confirmed:result:fspl_magnitude"
+        ],
+        "conclusion": "按已确认自由空间条件，98.42 dB。",
+        "limitations": [
+          "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+          "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。",
+          "当前只检查了明显异常的距离/波长组合，未完整验证天线远场条件；结果仅用于所声明的自由空间基准。",
+          "结果仅为自由空间基准，未估计真实海面反射、散射或遮挡，也不代表链路通信可行。",
+          "区间按输入上下界的组合计算，不包含概率或置信度；离散候选分别报告。"
+        ],
+        "evidence_refs": [
+          {
+            "card_version": "1.0.0",
+            "catalog_id": "fspl_ghz",
+            "content_hash": "2ed0e6930cf489981f389e87e7adcdb1af4b49eed9b495527ed2c5598898ba6d",
+            "evidence_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:fspl_ghz:0",
+            "excerpt": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。",
+            "kind": "formula_card",
+            "knowledge_snapshot_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c",
+            "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+            "parameter_names": [
+              "frequency_ghz",
+              "distance_km"
+            ],
+            "relevance_rank": 1,
+            "source_id": null,
+            "source_title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+            "source_url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+            "status": "verified"
+          }
+        ],
+        "component_modes": {
+          "interpretation": "llm",
+          "retrieval": "lexical_fallback",
+          "calculation": "deterministic",
+          "review": "llm",
+          "orchestrator": "bounded_policy"
+        },
+        "runtime_health": "ready",
+        "generated_at": "2026-09-30T05:27:16.068647+00:00",
+        "review": {
+          "assessment_hash": "7a5e88775d053c62e79eb3f16bc6792fc5b7c8330e6259da0113b57f8bd710ec",
+          "decision": "pass",
+          "label": "通过",
+          "mode": "llm",
+          "summary": "声明的自由空间基准结果通过校验；不据此推断真实链路可用。",
+          "opinions": [],
+          "withheld": []
+        },
+        "answer": {
+          "text": "The free-space path loss is 98.42 dB at 2 GHz over 1 km. This result assumes clear line-of-sight and ignores terrain, rain, or antenna losses.",
+          "mode": "llm",
+          "withheld": false
+        },
+        "explanation": [
+          {
+            "id": "step:fspl-step",
+            "note": "Calculated free-space attenuation using ITU-R P.525-5 formula with 2 GHz and 1 km inputs."
+          }
+        ],
+        "document_evidence": [
+          {
+            "id": "doc:sim-sites:s0-1",
+            "title": "站址表",
+            "excerpt": "模拟数据，仅供演示。以下名称、坐标和高度均为虚构，不是实测站址。",
+            "source": {
+              "doc_id": "sim-sites",
+              "locator": "正文, chunk 1",
+              "sha256": "2b776c0d45d1773baf28c34c2f44ac02d94b799fd56ad2cc5db922b0245cd0e8",
+              "simulated": true,
+              "title": "站址表",
+              "uri": "knowledge/documents/simulated/站址表.md",
+              "version": "2026-09-25"
+            }
+          },
+          {
+            "id": "doc:sim-sites:s2-1",
+            "title": "站址表",
+            "excerpt": "# 站址表（模拟）\n\n## 表 1：WGS84 站点资料\n\n地面高程在演示公式中按 WGS84 椭球高处理；天线高度为离地高度，单位 m。D 站天线高度未知，保留空值并追问。\n\n| id | 名称 | 别名 | 纬度 deg | 经度 deg | 地面高程 m | 天线离地 m | 环境 |\n| --- | --- | --- | ---: | ---: | ---: | ---: | --- |\n| site:sim-a | A站 | A岸站 | 30.0500 | 122.1000 | 12 | 30 | 海岸 |\n| site:sim-b | B站 | B岛站 | 30.0229 | 122.4518 | 25 | 25 | 海岛 |\n| site:sim-c | C站 | — | 30.4300 | 122.8678 | 8 | 20 | 海岛 |\n| site:sim-d | D站 | — | 29.8810 | 122.0291 | 15 | 未知 | 海岸 |\n| site:sim-f | F站 | — | 29.9565 | 122.1623 | 6 | 15 | 内陆 |\n| site:sim-east | 东港站 | 港口站 | 30.2290 | 122.2740 | 5 | 20 | 港口 |\n| site:sim-west | 西港站 | 港口站 | 30.1488 | 121.9019 | 5 | 20 | 港口 |\n\n“港口站”同时指向东港站和西港站，使用前必须让用户选定。仅有两端坐标不能证明地形无遮挡。",
+            "source": {
+              "doc_id": "sim-sites",
+              "locator": "站址表（模拟） / 表 1：WGS84 站点资料, chunk 1",
+              "sha256": "2b776c0d45d1773baf28c34c2f44ac02d94b799fd56ad2cc5db922b0245cd0e8",
+              "simulated": true,
+              "title": "站址表",
+              "uri": "knowledge/documents/simulated/站址表.md",
+              "version": "2026-09-25"
+            }
+          },
+          {
+            "id": "doc:sim-xx100:s0-1",
+            "title": "XX-100 手册",
+            "excerpt": "模拟数据，仅供演示。本手册及 XX-100 型号均为虚构，不构成真实设备规格。",
+            "source": {
+              "doc_id": "sim-xx100",
+              "locator": "正文, chunk 1",
+              "sha256": "74cd56505d040050e59ecaf9da5cdace04514984568780d0f90cdd1cef8c97c5",
+              "simulated": true,
+              "title": "XX-100 手册",
+              "uri": "knowledge/documents/simulated/XX-100 手册.md",
+              "version": "2026-09-25"
+            }
+          }
+        ]
+      },
+      "failure": null,
+      "passed": true,
+      "latency_s": 21.11,
+      "all_roles_llm": false
+    },
+    {
+      "id": "en-budget",
+      "lang": "en",
+      "text": "Use the free-space reference; frequency 2GHz; distance 10km; transmit power 30dBm; tx gain 5dBi; rx gain 5dBi; receiver threshold -100dBm; calculate link margin.",
+      "expected_target": "link_margin",
+      "create_status": "AWAITING_CONFIRMATION",
+      "requirements_mode": "llm",
+      "planning_mode": "llm",
+      "requirements_diagnostics": [
+        {
+          "code": "MODEL_CALL",
+          "message": "意图建议经原文核验。",
+          "details": {
+            "attempt": 1,
+            "model": "commplan-qwen35-9b",
+            "usage": {
+              "completion_tokens": 125,
+              "prompt_tokens": 1320,
+              "total_tokens": 1445,
+              "prompt_tokens_details": {
+                "cached_tokens": 1027
+              }
+            },
+            "accepted": [
+              {
+                "kind": "condition",
+                "id": "free_space_reference",
+                "evidence": "Use the free-space reference"
+              },
+              {
+                "kind": "quantity",
+                "span": [
+                  40,
+                  44
+                ],
+                "field": "frequency_ghz",
+                "value": 2.0,
+                "unit": "GHz"
+              },
+              {
+                "kind": "quantity",
+                "span": [
+                  55,
+                  59
+                ],
+                "field": "distance_km",
+                "value": 10.0,
+                "unit": "km"
+              },
+              {
+                "kind": "quantity",
+                "span": [
+                  76,
+                  81
+                ],
+                "field": "tx_power_dbm",
+                "value": 30.0,
+                "unit": "dBm"
+              },
+              {
+                "kind": "quantity",
+                "span": [
+                  91,
+                  95
+                ],
+                "field": "tx_gain_dbi",
+                "value": 5.0,
+                "unit": "dBi"
+              },
+              {
+                "kind": "quantity",
+                "span": [
+                  105,
+                  109
+                ],
+                "field": "rx_gain_dbi",
+                "value": 5.0,
+                "unit": "dBi"
+              },
+              {
+                "kind": "quantity",
+                "span": [
+                  130,
+                  137
+                ],
+                "field": "rx_threshold_dbm",
+                "value": -100.0,
+                "unit": "dBm"
+              }
+            ],
+            "latency_ms": 4600
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "frequency_ghz",
+            "excerpt": "frequency 2GHz",
+            "span": [
+              30,
+              44
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "distance_km",
+            "excerpt": "distance 10km",
+            "span": [
+              46,
+              59
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "tx_power_dbm",
+            "excerpt": "transmit power 30dBm",
+            "span": [
+              61,
+              81
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "tx_gain_dbi",
+            "excerpt": "tx gain 5dBi",
+            "span": [
+              83,
+              95
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "rx_gain_dbi",
+            "excerpt": "rx gain 5dBi",
+            "span": [
+              97,
+              109
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "rx_threshold_dbm",
+            "excerpt": "receiver threshold -100dBm",
+            "span": [
+              111,
+              137
+            ]
+          }
+        },
+        {
+          "code": "PLAN_DEPENDENCY",
+          "message": "按计算依赖加入上游登记公式：自由空间基本传输损耗。",
+          "details": {
+            "cards": [
+              "fspl_ghz"
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_REVIEW_LIMITATION",
+          "message": "来源状态来自库内登记，本次没有独立复核原始文献。",
+          "details": {}
+        }
+      ],
+      "status": "COMPLETED",
+      "targets": [
+        "link_margin"
+      ],
+      "calculation_mode": "deterministic",
+      "review_mode": "llm",
+      "validations": [
+        {
+          "validation_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:result_integrity",
+          "validator_id": "result_integrity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "b23419845e5ca9114e29be7d782c939bfb8aa1f2593fe324b077fc223b76e86e"
+        },
+        {
+          "validation_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:snapshot_identity",
+          "validator_id": "snapshot_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "b23419845e5ca9114e29be7d782c939bfb8aa1f2593fe324b077fc223b76e86e"
+        },
+        {
+          "validation_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:input_consistency",
+          "validator_id": "input_consistency",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "b23419845e5ca9114e29be7d782c939bfb8aa1f2593fe324b077fc223b76e86e"
+        },
+        {
+          "validation_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:plan_identity",
+          "validator_id": "plan_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "b23419845e5ca9114e29be7d782c939bfb8aa1f2593fe324b077fc223b76e86e"
+        },
+        {
+          "validation_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:evidence_consistency",
+          "validator_id": "evidence_consistency",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "b23419845e5ca9114e29be7d782c939bfb8aa1f2593fe324b077fc223b76e86e"
+        },
+        {
+          "validation_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:model_identity",
+          "validator_id": "model_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "b23419845e5ca9114e29be7d782c939bfb8aa1f2593fe324b077fc223b76e86e"
+        },
+        {
+          "validation_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:numeric_domain",
+          "validator_id": "numeric_domain",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "b23419845e5ca9114e29be7d782c939bfb8aa1f2593fe324b077fc223b76e86e"
+        },
+        {
+          "validation_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:step_chain",
+          "validator_id": "step_chain",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "b23419845e5ca9114e29be7d782c939bfb8aa1f2593fe324b077fc223b76e86e"
+        },
+        {
+          "validation_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:independent_magnitude",
+          "validator_id": "independent_magnitude",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "b23419845e5ca9114e29be7d782c939bfb8aa1f2593fe324b077fc223b76e86e"
+        },
+        {
+          "validation_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:plan_checks",
+          "validator_id": "plan_checks",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "b23419845e5ca9114e29be7d782c939bfb8aa1f2593fe324b077fc223b76e86e"
+        },
+        {
+          "validation_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:requirement_and_solve",
+          "validator_id": "requirement_and_solve",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "b23419845e5ca9114e29be7d782c939bfb8aa1f2593fe324b077fc223b76e86e"
+        }
+      ],
+      "result": {
+        "result_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result",
+        "task_id": "4423ab3f-7371-4cef-8817-c5ad6b389b43",
+        "revision": 0,
+        "snapshot_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed",
+        "snapshot_hash": "ccc2a72c9b343f73c7f635877a16ad2152eba657f879656a73d909d761a5ebea",
+        "plan_hash": "924299fef1a5a52d9ae8f7db27548cac273ad8b46bcbe918927fd1574a535866",
+        "model_id": "link_margin",
+        "model_version": "1.0.0",
+        "formula": "rx_power_dbm - rx_threshold_dbm - reserve_db",
+        "normalized_inputs": {
+          "frequency_ghz": 2.0,
+          "distance_km": 10.0,
+          "tx_power_dbm": 30.0,
+          "tx_gain_dbi": 5.0,
+          "rx_gain_dbi": 5.0,
+          "tx_loss_db": 2,
+          "rx_loss_db": 2,
+          "extra_loss_db": 0,
+          "rx_threshold_dbm": -100.0,
+          "reserve_db": 0
+        },
+        "outputs": [
+          {
+            "name": "link_margin_db",
+            "value": 17.57940008672037,
+            "unit": "dB"
+          }
+        ],
+        "steps": [
+          {
+            "step_id": "fspl-step",
+            "tool_id": "fspl_ghz",
+            "version": "1.0.0",
+            "inputs": {
+              "distance_km": 10.0,
+              "frequency_ghz": 2.0
+            },
+            "output": {
+              "name": "path_loss_db",
+              "value": 118.42059991327963,
+              "unit": "dB"
+            }
+          },
+          {
+            "step_id": "received_power-step",
+            "tool_id": "received_power",
+            "version": "1.0.0",
+            "inputs": {
+              "extra_loss_db": 0,
+              "path_loss_db": 118.42059991327963,
+              "rx_gain_dbi": 5.0,
+              "rx_loss_db": 2,
+              "tx_gain_dbi": 5.0,
+              "tx_loss_db": 2,
+              "tx_power_dbm": 30.0
+            },
+            "output": {
+              "name": "rx_power_dbm",
+              "value": -82.42059991327963,
+              "unit": "dBm"
+            }
+          },
+          {
+            "step_id": "link_margin-step",
+            "tool_id": "link_margin",
+            "version": "1.0.0",
+            "inputs": {
+              "reserve_db": 0,
+              "rx_power_dbm": -82.42059991327963,
+              "rx_threshold_dbm": -100.0
+            },
+            "output": {
+              "name": "link_margin_db",
+              "value": 17.57940008672037,
+              "unit": "dB"
+            }
+          }
+        ],
+        "evidence_ids": [
+          "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:fspl_ghz:0",
+          "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:received_power:0",
+          "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:link_margin:0"
+        ],
+        "runtime_mode": "deterministic",
+        "tool_version": "confirmed-plan-v1/p1-1.0.0",
+        "started_at": "2026-09-30T05:27:34.528814+00:00",
+        "finished_at": "2026-09-30T05:27:34.569336+00:00",
+        "result_hash": "b23419845e5ca9114e29be7d782c939bfb8aa1f2593fe324b077fc223b76e86e"
+      },
+      "final_report": {
+        "report_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:report",
+        "result_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result",
+        "result_hash": "b23419845e5ca9114e29be7d782c939bfb8aa1f2593fe324b077fc223b76e86e",
+        "snapshot_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed",
+        "snapshot_hash": "ccc2a72c9b343f73c7f635877a16ad2152eba657f879656a73d909d761a5ebea",
+        "task_id": "4423ab3f-7371-4cef-8817-c5ad6b389b43",
+        "revision": 0,
+        "normalized_inputs": {
+          "frequency_ghz": 2.0,
+          "distance_km": 10.0,
+          "tx_power_dbm": 30.0,
+          "tx_gain_dbi": 5.0,
+          "rx_gain_dbi": 5.0,
+          "tx_loss_db": 2,
+          "rx_loss_db": 2,
+          "extra_loss_db": 0,
+          "rx_threshold_dbm": -100.0,
+          "reserve_db": 0
+        },
+        "outputs": [
+          {
+            "name": "link_margin_db",
+            "value": 17.57940008672037,
+            "unit": "dB"
+          }
+        ],
+        "steps": [
+          {
+            "step_id": "fspl-step",
+            "tool_id": "fspl_ghz",
+            "version": "1.0.0",
+            "inputs": {
+              "distance_km": 10.0,
+              "frequency_ghz": 2.0
+            },
+            "output": {
+              "name": "path_loss_db",
+              "value": 118.42059991327963,
+              "unit": "dB"
+            }
+          },
+          {
+            "step_id": "received_power-step",
+            "tool_id": "received_power",
+            "version": "1.0.0",
+            "inputs": {
+              "extra_loss_db": 0,
+              "path_loss_db": 118.42059991327963,
+              "rx_gain_dbi": 5.0,
+              "rx_loss_db": 2,
+              "tx_gain_dbi": 5.0,
+              "tx_loss_db": 2,
+              "tx_power_dbm": 30.0
+            },
+            "output": {
+              "name": "rx_power_dbm",
+              "value": -82.42059991327963,
+              "unit": "dBm"
+            }
+          },
+          {
+            "step_id": "link_margin-step",
+            "tool_id": "link_margin",
+            "version": "1.0.0",
+            "inputs": {
+              "reserve_db": 0,
+              "rx_power_dbm": -82.42059991327963,
+              "rx_threshold_dbm": -100.0
+            },
+            "output": {
+              "name": "link_margin_db",
+              "value": 17.57940008672037,
+              "unit": "dB"
+            }
+          }
+        ],
+        "model_id": "link_margin",
+        "model_version": "1.0.0",
+        "formula": "rx_power_dbm - rx_threshold_dbm - reserve_db",
+        "parameters": [
+          {
+            "canonical_name": "distance_km",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "km",
+            "original_value": 10.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:distance_km:origin:0",
+                "source_ref": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:raw_text",
+                "span": [
+                  46,
+                  59
+                ],
+                "unit": "km",
+                "value": 10.0
+              }
+            ],
+            "parameter_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:distance_km",
+            "status": "user_provided",
+            "unit": "km",
+            "value": 10.0
+          },
+          {
+            "canonical_name": "extra_loss_db",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "dB",
+            "original_value": 0,
+            "origins": [
+              {
+                "kind": "default",
+                "origin_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:extra_loss_db:origin:0",
+                "source_ref": "card:received_power#extra_loss_db",
+                "span": null,
+                "unit": "dB",
+                "value": 0
+              }
+            ],
+            "parameter_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:extra_loss_db",
+            "status": "user_provided",
+            "unit": "dB",
+            "value": 0
+          },
+          {
+            "canonical_name": "frequency_ghz",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "GHz",
+            "original_value": 2.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:frequency_ghz:origin:0",
+                "source_ref": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:raw_text",
+                "span": [
+                  30,
+                  44
+                ],
+                "unit": "GHz",
+                "value": 2.0
+              }
+            ],
+            "parameter_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:frequency_ghz",
+            "status": "user_provided",
+            "unit": "GHz",
+            "value": 2.0
+          },
+          {
+            "canonical_name": "reserve_db",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "dB",
+            "original_value": 0,
+            "origins": [
+              {
+                "kind": "default",
+                "origin_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:reserve_db:origin:0",
+                "source_ref": "card:link_margin#reserve_db",
+                "span": null,
+                "unit": "dB",
+                "value": 0
+              }
+            ],
+            "parameter_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:reserve_db",
+            "status": "user_provided",
+            "unit": "dB",
+            "value": 0
+          },
+          {
+            "canonical_name": "rx_gain_dbi",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "dBi",
+            "original_value": 5.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:rx_gain_dbi:origin:0",
+                "source_ref": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:raw_text",
+                "span": [
+                  97,
+                  109
+                ],
+                "unit": "dBi",
+                "value": 5.0
+              }
+            ],
+            "parameter_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:rx_gain_dbi",
+            "status": "user_provided",
+            "unit": "dBi",
+            "value": 5.0
+          },
+          {
+            "canonical_name": "rx_loss_db",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "dB",
+            "original_value": 2,
+            "origins": [
+              {
+                "kind": "default",
+                "origin_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:rx_loss_db:origin:0",
+                "source_ref": "card:received_power#rx_loss_db",
+                "span": null,
+                "unit": "dB",
+                "value": 2
+              }
+            ],
+            "parameter_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:rx_loss_db",
+            "status": "user_provided",
+            "unit": "dB",
+            "value": 2
+          },
+          {
+            "canonical_name": "rx_threshold_dbm",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "dBm",
+            "original_value": -100.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:rx_threshold_dbm:origin:0",
+                "source_ref": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:raw_text",
+                "span": [
+                  111,
+                  137
+                ],
+                "unit": "dBm",
+                "value": -100.0
+              }
+            ],
+            "parameter_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:rx_threshold_dbm",
+            "status": "user_provided",
+            "unit": "dBm",
+            "value": -100.0
+          },
+          {
+            "canonical_name": "tx_gain_dbi",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "dBi",
+            "original_value": 5.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:tx_gain_dbi:origin:0",
+                "source_ref": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:raw_text",
+                "span": [
+                  83,
+                  95
+                ],
+                "unit": "dBi",
+                "value": 5.0
+              }
+            ],
+            "parameter_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:tx_gain_dbi",
+            "status": "user_provided",
+            "unit": "dBi",
+            "value": 5.0
+          },
+          {
+            "canonical_name": "tx_loss_db",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "dB",
+            "original_value": 2,
+            "origins": [
+              {
+                "kind": "default",
+                "origin_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:tx_loss_db:origin:0",
+                "source_ref": "card:received_power#tx_loss_db",
+                "span": null,
+                "unit": "dB",
+                "value": 2
+              }
+            ],
+            "parameter_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:tx_loss_db",
+            "status": "user_provided",
+            "unit": "dB",
+            "value": 2
+          },
+          {
+            "canonical_name": "tx_power_dbm",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "dBm",
+            "original_value": 30.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:tx_power_dbm:origin:0",
+                "source_ref": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:raw_text",
+                "span": [
+                  61,
+                  81
+                ],
+                "unit": "dBm",
+                "value": 30.0
+              }
+            ],
+            "parameter_id": "c14c19fb-171c-4e81-a9a6-c29e48f506ce:tx_power_dbm",
+            "status": "user_provided",
+            "unit": "dBm",
+            "value": 30.0
+          }
+        ],
+        "conditions": [
+          "free_space",
+          "free_space_reference"
+        ],
+        "validation_ids": [
+          "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:result_integrity",
+          "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:snapshot_identity",
+          "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:input_consistency",
+          "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:plan_identity",
+          "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:evidence_consistency",
+          "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:model_identity",
+          "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:numeric_domain",
+          "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:step_chain",
+          "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:independent_magnitude",
+          "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:plan_checks",
+          "c14c19fb-171c-4e81-a9a6-c29e48f506ce:confirmed:result:requirement_and_solve"
+        ],
+        "conclusion": "按已确认自由空间条件，链路余量 17.58 dB（扣除预留余量后高于门限）。",
+        "limitations": [
+          "发馈线损耗按假设取 2 dB：工程假设，典型取值，非标准值；请按实际馈线修改。",
+          "收馈线损耗按假设取 2 dB：工程假设，典型取值，非标准值；请按实际馈线修改。",
+          "额外损耗按假设取 0 dB：按自由空间假设，不计其他损耗。",
+          "预留余量按假设取 0 dB：要求余量单独比较，不预先扣除。",
+          "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+          "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。",
+          "所有项必须属于同一条单程链路、同一频率和一致功率参考面。",
+          "本式只做功率收支，不由正接收功率或正余量推断现场可用率。",
+          "接收电平和门限必须使用同一输入参考面，避免把已经扣减的损耗再次作为预留量扣减。",
+          "reserve_db 是此项目显式扣除的预留量；来源中的基本余量为接收功率减灵敏度。",
+          "当前只检查了明显异常的距离/波长组合，未完整验证天线远场条件；结果仅用于所声明的自由空间基准。",
+          "路径损耗按自由空间基准计算，未估计真实海面反射、散射或遮挡。",
+          "余量只表示所填预算条件下与接收门限的关系，不保证现场可靠通信。"
+        ],
+        "evidence_refs": [
+          {
+            "card_version": "1.0.0",
+            "catalog_id": "fspl_ghz",
+            "content_hash": "2ed0e6930cf489981f389e87e7adcdb1af4b49eed9b495527ed2c5598898ba6d",
+            "evidence_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:fspl_ghz:0",
+            "excerpt": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。",
+            "kind": "formula_card",
+            "knowledge_snapshot_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c",
+            "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+            "parameter_names": [
+              "frequency_ghz",
+              "distance_km"
+            ],
+            "relevance_rank": 3,
+            "source_id": null,
+            "source_title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+            "source_url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+            "status": "verified"
+          },
+          {
+            "card_version": "1.0.0",
+            "catalog_id": "received_power",
+            "content_hash": "821fd133e0ce21c6ae15f6db03960cbc0da4b74c7fac1da041a639ba8b6525da",
+            "evidence_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:received_power:0",
+            "excerpt": "按发射功率加收发天线增益、减去馈线、路径及额外损耗计算接收功率。路径损耗必须来自适用模型、测量或用户明确提供；此式不会根据环境自动估出路径损耗。",
+            "kind": "formula_card",
+            "knowledge_snapshot_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c",
+            "locator": "11.3.1 Frequency Selection: Link Budget",
+            "parameter_names": [
+              "tx_power_dbm",
+              "tx_gain_dbi",
+              "rx_gain_dbi",
+              "tx_loss_db",
+              "rx_loss_db",
+              "path_loss_db",
+              "extra_loss_db"
+            ],
+            "relevance_rank": 2,
+            "source_id": null,
+            "source_title": "NASA, State-of-the-Art of Small Spacecraft Technology, Ground Data Systems and Mission Operations",
+            "source_url": "https://www.nasa.gov/smallsat-institute/sst-soa/ground-data-systems-and-mission-operations/",
+            "status": "verified"
+          },
+          {
+            "card_version": "1.0.0",
+            "catalog_id": "link_margin",
+            "content_hash": "2c81c3ffffc81a18ca2f0b5f66985f9ec91091e8a80433d935ed4fbd4af1c40a",
+            "evidence_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:link_margin:0",
+            "excerpt": "计算接收电平高于接收门限的余量，再扣除用户指定的工程预留量。接收门限必须对应同一调制、码率及误码或丢包要求；正余量不等于已经验证现场可靠度。",
+            "kind": "formula_card",
+            "knowledge_snapshot_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c",
+            "locator": "page 4, section 2.4: link margin definition",
+            "parameter_names": [
+              "rx_power_dbm",
+              "rx_threshold_dbm",
+              "reserve_db"
+            ],
+            "relevance_rank": 1,
+            "source_id": null,
+            "source_title": "Texas Instruments SWRA479A, Achieving Optimum Radio Range (2017)",
+            "source_url": "https://www.ti.com/lit/an/swra479a/swra479a.pdf",
+            "status": "verified"
+          }
+        ],
+        "component_modes": {
+          "interpretation": "llm",
+          "retrieval": "lexical_fallback",
+          "calculation": "deterministic",
+          "review": "llm",
+          "orchestrator": "bounded_policy"
+        },
+        "runtime_health": "ready",
+        "generated_at": "2026-09-30T05:27:43.803010+00:00",
+        "review": {
+          "assessment_hash": "d6966b0a2cc908d2ef3faf399c8c4befb47cb6153a95ac904304d833d5abff37",
+          "decision": "pass",
+          "label": "通过",
+          "mode": "llm",
+          "summary": "声明的自由空间基准结果通过校验；不据此推断真实链路可用。",
+          "opinions": [],
+          "withheld": []
+        },
+        "answer": {
+          "text": "The link margin is 17.58 dB. Received power is -82.42 dBm against a -100 dBm threshold. This assumes 2 dB feeder loss per end and free-space propagation.",
+          "mode": "llm",
+          "withheld": false
+        },
+        "explanation": [
+          {
+            "id": "step:fspl-step",
+            "note": "Calculated free-space path loss using 2 GHz and 10 km distance."
+          },
+          {
+            "id": "step:received_power-step",
+            "note": "Computed received power by applying gains, losses, and path loss."
+          },
+          {
+            "id": "step:link_margin-step",
+            "note": "Derived link margin by subtracting threshold from received power."
+          }
+        ],
+        "document_evidence": [
+          {
+            "id": "doc:sim-sites:s0-1",
+            "title": "站址表",
+            "excerpt": "模拟数据，仅供演示。以下名称、坐标和高度均为虚构，不是实测站址。",
+            "source": {
+              "doc_id": "sim-sites",
+              "locator": "正文, chunk 1",
+              "sha256": "2b776c0d45d1773baf28c34c2f44ac02d94b799fd56ad2cc5db922b0245cd0e8",
+              "simulated": true,
+              "title": "站址表",
+              "uri": "knowledge/documents/simulated/站址表.md",
+              "version": "2026-09-25"
+            }
+          },
+          {
+            "id": "doc:sim-sites:s2-1",
+            "title": "站址表",
+            "excerpt": "# 站址表（模拟）\n\n## 表 1：WGS84 站点资料\n\n地面高程在演示公式中按 WGS84 椭球高处理；天线高度为离地高度，单位 m。D 站天线高度未知，保留空值并追问。\n\n| id | 名称 | 别名 | 纬度 deg | 经度 deg | 地面高程 m | 天线离地 m | 环境 |\n| --- | --- | --- | ---: | ---: | ---: | ---: | --- |\n| site:sim-a | A站 | A岸站 | 30.0500 | 122.1000 | 12 | 30 | 海岸 |\n| site:sim-b | B站 | B岛站 | 30.0229 | 122.4518 | 25 | 25 | 海岛 |\n| site:sim-c | C站 | — | 30.4300 | 122.8678 | 8 | 20 | 海岛 |\n| site:sim-d | D站 | — | 29.8810 | 122.0291 | 15 | 未知 | 海岸 |\n| site:sim-f | F站 | — | 29.9565 | 122.1623 | 6 | 15 | 内陆 |\n| site:sim-east | 东港站 | 港口站 | 30.2290 | 122.2740 | 5 | 20 | 港口 |\n| site:sim-west | 西港站 | 港口站 | 30.1488 | 121.9019 | 5 | 20 | 港口 |\n\n“港口站”同时指向东港站和西港站，使用前必须让用户选定。仅有两端坐标不能证明地形无遮挡。",
+            "source": {
+              "doc_id": "sim-sites",
+              "locator": "站址表（模拟） / 表 1：WGS84 站点资料, chunk 1",
+              "sha256": "2b776c0d45d1773baf28c34c2f44ac02d94b799fd56ad2cc5db922b0245cd0e8",
+              "simulated": true,
+              "title": "站址表",
+              "uri": "knowledge/documents/simulated/站址表.md",
+              "version": "2026-09-25"
+            }
+          },
+          {
+            "id": "doc:sim-xx100:s0-1",
+            "title": "XX-100 手册",
+            "excerpt": "模拟数据，仅供演示。本手册及 XX-100 型号均为虚构，不构成真实设备规格。",
+            "source": {
+              "doc_id": "sim-xx100",
+              "locator": "正文, chunk 1",
+              "sha256": "74cd56505d040050e59ecaf9da5cdace04514984568780d0f90cdd1cef8c97c5",
+              "simulated": true,
+              "title": "XX-100 手册",
+              "uri": "knowledge/documents/simulated/XX-100 手册.md",
+              "version": "2026-09-25"
+            }
+          }
+        ]
+      },
+      "failure": null,
+      "passed": true,
+      "latency_s": 27.703,
+      "all_roles_llm": false
+    },
+    {
+      "id": "en-fresnel",
+      "lang": "en",
+      "text": "Calculate first Fresnel zone radius; frequency 2GHz; d1=15km; d2=15km.",
+      "expected_target": "fresnel_radius",
+      "create_status": "AWAITING_INPUT",
+      "requirements_mode": "llm",
+      "planning_mode": null,
+      "requirements_diagnostics": [
+        {
+          "code": "MODEL_CALL",
+          "message": "意图建议经原文核验。",
+          "details": {
+            "attempt": 1,
+            "model": "commplan-qwen35-9b",
+            "usage": {
+              "completion_tokens": 78,
+              "prompt_tokens": 1300,
+              "total_tokens": 1378,
+              "prompt_tokens_details": {
+                "cached_tokens": 1027
+              }
+            },
+            "accepted": [
+              {
+                "kind": "quantity",
+                "span": [
+                  47,
+                  51
+                ],
+                "field": "frequency_ghz",
+                "value": 2.0,
+                "unit": "GHz"
+              },
+              {
+                "kind": "quantity",
+                "span": [
+                  56,
+                  60
+                ],
+                "field": "distance_km",
+                "value": 15.0,
+                "unit": "km"
+              },
+              {
+                "kind": "quantity",
+                "span": [
+                  65,
+                  69
+                ],
+                "field": "distance_km",
+                "value": 15.0,
+                "unit": "km"
+              }
+            ],
+            "latency_ms": 3318
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "d1_km",
+            "excerpt": "d1=15km",
+            "span": [
+              53,
+              60
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "d2_km",
+            "excerpt": "d2=15km",
+            "span": [
+              62,
+              69
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "frequency_ghz",
+            "excerpt": "frequency 2GHz",
+            "span": [
+              37,
+              51
+            ]
+          }
+        },
+        {
+          "code": "LABEL_CONFLICT",
+          "message": "原文数值的含义，规则与模型判断不一致。",
+          "details": {
+            "field": "distance_km",
+            "rule_fields": [
+              "d1_km"
+            ],
+            "excerpt": "15km",
+            "span": [
+              56,
+              60
+            ]
+          }
+        },
+        {
+          "code": "LABEL_CONFLICT",
+          "message": "原文数值的含义，规则与模型判断不一致。",
+          "details": {
+            "field": "distance_km",
+            "rule_fields": [
+              "d2_km"
+            ],
+            "excerpt": "15km",
+            "span": [
+              65,
+              69
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_REVIEW_LIMITATION",
+          "message": "来源状态来自库内登记，本次没有独立复核原始文献。",
+          "details": {}
+        }
+      ],
+      "status": "AWAITING_INPUT",
+      "passed": false,
+      "questions": [
+        "原文中有数值的含义，规则与模型判断不一致，请写明它是哪个参数。"
+      ],
+      "latency_s": 4.265,
+      "all_roles_llm": false
+    },
+    {
+      "id": "en-nu",
+      "lang": "en",
+      "text": "Calculate diffraction parameter; frequency 2GHz; d1=15km; d2=15km; relative obstacle height 20m.",
+      "expected_target": "knife_edge_nu",
+      "create_status": "AWAITING_INPUT",
+      "requirements_mode": "llm",
+      "planning_mode": null,
+      "requirements_diagnostics": [
+        {
+          "code": "MODEL_OUTPUT_INVALID",
+          "message": "模型结构或原文证据不合法。",
+          "details": {
+            "attempt": 1,
+            "exception": "ValueError",
+            "reason": "MODEL_UNGROUNDED",
+            "stage": "source_grounding",
+            "rejected": [
+              {
+                "kind": "condition",
+                "id": "free_space_reference",
+                "reason": "原文不足以确认该传播假设"
+              }
+            ],
+            "model_output": "{\"selected_ids\":[\"knife_edge_nu\"],\"targets\":[{\"id\":\"knife_edge_nu\",\"evidence\":\"Calculate diffraction parameter\"}],\"conditions\":[{\"id\":\"free_space_reference\",\"evidence\":\"Calculate diffraction parameter\"}],\"quantities\":[{\"id\":\"q1\",\"field\":\"frequency_ghz\"},{\"id\":\"q2\",\"field\":\"distance_km\"},{\"id\":\"q3\",\"field\":\"distance_km\"},{\"id\":\"q4\",\"field\":\"obstacle_height_m\"}],\"solve\":[],\"sites\":[],\"devices\":[]}",
+            "next_action": "查看逐次诊断记录；核对原文与用户选择，或采用确定性解析。"
+          }
+        },
+        {
+          "code": "MODEL_CALL",
+          "message": "意图建议经原文核验。",
+          "details": {
+            "attempt": 2,
+            "model": "commplan-qwen35-9b",
+            "usage": {
+              "completion_tokens": 88,
+              "prompt_tokens": 1360,
+              "total_tokens": 1448,
+              "prompt_tokens_details": {
+                "cached_tokens": 1027
+              }
+            },
+            "accepted": [
+              {
+                "kind": "quantity",
+                "span": [
+                  43,
+                  47
+                ],
+                "field": "frequency_ghz",
+                "value": 2.0,
+                "unit": "GHz"
+              },
+              {
+                "kind": "quantity",
+                "span": [
+                  52,
+                  56
+                ],
+                "field": "distance_km",
+                "value": 15.0,
+                "unit": "km"
+              },
+              {
+                "kind": "quantity",
+                "span": [
+                  61,
+                  65
+                ],
+                "field": "distance_km",
+                "value": 15.0,
+                "unit": "km"
+              },
+              {
+                "kind": "quantity",
+                "span": [
+                  92,
+                  95
+                ],
+                "field": "obstacle_height_m",
+                "value": 20.0,
+                "unit": "m"
+              }
+            ],
+            "latency_ms": 2949
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "d1_km",
+            "excerpt": "d1=15km",
+            "span": [
+              49,
+              56
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "d2_km",
+            "excerpt": "d2=15km",
+            "span": [
+              58,
+              65
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "obstacle_height_m",
+            "excerpt": "relative obstacle height 20m",
+            "span": [
+              67,
+              95
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "frequency_ghz",
+            "excerpt": "frequency 2GHz",
+            "span": [
+              33,
+              47
+            ]
+          }
+        },
+        {
+          "code": "LABEL_CONFLICT",
+          "message": "原文数值的含义，规则与模型判断不一致。",
+          "details": {
+            "field": "distance_km",
+            "rule_fields": [
+              "d1_km"
+            ],
+            "excerpt": "15km",
+            "span": [
+              52,
+              56
+            ]
+          }
+        },
+        {
+          "code": "LABEL_CONFLICT",
+          "message": "原文数值的含义，规则与模型判断不一致。",
+          "details": {
+            "field": "distance_km",
+            "rule_fields": [
+              "d2_km"
+            ],
+            "excerpt": "15km",
+            "span": [
+              61,
+              65
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_REVIEW_LIMITATION",
+          "message": "来源状态来自库内登记，本次没有独立复核原始文献。",
+          "details": {}
+        }
+      ],
+      "status": "AWAITING_INPUT",
+      "passed": false,
+      "questions": [
+        "原文中有数值的含义，规则与模型判断不一致，请写明它是哪个参数。"
+      ],
+      "latency_s": 7.672,
+      "all_roles_llm": false
+    },
+    {
+      "id": "en-knife",
+      "lang": "en",
+      "text": "Use a single knife-edge model; calculate knife-edge diffraction loss; frequency 2GHz; d1=15km; d2=15km; relative obstacle height 20m.",
+      "expected_target": "knife_edge_loss",
+      "create_status": "AWAITING_CONFIRMATION",
+      "requirements_mode": "deterministic",
+      "planning_mode": "llm",
+      "requirements_diagnostics": [
+        {
+          "code": "MODEL_OUTPUT_INVALID",
+          "message": "模型结构或原文证据不合法。",
+          "details": {
+            "attempt": 1,
+            "exception": "ValueError",
+            "reason": "MODEL_UNGROUNDED",
+            "stage": "source_grounding",
+            "rejected": [
+              {
+                "kind": "condition",
+                "id": "free_space_reference",
+                "reason": "原文不足以确认该传播假设"
+              }
+            ],
+            "model_output": "{\"selected_ids\":[\"knife_edge_loss\",\"knife_edge_nu\"],\"targets\":[{\"id\":\"knife_edge_loss\",\"evidence\":\"calculate knife-edge diffraction loss\"}],\"conditions\":[{\"id\":\"free_space_reference\",\"evidence\":\"Use a single knife-edge model\"}],\"quantities\":[{\"id\":\"q1\",\"field\":\"frequency_ghz\"},{\"id\":\"q2\",\"field\":\"distance_km\"},{\"id\":\"q3\",\"field\":\"distance_km\"},{\"id\":\"q4\",\"field\":\"height1_above_sea_m\"}],\"solve\":[],\"sites\":[],\"devices\":[]}",
+            "next_action": "查看逐次诊断记录；核对原文与用户选择，或采用确定性解析。"
+          }
+        },
+        {
+          "code": "MODEL_OUTPUT_INVALID",
+          "message": "模型结构或原文证据不合法。",
+          "details": {
+            "attempt": 2,
+            "exception": "ValueError",
+            "reason": "MODEL_UNGROUNDED",
+            "stage": "source_grounding",
+            "rejected": [
+              {
+                "kind": "condition",
+                "id": "free_space_reference",
+                "reason": "原文不足以确认该传播假设"
+              }
+            ],
+            "model_output": "{\"selected_ids\":[\"knife_edge_loss\",\"knife_edge_nu\"],\"targets\":[{\"id\":\"knife_edge_loss\",\"evidence\":\"calculate knife-edge diffraction loss\"}],\"conditions\":[{\"id\":\"free_space_reference\",\"evidence\":\"Use a single knife-edge model\"}],\"quantities\":[{\"id\":\"q1\",\"field\":\"frequency_ghz\"},{\"id\":\"q2\",\"field\":\"distance_km\"},{\"id\":\"q3\",\"field\":\"distance_km\"},{\"id\":\"q4\",\"field\":\"obstacle_height_m\"}],\"solve\":[],\"sites\":[],\"devices\":[]}",
+            "next_action": "查看逐次诊断记录；核对原文与用户选择，或采用确定性解析。"
+          }
+        },
+        {
+          "code": "MODEL_OUTPUT_INVALID",
+          "message": "模型结构或原文证据不合法。",
+          "details": {
+            "attempt": 3,
+            "exception": "ValueError",
+            "reason": "MODEL_UNGROUNDED",
+            "stage": "source_grounding",
+            "rejected": [
+              {
+                "kind": "condition",
+                "id": "free_space_reference",
+                "reason": "原文不足以确认该传播假设"
+              }
+            ],
+            "model_output": "{\"selected_ids\":[\"knife_edge_loss\",\"knife_edge_nu\"],\"targets\":[{\"id\":\"knife_edge_loss\",\"evidence\":\"calculate knife-edge diffraction loss\"}],\"conditions\":[{\"id\":\"free_space_reference\",\"evidence\":\"Use a single knife-edge model\"}],\"quantities\":[{\"id\":\"q1\",\"field\":\"frequency_ghz\"},{\"id\":\"q2\",\"field\":\"distance_km\"},{\"id\":\"q3\",\"field\":\"distance_km\"},{\"id\":\"q4\",\"field\":\"obstacle_height_m\"}],\"solve\":[],\"sites\":[],\"devices\":[]}",
+            "next_action": "查看逐次诊断记录；核对原文与用户选择，或采用确定性解析。"
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "d1_km",
+            "excerpt": "d1=15km",
+            "span": [
+              86,
+              93
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "d2_km",
+            "excerpt": "d2=15km",
+            "span": [
+              95,
+              102
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "obstacle_height_m",
+            "excerpt": "relative obstacle height 20m",
+            "span": [
+              104,
+              132
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "frequency_ghz",
+            "excerpt": "frequency 2GHz",
+            "span": [
+              70,
+              84
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_REVIEW_LIMITATION",
+          "message": "来源状态来自库内登记，本次没有独立复核原始文献。",
+          "details": {}
+        }
+      ],
+      "status": "COMPLETED",
+      "targets": [
+        "knife_edge_loss"
+      ],
+      "calculation_mode": "deterministic",
+      "review_mode": "llm",
+      "validations": [
+        {
+          "validation_id": "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:result_integrity",
+          "validator_id": "result_integrity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "61516023f25951fa2c806e535f5664f81f9dc6c7d0028c7be491b3a0f3492886"
+        },
+        {
+          "validation_id": "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:snapshot_identity",
+          "validator_id": "snapshot_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "61516023f25951fa2c806e535f5664f81f9dc6c7d0028c7be491b3a0f3492886"
+        },
+        {
+          "validation_id": "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:input_consistency",
+          "validator_id": "input_consistency",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "61516023f25951fa2c806e535f5664f81f9dc6c7d0028c7be491b3a0f3492886"
+        },
+        {
+          "validation_id": "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:plan_identity",
+          "validator_id": "plan_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "61516023f25951fa2c806e535f5664f81f9dc6c7d0028c7be491b3a0f3492886"
+        },
+        {
+          "validation_id": "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:evidence_consistency",
+          "validator_id": "evidence_consistency",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "61516023f25951fa2c806e535f5664f81f9dc6c7d0028c7be491b3a0f3492886"
+        },
+        {
+          "validation_id": "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:model_identity",
+          "validator_id": "model_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "61516023f25951fa2c806e535f5664f81f9dc6c7d0028c7be491b3a0f3492886"
+        },
+        {
+          "validation_id": "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:numeric_domain",
+          "validator_id": "numeric_domain",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "61516023f25951fa2c806e535f5664f81f9dc6c7d0028c7be491b3a0f3492886"
+        },
+        {
+          "validation_id": "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:step_chain",
+          "validator_id": "step_chain",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "61516023f25951fa2c806e535f5664f81f9dc6c7d0028c7be491b3a0f3492886"
+        },
+        {
+          "validation_id": "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:independent_magnitude",
+          "validator_id": "independent_magnitude",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "61516023f25951fa2c806e535f5664f81f9dc6c7d0028c7be491b3a0f3492886"
+        },
+        {
+          "validation_id": "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:plan_checks",
+          "validator_id": "plan_checks",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "61516023f25951fa2c806e535f5664f81f9dc6c7d0028c7be491b3a0f3492886"
+        },
+        {
+          "validation_id": "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:requirement_and_solve",
+          "validator_id": "requirement_and_solve",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "61516023f25951fa2c806e535f5664f81f9dc6c7d0028c7be491b3a0f3492886"
+        }
+      ],
+      "result": {
+        "result_id": "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result",
+        "task_id": "37098156-6910-4941-a4ab-1aea59fad989",
+        "revision": 0,
+        "snapshot_id": "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed",
+        "snapshot_hash": "216335024afaa9e903525fab0c77f5173c43be267f744b15e7c99f3cc9378bd2",
+        "plan_hash": "d3b66b2109d8d65bbbaf86b58559f0d074c2f64143f33a31934f859b56003b5c",
+        "model_id": "knife_edge_loss",
+        "model_version": "1.0.0",
+        "formula": "6.9+20*log10(sqrt((knife_edge_nu-0.1)**2+1)+knife_edge_nu-0.1)",
+        "normalized_inputs": {
+          "obstacle_height_m": 20.0,
+          "d1_km": 15.0,
+          "d2_km": 15.0,
+          "frequency_ghz": 2.0
+        },
+        "outputs": [
+          {
+            "name": "knife_edge_loss_db",
+            "value": 12.875822052112976,
+            "unit": "dB"
+          }
+        ],
+        "steps": [
+          {
+            "step_id": "knife_edge_nu-step",
+            "tool_id": "knife_edge_nu",
+            "version": "1.0.0",
+            "inputs": {
+              "d1_km": 15.0,
+              "d2_km": 15.0,
+              "frequency_ghz": 2.0,
+              "obstacle_height_m": 20.0
+            },
+            "output": {
+              "name": "knife_edge_nu",
+              "value": 0.8435658854466503,
+              "unit": "1"
+            }
+          },
+          {
+            "step_id": "knife_edge_loss-step",
+            "tool_id": "knife_edge_loss",
+            "version": "1.0.0",
+            "inputs": {
+              "knife_edge_nu": 0.8435658854466503
+            },
+            "output": {
+              "name": "knife_edge_loss_db",
+              "value": 12.875822052112976,
+              "unit": "dB"
+            }
+          }
+        ],
+        "evidence_ids": [
+          "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:knife_edge_nu:0",
+          "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:knife_edge_loss:0"
+        ],
+        "runtime_mode": "deterministic",
+        "tool_version": "confirmed-plan-v1/p1-1.0.0",
+        "started_at": "2026-09-30T05:28:20.213271+00:00",
+        "finished_at": "2026-09-30T05:28:20.262174+00:00",
+        "result_hash": "61516023f25951fa2c806e535f5664f81f9dc6c7d0028c7be491b3a0f3492886"
+      },
+      "final_report": {
+        "report_id": "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:report",
+        "result_id": "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result",
+        "result_hash": "61516023f25951fa2c806e535f5664f81f9dc6c7d0028c7be491b3a0f3492886",
+        "snapshot_id": "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed",
+        "snapshot_hash": "216335024afaa9e903525fab0c77f5173c43be267f744b15e7c99f3cc9378bd2",
+        "task_id": "37098156-6910-4941-a4ab-1aea59fad989",
+        "revision": 0,
+        "normalized_inputs": {
+          "obstacle_height_m": 20.0,
+          "d1_km": 15.0,
+          "d2_km": 15.0,
+          "frequency_ghz": 2.0
+        },
+        "outputs": [
+          {
+            "name": "knife_edge_loss_db",
+            "value": 12.875822052112976,
+            "unit": "dB"
+          }
+        ],
+        "steps": [
+          {
+            "step_id": "knife_edge_nu-step",
+            "tool_id": "knife_edge_nu",
+            "version": "1.0.0",
+            "inputs": {
+              "d1_km": 15.0,
+              "d2_km": 15.0,
+              "frequency_ghz": 2.0,
+              "obstacle_height_m": 20.0
+            },
+            "output": {
+              "name": "knife_edge_nu",
+              "value": 0.8435658854466503,
+              "unit": "1"
+            }
+          },
+          {
+            "step_id": "knife_edge_loss-step",
+            "tool_id": "knife_edge_loss",
+            "version": "1.0.0",
+            "inputs": {
+              "knife_edge_nu": 0.8435658854466503
+            },
+            "output": {
+              "name": "knife_edge_loss_db",
+              "value": 12.875822052112976,
+              "unit": "dB"
+            }
+          }
+        ],
+        "model_id": "knife_edge_loss",
+        "model_version": "1.0.0",
+        "formula": "6.9+20*log10(sqrt((knife_edge_nu-0.1)**2+1)+knife_edge_nu-0.1)",
+        "parameters": [
+          {
+            "canonical_name": "d1_km",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "km",
+            "original_value": 15.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "952b6b99-8a94-4136-9051-9697b7a406a3:d1_km:origin:0",
+                "source_ref": "952b6b99-8a94-4136-9051-9697b7a406a3:raw_text",
+                "span": [
+                  86,
+                  93
+                ],
+                "unit": "km",
+                "value": 15.0
+              }
+            ],
+            "parameter_id": "952b6b99-8a94-4136-9051-9697b7a406a3:d1_km",
+            "status": "user_provided",
+            "unit": "km",
+            "value": 15.0
+          },
+          {
+            "canonical_name": "d2_km",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "km",
+            "original_value": 15.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "952b6b99-8a94-4136-9051-9697b7a406a3:d2_km:origin:0",
+                "source_ref": "952b6b99-8a94-4136-9051-9697b7a406a3:raw_text",
+                "span": [
+                  95,
+                  102
+                ],
+                "unit": "km",
+                "value": 15.0
+              }
+            ],
+            "parameter_id": "952b6b99-8a94-4136-9051-9697b7a406a3:d2_km",
+            "status": "user_provided",
+            "unit": "km",
+            "value": 15.0
+          },
+          {
+            "canonical_name": "frequency_ghz",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "GHz",
+            "original_value": 2.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "952b6b99-8a94-4136-9051-9697b7a406a3:frequency_ghz:origin:0",
+                "source_ref": "952b6b99-8a94-4136-9051-9697b7a406a3:raw_text",
+                "span": [
+                  70,
+                  84
+                ],
+                "unit": "GHz",
+                "value": 2.0
+              }
+            ],
+            "parameter_id": "952b6b99-8a94-4136-9051-9697b7a406a3:frequency_ghz",
+            "status": "user_provided",
+            "unit": "GHz",
+            "value": 2.0
+          },
+          {
+            "canonical_name": "obstacle_height_m",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "m",
+            "original_value": 20.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "952b6b99-8a94-4136-9051-9697b7a406a3:obstacle_height_m:origin:0",
+                "source_ref": "952b6b99-8a94-4136-9051-9697b7a406a3:raw_text",
+                "span": [
+                  104,
+                  132
+                ],
+                "unit": "m",
+                "value": 20.0
+              }
+            ],
+            "parameter_id": "952b6b99-8a94-4136-9051-9697b7a406a3:obstacle_height_m",
+            "status": "user_provided",
+            "unit": "m",
+            "value": 20.0
+          }
+        ],
+        "conditions": [
+          "non_free_space",
+          "single_knife_edge"
+        ],
+        "validation_ids": [
+          "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:result_integrity",
+          "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:snapshot_identity",
+          "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:input_consistency",
+          "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:plan_identity",
+          "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:evidence_consistency",
+          "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:model_identity",
+          "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:numeric_domain",
+          "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:step_chain",
+          "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:independent_magnitude",
+          "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:plan_checks",
+          "952b6b99-8a94-4136-9051-9697b7a406a3:confirmed:result:requirement_and_solve"
+        ],
+        "conclusion": "按已确认输入，单刃形绕射损耗 12.88 dB。",
+        "limitations": [
+          "此处 h 为障碍物高出连线的高度，与 P.530 式 (2) 中表示余隙的 h 符号相反。",
+          "只描述单个理想刃形障碍物，不代表多障碍物或圆滑障碍物的损耗。"
+        ],
+        "evidence_refs": [
+          {
+            "card_version": "1.0.0",
+            "catalog_id": "knife_edge_nu",
+            "content_hash": "a043bcd464871669412892559ddb8f10bcdde29b1042a40302bcf2911a061740",
+            "evidence_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:knife_edge_nu:0",
+            "excerpt": "计算障碍物相对两端天线连线高度对应的无量纲绕射参数。",
+            "kind": "formula_card",
+            "knowledge_snapshot_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c",
+            "locator": "§4.1 (single knife-edge obstacle)",
+            "parameter_names": [
+              "obstacle_height_m",
+              "d1_km",
+              "d2_km",
+              "frequency_ghz"
+            ],
+            "relevance_rank": 3,
+            "source_id": null,
+            "source_title": "ITU-R P.526-16",
+            "source_url": "https://www.itu.int/rec/R-REC-P.526-16/en",
+            "status": "verified"
+          },
+          {
+            "card_version": "1.0.0",
+            "catalog_id": "knife_edge_loss",
+            "content_hash": "944fe0b8554e821d81469f9172ee44259d57231ca9bce338928045f641ba1a0f",
+            "evidence_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:knife_edge_loss:0",
+            "excerpt": "按 ν 估算单刃形绕射损耗；本近似式仅用于 ν > −0.78。",
+            "kind": "formula_card",
+            "knowledge_snapshot_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c",
+            "locator": "§4.1, equation (31)",
+            "parameter_names": [
+              "knife_edge_nu"
+            ],
+            "relevance_rank": 1,
+            "source_id": null,
+            "source_title": "ITU-R P.526-16",
+            "source_url": "https://www.itu.int/rec/R-REC-P.526-16/en",
+            "status": "verified"
+          }
+        ],
+        "component_modes": {
+          "interpretation": "deterministic",
+          "retrieval": "lexical_fallback",
+          "calculation": "deterministic",
+          "review": "llm",
+          "orchestrator": "bounded_policy"
+        },
+        "runtime_health": "degraded",
+        "generated_at": "2026-09-30T05:28:28.756386+00:00",
+        "review": {
+          "assessment_hash": "c45f56882cbaea79078fd02c876cd7b055cf0cafc26a439e17aa3066cef08c3b",
+          "decision": "pass",
+          "label": "通过",
+          "mode": "llm",
+          "summary": "声明的自由空间基准结果通过校验；不据此推断真实链路可用。",
+          "opinions": [],
+          "withheld": []
+        },
+        "answer": {
+          "text": "The single knife-edge diffraction loss is 12.88 dB. This assumes a relative obstacle height of 20 m, distances of 15 km each, and a frequency of 2 GHz. The result is a theoretical baseline.",
+          "mode": "llm",
+          "withheld": false
+        },
+        "explanation": [
+          {
+            "id": "step:knife_edge_nu-step",
+            "note": "Calculated diffraction parameter nu using d1, d2, frequency, and obstacle height per ITU-R P.526-16."
+          },
+          {
+            "id": "step:knife_edge_loss-step",
+            "note": "Computed single knife-edge diffraction loss of 12.88 dB based on the calculated nu value."
+          }
+        ],
+        "document_evidence": [
+          {
+            "id": "doc:sim-sites:s2-1",
+            "title": "站址表",
+            "excerpt": "# 站址表（模拟）\n\n## 表 1：WGS84 站点资料\n\n地面高程在演示公式中按 WGS84 椭球高处理；天线高度为离地高度，单位 m。D 站天线高度未知，保留空值并追问。\n\n| id | 名称 | 别名 | 纬度 deg | 经度 deg | 地面高程 m | 天线离地 m | 环境 |\n| --- | --- | --- | ---: | ---: | ---: | ---: | --- |\n| site:sim-a | A站 | A岸站 | 30.0500 | 122.1000 | 12 | 30 | 海岸 |\n| site:sim-b | B站 | B岛站 | 30.0229 | 122.4518 | 25 | 25 | 海岛 |\n| site:sim-c | C站 | — | 30.4300 | 122.8678 | 8 | 20 | 海岛 |\n| site:sim-d | D站 | — | 29.8810 | 122.0291 | 15 | 未知 | 海岸 |\n| site:sim-f | F站 | — | 29.9565 | 122.1623 | 6 | 15 | 内陆 |\n| site:sim-east | 东港站 | 港口站 | 30.2290 | 122.2740 | 5 | 20 | 港口 |\n| site:sim-west | 西港站 | 港口站 | 30.1488 | 121.9019 | 5 | 20 | 港口 |\n\n“港口站”同时指向东港站和西港站，使用前必须让用户选定。仅有两端坐标不能证明地形无遮挡。",
+            "source": {
+              "doc_id": "sim-sites",
+              "locator": "站址表（模拟） / 表 1：WGS84 站点资料, chunk 1",
+              "sha256": "2b776c0d45d1773baf28c34c2f44ac02d94b799fd56ad2cc5db922b0245cd0e8",
+              "simulated": true,
+              "title": "站址表",
+              "uri": "knowledge/documents/simulated/站址表.md",
+              "version": "2026-09-25"
+            }
+          },
+          {
+            "id": "doc:sim-sites:s0-1",
+            "title": "站址表",
+            "excerpt": "模拟数据，仅供演示。以下名称、坐标和高度均为虚构，不是实测站址。",
+            "source": {
+              "doc_id": "sim-sites",
+              "locator": "正文, chunk 1",
+              "sha256": "2b776c0d45d1773baf28c34c2f44ac02d94b799fd56ad2cc5db922b0245cd0e8",
+              "simulated": true,
+              "title": "站址表",
+              "uri": "knowledge/documents/simulated/站址表.md",
+              "version": "2026-09-25"
+            }
+          },
+          {
+            "id": "doc:sim-xx100:s0-1",
+            "title": "XX-100 手册",
+            "excerpt": "模拟数据，仅供演示。本手册及 XX-100 型号均为虚构，不构成真实设备规格。",
+            "source": {
+              "doc_id": "sim-xx100",
+              "locator": "正文, chunk 1",
+              "sha256": "74cd56505d040050e59ecaf9da5cdace04514984568780d0f90cdd1cef8c97c5",
+              "simulated": true,
+              "title": "XX-100 手册",
+              "uri": "knowledge/documents/simulated/XX-100 手册.md",
+              "version": "2026-09-25"
+            }
+          }
+        ]
+      },
+      "failure": null,
+      "passed": true,
+      "latency_s": 33.032,
+      "all_roles_llm": false
+    },
+    {
+      "id": "en-sea",
+      "lang": "en",
+      "text": "Use a smooth sea single specular reflection two-ray model; calculate additional sea-reflection loss; frequency 2GHz; distance 30km; tx height above sea 30m; rx height above sea 25m.",
+      "expected_target": "sea_reflection_two_ray",
+      "create_status": "AWAITING_CONFIRMATION",
+      "requirements_mode": "deterministic",
+      "planning_mode": "llm",
+      "requirements_diagnostics": [
+        {
+          "code": "MODEL_OUTPUT_INVALID",
+          "message": "模型结构或原文证据不合法。",
+          "details": {
+            "attempt": 1,
+            "exception": "ValueError",
+            "reason": "MODEL_UNGROUNDED",
+            "stage": "source_grounding",
+            "rejected": [
+              {
+                "kind": "condition",
+                "id": "free_space_reference",
+                "reason": "原文不足以确认该传播假设"
+              },
+              {
+                "kind": "quantity",
+                "id": "q3",
+                "reason": "30m 的单位与发馈线损耗（dB）不符"
+              },
+              {
+                "kind": "quantity",
+                "id": "q4",
+                "reason": "25m 的单位与收馈线损耗（dB）不符"
+              }
+            ],
+            "model_output": "{\"selected_ids\":[\"sea_reflection_two_ray\"],\"targets\":[{\"id\":\"sea_reflection_two_ray\",\"evidence\":\"calculate additional sea-reflection loss\"}],\"conditions\":[{\"id\":\"free_space_reference\",\"evidence\":\"Use a smooth sea single specular reflection two-ray model\"}],\"quantities\":[{\"id\":\"q1\",\"field\":\"frequency_ghz\"},{\"id\":\"q2\",\"field\":\"distance_km\"},{\"id\":\"q3\",\"field\":\"tx_loss_db\"},{\"id\":\"q4\",\"field\":\"rx_loss_db\"}],\"solve\":[],\"sites\":[],\"devices\":[]}",
+            "next_action": "查看逐次诊断记录；核对原文与用户选择，或采用确定性解析。"
+          }
+        },
+        {
+          "code": "MODEL_OUTPUT_INVALID",
+          "message": "模型结构或原文证据不合法。",
+          "details": {
+            "attempt": 2,
+            "exception": "ValueError",
+            "reason": "MODEL_UNGROUNDED",
+            "stage": "source_grounding",
+            "rejected": [
+              {
+                "kind": "condition",
+                "id": "free_space_reference",
+                "reason": "原文不足以确认该传播假设"
+              }
+            ],
+            "model_output": "{\"selected_ids\":[\"sea_reflection_two_ray\"],\"targets\":[{\"id\":\"sea_reflection_two_ray\",\"evidence\":\"calculate additional sea-reflection loss\"}],\"conditions\":[{\"id\":\"free_space_reference\",\"evidence\":\"Use a smooth sea single specular reflection two-ray model\"}],\"quantities\":[{\"id\":\"q1\",\"field\":\"frequency_ghz\"},{\"id\":\"q2\",\"field\":\"distance_km\"},{\"id\":\"q3\",\"field\":\"other\"},{\"id\":\"q4\",\"field\":\"other\"}],\"solve\":[],\"sites\":[],\"devices\":[]}",
+            "next_action": "查看逐次诊断记录；核对原文与用户选择，或采用确定性解析。"
+          }
+        },
+        {
+          "code": "MODEL_OUTPUT_INVALID",
+          "message": "模型结构或原文证据不合法。",
+          "details": {
+            "attempt": 3,
+            "exception": "ValueError",
+            "reason": "MODEL_UNGROUNDED",
+            "stage": "source_grounding",
+            "rejected": [
+              {
+                "kind": "condition",
+                "id": "free_space_reference",
+                "reason": "原文不足以确认该传播假设"
+              },
+              {
+                "kind": "quantity",
+                "id": "q3",
+                "reason": "30m 的单位与发馈线损耗（dB）不符"
+              },
+              {
+                "kind": "quantity",
+                "id": "q4",
+                "reason": "25m 的单位与收馈线损耗（dB）不符"
+              }
+            ],
+            "model_output": "{\"selected_ids\":[\"sea_reflection_two_ray\"],\"targets\":[{\"id\":\"sea_reflection_two_ray\",\"evidence\":\"calculate additional sea-reflection loss\"}],\"conditions\":[{\"id\":\"free_space_reference\",\"evidence\":\"Use a smooth sea single specular reflection two-ray model\"}],\"quantities\":[{\"id\":\"q1\",\"field\":\"frequency_ghz\"},{\"id\":\"q2\",\"field\":\"distance_km\"},{\"id\":\"q3\",\"field\":\"tx_loss_db\"},{\"id\":\"q4\",\"field\":\"rx_loss_db\"}],\"solve\":[],\"sites\":[],\"devices\":[]}",
+            "next_action": "查看逐次诊断记录；核对原文与用户选择，或采用确定性解析。"
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "height1_above_sea_m",
+            "excerpt": "tx height above sea 30m",
+            "span": [
+              132,
+              155
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "height2_above_sea_m",
+            "excerpt": "rx height above sea 25m",
+            "span": [
+              157,
+              180
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "frequency_ghz",
+            "excerpt": "frequency 2GHz",
+            "span": [
+              101,
+              115
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "distance_km",
+            "excerpt": "distance 30km",
+            "span": [
+              117,
+              130
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_REVIEW_LIMITATION",
+          "message": "来源状态来自库内登记，本次没有独立复核原始文献。",
+          "details": {}
+        }
+      ],
+      "status": "COMPLETED",
+      "targets": [
+        "sea_reflection_two_ray"
+      ],
+      "calculation_mode": "deterministic",
+      "review_mode": "llm",
+      "validations": [
+        {
+          "validation_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:result_integrity",
+          "validator_id": "result_integrity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "d4796322bb4c9132c18a57d0e91bf173817afa2ce47d9ec19bf8f20da786ba9c"
+        },
+        {
+          "validation_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:snapshot_identity",
+          "validator_id": "snapshot_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "d4796322bb4c9132c18a57d0e91bf173817afa2ce47d9ec19bf8f20da786ba9c"
+        },
+        {
+          "validation_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:input_consistency",
+          "validator_id": "input_consistency",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "d4796322bb4c9132c18a57d0e91bf173817afa2ce47d9ec19bf8f20da786ba9c"
+        },
+        {
+          "validation_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:plan_identity",
+          "validator_id": "plan_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "d4796322bb4c9132c18a57d0e91bf173817afa2ce47d9ec19bf8f20da786ba9c"
+        },
+        {
+          "validation_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:evidence_consistency",
+          "validator_id": "evidence_consistency",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "d4796322bb4c9132c18a57d0e91bf173817afa2ce47d9ec19bf8f20da786ba9c"
+        },
+        {
+          "validation_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:model_identity",
+          "validator_id": "model_identity",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "d4796322bb4c9132c18a57d0e91bf173817afa2ce47d9ec19bf8f20da786ba9c"
+        },
+        {
+          "validation_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:numeric_domain",
+          "validator_id": "numeric_domain",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "d4796322bb4c9132c18a57d0e91bf173817afa2ce47d9ec19bf8f20da786ba9c"
+        },
+        {
+          "validation_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:step_chain",
+          "validator_id": "step_chain",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "d4796322bb4c9132c18a57d0e91bf173817afa2ce47d9ec19bf8f20da786ba9c"
+        },
+        {
+          "validation_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:independent_magnitude",
+          "validator_id": "independent_magnitude",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "d4796322bb4c9132c18a57d0e91bf173817afa2ce47d9ec19bf8f20da786ba9c"
+        },
+        {
+          "validation_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:plan_checks",
+          "validator_id": "plan_checks",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "d4796322bb4c9132c18a57d0e91bf173817afa2ce47d9ec19bf8f20da786ba9c"
+        },
+        {
+          "validation_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:requirement_and_solve",
+          "validator_id": "requirement_and_solve",
+          "severity": "hard",
+          "passed": true,
+          "target_hash": "d4796322bb4c9132c18a57d0e91bf173817afa2ce47d9ec19bf8f20da786ba9c"
+        }
+      ],
+      "result": {
+        "result_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result",
+        "task_id": "e728eaf4-4282-4c3b-9986-772bb423c6ae",
+        "revision": 0,
+        "snapshot_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed",
+        "snapshot_hash": "50a869818da3390f865bf4a6a713ae6f19ff5caf46b0cff9caa02f35e53c4b7f",
+        "plan_hash": "d65f253ec11b98594a3b166a7dc3d053597cb54d5e2f4bd4f510d0c31aaa9b22",
+        "model_id": "sea_reflection_two_ray",
+        "model_version": "1.0.0",
+        "formula": "a_e=k*6375 km；m=d²*10³/(4*a_e*(h1+h2))，c=(h1−h2)/(h1+h2)，b=2*sqrt((m+1)/(3*m))*cos(π/3+acos((3*c/2)*sqrt(3*m/(m+1)³))/3)；d1=d*(1+b)/2，d2=d*(1−b)/2；h1′=h1−d1²/(12.74*k)，h2′=h2−d2²/(12.74*k)，任一 ≤0 时拒绝；τ=(2*f/0.3)*h1′*h2′*10⁻³/d；场比 A=2*abs(sin(π*τ))，A<0.1 时拒绝；L=−20*log10(A) dB。",
+        "normalized_inputs": {
+          "frequency_ghz": 2.0,
+          "distance_km": 30.0,
+          "height1_above_sea_m": 30.0,
+          "height2_above_sea_m": 25.0,
+          "k_factor": 1.3333333333333333
+        },
+        "outputs": [
+          {
+            "name": "sea_reflection_loss_db",
+            "value": 5.130388896249947,
+            "unit": "dB"
+          }
+        ],
+        "steps": [
+          {
+            "step_id": "sea_reflection_two_ray-step",
+            "tool_id": "sea_reflection_two_ray",
+            "version": "1.0.0",
+            "inputs": {
+              "distance_km": 30.0,
+              "frequency_ghz": 2.0,
+              "height1_above_sea_m": 30.0,
+              "height2_above_sea_m": 25.0,
+              "k_factor": 1.3333333333333333
+            },
+            "output": {
+              "name": "sea_reflection_loss_db",
+              "value": 5.130388896249947,
+              "unit": "dB"
+            }
+          }
+        ],
+        "evidence_ids": [
+          "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:sea_reflection_two_ray:0"
+        ],
+        "runtime_mode": "deterministic",
+        "tool_version": "confirmed-plan-v1/p1-1.0.0",
+        "started_at": "2026-09-30T05:28:55.682782+00:00",
+        "finished_at": "2026-09-30T05:28:55.723875+00:00",
+        "result_hash": "d4796322bb4c9132c18a57d0e91bf173817afa2ce47d9ec19bf8f20da786ba9c"
+      },
+      "final_report": {
+        "report_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:report",
+        "result_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result",
+        "result_hash": "d4796322bb4c9132c18a57d0e91bf173817afa2ce47d9ec19bf8f20da786ba9c",
+        "snapshot_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed",
+        "snapshot_hash": "50a869818da3390f865bf4a6a713ae6f19ff5caf46b0cff9caa02f35e53c4b7f",
+        "task_id": "e728eaf4-4282-4c3b-9986-772bb423c6ae",
+        "revision": 0,
+        "normalized_inputs": {
+          "frequency_ghz": 2.0,
+          "distance_km": 30.0,
+          "height1_above_sea_m": 30.0,
+          "height2_above_sea_m": 25.0,
+          "k_factor": 1.3333333333333333
+        },
+        "outputs": [
+          {
+            "name": "sea_reflection_loss_db",
+            "value": 5.130388896249947,
+            "unit": "dB"
+          }
+        ],
+        "steps": [
+          {
+            "step_id": "sea_reflection_two_ray-step",
+            "tool_id": "sea_reflection_two_ray",
+            "version": "1.0.0",
+            "inputs": {
+              "distance_km": 30.0,
+              "frequency_ghz": 2.0,
+              "height1_above_sea_m": 30.0,
+              "height2_above_sea_m": 25.0,
+              "k_factor": 1.3333333333333333
+            },
+            "output": {
+              "name": "sea_reflection_loss_db",
+              "value": 5.130388896249947,
+              "unit": "dB"
+            }
+          }
+        ],
+        "model_id": "sea_reflection_two_ray",
+        "model_version": "1.0.0",
+        "formula": "a_e=k*6375 km；m=d²*10³/(4*a_e*(h1+h2))，c=(h1−h2)/(h1+h2)，b=2*sqrt((m+1)/(3*m))*cos(π/3+acos((3*c/2)*sqrt(3*m/(m+1)³))/3)；d1=d*(1+b)/2，d2=d*(1−b)/2；h1′=h1−d1²/(12.74*k)，h2′=h2−d2²/(12.74*k)，任一 ≤0 时拒绝；τ=(2*f/0.3)*h1′*h2′*10⁻³/d；场比 A=2*abs(sin(π*τ))，A<0.1 时拒绝；L=−20*log10(A) dB。",
+        "parameters": [
+          {
+            "canonical_name": "distance_km",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "km",
+            "original_value": 30.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:distance_km:origin:0",
+                "source_ref": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:raw_text",
+                "span": [
+                  117,
+                  130
+                ],
+                "unit": "km",
+                "value": 30.0
+              }
+            ],
+            "parameter_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:distance_km",
+            "status": "user_provided",
+            "unit": "km",
+            "value": 30.0
+          },
+          {
+            "canonical_name": "frequency_ghz",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "GHz",
+            "original_value": 2.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:frequency_ghz:origin:0",
+                "source_ref": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:raw_text",
+                "span": [
+                  101,
+                  115
+                ],
+                "unit": "GHz",
+                "value": 2.0
+              }
+            ],
+            "parameter_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:frequency_ghz",
+            "status": "user_provided",
+            "unit": "GHz",
+            "value": 2.0
+          },
+          {
+            "canonical_name": "height1_above_sea_m",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "m",
+            "original_value": 30.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:height1_above_sea_m:origin:0",
+                "source_ref": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:raw_text",
+                "span": [
+                  132,
+                  155
+                ],
+                "unit": "m",
+                "value": 30.0
+              }
+            ],
+            "parameter_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:height1_above_sea_m",
+            "status": "user_provided",
+            "unit": "m",
+            "value": 30.0
+          },
+          {
+            "canonical_name": "height2_above_sea_m",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "m",
+            "original_value": 25.0,
+            "origins": [
+              {
+                "kind": "user_text",
+                "origin_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:height2_above_sea_m:origin:0",
+                "source_ref": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:raw_text",
+                "span": [
+                  157,
+                  180
+                ],
+                "unit": "m",
+                "value": 25.0
+              }
+            ],
+            "parameter_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:height2_above_sea_m",
+            "status": "user_provided",
+            "unit": "m",
+            "value": 25.0
+          },
+          {
+            "canonical_name": "k_factor",
+            "created_revision": 0,
+            "evidence_ids": [],
+            "original_unit": "1",
+            "original_value": 1.3333333333333333,
+            "origins": [
+              {
+                "kind": "default",
+                "origin_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:k_factor:origin:0",
+                "source_ref": "card:sea_reflection_two_ray#k_factor",
+                "span": null,
+                "unit": "1",
+                "value": 1.3333333333333333
+              }
+            ],
+            "parameter_id": "6f8ba74d-a579-4b50-80a9-e4a15d459b94:k_factor",
+            "status": "user_provided",
+            "unit": "1",
+            "value": 1.3333333333333333
+          }
+        ],
+        "conditions": [
+          "smooth_sea"
+        ],
+        "validation_ids": [
+          "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:result_integrity",
+          "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:snapshot_identity",
+          "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:input_consistency",
+          "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:plan_identity",
+          "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:evidence_consistency",
+          "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:model_identity",
+          "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:numeric_domain",
+          "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:step_chain",
+          "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:independent_magnitude",
+          "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:plan_checks",
+          "6f8ba74d-a579-4b50-80a9-e4a15d459b94:confirmed:result:requirement_and_solve"
+        ],
+        "conclusion": "按已确认输入，海面反射附加损耗（相对自由空间） 5.13 dB。",
+        "limitations": [
+          "有效地球半径系数按假设取 1.33333 1：标准大气典型值；须显式输入或确认，不自动应用。。",
+          "光滑海面、单一镜面反射点，只在视距内使用；反射点处等效高度必须大于 0。",
+          "反射系数 −1 是水平极化、小掠射角下的近似，实际随海况与极化变化；P.530 §6.1.2.4 指出掠射角大于约 0.7° 时，垂直极化的反射比水平极化弱 2–17 dB。",
+          "P.530 建议在 k 从 ke(99.9%) 到无穷大的范围内检查；此卡一次计算一个 k。",
+          "合成场比小于 0.1 时拒绝计算，避免反射系数 −1 时接近干涉零点的无界深衰落。"
+        ],
+        "evidence_refs": [
+          {
+            "card_version": "1.0.0",
+            "catalog_id": "sea_reflection_two_ray",
+            "content_hash": "abd9b585c446e5bc5bba26b6586df0e58668b7d7aa1d3b6b02656772788cb7a6",
+            "evidence_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c:sea_reflection_two_ray:0",
+            "excerpt": "计算海面镜面反射相对自由空间的附加损耗，负值为增强，最小约 −6.02 dB；计入等效地球曲率。",
+            "kind": "formula_card",
+            "knowledge_snapshot_id": "knowledge:e5fa4015d095432b05970bb3608f653d1fb527edd0676436cc7b8f839a9eb38c",
+            "locator": "§6.1.2.3 steps 3–4, equations (121)–(126), PDF pages 44–45 / printed pages 42–43; §6.1.2.4",
+            "parameter_names": [
+              "frequency_ghz",
+              "distance_km",
+              "height1_above_sea_m",
+              "height2_above_sea_m",
+              "k_factor"
+            ],
+            "relevance_rank": 1,
+            "source_id": null,
+            "source_title": "ITU-R P.530-19",
+            "source_url": "https://www.itu.int/rec/R-REC-P.530-19/en",
+            "status": "verified"
+          }
+        ],
+        "component_modes": {
+          "interpretation": "deterministic",
+          "retrieval": "lexical_fallback",
+          "calculation": "deterministic",
+          "review": "llm",
+          "orchestrator": "bounded_policy"
+        },
+        "runtime_health": "degraded",
+        "generated_at": "2026-09-30T05:29:02.645968+00:00",
+        "review": {
+          "assessment_hash": "3835efe67e03bcc35b0e0eac020a16439eae926b800481ce305c6dbdd7ea9727",
+          "decision": "pass",
+          "label": "通过",
+          "mode": "llm",
+          "summary": "声明的自由空间基准结果通过校验；不据此推断真实链路可用。",
+          "opinions": [],
+          "withheld": []
+        },
+        "answer": {
+          "text": "The smooth sea two-ray model yields an additional sea-reflection loss of 5.13 dB. This value represents attenuation relative to free space. The calculation assumes ideal smooth sea conditions and a k-factor of 1.33333.",
+          "mode": "llm",
+          "withheld": false
+        },
+        "explanation": [
+          {
+            "id": "step:sea_reflection_two_ray-step",
+            "note": "Calculated additional sea-reflection loss using ITU-R P.530-19 two-ray equations."
+          }
+        ],
+        "document_evidence": [
+          {
+            "id": "doc:sim-sites:s2-1",
+            "title": "站址表",
+            "excerpt": "# 站址表（模拟）\n\n## 表 1：WGS84 站点资料\n\n地面高程在演示公式中按 WGS84 椭球高处理；天线高度为离地高度，单位 m。D 站天线高度未知，保留空值并追问。\n\n| id | 名称 | 别名 | 纬度 deg | 经度 deg | 地面高程 m | 天线离地 m | 环境 |\n| --- | --- | --- | ---: | ---: | ---: | ---: | --- |\n| site:sim-a | A站 | A岸站 | 30.0500 | 122.1000 | 12 | 30 | 海岸 |\n| site:sim-b | B站 | B岛站 | 30.0229 | 122.4518 | 25 | 25 | 海岛 |\n| site:sim-c | C站 | — | 30.4300 | 122.8678 | 8 | 20 | 海岛 |\n| site:sim-d | D站 | — | 29.8810 | 122.0291 | 15 | 未知 | 海岸 |\n| site:sim-f | F站 | — | 29.9565 | 122.1623 | 6 | 15 | 内陆 |\n| site:sim-east | 东港站 | 港口站 | 30.2290 | 122.2740 | 5 | 20 | 港口 |\n| site:sim-west | 西港站 | 港口站 | 30.1488 | 121.9019 | 5 | 20 | 港口 |\n\n“港口站”同时指向东港站和西港站，使用前必须让用户选定。仅有两端坐标不能证明地形无遮挡。",
+            "source": {
+              "doc_id": "sim-sites",
+              "locator": "站址表（模拟） / 表 1：WGS84 站点资料, chunk 1",
+              "sha256": "2b776c0d45d1773baf28c34c2f44ac02d94b799fd56ad2cc5db922b0245cd0e8",
+              "simulated": true,
+              "title": "站址表",
+              "uri": "knowledge/documents/simulated/站址表.md",
+              "version": "2026-09-25"
+            }
+          },
+          {
+            "id": "doc:sim-sites:s0-1",
+            "title": "站址表",
+            "excerpt": "模拟数据，仅供演示。以下名称、坐标和高度均为虚构，不是实测站址。",
+            "source": {
+              "doc_id": "sim-sites",
+              "locator": "正文, chunk 1",
+              "sha256": "2b776c0d45d1773baf28c34c2f44ac02d94b799fd56ad2cc5db922b0245cd0e8",
+              "simulated": true,
+              "title": "站址表",
+              "uri": "knowledge/documents/simulated/站址表.md",
+              "version": "2026-09-25"
+            }
+          },
+          {
+            "id": "doc:sim-xx100:s0-1",
+            "title": "XX-100 手册",
+            "excerpt": "模拟数据，仅供演示。本手册及 XX-100 型号均为虚构，不构成真实设备规格。",
+            "source": {
+              "doc_id": "sim-xx100",
+              "locator": "正文, chunk 1",
+              "sha256": "74cd56505d040050e59ecaf9da5cdace04514984568780d0f90cdd1cef8c97c5",
+              "simulated": true,
+              "title": "XX-100 手册",
+              "uri": "knowledge/documents/simulated/XX-100 手册.md",
+              "version": "2026-09-25"
+            }
+          }
+        ]
+      },
+      "failure": null,
+      "passed": true,
+      "latency_s": 33.906,
+      "all_roles_llm": false
+    }
+  ],
+  "model_probe": {
+    "status": "ready",
+    "model": "commplan-qwen35-9b",
+    "endpoint": "http://127.0.0.1:18081",
+    "checked_at": "2026-09-30T05:25:20.994544+00:00"
+  },
+  "summary": {
+    "total": 9,
+    "task_and_numeric_pass": 7,
+    "all_roles_llm": 0
+  }
+}

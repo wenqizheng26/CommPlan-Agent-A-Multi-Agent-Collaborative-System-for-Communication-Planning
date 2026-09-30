@@ -1,0 +1,33 @@
+仅启动工作台；不启动或关闭模型服务。
+复用已有工作台，沿用该服务的数据库。
+工作台已就绪：http://127.0.0.1:18082
+页面默认使用确定性模式；模型就绪后可选择“本机 Qwen”。关闭本窗口后服务仍在后台运行，用“停止服务”关闭。
+已停止旧版工作台，启动当前版本。
+仅启动工作台；不启动或关闭模型服务。
+启动通信筹划工作台…
+工作台已就绪：http://127.0.0.1:18082
+页面默认使用确定性模式；模型就绪后可选择“本机 Qwen”。关闭本窗口后服务仍在后台运行，用“停止服务”关闭。
+仅启动工作台；不启动或关闭模型服务。
+启动通信筹划工作台…
+工作台已就绪：http://127.0.0.1:18083
+页面默认使用确定性模式；模型就绪后可选择“本机 Qwen”。关闭本窗口后服务仍在后台运行，用“停止服务”关闭。
+..................................................................EOF marker not found
+........EOF marker not found
+...................................EOF marker not found
+端口 18081（PID 11）未能关闭，请在任务管理器中结束该进程。
+已关闭本地模型：端口 18081（PID 11）
+已关闭工作台：端口 18082（PID 13）
+端口 18095（PID 99）不是 CommPlan 服务，未处理。
+........................................................................................................................................................................s........................................................F.........................................................................................................................
+======================================================================
+FAIL: test_demo_prompt_fits_the_4b_context_and_offers_the_quantities (test_requirement_labels.PromptTests.test_demo_prompt_fits_the_4b_context_and_offers_the_quantities)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\codex\项目\信号与AI\CommPlan-Agent-M1-codex\tests\test_requirement_labels.py", line 230, in test_demo_prompt_fits_the_4b_context_and_offers_the_quantities
+    self.assertIn('数量表：q1=2 GHz；q2=10 dB', payload['messages'][-1]['content'])
+AssertionError: '数量表：q1=2 GHz；q2=10 dB' not found in '以下是公式候选资料，仅用于理解公式ID，不能用作evidence：\n[{"id": "fspl_ghz", "title": "自由空间基本传输损耗", "description": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗", "required_conditions": ["free_space"], "parameters": {"frequency_ghz": {"unit": "GHz", "description": "载波频率"}, "distance_km": {"unit": "km", "description": "发射端到接收端的路径距离"}}}, {"id": "received_power", "title": "链路预算接收电平", "description": "按发射功率加收发天线增益、减去馈线、路径及额外损耗计算接收功率。路径损耗必须来自适用模型、测量或用户明确提供；此式不会根", "required_conditions": [], "parameters": {"tx_power_dbm": {"unit": "dBm", "description": "发射机输出功率，不是已含天线增益的 EIRP"}, "tx_gain_dbi": {"unit": "dBi", "description": "发射天线沿接收方向的增益，参考各向同性天线"}, "rx_gain_dbi": {"unit": "dBi", "description": "接收天线沿发射方向的增益，参考各向同性天线"}, "tx_loss_db": {"unit": "dB", "description": "发射馈线损耗；无损耗请显式填写 0"}, "rx_loss_db": {"unit": "dB", "description": "接收馈线损耗；无损耗请显式填写 0"}, "path_loss_db": {"unit": "dB", "description": "符合场景的基本路径损耗，不重复包含天线增益或馈线损耗"}, "extra_loss_db": {"unit": "dB", "description": "尚未计入其他项的额外损耗；无损耗请显式填写 0"}}}, {"id": "link_margin", "title": "扣除预留量后的链路电平余量", "description": "计算接收电平高于接收门限的余量，再扣除用户指定的工程预留量。接收门限必须对应同一调制、码率及误码或丢包要求；正余量不等于", "required_conditions": [], "parameters": {"rx_power_dbm": {"unit": "dBm", "description": "接收端输入参考面的信号电平"}, "rx_threshold_dbm": {"unit": "dBm", "description": "满足指定通信质量的接收灵敏度或门限"}, "reserve_db": {"unit": "dB", "description": "未计入接收电平或门限的工程预留量；不预留请显式填写 0"}}}]\n\n现在分析这个用户问题。evidence只能逐字引用下方问题，不要从公式资料复制：\n<question>A 站到 B 站用 XX-100 电台、2 GHz，要留 10 dB 余量，能通吗？不能的话发射功率至少要多大？</question>\n数量表：q1=2 GHz [原文上下文：A 站到 B 站用 XX-100 电台、2 GHz]；q2=10 dB [原文上下文：要留 10 dB 余量]'
+
+----------------------------------------------------------------------
+Ran 456 tests in 435.813s
+
+FAILED (failures=1, skipped=1)
