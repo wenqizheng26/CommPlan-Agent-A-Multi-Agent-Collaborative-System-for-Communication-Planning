@@ -614,7 +614,7 @@ const COASTAL={
 // Teacher cases: modulation table, default completion, comparison (TEACHER_CASES).
 const TEACHER={
  '选择调制方式':'Choose the modulation','默认补全，需确认':'Default value, please confirm','典型值表的默认值':'Default from the typical-value table',
- '默认补全':'Default value','调制方式对比':'Modulation comparison','调制':'Modulation','灵敏度 dBm':'Sensitivity dBm',
+ '默认补全':'Default value','采用默认补全':'Adopted default values','调制方式对比':'Modulation comparison','调制':'Modulation','灵敏度 dBm':'Sensitivity dBm',
  '接收电平 dBm':'Rx level dBm','余量 dB':'Margin dB',
  '各调制共用路径损耗与接收电平；灵敏度为模拟参数，可配置。':'All modulations share the path loss and the received level; the sensitivities are simulated, configurable values.',
  '只算自由空间，不计遮挡与损耗。':'Free space only; no blockage or losses.',
