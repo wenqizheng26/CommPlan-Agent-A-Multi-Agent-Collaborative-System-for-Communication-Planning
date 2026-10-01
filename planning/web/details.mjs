@@ -5,18 +5,20 @@ import {nodes,statusText,nodeStates} from './flow.mjs';
 import {roleModeNames,reviewDecisionNames} from './roles.mjs';
 import {provenance,settingsDrift,RETRIEVAL} from './settings.mjs';
 import {fmt} from './timing.mjs';
-import {assessmentNoteText,planPresentation,originLabel,answerPresentation,horizonPresentation,renderSolve,documentSource} from './m1.mjs';
-export const parameterNames={frequency_ghz:'载波频率',distance_km:'路径距离',tx_power_dbm:'发射功率',tx_gain_dbi:'发射天线增益',rx_gain_dbi:'接收天线增益',
+import {assessmentNoteText,planPresentation,originLabel,answerPresentation,horizonPresentation,renderSolve,documentSource,comparisonPresentation} from './m1.mjs';
+export const parameterNames={frequency_ghz:'载波频率',frequency_mhz:'载波频率',distance_km:'路径距离',tx_power_dbm:'发射功率',tx_gain_dbi:'发射天线增益',rx_gain_dbi:'接收天线增益',
  tx_loss_db:'发射馈线损耗',rx_loss_db:'接收馈线损耗',path_loss_db:'路径损耗',extra_loss_db:'额外损耗',rx_power_dbm:'接收信号电平',rx_threshold_dbm:'接收门限',reserve_db:'预留余量',link_margin_db:'链路余量'};
 Object.assign(parameterNames,{d1_km:'起点到障碍物距离',d2_km:'终点到障碍物距离',obstacle_height_m:'障碍物高出连线高度',height1_above_sea_m:'起点天线海面高度',height2_above_sea_m:'终点天线海面高度',k_factor:'有效地球半径系数',knife_edge_nu:'绕射参数',fresnel_radius_m:'第一菲涅耳区半径',knife_edge_loss_db:'单刃形绕射损耗',sea_reflection_loss_db:'海面反射附加损耗'});
-export const symbols={frequency_ghz:'f',distance_km:'d',tx_power_dbm:'Pt',tx_gain_dbi:'Gt',rx_gain_dbi:'Gr',tx_loss_db:'Lt',rx_loss_db:'Lr',path_loss_db:'L',extra_loss_db:'La',rx_power_dbm:'Pr',rx_threshold_dbm:'Pth',reserve_db:'M₀',link_margin_db:'M'};
+export const symbols={frequency_ghz:'f',frequency_mhz:'f',distance_km:'d',tx_power_dbm:'Pt',tx_gain_dbi:'Gt',rx_gain_dbi:'Gr',tx_loss_db:'Lt',rx_loss_db:'Lr',path_loss_db:'L',extra_loss_db:'La',rx_power_dbm:'Pr',rx_threshold_dbm:'Pth',reserve_db:'M₀',link_margin_db:'M'};
 Object.assign(parameterNames,{lat1_deg:'起点纬度',lon1_deg:'起点经度',ground1_m:'起点地面高程',antenna1_m:'起点天线高度',lat2_deg:'终点纬度',lon2_deg:'终点经度',ground2_m:'终点地面高程',antenna2_m:'终点天线高度',radio_horizon_km:'无线电视距'});
 // Registered expression written with symbols for reading; the program expression itself stays unchanged.
 export function symbolic(model){
  const expr=model.expression.replace(/[a-z]+(?:_[a-z0-9]+)+/g,n=>symbols[n]||parameterNames[n]||n).replaceAll('*',' · ').replace(/ - /g,' − ');
  return model.output?.name?`${symbols[model.output.name]||parameterNames[model.output.name]||model.output.name} = ${expr}`:expr;
 }
-export const toolNames={fspl_ghz:'自由空间损耗',received_power:'接收电平',link_margin:'链路余量',slant_range_wgs84:'直线距离',radio_horizon:'无线电视距'};
+// A card input taken from a parameter in another unit (planning/services/plans.py ALIASES).
+const ALIASES={frequency_mhz:{factor:1000,unit:'MHz'}};
+export const toolNames={fspl_ghz:'自由空间损耗',fspl_mhz:'自由空间损耗（MHz 式）',received_power:'接收电平',link_margin:'链路余量',slant_range_wgs84:'直线距离',radio_horizon:'无线电视距'};
 export const conditionNames={free_space:'自由空间模型',free_space_reference:'自由空间基准',non_free_space:'非自由空间环境'};
 export const targetNames={fspl_ghz:'路径损耗',received_power:'接收信号电平',link_margin:'链路余量'};
 Object.assign(toolNames,{fresnel_radius:'第一菲涅耳区半径',knife_edge_nu:'绕射参数',knife_edge_loss:'单刃形绕射损耗',sea_reflection_two_ray:'海面反射附加损耗'});
@@ -38,7 +40,7 @@ export function citation(ref){
  return name+(eq?` 式(${eq[1]})`:sec?` §${sec[1]}`:'');
 }
 // One row per plan step: every input names its source (text, manual, an earlier step, missing or conflicting).
-export function planSteps(plan,report,result,facts={},cards={}){
+export function planSteps(plan,report,result,facts={},cards={},text=''){
  const order=Object.fromEntries(plan.steps.map((s,i)=>[s.step_id,i+1]));
  const params=Object.fromEntries((report.parameters_proposal||[]).map(p=>[p.parameter_id,p]));
  const refs=Object.fromEntries((report.evidence_refs||[]).map(r=>[r.catalog_id,r]));
@@ -53,7 +55,10 @@ export function planSteps(plan,report,result,facts={},cards={}){
     if(b.kind==='step')return {...base,kind:'step',tag:'上一步',value:'← '+circled(order[b.ref]),ref:order[b.ref]};
     const p=params[b.ref];
     if(!p||p.value===null)return p?.status==='conflicting'?{...base,kind:'conflict',tag:'冲突',value:'待选定'}:{...base,kind:'missing',tag:'待补充',value:'待补充'};
-    return {...base,...originLabel(p,facts,cards),number:p.value,unit:p.unit,value:`${formatDomain(p.value)} ${p.unit}`};
+    const alias=name!==p.canonical_name&&ALIASES[name];
+    if(alias)return {...base,...originLabel(p,facts,cards,text),editable:false,number:p.value*alias.factor,unit:alias.unit,
+     value:`${formatDomain(p.value*alias.factor)} ${alias.unit}（${formatDomain(p.value)} ${p.unit} 换算）`};
+    return {...base,...originLabel(p,facts,cards,text),number:p.value,unit:p.unit,value:`${formatDomain(p.value)} ${p.unit}`};
    })};
  });
 }
@@ -89,7 +94,7 @@ function retrievalTable(found){
  return b;
 }
 
-const TAGS=[['missing','待补充'],['conflict','冲突'],['text','原文'],['manual','手填'],['site','站点库'],['device','设备库'],['default','假设'],['step','上一步']];
+const TAGS=[['missing','待补充'],['conflict','冲突'],['text','原文'],['suggested','默认补全'],['manual','手填'],['site','站点库'],['device','设备库'],['modulation','调制表'],['default','假设'],['step','上一步']];
 function sourceSummary(inputs){
  const count=new Map();for(const x of inputs)count.set(x.kind,(count.get(x.kind)||0)+1);
  return TAGS.filter(([k])=>count.has(k)).map(([k,t])=>t+(count.get(k)>1?` ×${count.get(k)}`:'')).join(' · ');
@@ -143,7 +148,7 @@ function planCard(host,ctx,open){
  const objective=plan.requirement?`链路余量 ≥ ${formatDomain(plan.requirement.value)} dB`+(plan.solve_if_unmet?'；不满足时求最小发射功率':''):plan.objective||'—';
  const goal=el('dl',undefined,'goal');goal.append(el('dt','目标'),el('dd',objective));
  const cond=(r.conditions||[]).map(c=>conditionNames[c]||c).join(' · ');if(cond)goal.append(el('dt','条件'),el('dd',cond));
- const steps=planSteps(plan,r,state.result||state.failure?.details,ctx.facts,ctx.cards);
+ const steps=planSteps(plan,r,state.result||state.failure?.details,ctx.facts,ctx.cards,state.request?.raw_text||'');
  if(horizonPresentation(state))for(const step of steps)if(!step.out)step.out='未计算';
  host.append(goal);
  if(presentation.assessment){const a=presentation.assessment,box=el('section',undefined,'applicability');box.append(el('h4','适用性评估 · '+(a.verdict==='ready'?'可以确认':'建议核对')));
@@ -160,7 +165,7 @@ function knownView(host,state,ctx={}){
  const box=el('section',undefined,'known');box.append(el('h3','已识别'));
  if(!known.length)box.append(el('p','尚未识别到参数','muted'));
  const ul=el('ul',undefined,'inputs');
- for(const p of known){const label=originLabel(p,ctx.facts,ctx.cards),row=el('li',undefined,'input '+label.kind);
+ for(const p of known){const label=originLabel(p,ctx.facts,ctx.cards,state.request?.raw_text||''),row=el('li',undefined,'input '+label.kind);
   row.append(el('span',parameterNames[p.canonical_name]||p.canonical_name,'in-name'),el('span',`${formatDomain(p.value)} ${p.unit}${approx.has(p.canonical_name)?'（近似）':''}`,'in-value'),el('span',label.tag,'tag '+label.kind));ul.append(row);}
  box.append(ul);host.append(box);
 }
@@ -178,6 +183,13 @@ function answer(host,state,comparison=null){
  const req=state.final_report.requirement;if(req)sec.append(el('p',`要求 ≥ ${formatDomain(req.value)} dB · ${req.met?'满足':'不满足'}`,req.met?'ok':'warn-text'));
  if(comparison)sec.append(el('p',comparison,'compare-line'));
  sec.append(el('p',(presentation.show?'程序结论：':'')+state.final_report.conclusion,presentation.show?'hint':'conclusion'));host.append(sec);
+ const compared=comparisonPresentation(state.final_report.comparison);
+ if(compared){
+  const b=el('section',undefined,'detail-block comparison');b.append(el('h3',compared.title));
+  const table=el('table'),head=el('tr');compared.head.forEach(t=>head.append(el('th',t)));table.append(head);
+  for(const r of compared.rows){const tr=el('tr',undefined,r.best?'best':'');r.cells.forEach((t,i)=>tr.append(i?el('td',t,i<4?'num':''):raw('td',t)));table.append(tr);}
+  const wrap=el('div',undefined,'table-wrap');wrap.append(table);b.append(wrap,el('p',compared.summary,'ok'),el('p',compared.note,'hint'));host.append(b);
+ }
  if(!presentation.caution&&presentation.opinions.length)host.append(block('审查意见',presentation.opinions));
  renderSolve(host,state.final_report.solve,el);
 }
@@ -194,7 +206,7 @@ function resultView(host,ctx){
  const drift=ctx.historical?[]:settingsDrift(state,ctx.settings);
  if(drift.length){const p=el('p',`默认设置已变：${drift.join('；')}。本结果不变。`,'drift');if(ctx.onReparse)p.append(button('按新设置重新解析',ctx.onReparse));host.append(p);}
  const r=state.review?.report||state.report,plan=r?.calculation_plan_proposal;
- if(plan)host.append(stepList(ctx,planSteps(plan,r,state.result,ctx.facts,ctx.cards),false));
+ if(plan)host.append(stepList(ctx,planSteps(plan,r,state.result,ctx.facts,ctx.cards,state.request?.raw_text||''),false));
  const v=state.validations||[];
  if(v.length){const d=fold(ctx,'checks',`${v.filter(x=>x.passed).length}/${v.length} 校验通过`,false,'checks'),ul=el('ul',undefined,'check-list');for(const x of v)ul.append(el('li',`${x.passed?'✓':'×'} ${checkNames[x.validator_id]||x.validator_id}`,x.passed?'ok':'bad'));d.append(ul);host.append(d);}
  const lim=(state.final_report.limitations||[]).map(humanize);
@@ -227,7 +239,7 @@ function paramsView(host,ctx){
   cell.append(button(`${parameterNames[name]||name}${symbols[name]?' · '+symbols[name]:''}`,()=>onParameter(name)));
   row.append(cell,el('td',param.value===null?(param.status==='conflicting'?'冲突':'缺失'):`${formatDomain(param.value)} ${param.unit}`,'num'));
   const sources=el('td');
-  for(const o of param.origins){const label=originLabel({...param,origins:[o]},ctx.facts,ctx.cards),line=el('small',`${label.tag} · ${formatDomain(o.value)} ${o.unit}`);
+  for(const o of param.origins){const label=originLabel({...param,origins:[o]},ctx.facts,ctx.cards,state.request?.raw_text||''),line=el('small',`${label.tag} · ${formatDomain(o.value)} ${o.unit}`);
    if(o.kind==='user_text'&&o.span)line.append(' · “',raw('span',sourceExcerpt(text,o.span)),'”');
    if(label.source)line.append(` · ${label.source.title} ${label.source.locator}`);sources.append(line);}
   const turn=state.conversation?.field_sources?.[name];if(turn)sources.append(el('small',`第 ${turn.number} 条补充`));

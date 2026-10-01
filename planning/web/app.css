@@ -525,3 +525,12 @@ html.translating body{visibility:hidden}
 .record-results{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;margin-top:8px}
 .record-results dt,.record-results dd{margin:0;font-size:12px}
 .record-results dd{text-align:right;font-variant-numeric:tabular-nums}
+
+/* Teacher cases: source tags for the modulation table and adopted suggestions, and the comparison table. */
+.tag.modulation{background:#e8f0fb}
+.tag.suggested{background:#fde8d4;color:#8a4b0f}
+.comparison table{width:100%;border-collapse:collapse;font-size:13px}
+.comparison th,.comparison td{padding:6px 5px;border-bottom:1px solid var(--hairline);text-align:left}
+.comparison td.num,.comparison th:not(:first-child){text-align:right}
+.comparison td:first-child{white-space:nowrap}
+.comparison tr.best td{font-weight:600;background:var(--accent-soft)}
