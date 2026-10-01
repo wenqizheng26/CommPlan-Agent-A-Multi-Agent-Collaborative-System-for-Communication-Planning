@@ -222,3 +222,119 @@
 > **完成标准**：
 > - 以上测试通过。
 > - 证据 `docs/codex/evidence/2026-10-0X-T2-tools.md` 写明四项：`/api/tools` 中 `calc_link_margin` 的 schema 原文；老师两组数据的计算结果；回归候选变化列表；测试数。
+
+## T3、T4 的环境（2026-10-01 追加）
+
+- **开始时机**：T2 提交后，Claude 审核 T1、T2 并合入 `claude/calc-plans`。之后在 `CommPlan-Agent-M1-codex` 执行 `git switch -c codex/m1-teacher-ui claude/calc-plans`，先做 T3，再做 T4。
+- **约定**：同 T1、T2。
+- **分工**：两项都只改页面：
+  - `planning/web/` 下的新模块、`app.js` 的接线、`index.html`、`app.css`、`i18n-en.mjs`；
+  - Node 测试、浏览器验收、证据。
+  - 不改 Python 业务代码。需要后端多给数据时，停下报告。
+- **Claude 同期改的页面文件**：`details.mjs`、`m1.mjs`、`questions.mjs`（结果页的对比表、来源标签、默认补全的表单）。这三个文件不要改；`app.js` 只加接线，不改已有逻辑。
+
+## 页面要用的数据（Claude 保证提供，T3、T4 按此实现）
+
+已在 `claude/calc-plans` 上：
+
+1. **模型调用事件**（`GET /api/tasks/<id>/activity`）：
+   - `node='llm'`，`phase` 为 `started`、`completed` 或 `failed`；
+   - `details` 包含 `caller`、`purpose`，有时还有 `model_id`、`latency_ms`、`usage`、`reason`、`attempt`。
+   - 按 `purpose` 对应到 Agent：
+     - `intent`、`supplement`、`followup` → Requirement；
+     - `compute_agent` → LinkBudget；
+     - `validator_agent` → Report；
+     - `extraction` → 资料抽取。
+2. **模型调用日志**（`GET /api/tasks/<id>/model-calls`）：
+   - 返回 `{calls: [...], file}`，每条为 `{call_id, task_id, event_id, action, revision, agent, agent_name, model, served, messages, response, status, latency_ms, usage, at}`。
+   - 一次需求解析可能重试多次。每次 HTTP 调用写一条日志，但活动事件只有一对 started/completed，所以按时间窗对应：同一 revision、同一 agent，`at` 落在该事件的 started 与 completed/failed 之间，前后各放宽 2 秒。
+   - 活动事件的 `purpose` 对应日志里的 `agent`：`intent` → `requirements`，`supplement` → `supplement`，其余与 `caller` 相同。
+3. **工具计算事件**：`node='tool'`、`phase='completed'`，`details` 有两种形式：
+   - **单步**：`{caller, step_id, tool_id, inputs, output: {name, value, unit}}`，每个计划步骤一条（已提供）。
+   - **按调制调用 `calc_link_margin`**：`{caller, tool_id: 'calc_link_margin', label: 'QPSK', arguments, result, steps: [{card, inputs, value, unit}]}`，每种调制一条；这种情况下没有单步事件。这一形式在 Claude 第 10 项完成后提供。
+
+Claude 第 5–10 项完成后提供：
+
+4. **参数来源**：`report.parameters_proposal[].origins[]` 增加两种：
+   - `kind: 'modulation'`，`source_ref` 如 `modulation:qpsk#rx_sensitivity_dbm`，显示为“调制表（QPSK，模拟参数）”；
+   - 采用的建议值，写进需求原文时紧跟“（默认补全）”，来源仍是 `user_text`。页面在该来源的 span 之后紧接“（默认补全）”时，显示“默认补全，需确认”。
+5. **采用建议值的那一轮对话**：`conversation.turns[]` 中 `kind: 'answer'`、`mode: 'suggestion'`，`answers: [{issue_id, title, answer, display}]`。
+6. **对比**：`final_report.comparison`，只有多种调制时才有：
+   - `parameter: 'rx_threshold_dbm'`；
+   - `rows: [{label, rx_sensitivity_dbm, path_loss_db, rx_power_dbm, link_margin_db, meets}]`；
+   - `margin_diff_db`、`recommend`。
+7. **工具调用记录**：`final_report.tool_calls: [{tool, label, arguments, result, status}]`，按调制计算时才有。
+
+## T3：对话区的“执行记录”
+
+> **目标**：页面上看得出谁调用了谁、执行到哪一步，以及每次模型调用、工具计算的概要。计算途中每完成一步就追加一张卡片。prompt 默认收起。
+>
+> **内容**：
+> 1. **纯函数** `records(state, events)`，放在新模块 `planning/web/records.mjs`：
+>    - 只用当前任务、当前 revision 的事件（沿用 `relevantEvents`），按时间排序。
+>    - **模型调用卡**：`{kind: 'model', agent, purpose, status, model, duration_ms, reason, started_at}`。
+>      - 一对 `started` 与 `completed`/`failed` 合成一张卡；只有 `started` 时状态为“运行中”。
+>      - 用途的中文：`intent` 需求解析，`supplement` 合并补充，`followup` 换用追问，`compute_agent` 写计划与适用性评估，`validator_agent` 解释与审查，`extraction` 资料抽取。
+>    - **工具计算卡**：
+>      - 单步事件：`{kind: 'tool', agent: 'LinkBudget', tool, inputs, output}`；
+>      - `calc_link_margin` 事件：`{kind: 'tool', tool: 'calc_link_margin', label, arguments, result, steps}`。
+>    - **没有事件时**（历史版本），由 `state.result.steps` 或 `state.final_report.tool_calls` 生成工具卡，模型卡省略，并标明“历史版本只显示工具计算”。
+> 2. **渲染**：在对话区、对话记录之后，加一段“执行记录”。
+>    - 两种卡片用不同的标记区分：“模型调用”“工具计算”。
+>    - 模型卡写成一行：`Requirement Agent → 本机模型 · 需求解析 · 完成 · 21.3 s`。
+>    - 工具卡：
+>      - 单步写一行，如 `LinkBudget Agent → fspl_mhz：d = 10 km，f = 5800 MHz → 127.71 dB`；
+>      - `calc_link_margin` 卡写出参数，以及 FSPL、Prx、灵敏度、余量、是否满足。
+>      - 数值显示两位小数，单位照原样。名称用 `details.mjs` 已导出的 `parameterNames` 和 `toolNames`，缺的名称在新模块里补。
+>    - 活动轮询更新时，卡片逐条追加；已展开的卡片保持展开。
+> 3. **查看 prompt 与 response**：模型卡上有“查看 prompt 与 response”。
+>    - 第一次展开时请求 `/api/tasks/<id>/model-calls`，按上面数据 2 的规则对应到日志条目。
+>    - 每条依次显示 system、user 消息和 response。response 能解析为 JSON 时缩进显示，内容区限高、可滚动。
+>    - 这部分内容标 `translate="no"`。
+>    - 找不到对应条目时显示“日志中没有对应记录”。
+> 4. **英文界面**：新出现的中文文字都在 `i18n-en.mjs` 里补上英文。
+>
+> **测试**：
+> - Node（新文件 `tests/planning_records.test.mjs`）覆盖：
+>   - 模型卡的合并、运行中、失败原因；
+>   - 两种工具卡；
+>   - 历史版本的回退；
+>   - 只取当前 revision；
+>   - 日志条目的时间窗对应（含重试多条、找不到）；
+>   - 英文整句能译出。
+> - 浏览器：用确定性模式跑 `tests/test_calculation_plans.py` 里的 `MARGIN` 需求，确认后应看到 3 张工具卡。截图写入证据。模型卡的展示用测试替身数据检查即可。
+> - 全量回归。
+>
+> **完成标准**：以上通过；证据 `docs/codex/evidence/2026-10-0X-T3-records.md`。
+
+## T4：报告视图（可打印成 PDF）
+
+> **目标**：结果页加“报告”，按老师列的字段排版，用浏览器打印或存为 PDF。
+>
+> **内容**：
+> 1. **纯函数** `reportModel(state)`，放在新模块 `planning/web/report.mjs`，返回各节的数据：
+>    1. 原始输入：`conversation.original_input.raw_text`，没有时用 `request.raw_text`。
+>    2. 解析字段：`report.parameters_proposal` 的名称、值、单位、来源标签。来源标签包括原文、手填、站点库、设备库、假设、调制表（数据 4）、默认补全（数据 4）。
+>    3. 缺失项与补全：
+>       - `resolved_input_issues` 中 `kind: 'missing'` 的项；
+>       - `mode: 'suggestion'` 的回答（数据 5）；
+>       - 都没有时写“无”。
+>    4. 工具调用参数：有 `final_report.tool_calls` 时列出每次调用的参数与结果；否则列 `result.steps` 的每步输入与输出。
+>    5. 计算结果：FSPL（`path_loss_db`）、Prx（`rx_power_dbm`）、灵敏度（`link_margin` 步骤的输入 `rx_threshold_dbm`）、余量（`link_margin_db`）、是否满足（余量 ≥ 0；有余量要求时按要求判断）。
+>    6. 对比表：有 `final_report.comparison` 时列出各行，并写差值和推荐。
+>    7. 模型解释：`final_report.answer.text`、`final_report.explanation` 的每步说明、`final_report.review.opinions`。
+>    8. 附注：任务编号、版本、完成时间、模型名（来自活动事件或 `component_modes`）、模型调用次数与工具计算次数。
+> 2. **页面**：
+>    - 任务完成后，结果区出现“报告”按钮，打开一个全宽的报告面板，内含“打印 / 存为 PDF”（调用 `window.print()`）。
+>    - 打印样式只输出报告，A4 纵向；表格不跨页断行；模拟参数处保留“模拟参数，可配置”字样。
+>    - 英文界面下报告随之翻译；用户原文和模型原话不翻译。
+>
+> **测试**：
+> - Node（新文件 `tests/planning_report.test.mjs`）：
+>   - 用确定性模式跑出的真实状态做夹具（`MARGIN` 需求，存为 JSON 夹具）；
+>   - 另造三份夹具：含调制来源与默认补全、含对比、只算 FSPL 的旧形状；
+>   - 检查每节都能生成，缺的数据显示“无”而不是报错。
+> - 浏览器：打开报告，并用打印预览（或 `window.print` 前的 DOM 检查）确认只输出报告。截图写入证据。
+> - 全量回归。
+>
+> **完成标准**：以上通过；证据 `docs/codex/evidence/2026-10-0X-T4-report.md`。
