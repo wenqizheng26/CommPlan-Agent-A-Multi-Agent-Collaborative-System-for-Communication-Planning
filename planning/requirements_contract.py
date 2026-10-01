@@ -116,12 +116,19 @@ def validate_request(value, *, expected_revision=None):
 
 def validate_report(value, request):
     request = validate_request(request)
-    require(type(value) is dict and set(REPORT_FIELDS.split())<=set(value)<=set(REPORT_FIELDS.split())|{'planning_role','document_retrieval'},'SCHEMA_FIELDS: report')
+    require(type(value) is dict and set(REPORT_FIELDS.split())<=set(value)<=set(REPORT_FIELDS.split())|{'planning_role','document_retrieval','suggestions'},'SCHEMA_FIELDS: report')
     json_value(value); identity(value)
     require(value['profile'] == PROFILE, 'PROFILE')
     for key in ('task_id', 'revision', 'request_id'):
         require(value[key] == request[key], 'REPORT_IDENTITY_MISMATCH')
     require(value['execution_status'] in STATUSES, 'INVALID_STATUS')
+    if 'suggestions' in value:
+        found = value['suggestions']
+        obj(found, 'mode items source')
+        require(value['execution_status'] == 'AWAITING_INPUT' and type(found['items']) is list and bool(found['items']), 'SUGGESTIONS')
+        for item in found['items']:
+            obj(item, 'field value unit reason note'); string(item['reason']); string(item['unit'])
+            require(item['field'] in {'distance_km', 'tx_power_dbm', 'tx_gain_dbi', 'rx_gain_dbi', 'modulation'}, 'SUGGESTIONS')
     require(value['runtime_health'] in {'ready', 'degraded', 'unavailable'}, 'INVALID_HEALTH')
     obj(value['component_modes'], 'interpretation retrieval')
     require(value['component_modes']['interpretation'] in {'llm', 'deterministic', 'stub'}, 'INVALID_MODE')

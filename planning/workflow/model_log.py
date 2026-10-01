@@ -11,7 +11,7 @@ import uuid
 from formula_rag.model_transport import call_log
 
 # The teacher's agent names for the roles that call the model.
-AGENTS = {'requirements': 'Requirement', 'supplement': 'Requirement', 'followup': 'Requirement',
+AGENTS = {'requirements': 'Requirement', 'supplement': 'Requirement', 'followup': 'Requirement', 'suggest': 'Requirement',
           'compute_agent': 'LinkBudget', 'validator_agent': 'Report', 'extraction': 'Extraction'}
 
 

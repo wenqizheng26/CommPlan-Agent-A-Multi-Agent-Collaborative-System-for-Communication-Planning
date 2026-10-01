@@ -110,6 +110,62 @@ class TeacherPathTests(unittest.TestCase):
             failed = [v['validator_id'] for v in calculation.validate_result(result, snapshot) if not v['passed']]
             self.assertEqual(failed, ['link_tool'], path)
 
+    def test_case_two_lists_the_gaps_with_table_suggestions_that_one_answer_adopts(self):
+        text = CASES['teacher_02']['text']
+        draft = self.service.apply(command(text=text, **manual(text)))['state']
+        self.assertEqual(draft['status'], 'AWAITING_INPUT')
+        found = draft['report']['suggestions']
+        self.assertEqual(found['mode'], 'deterministic')
+        self.assertEqual({x['field']: x['value'] for x in found['items']},
+                         dict(distance_km=10, tx_power_dbm=20, tx_gain_dbi=18, rx_gain_dbi=18, modulation='QPSK'))
+        issues = {i['field']: i for i in draft['input_issues']}
+        self.assertEqual(set(issues), {'distance_km', 'tx_power_dbm', 'tx_gain_dbi', 'rx_gain_dbi', 'modulation'})
+        self.assertEqual(issues['tx_power_dbm']['suggestion']['value'], '20dBm')
+        self.assertEqual(issues['modulation']['suggestion']['note'], '默认补全，需确认')
+        answers = {i['id']: i['suggestion']['value'] for i in issues.values()}
+        state = self.service.apply(command('answer', draft, answers=answers))['state']
+        self.assertEqual(state['status'], 'AWAITING_CONFIRMATION', state['report']['questions'])
+        for line in ('路径距离10km（默认补全）', '发射功率20dBm（默认补全）', '调制方式 QPSK（默认补全）'):
+            self.assertIn(line, state['request']['raw_text'])
+        turn = state['conversation']['turns'][-1]
+        self.assertEqual((turn['kind'], turn['mode']), ('answer', 'suggestion'))
+        self.assertTrue(all(a['suggested'] for a in turn['answers']))
+        self.assertNotIn('suggestions', state['report'])
+        done = self.service.apply(command('confirm', state))['state']
+        self.assert_rows([dict(done['final_report']['tool_calls'][0]['result'], label='QPSK')], CASES['teacher_02']['expected']['results'])
+
+    def test_a_typed_value_is_not_marked_as_a_default(self):
+        text = CASES['teacher_02']['text']
+        draft = self.service.apply(command(text=text, **manual(text)))['state']
+        issue = next(i for i in draft['input_issues'] if i['field'] == 'tx_power_dbm')
+        state = self.service.apply(command('answer', draft, answers={issue['id']: '23dBm'}))['state']
+        self.assertIn('发射功率23dBm', state['request']['raw_text'])
+        self.assertNotIn('（默认补全）', state['request']['raw_text'])
+        self.assertEqual(state['conversation']['turns'][-1]['mode'], 'user_answer')
+
+    def test_the_model_picks_a_candidate_with_a_reason_and_a_bad_pick_falls_back_to_the_table(self):
+        from planning.agents.requirements import RequirementsAgent
+        from planning.services.suggestions import suggestions_for
+        text = CASES['teacher_02']['text']
+        request = dict(schema_version='1.0.0', task_id='t', revision=0, request_id='r', raw_text=text,
+                       manual_parameters={}, condition=None, target='link_margin')
+        report = RequirementsAgent(ROOT, selector=False).run(request)
+
+        def selector(picks):
+            def call(role, prompt, view, schema):
+                self.assertEqual(role, 'suggest')
+                items = [dict(field=o['field'], value=picks.get(o['field'], o['default']), reason='要稳定，选抗干扰强的低阶调制'
+                              if o['field'] == 'modulation' else '典型取值') for o in view['open']]
+                return dict(output=dict(items=items), raw_output='', model='stub', usage={})
+            return call
+        found = suggestions_for(request, report, ROOT, selector({'tx_power_dbm': '23'}))
+        self.assertEqual(found['mode'], 'stub')
+        picked = {x['field']: x for x in found['items']}
+        self.assertEqual((picked['tx_power_dbm']['value'], picked['modulation']['reason']), (23, '要稳定，选抗干扰强的低阶调制'))
+        fallback = suggestions_for(request, report, ROOT, selector({'tx_power_dbm': '25'}))
+        self.assertEqual(fallback['mode'], 'deterministic_fallback')
+        self.assertEqual({x['field']: x['reason'] for x in fallback['items']}['tx_power_dbm'], '典型值表的默认值')
+
 
 if __name__ == '__main__':
     unittest.main()

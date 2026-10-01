@@ -611,16 +611,38 @@ const COASTAL={
  '补充模型的适用条件尚未声明。':'The supplementary model conditions have not been declared.',
  '请在需求中写明采用单刃形障碍物模型，或光滑海面单点镜面反射两径模型。':'State in the request that you use a single knife-edge model or a smooth-sea, single-reflection two-ray model.'
 };
+// Teacher cases: modulation table, default completion, comparison (TEACHER_CASES).
+const TEACHER={
+ '选择调制方式':'Choose the modulation','默认补全，需确认':'Default value, please confirm','典型值表的默认值':'Default from the typical-value table',
+ '默认补全':'Default value','调制方式对比':'Modulation comparison','调制':'Modulation','灵敏度 dBm':'Sensitivity dBm',
+ '接收电平 dBm':'Rx level dBm','余量 dB':'Margin dB',
+ '各调制共用路径损耗与接收电平；灵敏度为模拟参数，可配置。':'All modulations share the path loss and the received level; the sensitivities are simulated, configurable values.',
+ '只算自由空间，不计遮挡与损耗。':'Free space only; no blockage or losses.',
+ '发射馈线损耗、接收馈线损耗、额外损耗和预留量都按 0 计。':'Tx and Rx feeder losses, extra loss and reserve are taken as 0.',
+ '还没有调制方式，无法查调制表得到接收灵敏度。接收灵敏度按调制表取值（模拟参数，可配置）。':'No modulation yet, so the receiver sensitivity cannot be read from the modulation table. The sensitivity comes from the modulation table (simulated, configurable).',
+ '自由空间损耗（MHz 式）':'Free-space loss (MHz form)'
+};
+const TEACHER_PATTERNS=[
+ [/^全部采用默认值（(\d+) 项）$/,'Adopt all defaults ($1)'],
+ [/^相差 ([-\d.]+) dB · 推荐 (\S+)（余量最大）$/,'Spread $1 dB · recommended: $2 (largest margin)'],
+ [/^调制表 (\S+) · 模拟参数$/,'Modulation table $1 · simulated'],
+ [/^调制表 (\S+) · 模拟参数 · 默认补全$/,'Modulation table $1 · simulated · default value'],
+ [/^调制表中没有“(.+)”。接收灵敏度按调制表取值（模拟参数，可配置）。$/,'The modulation table has no “$1”. The sensitivity comes from the modulation table (simulated, configurable).'],
+ [/^接收灵敏度取调制表（模拟参数，可配置）：(.+)。$/,'Receiver sensitivity from the modulation table (simulated, configurable): $1.'],
+ [/^(.+)不在站点库，只作标签；距离按原文或补充的数值。$/,'Not in the site library, kept as labels: $1. The distance is the stated or supplied value.'],
+ [/^距离按原文；(.+)只作标签，未查站点库。$/,'Distance as stated; $1 kept as labels, not looked up in the site library.'],
+ [/^([\d.]+ \S+|\S+)（(\d+(?:\.\d+)? \S+) 换算）$/,'$1 (converted from $2)']
+];
 const RECORDS={
  '执行记录':'Execution records','模型调用':'Model call','工具计算':'Tool calculation','链路余量计算':'Link-margin calculation',
  '历史版本只显示工具计算':'Historical versions show tool calculations only','暂无执行记录。':'No execution records yet.',
  '查看 prompt 与 response':'View prompt and response','正在读取调用日志…':'Loading call logs…',
  '日志中没有对应记录':'No matching record in the logs','调用日志读取失败，请收起后重试。':'Could not load call logs. Collapse and reopen to retry.',
- '合并补充':'Merge supplementary input','换用追问':'Use a follow-up question','写计划与适用性评估':'Write the plan and assess applicability',
+ '合并补充':'Merge supplementary input','默认补全建议':'Suggest default values','换用追问':'Use a follow-up question','写计划与适用性评估':'Write the plan and assess applicability',
  '解释与审查':'Explain and review','资料抽取':'Extract source data','调制方式':'Modulation',
  '接收灵敏度':'Receiver sensitivity','要求余量':'Required margin','是否满足':'Meets requirement',
  '本机模型':'Local model'
 };
-export const EXACT={...PAGE,...FLOW,...PROGRESS,...DETAILS,...SETTINGS,...CHAT,...LIBRARY,...SERVER,...KNOWLEDGE,...COASTAL,...RECORDS};
+export const EXACT={...PAGE,...FLOW,...PROGRESS,...DETAILS,...SETTINGS,...CHAT,...LIBRARY,...SERVER,...KNOWLEDGE,...COASTAL,...RECORDS,...TEACHER};
 const RECORDS_PATTERNS=[[/^(调制方式|接收灵敏度|要求余量) = ([\s\S]+)$/,'$1 = $=2']];
-export const PATTERNS=[...PAGE_PATTERNS,...PROGRESS_PATTERNS,...DETAILS_PATTERNS,...SETTINGS_PATTERNS,...CHAT_PATTERNS,...LIBRARY_PATTERNS,...SERVER_PATTERNS,...KNOWLEDGE_PATTERNS,...RECORDS_PATTERNS];
+export const PATTERNS=[...PAGE_PATTERNS,...PROGRESS_PATTERNS,...DETAILS_PATTERNS,...SETTINGS_PATTERNS,...CHAT_PATTERNS,...LIBRARY_PATTERNS,...SERVER_PATTERNS,...KNOWLEDGE_PATTERNS,...RECORDS_PATTERNS,...TEACHER_PATTERNS];

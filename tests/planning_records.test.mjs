@@ -66,7 +66,7 @@ test('an optional attempt on a start does not leave a spinner when failure omits
 test('purpose maps all three teacher Agents and extraction and separates runs',()=>{
  const purposes = Object.keys(purposeNames);
  const cards = records(state,purposes.map((purpose,index) => event('llm','started',index,{caller:purpose,purpose})));
- assert.deepEqual(cards.map(card=>card.agent),['Requirement','Requirement','Requirement','LinkBudget','Report','资料抽取']);
+ assert.deepEqual(cards.map(card=>card.agent),['Requirement','Requirement','Requirement','Requirement','LinkBudget','Report','资料抽取']);
  const otherRun = event('llm','completed',31300,{caller:'requirements',purpose:'intent'},{run_id:'r2'});
  assert.equal(records(state,[model[0],otherRun])[0].status,'running');
 });

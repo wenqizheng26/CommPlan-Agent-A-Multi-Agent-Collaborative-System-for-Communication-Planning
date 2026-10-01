@@ -534,3 +534,4 @@ html.translating body{visibility:hidden}
 .comparison td.num,.comparison th:not(:first-child){text-align:right}
 .comparison td:first-child{white-space:nowrap}
 .comparison tr.best td{font-weight:600;background:var(--accent-soft)}
+.suggestion-note{grid-column:1/-1;margin:2px 0 4px;font-size:12px}
