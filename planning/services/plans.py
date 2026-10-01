@@ -14,8 +14,14 @@ COASTAL_TARGETS = ('fresnel_radius', 'knife_edge_nu', 'knife_edge_loss', 'sea_re
 TARGETS = BUDGET_TARGETS + COASTAL_TARGETS
 # Geometry from site records: the straight-line distance, and the radio horizon it must stay within.
 GEOMETRY = ('slant_range_wgs84', 'radio_horizon')
+# The teacher's link-margin path (TEACHER_CASES): path loss with frequency in MHz and the 32.44 constant.
+# Only that path uses it; everywhere else the path loss stays fspl_ghz, as in v0.1.0.
+TEACHER = ('fspl_mhz',)
 # Cards that may appear in a plan in this version.
-SUPPORTED = TARGETS + GEOMETRY
+SUPPORTED = TARGETS + GEOMETRY + TEACHER
+# A card input that is another parameter in a different unit: name -> (parameter, factor).
+ALIASES = {'frequency_mhz': ('frequency_ghz', 1000)}
+LINK_TOOL = 'calc_link_margin'
 OBJECTIVES = {'fspl_ghz': '自由空间单链路损耗基准',
               'received_power': '接收信号电平（链路预算）',
               'link_margin': '链路余量（链路预算）',
@@ -34,7 +40,7 @@ def producers(cards, exclude=()):
     return out
 
 
-def chain(target, cards, known, exclude=GEOMETRY):
+def chain(target, cards, known, exclude=GEOMETRY + TEACHER):
     """Backward-chain from target. Known names stay inputs; others come from the unique producer.
 
     Cards in exclude never produce an input. By default that is the geometry: the distance comes
@@ -86,10 +92,17 @@ def with_line_of_sight(order):
     return list(order[:i]) + ['radio_horizon'] + list(order[i:])
 
 
-def plan_for(request, order, cards, parameters, evidence_ids, requirement=None, solve_if_unmet=None, notes=()):
-    """notes are this task's own assumptions (values the user did not state); they come before card notes."""
+def plan_for(request, order, cards, parameters, evidence_ids, requirement=None, solve_if_unmet=None, notes=(), tool=None,
+             variants=()):
+    """notes are this task's own assumptions (values the user did not state); they come before card notes.
+
+    tool names the registered tool the chain is run as (calc_link_margin); variants are the other
+    modulations to compare, each with its own receiver sensitivity.
+    """
     by_id = {c['id']: c for c in cards}
     by_name = {p['canonical_name']: p for p in parameters}
+    by_name.update({alias: by_name[source] for alias, (source, _) in ALIASES.items()
+                    if source in by_name and alias not in by_name})
     step_ids = {card_id: ('fspl-step' if card_id == 'fspl_ghz' else card_id + '-step') for card_id in order}
     output_of = {by_id[card_id]['output']['name']: card_id for card_id in order}
     steps, required, assumptions = [], [], list(dict.fromkeys(notes))
@@ -103,8 +116,8 @@ def plan_for(request, order, cards, parameters, evidence_ids, requirement=None, 
                 dependencies.append(step_ids[source])
             else:
                 inputs[name] = dict(kind='parameter', ref=by_name[name]['parameter_id'], unit=spec['unit'])
-                if name not in required:
-                    required.append(name)
+                if by_name[name]['canonical_name'] not in required:
+                    required.append(by_name[name]['canonical_name'])
         steps.append(dict(step_id=step_ids[card_id], tool_id=card_id, inputs=inputs, expected_unit=card['output']['unit'],
                           dependencies=dependencies, required_conditions=list(card['applicability']['requires'])))
         assumptions.extend(n for n in card['applicability'].get('notes', []) if n not in assumptions)
@@ -121,8 +134,20 @@ def plan_for(request, order, cards, parameters, evidence_ids, requirement=None, 
         plan['requirement'] = dict(requirement)
     if solve_if_unmet:
         plan['solve_if_unmet'] = solve_if_unmet
+    if tool:
+        plan['tool'] = tool
+    if variants:
+        plan['variants'] = [dict(v) for v in variants]
     plan['plan_hash'] = digest(plan)
     return plan
+
+
+def bound(name, source, parameters):
+    """The value a card input takes from a confirmed parameter, converted when it is an alias."""
+    if source == name:
+        return parameters[name]
+    require(ALIASES.get(name, (None,))[0] == source, 'PLAN_BINDING')
+    return parameters[source] * ALIASES[name][1]
 
 
 def requires_free_space(order, cards):

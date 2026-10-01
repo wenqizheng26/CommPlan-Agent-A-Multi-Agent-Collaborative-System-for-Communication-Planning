@@ -45,7 +45,8 @@ EN_SWAPS = (('不超过 16 字，不写数字，例如“由两站经纬度与�
             ('每条 text 不超过 45 字', '每条 text 不超过 18 个英文词'))
 CONDITION_NAMES = {'free_space': '自由空间模型', 'free_space_reference': '自由空间基准', 'non_free_space': '实际非自由空间环境',
                    'maximum_doppler': '最大多普勒频移', 'two_way': '双程'}
-ORIGIN_NAMES = {'user_text': '原文', 'manual_form': '手填', 'site': '站点库', 'device': '设备库', 'default': '假设（卡片默认值）'}
+ORIGIN_NAMES = {'user_text': '原文', 'manual_form': '手填', 'site': '站点库', 'device': '设备库',
+                'modulation': '调制表（模拟参数）', 'default': '假设（卡片默认值）'}
 OUTPUT_NAMES = {'distance_km': '直线距离', 'radio_horizon_km': '视距', 'path_loss_db': '路径损耗',
                 'rx_power_dbm': '接收信号电平', 'link_margin_db': '链路余量'}
 
@@ -257,8 +258,11 @@ def decorate_plan(plan,role):
     return plan
 
 
-def available_cards(cards):
-    return [c for c in cards if c['id'] in SUPPORTED and c['status'] == 'verified']
+def available_cards(cards, plan=None):
+    """The cards the compute agent may choose; of the two path-loss cards, only the one the program's plan uses."""
+    used = {s['tool_id'] for s in plan['steps']} if plan else {'fspl_ghz'}
+    unused = {'fspl_ghz', 'fspl_mhz'} - used if used & {'fspl_ghz', 'fspl_mhz'} else {'fspl_mhz'}
+    return [c for c in cards if c['id'] in SUPPORTED and c['id'] not in unused and c['status'] == 'verified']
 
 
 def planning_view(request, report, available, root=None):
@@ -283,6 +287,10 @@ def planning_view(request, report, available, root=None):
             elif o['kind'] in ('site', 'device'):
                 r = records.get(o['source_ref'].split('#')[0])
                 parts.append(name + (' ' + r['names'][0] if r else ''))
+            elif o['kind'] == 'modulation':
+                parts.append(name + ' ' + o['source_ref'].split('#')[0].split(':')[1].upper())
+            elif o['source_ref'].startswith('tool:'):
+                parts.append('假设（' + o['source_ref'][len('tool:'):].split('#')[0] + '）')
             else:
                 parts.append(name)
         return '；'.join(dict.fromkeys(parts))
@@ -323,7 +331,7 @@ class PlanningAgent:
     def __init__(self,selector=False,root=None):self.selector=selector;self.root=root
 
     def run(self,request,report,cards,observer=None):
-        available=available_cards(cards)
+        available=available_cards(cards,report['calculation_plan_proposal'])
         facts=planning_view(request,report,available,self.root)
         string=lambda values:dict(type='string',enum=values)
         object_schema=lambda properties:dict(type='object',properties=properties,required=list(properties),additionalProperties=False)

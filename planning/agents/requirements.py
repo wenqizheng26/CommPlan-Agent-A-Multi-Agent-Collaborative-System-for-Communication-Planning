@@ -293,6 +293,12 @@ class RequirementsAgent:
         observed = {p['canonical_name'] for p in collect_parameters(request, original, [], numeric)[0]}
         facts = sources_for(request, entities, self.cards, final, observed, self.root)
         order, leaves = facts['order'], facts['leaves']
+        if facts['tool']:
+            # The registered link tool computes free space only; the condition is its assumption, not a question.
+            conditions |= set(facts['conditions'])
+            diagnostics.append(diagnostic('LINK_TOOL', '按调制方式计算链路余量：由登记工具 calc_link_margin 依次调用 '
+                                          + '、'.join(order) + '，只算自由空间。', tool=facts['tool'],
+                                          modulations=facts['modulations']))
         required = leaves if final else (REQUIRED if unsupported else [])
         parameters, conflicts, param_diagnostics = collect_parameters(request, original, required, numeric, facts['sources'])
         diagnostics.extend(param_diagnostics + facts['issues'])
@@ -307,8 +313,12 @@ class RequirementsAgent:
             diagnostics.append(diagnostic('SOLVE_REQUESTED', '已识别反求要求：余量不满足要求时，求最小发射功率。' if solve_if_unmet
                                           else '已识别反求要求，但原文没有余量要求，只计算余量。', unknown=solve['unknown']))
         missing = [p['canonical_name'] for p in parameters if p['status'] == 'missing']
+        # A modulation still to choose is asked for as such, not as a sensitivity in dBm.
+        asked = [m for m in missing if not (m == 'rx_threshold_dbm' and any(
+            d['code'] in {'MODULATION_NEEDED', 'MODULATION_UNKNOWN'} for d in facts['issues']))]
+        if asked:
+            questions.append('请补充：' + '、'.join(asked))
         if missing:
-            questions.append('请补充：' + '、'.join(missing))
             diagnostics.append(diagnostic('MISSING_INPUT', '必要参数尚未输入。', fields=missing))
         if conflicts:
             questions.append('请消除同一参数的来源冲突。')
@@ -361,7 +371,8 @@ class RequirementsAgent:
                                           next_action='明确改为自由空间基准，或等待对应模型接入。'))
         elif final and not available:
             diagnostics.append(diagnostic('EVIDENCE_UNAVAILABLE', '没有可用的已登记模型证据。', next_action='检查知识目录与目标。'))
-        plan = (plan_for(request, order, self.cards, parameters, evidence_ids, plan_requirement, solve_if_unmet, facts['notes'])
+        plan = (plan_for(request, order, self.cards, parameters, evidence_ids, plan_requirement, solve_if_unmet, facts['notes'],
+                         facts['tool'], facts['variants'])
                 if available and not unsupported else None)
         status = ('FAILED' if failed else 'NEEDS_MODEL' if unsupported or (final and not available) else
                   'AWAITING_INPUT' if questions or not plan else 'AWAITING_CONFIRMATION')

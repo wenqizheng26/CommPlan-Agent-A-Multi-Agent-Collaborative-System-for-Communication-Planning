@@ -86,11 +86,17 @@ def issues_for(state):
                 add('missing',field,'请补充'+NAMES[field],'可输入单值、区间或离散候选，必须包含单位。')
         elif min(numbers(p['value']))<=0:
             add('invalid',field,NAMES[field]+'必须大于零','区间的所有端点与候选都必须大于零。')
+    # The link tool takes the sensitivity from the modulation table: the modulation is chosen, not typed in dBm.
+    modulation=next((d for d in diagnostics if d['code'] in {'MODULATION_NEEDED','MODULATION_UNKNOWN'}),None)
+    if modulation:
+        det=modulation['details']
+        add('choice','modulation','选择调制方式',d_text(modulation),excerpt=det.get('mention',''),
+            choices=[dict(value=name,label=name) for name in det['choices']])
     # Link-budget inputs are answered one field at a time, like frequency and distance.
     unit=lambda f: FIELDS[f][1]
     for field in BUDGET:  # link order, transmitter first
         p=params.get(field)
-        if not p:
+        if not p or (modulation and field=='rx_threshold_dbm' and p['status']=='missing'):
             continue
         if p['status']=='conflicting':
             add('conflict',field,BUDGET[field]+'有多个冲突来源',f'输入最终采用的单个数值（含单位，例如 {example(field)}）。',
@@ -140,6 +146,10 @@ def issues_for(state):
         for question in report.get('questions',[]):
             add('clarification','task','请澄清当前描述',question,excerpt=question)
     return issues
+
+
+def d_text(diagnostic):
+    return diagnostic['message']+'接收灵敏度按调制表取值（模拟参数，可配置）。'
 
 
 def attach_issues(state,previous=None):
@@ -311,6 +321,15 @@ def apply_answers(current,answers,event_id):
             conversation['pending']=[p for p in conversation['pending'] if p.get('field')!=field]
         elif field in FACT_FIELDS:
             request['manual_parameters'][field]=fact_value(field,value)
+        elif field=='modulation':
+            require(value in {c['value'] for c in issue['choices']},'INVALID_ANSWER_CHOICE')
+            spans=[d['details']['span'] for d in current['report']['diagnostics']
+                   if d['code']=='MODULATION_UNKNOWN' and d['details']['mention']==issue['excerpt']]
+            if spans:  # the name the table lacks is replaced in place
+                start,end=spans[0]
+                request['raw_text']=request['raw_text'][:start]+value+request['raw_text'][end:]
+            else:
+                request['raw_text']=request['raw_text'].rstrip()+'\n调制方式 '+value+'。'
         elif field=='entity':
             require(value in {c['value'] for c in issue['choices']},'INVALID_ANSWER_CHOICE')
             [span]=[d['details']['span'] for d in current['report']['diagnostics']

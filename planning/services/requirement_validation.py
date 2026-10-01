@@ -126,7 +126,8 @@ def check_report(report, request, cards, root=None):
         order = facts['order']
         require([c['model_id'] for c in candidates] == order, 'PLAN_CANDIDATES')
         wanted, solve_if_unmet = plan_goal(r['requirement'], r['solve'], final, facts['leaves'])
-        expected = plan_for(request, order, cards, parameters, r['evidence_ids'], wanted, solve_if_unmet, facts['notes'])
+        expected = plan_for(request, order, cards, parameters, r['evidence_ids'], wanted, solve_if_unmet, facts['notes'],
+                            facts['tool'], facts['variants'])
         if 'planning_role' in r:
             from planning.agents.planner import (equivalent_plan, compile_proposal, decorate_plan, validate_assessment,
                                                  planning_view, available_cards)
@@ -134,7 +135,7 @@ def check_report(report, request, cards, root=None):
             require(type(role) is dict and role.get('mode') in {'llm','stub','deterministic','deterministic_fallback'},'PLAN_ROLE')
             # The facts the model was shown are rebuilt from the program's own plan; H4 is replayed against them.
             base=dict(r,calculation_plan_proposal=expected)
-            shown=planning_view(request,base,available_cards(cards),root)
+            shown=planning_view(request,base,available_cards(cards,expected),root)
             validate_assessment(role['proposal']['assessment'],base,stored=True,facts=shown)
             equivalent_plan(r['calculation_plan_proposal'],expected)
             replay=decorate_plan(compile_proposal(role['proposal'],base,cards,shown),role)
@@ -166,7 +167,7 @@ def check_report(report, request, cards, root=None):
         require(parsed['target_origin']=='explicit_text' or interpreted['targets'] != parsed['targets'] or any(d['code']=='MODEL_CALL' and any(a.get('kind')=='target' for a in d['details'].get('accepted',[])) for d in r['diagnostics']), 'TARGET_NOT_GROUNDED')
     require(final_target(target, cards) is not None and not parsed['unsupported_targets'], 'UNSUPPORTED_SCOPE')
     require(r['targets'] == target, 'TARGET_MISMATCH')
-    conditions = set(interpreted['conditions'])
+    conditions = set(interpreted['conditions']) | set(facts['conditions'])
     if request['condition']:
         conditions.add(request['condition'])
         if request['condition']=='free_space_reference':

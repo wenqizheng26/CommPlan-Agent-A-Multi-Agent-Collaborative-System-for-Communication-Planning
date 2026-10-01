@@ -190,6 +190,11 @@ class FactService:
                                        for record in matches]}
         return {'query': query, 'match_method': None, 'candidates': []}
 
+    def modulation_records(self):
+        """The modulation table, most robust (lowest sensitivity) first."""
+        import copy
+        return copy.deepcopy(sorted(self._records['modulation'], key=lambda r: r['rx_sensitivity_dbm']))
+
     def typical_values(self):
         import copy
         return copy.deepcopy(self._typical_values)
