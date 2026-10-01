@@ -1,0 +1,7 @@
+[
+  {"field":"distance_km","unit":"km","default":10,"candidates":[10],"note":"模拟参数，可配置；默认补全，需用户确认"},
+  {"field":"tx_power_dbm","unit":"dBm","default":20,"candidates":[17,20,23,27,30],"note":"模拟参数，可配置；默认补全，需用户确认"},
+  {"field":"tx_gain_dbi","unit":"dBi","default":18,"candidates":[12,18,24],"note":"模拟参数，可配置；默认补全，需用户确认"},
+  {"field":"rx_gain_dbi","unit":"dBi","default":18,"candidates":[12,18,24],"note":"模拟参数，可配置；默认补全，需用户确认"},
+  {"field":"modulation","unit":"—","default":"QPSK","candidates":["QPSK","16QAM","64QAM"],"note":"模拟参数，可配置；默认补全，需用户确认"}
+]

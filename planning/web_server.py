@@ -151,6 +151,9 @@ def create_server(root, db_path=None, port=18082):
             elif path=='/api/facts':
                 from planning.knowledge.facts import FactService
                 self.respond(200,FactService(service.root).public_records())
+            elif path=='/api/tools':
+                from formula_rag.registry import load_tools
+                self.respond(200,{'tools':load_tools(service.root)})
             elif path=='/api/documents' or path.startswith('/api/documents/') or path=='/api/drafts':
                 self.knowledge(path)
             elif path=='/api/formula-cards':

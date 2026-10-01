@@ -10,6 +10,7 @@ from formula_rag.catalog import load_catalog, validate_card
 from formula_rag.core import evaluate
 from formula_rag.presentation import formula_view
 from planning.agents.requirements import RequirementsAgent
+from tests.teacher_fixtures import copy_teacher_dependencies
 
 ROOT = Path(__file__).resolve().parents[1]
 IDS = ('fresnel_radius', 'knife_edge_nu', 'knife_edge_loss', 'sea_reflection_two_ray')
@@ -73,6 +74,7 @@ def regression_rows():
         raw=json.loads((ROOT/'knowledge/formulas.json').read_text(encoding='utf-8'))
         for folder,cards in ((before,[c for c in raw if c['id'] not in IDS]),(after,raw)):
             shutil.copytree(ROOT/'knowledge',folder/'knowledge',ignore=shutil.ignore_patterns('sources'))
+            copy_teacher_dependencies(folder)
             (folder/'knowledge/formulas.json').write_text(json.dumps(cards),encoding='utf-8')
         agents=[RequirementsAgent(folder,selector=False) for folder in (before,after)]
         for line in (ROOT/'tests/eval/m1_cases.jsonl').read_text(encoding='utf-8').splitlines():

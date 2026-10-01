@@ -12,6 +12,7 @@ from planning.knowledge.drafts import DraftStore
 from planning.workflow.task_service import TaskService
 from test_knowledge_drafts import TABLE, model
 from test_requirement_facts import ask, labeller
+from tests.teacher_fixtures import copy_teacher_dependencies
 
 ROOT = Path(__file__).resolve().parents[1]
 RADIOS = ('XX-300', 'XX-200', 'XX-100')
@@ -32,6 +33,7 @@ class FollowupTests(unittest.TestCase):
             shutil.copytree(ROOT / folder, self.root / folder)
         for name in ('knowledge/formulas.json', 'runtime_config.json'):
             shutil.copy(ROOT / name, self.root / name)
+        copy_teacher_dependencies(self.root)
         self.service = TaskService(self.root, Path(temp.name) / 'followup.sqlite')
         self.followup = None  # what the stub model answers for the follow-up role
 

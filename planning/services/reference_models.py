@@ -13,6 +13,11 @@ def fspl_ghz(i):
     return 20 * (math.log10(i['frequency_ghz']) + math.log10(i['distance_km']) + 12 + math.log10(4 * math.pi / C))
 
 
+def fspl_mhz(i):
+    # Independent 4*pi*d*f/c identity; exact c gives 32.4478, teacher uses 32.44.
+    return 20 * (math.log10(i['frequency_mhz']) + math.log10(i['distance_km']) + 9 + math.log10(4 * math.pi / C))
+
+
 def received_power(i):
     gains = i['tx_power_dbm'] + i['tx_gain_dbi'] + i['rx_gain_dbi']
     losses = i['tx_loss_db'] + i['rx_loss_db'] + i['path_loss_db'] + i['extra_loss_db']
@@ -90,7 +95,7 @@ def sea_reflection_two_ray(i):
 
 REFERENCE = {'fresnel_radius': (fresnel_radius, 0), 'knife_edge_nu': (knife_edge_nu, 1e-9),
              'knife_edge_loss': (knife_edge_loss, 1e-9), 'sea_reflection_two_ray': (sea_reflection_two_ray, 1e-5),
-             'fspl_ghz': (fspl_ghz, 0.05), 'received_power': (received_power, 1e-9),
+             'fspl_ghz': (fspl_ghz, 0.05), 'fspl_mhz': (fspl_mhz, 0.01), 'received_power': (received_power, 1e-9),
              'link_margin': (link_margin, 1e-9), 'radio_horizon': (radio_horizon, 1e-9),
              'slant_range_wgs84': (slant_range_wgs84, 1e-6)}
 

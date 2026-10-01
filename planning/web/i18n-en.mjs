@@ -284,6 +284,9 @@ const CHAT_PATTERNS=[
 
 // The 资料 page: documents, sections and drafts (library.mjs).
 const LIBRARY={
+ '调制灵敏度':'Modulation sensitivity','调制方式':'Modulation','灵敏度（dBm）':'Sensitivity (dBm)',
+ '模拟参数，可配置':'Simulated parameters, configurable','正在读取调制灵敏度…':'Reading modulation sensitivity…',
+ '调制灵敏度读取失败，请重新打开资料页。':'Could not load modulation sensitivity. Reopen the Library page.',
  '设备':'Device','名称':'Name','型号':'Model','额定发射功率 dBm':'Rated Tx power dBm','天线增益 dBi':'Antenna gain dBi','接收灵敏度 dBm':'Rx sensitivity dBm',
  '频段下限 GHz':'Band low GHz','频段上限 GHz':'Band high GHz','纬度 °':'Latitude °','经度 °':'Longitude °','地面高程 m':'Ground elevation m',
  '天线离地高度 m':'Antenna height m','坐标基准':'Datum','环境':'Environment','说明':'Description','表达式':'Expression','结果单位':'Output unit',

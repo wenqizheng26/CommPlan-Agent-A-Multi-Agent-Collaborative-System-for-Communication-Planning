@@ -1,0 +1,2853 @@
+{
+  "date": "2026-10-01",
+  "workspace": "CommPlan-Agent-M1-codex",
+  "branch": "codex/m1-teacher",
+  "collection": {
+    "temporary_complete_root": true,
+    "server_port_requested": 0,
+    "temporary_server_port": 57741,
+    "server_stopped_after_collection": true,
+    "live_workbench_ports_untouched": [
+      18081,
+      18082
+    ],
+    "model_calls": 0
+  },
+  "api_tools": {
+    "tools": [
+      {
+        "id": "fspl_ghz",
+        "kind": "card",
+        "title": "自由空间基本传输损耗",
+        "description": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "frequency_ghz": {
+              "type": "number",
+              "description": "载波频率（单位：GHz）",
+              "exclusiveMinimum": 0
+            },
+            "distance_km": {
+              "type": "number",
+              "description": "发射端到接收端的路径距离（单位：km）",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": [
+            "frequency_ghz",
+            "distance_km"
+          ],
+          "additionalProperties": false
+        },
+        "output_schema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "enum": [
+                "dB"
+              ]
+            }
+          },
+          "required": [
+            "value",
+            "unit"
+          ],
+          "additionalProperties": false
+        },
+        "content_hash": "2ed0e6930cf489981f389e87e7adcdb1af4b49eed9b495527ed2c5598898ba6d"
+      },
+      {
+        "id": "doppler_max",
+        "kind": "card",
+        "title": "单程最大多普勒频移上界",
+        "description": "用相对速率估计单程无线电链路的一阶多普勒频移幅度上界。上界取全部速度为径向分量；实际有符号频移还需要运动方向，不是任意方向的实际频移，也不适用于双程雷达。",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "frequency_ghz": {
+              "type": "number",
+              "description": "载波频率（单位：GHz）",
+              "exclusiveMinimum": 0
+            },
+            "speed_kmh": {
+              "type": "number",
+              "description": "收发端相对速率的非负幅值（单位：km/h）",
+              "minimum": 0,
+              "maximum": 1079252.8488
+            }
+          },
+          "required": [
+            "frequency_ghz",
+            "speed_kmh"
+          ],
+          "additionalProperties": false
+        },
+        "output_schema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "enum": [
+                "Hz"
+              ]
+            }
+          },
+          "required": [
+            "value",
+            "unit"
+          ],
+          "additionalProperties": false
+        },
+        "content_hash": "af102cabd63f88e9a57ee4cf874dcaa48f180badae2923d0c5b7e23a8cedcd93"
+      },
+      {
+        "id": "thermal_noise",
+        "kind": "card",
+        "title": "指定温度与带宽的热噪声功率",
+        "description": "按 N=kTB 计算指定等效噪声温度和噪声等效带宽内的可用热噪声功率，转换为 dBm。温度必须显式输入，不默认 290 K，也不将比特率直接当作噪声带宽。",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "temperature_k": {
+              "type": "number",
+              "description": "输入参考面上的等效噪声温度（单位：K）",
+              "exclusiveMinimum": 0
+            },
+            "bandwidth_hz": {
+              "type": "number",
+              "description": "噪声等效带宽，不是未经说明的比特率（单位：Hz）",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": [
+            "temperature_k",
+            "bandwidth_hz"
+          ],
+          "additionalProperties": false
+        },
+        "output_schema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "enum": [
+                "dBm"
+              ]
+            }
+          },
+          "required": [
+            "value",
+            "unit"
+          ],
+          "additionalProperties": false
+        },
+        "content_hash": "54ba422a416c858b64f8a46b0af93a12043fdfdfeb2477036b52d49c93b65614"
+      },
+      {
+        "id": "received_power",
+        "kind": "card",
+        "title": "链路预算接收电平",
+        "description": "按发射功率加收发天线增益、减去馈线、路径及额外损耗计算接收功率。路径损耗必须来自适用模型、测量或用户明确提供；此式不会根据环境自动估出路径损耗。",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "tx_power_dbm": {
+              "type": "number",
+              "description": "发射机输出功率，不是已含天线增益的 EIRP（单位：dBm）"
+            },
+            "tx_gain_dbi": {
+              "type": "number",
+              "description": "发射天线沿接收方向的增益，参考各向同性天线（单位：dBi）"
+            },
+            "rx_gain_dbi": {
+              "type": "number",
+              "description": "接收天线沿发射方向的增益，参考各向同性天线（单位：dBi）"
+            },
+            "tx_loss_db": {
+              "type": "number",
+              "description": "发射馈线损耗；无损耗请显式填写 0（单位：dB）",
+              "minimum": 0
+            },
+            "rx_loss_db": {
+              "type": "number",
+              "description": "接收馈线损耗；无损耗请显式填写 0（单位：dB）",
+              "minimum": 0
+            },
+            "path_loss_db": {
+              "type": "number",
+              "description": "符合场景的基本路径损耗，不重复包含天线增益或馈线损耗（单位：dB）",
+              "minimum": 0
+            },
+            "extra_loss_db": {
+              "type": "number",
+              "description": "尚未计入其他项的额外损耗；无损耗请显式填写 0（单位：dB）",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "tx_power_dbm",
+            "tx_gain_dbi",
+            "rx_gain_dbi",
+            "tx_loss_db",
+            "rx_loss_db",
+            "path_loss_db",
+            "extra_loss_db"
+          ],
+          "additionalProperties": false
+        },
+        "output_schema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "enum": [
+                "dBm"
+              ]
+            }
+          },
+          "required": [
+            "value",
+            "unit"
+          ],
+          "additionalProperties": false
+        },
+        "content_hash": "821fd133e0ce21c6ae15f6db03960cbc0da4b74c7fac1da041a639ba8b6525da"
+      },
+      {
+        "id": "link_margin",
+        "kind": "card",
+        "title": "扣除预留量后的链路电平余量",
+        "description": "计算接收电平高于接收门限的余量，再扣除用户指定的工程预留量。接收门限必须对应同一调制、码率及误码或丢包要求；正余量不等于已经验证现场可靠度。",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "rx_power_dbm": {
+              "type": "number",
+              "description": "接收端输入参考面的信号电平（单位：dBm）"
+            },
+            "rx_threshold_dbm": {
+              "type": "number",
+              "description": "满足指定通信质量的接收灵敏度或门限（单位：dBm）"
+            },
+            "reserve_db": {
+              "type": "number",
+              "description": "未计入接收电平或门限的工程预留量；不预留请显式填写 0（单位：dB）",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "rx_power_dbm",
+            "rx_threshold_dbm",
+            "reserve_db"
+          ],
+          "additionalProperties": false
+        },
+        "output_schema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "enum": [
+                "dB"
+              ]
+            }
+          },
+          "required": [
+            "value",
+            "unit"
+          ],
+          "additionalProperties": false
+        },
+        "content_hash": "2c81c3ffffc81a18ca2f0b5f66985f9ec91091e8a80433d935ed4fbd4af1c40a"
+      },
+      {
+        "id": "noise_density",
+        "kind": "card",
+        "title": "指定温度的热噪声谱密度",
+        "description": "由明确给出的参考噪声温度计算 kT 并转换为 dBm/Hz。温度必须输入，不默认为290 K。",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "temperature_k": {
+              "type": "number",
+              "description": "尚未计入接收机噪声系数的参考噪声温度（单位：K）",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": [
+            "temperature_k"
+          ],
+          "additionalProperties": false
+        },
+        "output_schema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "enum": [
+                "dBm/Hz"
+              ]
+            }
+          },
+          "required": [
+            "value",
+            "unit"
+          ],
+          "additionalProperties": false
+        },
+        "content_hash": "a384eca0d03e3715cd826453d6ac727c866d99fbdd2f370f871fb54971106c53"
+      },
+      {
+        "id": "receiver_threshold",
+        "kind": "card",
+        "title": "由 Eb/N0 与比特率计算接收门限",
+        "description": "按噪声谱密度、比特速率、所需 Eb/N0、接收机噪声系数和工程损失计算接收门限。参考噪声谱密度必须明确输入，或由显式参考温度计算；不会固定为-174。",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "noise_density_dbm_hz": {
+              "type": "number",
+              "description": "接收机附加噪声之前的参考噪声谱密度；已含噪声系数时不可重复加算（单位：dBm/Hz）"
+            },
+            "bit_rate_bps": {
+              "type": "number",
+              "description": "与 Eb/N0 定义一致的信息比特率；不能混用符号率或编码后速率（单位：bit/s）",
+              "exclusiveMinimum": 0
+            },
+            "ebn0_db": {
+              "type": "number",
+              "description": "指定调制、编码和误码率下所需 Eb/N0，以dB输入（单位：dB）"
+            },
+            "noise_figure_db": {
+              "type": "number",
+              "description": "相对于所采用参考温度的接收机噪声系数，不能与输入谱密度重复计入（单位：dB）",
+              "minimum": 0
+            },
+            "engineering_loss_db": {
+              "type": "number",
+              "description": "尚未计入 Eb/N0 门限的实现或工程损失；无损失需输入0（单位：dB）",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "noise_density_dbm_hz",
+            "bit_rate_bps",
+            "ebn0_db",
+            "noise_figure_db",
+            "engineering_loss_db"
+          ],
+          "additionalProperties": false
+        },
+        "output_schema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "enum": [
+                "dBm"
+              ]
+            }
+          },
+          "required": [
+            "value",
+            "unit"
+          ],
+          "additionalProperties": false
+        },
+        "content_hash": "342a4ea7bcd5446091c311ebec4bb9564c3468b8a812593daecf8cae3f171f54"
+      },
+      {
+        "id": "radio_horizon",
+        "kind": "card",
+        "title": "标准大气假设下的两端无线电视距",
+        "description": "按等效地球半径系数 k = 4/3 估算两端天线的无线电地平线距离之和；不考虑中间地形遮挡或菲涅耳区余隙，不能单独证明链路可用。",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "antenna1_m": {
+              "type": "number",
+              "description": "第一端天线离地高度（单位：m）",
+              "minimum": 0
+            },
+            "antenna2_m": {
+              "type": "number",
+              "description": "第二端天线离地高度（单位：m）",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "antenna1_m",
+            "antenna2_m"
+          ],
+          "additionalProperties": false
+        },
+        "output_schema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "enum": [
+                "km"
+              ]
+            }
+          },
+          "required": [
+            "value",
+            "unit"
+          ],
+          "additionalProperties": false
+        },
+        "content_hash": "90fe13c0286e5c001d11dc79e0ee56ad310367bcc7722bcc522c10de212f83e4"
+      },
+      {
+        "id": "slant_range_wgs84",
+        "kind": "card",
+        "title": "WGS84 两端天线直线距离",
+        "description": "将两端 WGS84 经纬度与椭球高转换为地心直角坐标，求两天线相位中心之间的弦长。地面高程加天线离地高度在此卡中按 WGS84 椭球高处理；若实测高程基准不同，需先转换。",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "lat1_deg": {
+              "type": "number",
+              "description": "第一端 WGS84 纬度（单位：deg）",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "lon1_deg": {
+              "type": "number",
+              "description": "第一端 WGS84 经度（单位：deg）",
+              "minimum": -180,
+              "maximum": 180
+            },
+            "ground1_m": {
+              "type": "number",
+              "description": "第一端地面 WGS84 椭球高（单位：m）"
+            },
+            "antenna1_m": {
+              "type": "number",
+              "description": "第一端天线离地高度（单位：m）",
+              "minimum": 0
+            },
+            "lat2_deg": {
+              "type": "number",
+              "description": "第二端 WGS84 纬度（单位：deg）",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "lon2_deg": {
+              "type": "number",
+              "description": "第二端 WGS84 经度（单位：deg）",
+              "minimum": -180,
+              "maximum": 180
+            },
+            "ground2_m": {
+              "type": "number",
+              "description": "第二端地面 WGS84 椭球高（单位：m）"
+            },
+            "antenna2_m": {
+              "type": "number",
+              "description": "第二端天线离地高度（单位：m）",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "lat1_deg",
+            "lon1_deg",
+            "ground1_m",
+            "antenna1_m",
+            "lat2_deg",
+            "lon2_deg",
+            "ground2_m",
+            "antenna2_m"
+          ],
+          "additionalProperties": false
+        },
+        "output_schema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "enum": [
+                "km"
+              ]
+            }
+          },
+          "required": [
+            "value",
+            "unit"
+          ],
+          "additionalProperties": false
+        },
+        "content_hash": "d1e5a3cd7cb157f9c78c675fb809ec44aa19e29d3484db65ca5f1803b7be9567"
+      },
+      {
+        "id": "fresnel_radius",
+        "kind": "card",
+        "title": "第一菲涅耳区半径",
+        "description": "按频率与障碍物到两端天线的距离计算第一菲涅耳区半径；不包含障碍物高度或地球曲率。",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "frequency_ghz": {
+              "type": "number",
+              "description": "载波频率（单位：GHz）",
+              "exclusiveMinimum": 0
+            },
+            "d1_km": {
+              "type": "number",
+              "description": "第一端天线到障碍物的距离（单位：km）",
+              "exclusiveMinimum": 0
+            },
+            "d2_km": {
+              "type": "number",
+              "description": "第二端天线到障碍物的距离（单位：km）",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": [
+            "frequency_ghz",
+            "d1_km",
+            "d2_km"
+          ],
+          "additionalProperties": false
+        },
+        "output_schema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "enum": [
+                "m"
+              ]
+            }
+          },
+          "required": [
+            "value",
+            "unit"
+          ],
+          "additionalProperties": false
+        },
+        "content_hash": "1c360d9fb5d0108f4c6eeaf5f34a1150587e999b6157b9de664760d97cc662de"
+      },
+      {
+        "id": "knife_edge_nu",
+        "kind": "card",
+        "title": "单刃形绕射参数 ν",
+        "description": "计算障碍物相对两端天线连线高度对应的无量纲绕射参数。",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "obstacle_height_m": {
+              "type": "number",
+              "description": "障碍物顶端高出两端天线连线为正，低于为负（单位：m）"
+            },
+            "d1_km": {
+              "type": "number",
+              "description": "第一端天线到障碍物的距离（单位：km）",
+              "exclusiveMinimum": 0
+            },
+            "d2_km": {
+              "type": "number",
+              "description": "第二端天线到障碍物的距离（单位：km）",
+              "exclusiveMinimum": 0
+            },
+            "frequency_ghz": {
+              "type": "number",
+              "description": "载波频率（单位：GHz）",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": [
+            "obstacle_height_m",
+            "d1_km",
+            "d2_km",
+            "frequency_ghz"
+          ],
+          "additionalProperties": false
+        },
+        "output_schema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "enum": [
+                "1"
+              ]
+            }
+          },
+          "required": [
+            "value",
+            "unit"
+          ],
+          "additionalProperties": false
+        },
+        "content_hash": "a043bcd464871669412892559ddb8f10bcdde29b1042a40302bcf2911a061740"
+      },
+      {
+        "id": "knife_edge_loss",
+        "kind": "card",
+        "title": "单刃形绕射附加损耗",
+        "description": "按 ν 估算单刃形绕射损耗；本近似式仅用于 ν > −0.78。",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "knife_edge_nu": {
+              "type": "number",
+              "description": "无量纲单刃形绕射参数 ν（单位：1）",
+              "exclusiveMinimum": -0.78
+            }
+          },
+          "required": [
+            "knife_edge_nu"
+          ],
+          "additionalProperties": false
+        },
+        "output_schema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "enum": [
+                "dB"
+              ]
+            }
+          },
+          "required": [
+            "value",
+            "unit"
+          ],
+          "additionalProperties": false
+        },
+        "content_hash": "944fe0b8554e821d81469f9172ee44259d57231ca9bce338928045f641ba1a0f"
+      },
+      {
+        "id": "sea_reflection_two_ray",
+        "kind": "card",
+        "title": "光滑海面球面地球两径附加损耗",
+        "description": "计算海面镜面反射相对自由空间的附加损耗，负值为增强，最小约 −6.02 dB；计入等效地球曲率。",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "frequency_ghz": {
+              "type": "number",
+              "description": "载波频率（单位：GHz）",
+              "exclusiveMinimum": 0
+            },
+            "distance_km": {
+              "type": "number",
+              "description": "两端路径距离（单位：km）",
+              "exclusiveMinimum": 0
+            },
+            "height1_above_sea_m": {
+              "type": "number",
+              "description": "第一端天线高出海面的高度，已含站址高程（单位：m）",
+              "exclusiveMinimum": 0
+            },
+            "height2_above_sea_m": {
+              "type": "number",
+              "description": "第二端天线高出海面的高度，已含站址高程（单位：m）",
+              "exclusiveMinimum": 0
+            },
+            "k_factor": {
+              "type": "number",
+              "description": "等效地球半径系数 k（单位：1）",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": [
+            "frequency_ghz",
+            "distance_km",
+            "height1_above_sea_m",
+            "height2_above_sea_m",
+            "k_factor"
+          ],
+          "additionalProperties": false
+        },
+        "output_schema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "enum": [
+                "dB"
+              ]
+            }
+          },
+          "required": [
+            "value",
+            "unit"
+          ],
+          "additionalProperties": false
+        },
+        "content_hash": "abd9b585c446e5bc5bba26b6586df0e58668b7d7aa1d3b6b02656772788cb7a6"
+      },
+      {
+        "id": "fspl_mhz",
+        "kind": "card",
+        "title": "老师验收口径的自由空间基本传输损耗",
+        "description": "老师链路余量验收工具使用的自由空间路径损耗。频率用 MHz、距离用 km，使用 32.44 常数；单独计算自由空间路径损耗仍用 fspl_ghz，以保持 v0.1.0 的结果。",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "frequency_mhz": {
+              "type": "number",
+              "description": "载波频率（单位：MHz）",
+              "exclusiveMinimum": 0
+            },
+            "distance_km": {
+              "type": "number",
+              "description": "发射端到接收端的路径距离（单位：km）",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": [
+            "frequency_mhz",
+            "distance_km"
+          ],
+          "additionalProperties": false
+        },
+        "output_schema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "enum": [
+                "dB"
+              ]
+            }
+          },
+          "required": [
+            "value",
+            "unit"
+          ],
+          "additionalProperties": false
+        },
+        "content_hash": "ef8a54c54fd58923fea7bb039f5829d33c3a2f906ae2879a766601b6c53496b4"
+      },
+      {
+        "id": "calc_link_margin",
+        "title": "链路余量计算",
+        "description": "用 MHz 频率口径的自由空间损耗、接收功率和调制灵敏度计算单链路余量；数值来自登记公式卡。",
+        "steps": [
+          "fspl_mhz",
+          "received_power",
+          "link_margin"
+        ],
+        "assumptions": [
+          "只算自由空间，不计遮挡与损耗",
+          "发射馈线损耗、接收馈线损耗、额外损耗和预留量都按 0 计"
+        ],
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "distance_km": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "链路距离，单位 km"
+            },
+            "frequency_mhz": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "载波频率，单位 MHz"
+            },
+            "tx_power_dbm": {
+              "type": "number",
+              "description": "发射功率，单位 dBm"
+            },
+            "tx_gain_dbi": {
+              "type": "number",
+              "description": "发射天线增益，单位 dBi"
+            },
+            "rx_gain_dbi": {
+              "type": "number",
+              "description": "接收天线增益，单位 dBi"
+            },
+            "modulation": {
+              "type": "string",
+              "description": "调制表中的规范名称，与直接给出的灵敏度二选一",
+              "enum": [
+                "QPSK",
+                "16QAM",
+                "64QAM"
+              ]
+            },
+            "rx_sensitivity_dbm": {
+              "type": "number",
+              "description": "接收灵敏度，单位 dBm，与调制方式二选一"
+            },
+            "required_margin_db": {
+              "type": "number",
+              "minimum": 0,
+              "description": "要求的链路余量，单位 dB；省略时按 0 计"
+            }
+          },
+          "required": [
+            "distance_km",
+            "frequency_mhz",
+            "tx_power_dbm",
+            "tx_gain_dbi",
+            "rx_gain_dbi"
+          ],
+          "oneOf": [
+            {
+              "required": [
+                "modulation"
+              ]
+            },
+            {
+              "required": [
+                "rx_sensitivity_dbm"
+              ]
+            }
+          ],
+          "additionalProperties": false
+        },
+        "output_schema": {
+          "type": "object",
+          "properties": {
+            "path_loss_db": {
+              "type": "number",
+              "description": "自由空间路径损耗，单位 dB"
+            },
+            "rx_power_dbm": {
+              "type": "number",
+              "description": "接收信号电平，单位 dBm"
+            },
+            "rx_sensitivity_dbm": {
+              "type": "number",
+              "description": "采用的接收灵敏度，单位 dBm"
+            },
+            "sensitivity_source": {
+              "type": "string",
+              "enum": [
+                "modulation_table",
+                "argument"
+              ]
+            },
+            "link_margin_db": {
+              "type": "number",
+              "description": "链路余量，单位 dB"
+            },
+            "required_margin_db": {
+              "type": "number",
+              "minimum": 0,
+              "description": "用于满足判断的要求余量，单位 dB"
+            },
+            "meets": {
+              "type": "boolean"
+            },
+            "modulation": {
+              "type": "string",
+              "enum": [
+                "QPSK",
+                "16QAM",
+                "64QAM"
+              ]
+            },
+            "simulated": {
+              "type": "boolean",
+              "enum": [
+                true
+              ]
+            }
+          },
+          "required": [
+            "path_loss_db",
+            "rx_power_dbm",
+            "rx_sensitivity_dbm",
+            "sensitivity_source",
+            "link_margin_db",
+            "required_margin_db",
+            "meets"
+          ],
+          "additionalProperties": false,
+          "oneOf": [
+            {
+              "properties": {
+                "sensitivity_source": {
+                  "enum": [
+                    "modulation_table"
+                  ]
+                }
+              },
+              "required": [
+                "modulation",
+                "simulated"
+              ]
+            },
+            {
+              "properties": {
+                "path_loss_db": {},
+                "rx_power_dbm": {},
+                "rx_sensitivity_dbm": {},
+                "sensitivity_source": {
+                  "enum": [
+                    "argument"
+                  ]
+                },
+                "link_margin_db": {},
+                "required_margin_db": {},
+                "meets": {}
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "kind": "composite",
+        "content_hash": "96ce9330adc3e75a41e914e1424f02eb7f8bd52b4ad4cf3f8f4ae81c9da2f830"
+      }
+    ]
+  },
+  "api_tools_response_body": "{\"tools\": [{\"id\": \"fspl_ghz\", \"kind\": \"card\", \"title\": \"自由空间基本传输损耗\", \"description\": \"自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。\", \"input_schema\": {\"type\": \"object\", \"properties\": {\"frequency_ghz\": {\"type\": \"number\", \"description\": \"载波频率（单位：GHz）\", \"exclusiveMinimum\": 0}, \"distance_km\": {\"type\": \"number\", \"description\": \"发射端到接收端的路径距离（单位：km）\", \"exclusiveMinimum\": 0}}, \"required\": [\"frequency_ghz\", \"distance_km\"], \"additionalProperties\": false}, \"output_schema\": {\"type\": \"object\", \"properties\": {\"value\": {\"type\": \"number\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"dB\"]}}, \"required\": [\"value\", \"unit\"], \"additionalProperties\": false}, \"content_hash\": \"2ed0e6930cf489981f389e87e7adcdb1af4b49eed9b495527ed2c5598898ba6d\"}, {\"id\": \"doppler_max\", \"kind\": \"card\", \"title\": \"单程最大多普勒频移上界\", \"description\": \"用相对速率估计单程无线电链路的一阶多普勒频移幅度上界。上界取全部速度为径向分量；实际有符号频移还需要运动方向，不是任意方向的实际频移，也不适用于双程雷达。\", \"input_schema\": {\"type\": \"object\", \"properties\": {\"frequency_ghz\": {\"type\": \"number\", \"description\": \"载波频率（单位：GHz）\", \"exclusiveMinimum\": 0}, \"speed_kmh\": {\"type\": \"number\", \"description\": \"收发端相对速率的非负幅值（单位：km/h）\", \"minimum\": 0, \"maximum\": 1079252.8488}}, \"required\": [\"frequency_ghz\", \"speed_kmh\"], \"additionalProperties\": false}, \"output_schema\": {\"type\": \"object\", \"properties\": {\"value\": {\"type\": \"number\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"Hz\"]}}, \"required\": [\"value\", \"unit\"], \"additionalProperties\": false}, \"content_hash\": \"af102cabd63f88e9a57ee4cf874dcaa48f180badae2923d0c5b7e23a8cedcd93\"}, {\"id\": \"thermal_noise\", \"kind\": \"card\", \"title\": \"指定温度与带宽的热噪声功率\", \"description\": \"按 N=kTB 计算指定等效噪声温度和噪声等效带宽内的可用热噪声功率，转换为 dBm。温度必须显式输入，不默认 290 K，也不将比特率直接当作噪声带宽。\", \"input_schema\": {\"type\": \"object\", \"properties\": {\"temperature_k\": {\"type\": \"number\", \"description\": \"输入参考面上的等效噪声温度（单位：K）\", \"exclusiveMinimum\": 0}, \"bandwidth_hz\": {\"type\": \"number\", \"description\": \"噪声等效带宽，不是未经说明的比特率（单位：Hz）\", \"exclusiveMinimum\": 0}}, \"required\": [\"temperature_k\", \"bandwidth_hz\"], \"additionalProperties\": false}, \"output_schema\": {\"type\": \"object\", \"properties\": {\"value\": {\"type\": \"number\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"dBm\"]}}, \"required\": [\"value\", \"unit\"], \"additionalProperties\": false}, \"content_hash\": \"54ba422a416c858b64f8a46b0af93a12043fdfdfeb2477036b52d49c93b65614\"}, {\"id\": \"received_power\", \"kind\": \"card\", \"title\": \"链路预算接收电平\", \"description\": \"按发射功率加收发天线增益、减去馈线、路径及额外损耗计算接收功率。路径损耗必须来自适用模型、测量或用户明确提供；此式不会根据环境自动估出路径损耗。\", \"input_schema\": {\"type\": \"object\", \"properties\": {\"tx_power_dbm\": {\"type\": \"number\", \"description\": \"发射机输出功率，不是已含天线增益的 EIRP（单位：dBm）\"}, \"tx_gain_dbi\": {\"type\": \"number\", \"description\": \"发射天线沿接收方向的增益，参考各向同性天线（单位：dBi）\"}, \"rx_gain_dbi\": {\"type\": \"number\", \"description\": \"接收天线沿发射方向的增益，参考各向同性天线（单位：dBi）\"}, \"tx_loss_db\": {\"type\": \"number\", \"description\": \"发射馈线损耗；无损耗请显式填写 0（单位：dB）\", \"minimum\": 0}, \"rx_loss_db\": {\"type\": \"number\", \"description\": \"接收馈线损耗；无损耗请显式填写 0（单位：dB）\", \"minimum\": 0}, \"path_loss_db\": {\"type\": \"number\", \"description\": \"符合场景的基本路径损耗，不重复包含天线增益或馈线损耗（单位：dB）\", \"minimum\": 0}, \"extra_loss_db\": {\"type\": \"number\", \"description\": \"尚未计入其他项的额外损耗；无损耗请显式填写 0（单位：dB）\", \"minimum\": 0}}, \"required\": [\"tx_power_dbm\", \"tx_gain_dbi\", \"rx_gain_dbi\", \"tx_loss_db\", \"rx_loss_db\", \"path_loss_db\", \"extra_loss_db\"], \"additionalProperties\": false}, \"output_schema\": {\"type\": \"object\", \"properties\": {\"value\": {\"type\": \"number\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"dBm\"]}}, \"required\": [\"value\", \"unit\"], \"additionalProperties\": false}, \"content_hash\": \"821fd133e0ce21c6ae15f6db03960cbc0da4b74c7fac1da041a639ba8b6525da\"}, {\"id\": \"link_margin\", \"kind\": \"card\", \"title\": \"扣除预留量后的链路电平余量\", \"description\": \"计算接收电平高于接收门限的余量，再扣除用户指定的工程预留量。接收门限必须对应同一调制、码率及误码或丢包要求；正余量不等于已经验证现场可靠度。\", \"input_schema\": {\"type\": \"object\", \"properties\": {\"rx_power_dbm\": {\"type\": \"number\", \"description\": \"接收端输入参考面的信号电平（单位：dBm）\"}, \"rx_threshold_dbm\": {\"type\": \"number\", \"description\": \"满足指定通信质量的接收灵敏度或门限（单位：dBm）\"}, \"reserve_db\": {\"type\": \"number\", \"description\": \"未计入接收电平或门限的工程预留量；不预留请显式填写 0（单位：dB）\", \"minimum\": 0}}, \"required\": [\"rx_power_dbm\", \"rx_threshold_dbm\", \"reserve_db\"], \"additionalProperties\": false}, \"output_schema\": {\"type\": \"object\", \"properties\": {\"value\": {\"type\": \"number\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"dB\"]}}, \"required\": [\"value\", \"unit\"], \"additionalProperties\": false}, \"content_hash\": \"2c81c3ffffc81a18ca2f0b5f66985f9ec91091e8a80433d935ed4fbd4af1c40a\"}, {\"id\": \"noise_density\", \"kind\": \"card\", \"title\": \"指定温度的热噪声谱密度\", \"description\": \"由明确给出的参考噪声温度计算 kT 并转换为 dBm/Hz。温度必须输入，不默认为290 K。\", \"input_schema\": {\"type\": \"object\", \"properties\": {\"temperature_k\": {\"type\": \"number\", \"description\": \"尚未计入接收机噪声系数的参考噪声温度（单位：K）\", \"exclusiveMinimum\": 0}}, \"required\": [\"temperature_k\"], \"additionalProperties\": false}, \"output_schema\": {\"type\": \"object\", \"properties\": {\"value\": {\"type\": \"number\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"dBm/Hz\"]}}, \"required\": [\"value\", \"unit\"], \"additionalProperties\": false}, \"content_hash\": \"a384eca0d03e3715cd826453d6ac727c866d99fbdd2f370f871fb54971106c53\"}, {\"id\": \"receiver_threshold\", \"kind\": \"card\", \"title\": \"由 Eb/N0 与比特率计算接收门限\", \"description\": \"按噪声谱密度、比特速率、所需 Eb/N0、接收机噪声系数和工程损失计算接收门限。参考噪声谱密度必须明确输入，或由显式参考温度计算；不会固定为-174。\", \"input_schema\": {\"type\": \"object\", \"properties\": {\"noise_density_dbm_hz\": {\"type\": \"number\", \"description\": \"接收机附加噪声之前的参考噪声谱密度；已含噪声系数时不可重复加算（单位：dBm/Hz）\"}, \"bit_rate_bps\": {\"type\": \"number\", \"description\": \"与 Eb/N0 定义一致的信息比特率；不能混用符号率或编码后速率（单位：bit/s）\", \"exclusiveMinimum\": 0}, \"ebn0_db\": {\"type\": \"number\", \"description\": \"指定调制、编码和误码率下所需 Eb/N0，以dB输入（单位：dB）\"}, \"noise_figure_db\": {\"type\": \"number\", \"description\": \"相对于所采用参考温度的接收机噪声系数，不能与输入谱密度重复计入（单位：dB）\", \"minimum\": 0}, \"engineering_loss_db\": {\"type\": \"number\", \"description\": \"尚未计入 Eb/N0 门限的实现或工程损失；无损失需输入0（单位：dB）\", \"minimum\": 0}}, \"required\": [\"noise_density_dbm_hz\", \"bit_rate_bps\", \"ebn0_db\", \"noise_figure_db\", \"engineering_loss_db\"], \"additionalProperties\": false}, \"output_schema\": {\"type\": \"object\", \"properties\": {\"value\": {\"type\": \"number\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"dBm\"]}}, \"required\": [\"value\", \"unit\"], \"additionalProperties\": false}, \"content_hash\": \"342a4ea7bcd5446091c311ebec4bb9564c3468b8a812593daecf8cae3f171f54\"}, {\"id\": \"radio_horizon\", \"kind\": \"card\", \"title\": \"标准大气假设下的两端无线电视距\", \"description\": \"按等效地球半径系数 k = 4/3 估算两端天线的无线电地平线距离之和；不考虑中间地形遮挡或菲涅耳区余隙，不能单独证明链路可用。\", \"input_schema\": {\"type\": \"object\", \"properties\": {\"antenna1_m\": {\"type\": \"number\", \"description\": \"第一端天线离地高度（单位：m）\", \"minimum\": 0}, \"antenna2_m\": {\"type\": \"number\", \"description\": \"第二端天线离地高度（单位：m）\", \"minimum\": 0}}, \"required\": [\"antenna1_m\", \"antenna2_m\"], \"additionalProperties\": false}, \"output_schema\": {\"type\": \"object\", \"properties\": {\"value\": {\"type\": \"number\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"km\"]}}, \"required\": [\"value\", \"unit\"], \"additionalProperties\": false}, \"content_hash\": \"90fe13c0286e5c001d11dc79e0ee56ad310367bcc7722bcc522c10de212f83e4\"}, {\"id\": \"slant_range_wgs84\", \"kind\": \"card\", \"title\": \"WGS84 两端天线直线距离\", \"description\": \"将两端 WGS84 经纬度与椭球高转换为地心直角坐标，求两天线相位中心之间的弦长。地面高程加天线离地高度在此卡中按 WGS84 椭球高处理；若实测高程基准不同，需先转换。\", \"input_schema\": {\"type\": \"object\", \"properties\": {\"lat1_deg\": {\"type\": \"number\", \"description\": \"第一端 WGS84 纬度（单位：deg）\", \"minimum\": -90, \"maximum\": 90}, \"lon1_deg\": {\"type\": \"number\", \"description\": \"第一端 WGS84 经度（单位：deg）\", \"minimum\": -180, \"maximum\": 180}, \"ground1_m\": {\"type\": \"number\", \"description\": \"第一端地面 WGS84 椭球高（单位：m）\"}, \"antenna1_m\": {\"type\": \"number\", \"description\": \"第一端天线离地高度（单位：m）\", \"minimum\": 0}, \"lat2_deg\": {\"type\": \"number\", \"description\": \"第二端 WGS84 纬度（单位：deg）\", \"minimum\": -90, \"maximum\": 90}, \"lon2_deg\": {\"type\": \"number\", \"description\": \"第二端 WGS84 经度（单位：deg）\", \"minimum\": -180, \"maximum\": 180}, \"ground2_m\": {\"type\": \"number\", \"description\": \"第二端地面 WGS84 椭球高（单位：m）\"}, \"antenna2_m\": {\"type\": \"number\", \"description\": \"第二端天线离地高度（单位：m）\", \"minimum\": 0}}, \"required\": [\"lat1_deg\", \"lon1_deg\", \"ground1_m\", \"antenna1_m\", \"lat2_deg\", \"lon2_deg\", \"ground2_m\", \"antenna2_m\"], \"additionalProperties\": false}, \"output_schema\": {\"type\": \"object\", \"properties\": {\"value\": {\"type\": \"number\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"km\"]}}, \"required\": [\"value\", \"unit\"], \"additionalProperties\": false}, \"content_hash\": \"d1e5a3cd7cb157f9c78c675fb809ec44aa19e29d3484db65ca5f1803b7be9567\"}, {\"id\": \"fresnel_radius\", \"kind\": \"card\", \"title\": \"第一菲涅耳区半径\", \"description\": \"按频率与障碍物到两端天线的距离计算第一菲涅耳区半径；不包含障碍物高度或地球曲率。\", \"input_schema\": {\"type\": \"object\", \"properties\": {\"frequency_ghz\": {\"type\": \"number\", \"description\": \"载波频率（单位：GHz）\", \"exclusiveMinimum\": 0}, \"d1_km\": {\"type\": \"number\", \"description\": \"第一端天线到障碍物的距离（单位：km）\", \"exclusiveMinimum\": 0}, \"d2_km\": {\"type\": \"number\", \"description\": \"第二端天线到障碍物的距离（单位：km）\", \"exclusiveMinimum\": 0}}, \"required\": [\"frequency_ghz\", \"d1_km\", \"d2_km\"], \"additionalProperties\": false}, \"output_schema\": {\"type\": \"object\", \"properties\": {\"value\": {\"type\": \"number\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"m\"]}}, \"required\": [\"value\", \"unit\"], \"additionalProperties\": false}, \"content_hash\": \"1c360d9fb5d0108f4c6eeaf5f34a1150587e999b6157b9de664760d97cc662de\"}, {\"id\": \"knife_edge_nu\", \"kind\": \"card\", \"title\": \"单刃形绕射参数 ν\", \"description\": \"计算障碍物相对两端天线连线高度对应的无量纲绕射参数。\", \"input_schema\": {\"type\": \"object\", \"properties\": {\"obstacle_height_m\": {\"type\": \"number\", \"description\": \"障碍物顶端高出两端天线连线为正，低于为负（单位：m）\"}, \"d1_km\": {\"type\": \"number\", \"description\": \"第一端天线到障碍物的距离（单位：km）\", \"exclusiveMinimum\": 0}, \"d2_km\": {\"type\": \"number\", \"description\": \"第二端天线到障碍物的距离（单位：km）\", \"exclusiveMinimum\": 0}, \"frequency_ghz\": {\"type\": \"number\", \"description\": \"载波频率（单位：GHz）\", \"exclusiveMinimum\": 0}}, \"required\": [\"obstacle_height_m\", \"d1_km\", \"d2_km\", \"frequency_ghz\"], \"additionalProperties\": false}, \"output_schema\": {\"type\": \"object\", \"properties\": {\"value\": {\"type\": \"number\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"1\"]}}, \"required\": [\"value\", \"unit\"], \"additionalProperties\": false}, \"content_hash\": \"a043bcd464871669412892559ddb8f10bcdde29b1042a40302bcf2911a061740\"}, {\"id\": \"knife_edge_loss\", \"kind\": \"card\", \"title\": \"单刃形绕射附加损耗\", \"description\": \"按 ν 估算单刃形绕射损耗；本近似式仅用于 ν > −0.78。\", \"input_schema\": {\"type\": \"object\", \"properties\": {\"knife_edge_nu\": {\"type\": \"number\", \"description\": \"无量纲单刃形绕射参数 ν（单位：1）\", \"exclusiveMinimum\": -0.78}}, \"required\": [\"knife_edge_nu\"], \"additionalProperties\": false}, \"output_schema\": {\"type\": \"object\", \"properties\": {\"value\": {\"type\": \"number\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"dB\"]}}, \"required\": [\"value\", \"unit\"], \"additionalProperties\": false}, \"content_hash\": \"944fe0b8554e821d81469f9172ee44259d57231ca9bce338928045f641ba1a0f\"}, {\"id\": \"sea_reflection_two_ray\", \"kind\": \"card\", \"title\": \"光滑海面球面地球两径附加损耗\", \"description\": \"计算海面镜面反射相对自由空间的附加损耗，负值为增强，最小约 −6.02 dB；计入等效地球曲率。\", \"input_schema\": {\"type\": \"object\", \"properties\": {\"frequency_ghz\": {\"type\": \"number\", \"description\": \"载波频率（单位：GHz）\", \"exclusiveMinimum\": 0}, \"distance_km\": {\"type\": \"number\", \"description\": \"两端路径距离（单位：km）\", \"exclusiveMinimum\": 0}, \"height1_above_sea_m\": {\"type\": \"number\", \"description\": \"第一端天线高出海面的高度，已含站址高程（单位：m）\", \"exclusiveMinimum\": 0}, \"height2_above_sea_m\": {\"type\": \"number\", \"description\": \"第二端天线高出海面的高度，已含站址高程（单位：m）\", \"exclusiveMinimum\": 0}, \"k_factor\": {\"type\": \"number\", \"description\": \"等效地球半径系数 k（单位：1）\", \"exclusiveMinimum\": 0}}, \"required\": [\"frequency_ghz\", \"distance_km\", \"height1_above_sea_m\", \"height2_above_sea_m\", \"k_factor\"], \"additionalProperties\": false}, \"output_schema\": {\"type\": \"object\", \"properties\": {\"value\": {\"type\": \"number\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"dB\"]}}, \"required\": [\"value\", \"unit\"], \"additionalProperties\": false}, \"content_hash\": \"abd9b585c446e5bc5bba26b6586df0e58668b7d7aa1d3b6b02656772788cb7a6\"}, {\"id\": \"fspl_mhz\", \"kind\": \"card\", \"title\": \"老师验收口径的自由空间基本传输损耗\", \"description\": \"老师链路余量验收工具使用的自由空间路径损耗。频率用 MHz、距离用 km，使用 32.44 常数；单独计算自由空间路径损耗仍用 fspl_ghz，以保持 v0.1.0 的结果。\", \"input_schema\": {\"type\": \"object\", \"properties\": {\"frequency_mhz\": {\"type\": \"number\", \"description\": \"载波频率（单位：MHz）\", \"exclusiveMinimum\": 0}, \"distance_km\": {\"type\": \"number\", \"description\": \"发射端到接收端的路径距离（单位：km）\", \"exclusiveMinimum\": 0}}, \"required\": [\"frequency_mhz\", \"distance_km\"], \"additionalProperties\": false}, \"output_schema\": {\"type\": \"object\", \"properties\": {\"value\": {\"type\": \"number\"}, \"unit\": {\"type\": \"string\", \"enum\": [\"dB\"]}}, \"required\": [\"value\", \"unit\"], \"additionalProperties\": false}, \"content_hash\": \"ef8a54c54fd58923fea7bb039f5829d33c3a2f906ae2879a766601b6c53496b4\"}, {\"id\": \"calc_link_margin\", \"title\": \"链路余量计算\", \"description\": \"用 MHz 频率口径的自由空间损耗、接收功率和调制灵敏度计算单链路余量；数值来自登记公式卡。\", \"steps\": [\"fspl_mhz\", \"received_power\", \"link_margin\"], \"assumptions\": [\"只算自由空间，不计遮挡与损耗\", \"发射馈线损耗、接收馈线损耗、额外损耗和预留量都按 0 计\"], \"input_schema\": {\"type\": \"object\", \"properties\": {\"distance_km\": {\"type\": \"number\", \"exclusiveMinimum\": 0, \"description\": \"链路距离，单位 km\"}, \"frequency_mhz\": {\"type\": \"number\", \"exclusiveMinimum\": 0, \"description\": \"载波频率，单位 MHz\"}, \"tx_power_dbm\": {\"type\": \"number\", \"description\": \"发射功率，单位 dBm\"}, \"tx_gain_dbi\": {\"type\": \"number\", \"description\": \"发射天线增益，单位 dBi\"}, \"rx_gain_dbi\": {\"type\": \"number\", \"description\": \"接收天线增益，单位 dBi\"}, \"modulation\": {\"type\": \"string\", \"description\": \"调制表中的规范名称，与直接给出的灵敏度二选一\", \"enum\": [\"QPSK\", \"16QAM\", \"64QAM\"]}, \"rx_sensitivity_dbm\": {\"type\": \"number\", \"description\": \"接收灵敏度，单位 dBm，与调制方式二选一\"}, \"required_margin_db\": {\"type\": \"number\", \"minimum\": 0, \"description\": \"要求的链路余量，单位 dB；省略时按 0 计\"}}, \"required\": [\"distance_km\", \"frequency_mhz\", \"tx_power_dbm\", \"tx_gain_dbi\", \"rx_gain_dbi\"], \"oneOf\": [{\"required\": [\"modulation\"]}, {\"required\": [\"rx_sensitivity_dbm\"]}], \"additionalProperties\": false}, \"output_schema\": {\"type\": \"object\", \"properties\": {\"path_loss_db\": {\"type\": \"number\", \"description\": \"自由空间路径损耗，单位 dB\"}, \"rx_power_dbm\": {\"type\": \"number\", \"description\": \"接收信号电平，单位 dBm\"}, \"rx_sensitivity_dbm\": {\"type\": \"number\", \"description\": \"采用的接收灵敏度，单位 dBm\"}, \"sensitivity_source\": {\"type\": \"string\", \"enum\": [\"modulation_table\", \"argument\"]}, \"link_margin_db\": {\"type\": \"number\", \"description\": \"链路余量，单位 dB\"}, \"required_margin_db\": {\"type\": \"number\", \"minimum\": 0, \"description\": \"用于满足判断的要求余量，单位 dB\"}, \"meets\": {\"type\": \"boolean\"}, \"modulation\": {\"type\": \"string\", \"enum\": [\"QPSK\", \"16QAM\", \"64QAM\"]}, \"simulated\": {\"type\": \"boolean\", \"enum\": [true]}}, \"required\": [\"path_loss_db\", \"rx_power_dbm\", \"rx_sensitivity_dbm\", \"sensitivity_source\", \"link_margin_db\", \"required_margin_db\", \"meets\"], \"additionalProperties\": false, \"oneOf\": [{\"properties\": {\"sensitivity_source\": {\"enum\": [\"modulation_table\"]}}, \"required\": [\"modulation\", \"simulated\"]}, {\"properties\": {\"path_loss_db\": {}, \"rx_power_dbm\": {}, \"rx_sensitivity_dbm\": {}, \"sensitivity_source\": {\"enum\": [\"argument\"]}, \"link_margin_db\": {}, \"required_margin_db\": {}, \"meets\": {}}, \"additionalProperties\": false}]}, \"kind\": \"composite\", \"content_hash\": \"96ce9330adc3e75a41e914e1424f02eb7f8bd52b4ad4cf3f8f4ae81c9da2f830\"}]}",
+  "formula_cards_content_hashes": {
+    "fspl_ghz": "2ed0e6930cf489981f389e87e7adcdb1af4b49eed9b495527ed2c5598898ba6d",
+    "doppler_max": "af102cabd63f88e9a57ee4cf874dcaa48f180badae2923d0c5b7e23a8cedcd93",
+    "thermal_noise": "54ba422a416c858b64f8a46b0af93a12043fdfdfeb2477036b52d49c93b65614",
+    "received_power": "821fd133e0ce21c6ae15f6db03960cbc0da4b74c7fac1da041a639ba8b6525da",
+    "link_margin": "2c81c3ffffc81a18ca2f0b5f66985f9ec91091e8a80433d935ed4fbd4af1c40a",
+    "noise_density": "a384eca0d03e3715cd826453d6ac727c866d99fbdd2f370f871fb54971106c53",
+    "receiver_threshold": "342a4ea7bcd5446091c311ebec4bb9564c3468b8a812593daecf8cae3f171f54",
+    "radio_horizon": "90fe13c0286e5c001d11dc79e0ee56ad310367bcc7722bcc522c10de212f83e4",
+    "slant_range_wgs84": "d1e5a3cd7cb157f9c78c675fb809ec44aa19e29d3484db65ca5f1803b7be9567",
+    "fresnel_radius": "1c360d9fb5d0108f4c6eeaf5f34a1150587e999b6157b9de664760d97cc662de",
+    "knife_edge_nu": "a043bcd464871669412892559ddb8f10bcdde29b1042a40302bcf2911a061740",
+    "knife_edge_loss": "944fe0b8554e821d81469f9172ee44259d57231ca9bce338928045f641ba1a0f",
+    "sea_reflection_two_ray": "abd9b585c446e5bc5bba26b6586df0e58668b7d7aa1d3b6b02656772788cb7a6",
+    "fspl_mhz": "ef8a54c54fd58923fea7bb039f5829d33c3a2f906ae2879a766601b6c53496b4"
+  },
+  "api_facts_counts": {
+    "records": 12,
+    "modulations": 3,
+    "typical_values": 5
+  },
+  "teacher_tool_calls": [
+    {
+      "group": 1,
+      "modulation": "QPSK",
+      "response": {
+        "tool": "calc_link_margin",
+        "arguments": {
+          "distance_km": 10,
+          "frequency_mhz": 5800,
+          "tx_power_dbm": 20,
+          "tx_gain_dbi": 18,
+          "rx_gain_dbi": 18,
+          "modulation": "QPSK"
+        },
+        "status": "ok",
+        "errors": [],
+        "result": {
+          "path_loss_db": 127.70855987125874,
+          "rx_power_dbm": -71.70855987125874,
+          "rx_sensitivity_dbm": -100,
+          "sensitivity_source": "modulation_table",
+          "link_margin_db": 28.291440128741257,
+          "required_margin_db": 0,
+          "meets": true,
+          "modulation": "QPSK",
+          "simulated": true
+        },
+        "steps": [
+          {
+            "card": "fspl_mhz",
+            "inputs": {
+              "distance_km": 10,
+              "frequency_mhz": 5800
+            },
+            "value": 127.70855987125874,
+            "unit": "dB",
+            "content_hash": "ef8a54c54fd58923fea7bb039f5829d33c3a2f906ae2879a766601b6c53496b4"
+          },
+          {
+            "card": "received_power",
+            "inputs": {
+              "tx_power_dbm": 20,
+              "tx_gain_dbi": 18,
+              "rx_gain_dbi": 18,
+              "tx_loss_db": 0,
+              "rx_loss_db": 0,
+              "extra_loss_db": 0,
+              "path_loss_db": 127.70855987125874
+            },
+            "value": -71.70855987125874,
+            "unit": "dBm",
+            "content_hash": "821fd133e0ce21c6ae15f6db03960cbc0da4b74c7fac1da041a639ba8b6525da"
+          },
+          {
+            "card": "link_margin",
+            "inputs": {
+              "rx_power_dbm": -71.70855987125874,
+              "rx_threshold_dbm": -100,
+              "reserve_db": 0
+            },
+            "value": 28.291440128741257,
+            "unit": "dB",
+            "content_hash": "2c81c3ffffc81a18ca2f0b5f66985f9ec91091e8a80433d935ed4fbd4af1c40a"
+          }
+        ]
+      },
+      "independent_expected": {
+        "path_loss_db": 127.70855987125874,
+        "rx_power_dbm": -71.70855987125874,
+        "rx_sensitivity_dbm": -100,
+        "link_margin_db": 28.291440128741257
+      },
+      "absolute_errors": {
+        "path_loss_db": 0.0,
+        "rx_power_dbm": 0.0,
+        "rx_sensitivity_dbm": 0,
+        "link_margin_db": 0.0
+      }
+    },
+    {
+      "group": 1,
+      "modulation": "16QAM",
+      "response": {
+        "tool": "calc_link_margin",
+        "arguments": {
+          "distance_km": 10,
+          "frequency_mhz": 5800,
+          "tx_power_dbm": 20,
+          "tx_gain_dbi": 18,
+          "rx_gain_dbi": 18,
+          "modulation": "16QAM"
+        },
+        "status": "ok",
+        "errors": [],
+        "result": {
+          "path_loss_db": 127.70855987125874,
+          "rx_power_dbm": -71.70855987125874,
+          "rx_sensitivity_dbm": -95,
+          "sensitivity_source": "modulation_table",
+          "link_margin_db": 23.291440128741257,
+          "required_margin_db": 0,
+          "meets": true,
+          "modulation": "16QAM",
+          "simulated": true
+        },
+        "steps": [
+          {
+            "card": "fspl_mhz",
+            "inputs": {
+              "distance_km": 10,
+              "frequency_mhz": 5800
+            },
+            "value": 127.70855987125874,
+            "unit": "dB",
+            "content_hash": "ef8a54c54fd58923fea7bb039f5829d33c3a2f906ae2879a766601b6c53496b4"
+          },
+          {
+            "card": "received_power",
+            "inputs": {
+              "tx_power_dbm": 20,
+              "tx_gain_dbi": 18,
+              "rx_gain_dbi": 18,
+              "tx_loss_db": 0,
+              "rx_loss_db": 0,
+              "extra_loss_db": 0,
+              "path_loss_db": 127.70855987125874
+            },
+            "value": -71.70855987125874,
+            "unit": "dBm",
+            "content_hash": "821fd133e0ce21c6ae15f6db03960cbc0da4b74c7fac1da041a639ba8b6525da"
+          },
+          {
+            "card": "link_margin",
+            "inputs": {
+              "rx_power_dbm": -71.70855987125874,
+              "rx_threshold_dbm": -95,
+              "reserve_db": 0
+            },
+            "value": 23.291440128741257,
+            "unit": "dB",
+            "content_hash": "2c81c3ffffc81a18ca2f0b5f66985f9ec91091e8a80433d935ed4fbd4af1c40a"
+          }
+        ]
+      },
+      "independent_expected": {
+        "path_loss_db": 127.70855987125874,
+        "rx_power_dbm": -71.70855987125874,
+        "rx_sensitivity_dbm": -95,
+        "link_margin_db": 23.291440128741257
+      },
+      "absolute_errors": {
+        "path_loss_db": 0.0,
+        "rx_power_dbm": 0.0,
+        "rx_sensitivity_dbm": 0,
+        "link_margin_db": 0.0
+      }
+    },
+    {
+      "group": 1,
+      "modulation": "64QAM",
+      "response": {
+        "tool": "calc_link_margin",
+        "arguments": {
+          "distance_km": 10,
+          "frequency_mhz": 5800,
+          "tx_power_dbm": 20,
+          "tx_gain_dbi": 18,
+          "rx_gain_dbi": 18,
+          "modulation": "64QAM"
+        },
+        "status": "ok",
+        "errors": [],
+        "result": {
+          "path_loss_db": 127.70855987125874,
+          "rx_power_dbm": -71.70855987125874,
+          "rx_sensitivity_dbm": -90,
+          "sensitivity_source": "modulation_table",
+          "link_margin_db": 18.291440128741257,
+          "required_margin_db": 0,
+          "meets": true,
+          "modulation": "64QAM",
+          "simulated": true
+        },
+        "steps": [
+          {
+            "card": "fspl_mhz",
+            "inputs": {
+              "distance_km": 10,
+              "frequency_mhz": 5800
+            },
+            "value": 127.70855987125874,
+            "unit": "dB",
+            "content_hash": "ef8a54c54fd58923fea7bb039f5829d33c3a2f906ae2879a766601b6c53496b4"
+          },
+          {
+            "card": "received_power",
+            "inputs": {
+              "tx_power_dbm": 20,
+              "tx_gain_dbi": 18,
+              "rx_gain_dbi": 18,
+              "tx_loss_db": 0,
+              "rx_loss_db": 0,
+              "extra_loss_db": 0,
+              "path_loss_db": 127.70855987125874
+            },
+            "value": -71.70855987125874,
+            "unit": "dBm",
+            "content_hash": "821fd133e0ce21c6ae15f6db03960cbc0da4b74c7fac1da041a639ba8b6525da"
+          },
+          {
+            "card": "link_margin",
+            "inputs": {
+              "rx_power_dbm": -71.70855987125874,
+              "rx_threshold_dbm": -90,
+              "reserve_db": 0
+            },
+            "value": 18.291440128741257,
+            "unit": "dB",
+            "content_hash": "2c81c3ffffc81a18ca2f0b5f66985f9ec91091e8a80433d935ed4fbd4af1c40a"
+          }
+        ]
+      },
+      "independent_expected": {
+        "path_loss_db": 127.70855987125874,
+        "rx_power_dbm": -71.70855987125874,
+        "rx_sensitivity_dbm": -90,
+        "link_margin_db": 18.291440128741257
+      },
+      "absolute_errors": {
+        "path_loss_db": 0.0,
+        "rx_power_dbm": 0.0,
+        "rx_sensitivity_dbm": 0,
+        "link_margin_db": 0.0
+      }
+    },
+    {
+      "group": 2,
+      "modulation": "QPSK",
+      "response": {
+        "tool": "calc_link_margin",
+        "arguments": {
+          "distance_km": 8,
+          "frequency_mhz": 2400,
+          "tx_power_dbm": 17,
+          "tx_gain_dbi": 12,
+          "rx_gain_dbi": 12,
+          "modulation": "QPSK"
+        },
+        "status": "ok",
+        "errors": [],
+        "result": {
+          "path_loss_db": 118.10602457407099,
+          "rx_power_dbm": -77.10602457407099,
+          "rx_sensitivity_dbm": -100,
+          "sensitivity_source": "modulation_table",
+          "link_margin_db": 22.893975425929014,
+          "required_margin_db": 0,
+          "meets": true,
+          "modulation": "QPSK",
+          "simulated": true
+        },
+        "steps": [
+          {
+            "card": "fspl_mhz",
+            "inputs": {
+              "distance_km": 8,
+              "frequency_mhz": 2400
+            },
+            "value": 118.10602457407099,
+            "unit": "dB",
+            "content_hash": "ef8a54c54fd58923fea7bb039f5829d33c3a2f906ae2879a766601b6c53496b4"
+          },
+          {
+            "card": "received_power",
+            "inputs": {
+              "tx_power_dbm": 17,
+              "tx_gain_dbi": 12,
+              "rx_gain_dbi": 12,
+              "tx_loss_db": 0,
+              "rx_loss_db": 0,
+              "extra_loss_db": 0,
+              "path_loss_db": 118.10602457407099
+            },
+            "value": -77.10602457407099,
+            "unit": "dBm",
+            "content_hash": "821fd133e0ce21c6ae15f6db03960cbc0da4b74c7fac1da041a639ba8b6525da"
+          },
+          {
+            "card": "link_margin",
+            "inputs": {
+              "rx_power_dbm": -77.10602457407099,
+              "rx_threshold_dbm": -100,
+              "reserve_db": 0
+            },
+            "value": 22.893975425929014,
+            "unit": "dB",
+            "content_hash": "2c81c3ffffc81a18ca2f0b5f66985f9ec91091e8a80433d935ed4fbd4af1c40a"
+          }
+        ]
+      },
+      "independent_expected": {
+        "path_loss_db": 118.10602457407099,
+        "rx_power_dbm": -77.10602457407099,
+        "rx_sensitivity_dbm": -100,
+        "link_margin_db": 22.893975425929014
+      },
+      "absolute_errors": {
+        "path_loss_db": 0.0,
+        "rx_power_dbm": 0.0,
+        "rx_sensitivity_dbm": 0,
+        "link_margin_db": 0.0
+      }
+    },
+    {
+      "group": 2,
+      "modulation": "16QAM",
+      "response": {
+        "tool": "calc_link_margin",
+        "arguments": {
+          "distance_km": 8,
+          "frequency_mhz": 2400,
+          "tx_power_dbm": 17,
+          "tx_gain_dbi": 12,
+          "rx_gain_dbi": 12,
+          "modulation": "16QAM"
+        },
+        "status": "ok",
+        "errors": [],
+        "result": {
+          "path_loss_db": 118.10602457407099,
+          "rx_power_dbm": -77.10602457407099,
+          "rx_sensitivity_dbm": -95,
+          "sensitivity_source": "modulation_table",
+          "link_margin_db": 17.893975425929014,
+          "required_margin_db": 0,
+          "meets": true,
+          "modulation": "16QAM",
+          "simulated": true
+        },
+        "steps": [
+          {
+            "card": "fspl_mhz",
+            "inputs": {
+              "distance_km": 8,
+              "frequency_mhz": 2400
+            },
+            "value": 118.10602457407099,
+            "unit": "dB",
+            "content_hash": "ef8a54c54fd58923fea7bb039f5829d33c3a2f906ae2879a766601b6c53496b4"
+          },
+          {
+            "card": "received_power",
+            "inputs": {
+              "tx_power_dbm": 17,
+              "tx_gain_dbi": 12,
+              "rx_gain_dbi": 12,
+              "tx_loss_db": 0,
+              "rx_loss_db": 0,
+              "extra_loss_db": 0,
+              "path_loss_db": 118.10602457407099
+            },
+            "value": -77.10602457407099,
+            "unit": "dBm",
+            "content_hash": "821fd133e0ce21c6ae15f6db03960cbc0da4b74c7fac1da041a639ba8b6525da"
+          },
+          {
+            "card": "link_margin",
+            "inputs": {
+              "rx_power_dbm": -77.10602457407099,
+              "rx_threshold_dbm": -95,
+              "reserve_db": 0
+            },
+            "value": 17.893975425929014,
+            "unit": "dB",
+            "content_hash": "2c81c3ffffc81a18ca2f0b5f66985f9ec91091e8a80433d935ed4fbd4af1c40a"
+          }
+        ]
+      },
+      "independent_expected": {
+        "path_loss_db": 118.10602457407099,
+        "rx_power_dbm": -77.10602457407099,
+        "rx_sensitivity_dbm": -95,
+        "link_margin_db": 17.893975425929014
+      },
+      "absolute_errors": {
+        "path_loss_db": 0.0,
+        "rx_power_dbm": 0.0,
+        "rx_sensitivity_dbm": 0,
+        "link_margin_db": 0.0
+      }
+    },
+    {
+      "group": 2,
+      "modulation": "64QAM",
+      "response": {
+        "tool": "calc_link_margin",
+        "arguments": {
+          "distance_km": 8,
+          "frequency_mhz": 2400,
+          "tx_power_dbm": 17,
+          "tx_gain_dbi": 12,
+          "rx_gain_dbi": 12,
+          "modulation": "64QAM"
+        },
+        "status": "ok",
+        "errors": [],
+        "result": {
+          "path_loss_db": 118.10602457407099,
+          "rx_power_dbm": -77.10602457407099,
+          "rx_sensitivity_dbm": -90,
+          "sensitivity_source": "modulation_table",
+          "link_margin_db": 12.893975425929014,
+          "required_margin_db": 0,
+          "meets": true,
+          "modulation": "64QAM",
+          "simulated": true
+        },
+        "steps": [
+          {
+            "card": "fspl_mhz",
+            "inputs": {
+              "distance_km": 8,
+              "frequency_mhz": 2400
+            },
+            "value": 118.10602457407099,
+            "unit": "dB",
+            "content_hash": "ef8a54c54fd58923fea7bb039f5829d33c3a2f906ae2879a766601b6c53496b4"
+          },
+          {
+            "card": "received_power",
+            "inputs": {
+              "tx_power_dbm": 17,
+              "tx_gain_dbi": 12,
+              "rx_gain_dbi": 12,
+              "tx_loss_db": 0,
+              "rx_loss_db": 0,
+              "extra_loss_db": 0,
+              "path_loss_db": 118.10602457407099
+            },
+            "value": -77.10602457407099,
+            "unit": "dBm",
+            "content_hash": "821fd133e0ce21c6ae15f6db03960cbc0da4b74c7fac1da041a639ba8b6525da"
+          },
+          {
+            "card": "link_margin",
+            "inputs": {
+              "rx_power_dbm": -77.10602457407099,
+              "rx_threshold_dbm": -90,
+              "reserve_db": 0
+            },
+            "value": 12.893975425929014,
+            "unit": "dB",
+            "content_hash": "2c81c3ffffc81a18ca2f0b5f66985f9ec91091e8a80433d935ed4fbd4af1c40a"
+          }
+        ]
+      },
+      "independent_expected": {
+        "path_loss_db": 118.10602457407099,
+        "rx_power_dbm": -77.10602457407099,
+        "rx_sensitivity_dbm": -90,
+        "link_margin_db": 12.893975425929014
+      },
+      "absolute_errors": {
+        "path_loss_db": 0.0,
+        "rx_power_dbm": 0.0,
+        "rx_sensitivity_dbm": 0,
+        "link_margin_db": 0.0
+      }
+    }
+  ],
+  "independent_max_absolute_error": 0.0,
+  "regression": {
+    "rows": [
+      {
+        "id": "main_01",
+        "before": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "received_power",
+          "link_margin",
+          "fresnel_radius"
+        ],
+        "candidates_after": [
+          "received_power",
+          "link_margin",
+          "fspl_mhz"
+        ],
+        "models_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "main_02",
+        "before": {
+          "targets": [
+            "link_margin"
+          ],
+          "final_target": "link_margin",
+          "chain": [
+            "fspl_ghz",
+            "received_power",
+            "link_margin"
+          ],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [
+            "link_margin"
+          ],
+          "final_target": "link_margin",
+          "chain": [
+            "fspl_ghz",
+            "received_power",
+            "link_margin"
+          ],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "candidates_after": [
+          "received_power",
+          "link_margin",
+          "fspl_mhz"
+        ],
+        "models_before": [
+          "fspl_ghz",
+          "received_power",
+          "link_margin"
+        ],
+        "models_after": [
+          "fspl_ghz",
+          "received_power",
+          "link_margin"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "main_03",
+        "before": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "received_power",
+          "link_margin",
+          "fresnel_radius"
+        ],
+        "candidates_after": [
+          "received_power",
+          "link_margin",
+          "fresnel_radius"
+        ],
+        "models_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "main_04",
+        "before": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "received_power",
+          "link_margin",
+          "fresnel_radius"
+        ],
+        "candidates_after": [
+          "received_power",
+          "link_margin",
+          "fspl_mhz"
+        ],
+        "models_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "main_05",
+        "before": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "candidates_after": [
+          "received_power",
+          "link_margin",
+          "fspl_mhz"
+        ],
+        "models_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "main_06",
+        "before": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "link_margin",
+          "received_power",
+          "fresnel_radius"
+        ],
+        "candidates_after": [
+          "link_margin",
+          "received_power",
+          "fresnel_radius"
+        ],
+        "models_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "main_07",
+        "before": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "received_power",
+          "link_margin",
+          "doppler_max"
+        ],
+        "candidates_after": [
+          "received_power",
+          "link_margin",
+          "fspl_mhz"
+        ],
+        "models_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "main_08",
+        "before": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "received_power",
+          "link_margin",
+          "receiver_threshold"
+        ],
+        "candidates_after": [
+          "received_power",
+          "fspl_mhz",
+          "link_margin"
+        ],
+        "models_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "main_09",
+        "before": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "received_power",
+          "link_margin",
+          "fresnel_radius"
+        ],
+        "candidates_after": [
+          "received_power",
+          "link_margin",
+          "fresnel_radius"
+        ],
+        "models_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "main_10",
+        "before": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "candidates_after": [
+          "received_power",
+          "fspl_mhz",
+          "link_margin"
+        ],
+        "models_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "main_11",
+        "before": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "candidates_after": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "models_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "main_12",
+        "before": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "received_power",
+          "link_margin",
+          "fresnel_radius"
+        ],
+        "candidates_after": [
+          "received_power",
+          "link_margin",
+          "fspl_mhz"
+        ],
+        "models_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "missing_height_1",
+        "before": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "link_margin",
+          "received_power",
+          "fresnel_radius"
+        ],
+        "candidates_after": [
+          "link_margin",
+          "received_power",
+          "fresnel_radius"
+        ],
+        "models_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "missing_height_2",
+        "before": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "received_power",
+          "link_margin",
+          "fresnel_radius"
+        ],
+        "candidates_after": [
+          "received_power",
+          "link_margin",
+          "fspl_mhz"
+        ],
+        "models_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "horizon_1",
+        "before": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "received_power",
+          "link_margin",
+          "fresnel_radius"
+        ],
+        "candidates_after": [
+          "fspl_mhz",
+          "received_power",
+          "link_margin"
+        ],
+        "models_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "horizon_2",
+        "before": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "received_power",
+          "link_margin",
+          "fresnel_radius"
+        ],
+        "candidates_after": [
+          "fspl_mhz",
+          "received_power",
+          "link_margin"
+        ],
+        "models_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "conflict_1",
+        "before": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "candidates_after": [
+          "received_power",
+          "link_margin",
+          "fspl_mhz"
+        ],
+        "models_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "conflict_2",
+        "before": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "received_power",
+          "link_margin",
+          "fresnel_radius"
+        ],
+        "candidates_after": [
+          "received_power",
+          "link_margin",
+          "fspl_mhz"
+        ],
+        "models_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "ambiguous_1",
+        "before": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "link_margin",
+          "received_power",
+          "fresnel_radius"
+        ],
+        "candidates_after": [
+          "link_margin",
+          "received_power",
+          "fresnel_radius"
+        ],
+        "models_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "ambiguous_2",
+        "before": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "link_margin",
+          "received_power",
+          "fresnel_radius"
+        ],
+        "candidates_after": [
+          "link_margin",
+          "received_power",
+          "fresnel_radius"
+        ],
+        "models_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "enough_1",
+        "before": {
+          "targets": [
+            "link_margin"
+          ],
+          "final_target": "link_margin",
+          "chain": [
+            "fspl_ghz",
+            "received_power",
+            "link_margin"
+          ],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [
+            "link_margin"
+          ],
+          "final_target": "link_margin",
+          "chain": [
+            "fspl_ghz",
+            "received_power",
+            "link_margin"
+          ],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "received_power",
+          "link_margin",
+          "fresnel_radius"
+        ],
+        "candidates_after": [
+          "received_power",
+          "link_margin",
+          "fspl_mhz"
+        ],
+        "models_before": [
+          "fspl_ghz",
+          "received_power",
+          "link_margin"
+        ],
+        "models_after": [
+          "fspl_ghz",
+          "received_power",
+          "link_margin"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "enough_2",
+        "before": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "after": {
+          "targets": [],
+          "final_target": null,
+          "chain": [],
+          "status": "AWAITING_INPUT"
+        },
+        "candidates_before": [
+          "received_power",
+          "link_margin",
+          "fresnel_radius"
+        ],
+        "candidates_after": [
+          "received_power",
+          "link_margin",
+          "fspl_mhz"
+        ],
+        "models_before": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "received_power",
+          "link_margin",
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "offline_fspl_1",
+        "before": {
+          "targets": [
+            "fspl_ghz"
+          ],
+          "final_target": "fspl_ghz",
+          "chain": [
+            "fspl_ghz"
+          ],
+          "status": "AWAITING_CONFIRMATION"
+        },
+        "after": {
+          "targets": [
+            "fspl_ghz"
+          ],
+          "final_target": "fspl_ghz",
+          "chain": [
+            "fspl_ghz"
+          ],
+          "status": "AWAITING_CONFIRMATION"
+        },
+        "candidates_before": [
+          "fspl_ghz",
+          "fresnel_radius",
+          "received_power"
+        ],
+        "candidates_after": [
+          "fspl_ghz",
+          "fspl_mhz",
+          "fresnel_radius"
+        ],
+        "models_before": [
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "fspl_ghz",
+          "received_power"
+        ],
+        "eligible_after": [
+          "fspl_ghz",
+          "received_power"
+        ]
+      },
+      {
+        "id": "offline_fspl_2",
+        "before": {
+          "targets": [
+            "fspl_ghz"
+          ],
+          "final_target": "fspl_ghz",
+          "chain": [
+            "fspl_ghz"
+          ],
+          "status": "AWAITING_CONFIRMATION"
+        },
+        "after": {
+          "targets": [
+            "fspl_ghz"
+          ],
+          "final_target": "fspl_ghz",
+          "chain": [
+            "fspl_ghz"
+          ],
+          "status": "AWAITING_CONFIRMATION"
+        },
+        "candidates_before": [
+          "fspl_ghz",
+          "received_power",
+          "fresnel_radius"
+        ],
+        "candidates_after": [
+          "fspl_ghz",
+          "fspl_mhz",
+          "received_power"
+        ],
+        "models_before": [
+          "fspl_ghz"
+        ],
+        "models_after": [
+          "fspl_ghz"
+        ],
+        "eligible_before": [
+          "fspl_ghz",
+          "received_power"
+        ],
+        "eligible_after": [
+          "fspl_ghz",
+          "received_power"
+        ]
+      },
+      {
+        "id": "offline_received_power_1",
+        "before": {
+          "targets": [
+            "received_power"
+          ],
+          "final_target": "received_power",
+          "chain": [
+            "fspl_ghz",
+            "received_power"
+          ],
+          "status": "AWAITING_CONFIRMATION"
+        },
+        "after": {
+          "targets": [
+            "received_power"
+          ],
+          "final_target": "received_power",
+          "chain": [
+            "fspl_ghz",
+            "received_power"
+          ],
+          "status": "AWAITING_CONFIRMATION"
+        },
+        "candidates_before": [
+          "received_power",
+          "fspl_ghz",
+          "link_margin"
+        ],
+        "candidates_after": [
+          "received_power",
+          "fspl_ghz",
+          "fspl_mhz"
+        ],
+        "models_before": [
+          "fspl_ghz",
+          "received_power"
+        ],
+        "models_after": [
+          "fspl_ghz",
+          "received_power"
+        ],
+        "eligible_before": [
+          "received_power",
+          "fspl_ghz",
+          "link_margin"
+        ],
+        "eligible_after": [
+          "received_power",
+          "fspl_ghz",
+          "link_margin"
+        ]
+      },
+      {
+        "id": "offline_received_power_2",
+        "before": {
+          "targets": [
+            "received_power"
+          ],
+          "final_target": "received_power",
+          "chain": [
+            "fspl_ghz",
+            "received_power"
+          ],
+          "status": "AWAITING_CONFIRMATION"
+        },
+        "after": {
+          "targets": [
+            "received_power"
+          ],
+          "final_target": "received_power",
+          "chain": [
+            "fspl_ghz",
+            "received_power"
+          ],
+          "status": "AWAITING_CONFIRMATION"
+        },
+        "candidates_before": [
+          "received_power",
+          "fspl_ghz",
+          "link_margin"
+        ],
+        "candidates_after": [
+          "received_power",
+          "fspl_ghz",
+          "fspl_mhz"
+        ],
+        "models_before": [
+          "fspl_ghz",
+          "received_power"
+        ],
+        "models_after": [
+          "fspl_ghz",
+          "received_power"
+        ],
+        "eligible_before": [
+          "received_power",
+          "fspl_ghz",
+          "link_margin"
+        ],
+        "eligible_after": [
+          "received_power",
+          "fspl_ghz",
+          "link_margin"
+        ]
+      },
+      {
+        "id": "offline_link_margin_1",
+        "before": {
+          "targets": [
+            "link_margin"
+          ],
+          "final_target": "link_margin",
+          "chain": [
+            "fspl_ghz",
+            "received_power",
+            "link_margin"
+          ],
+          "status": "AWAITING_CONFIRMATION"
+        },
+        "after": {
+          "targets": [
+            "link_margin"
+          ],
+          "final_target": "link_margin",
+          "chain": [
+            "fspl_ghz",
+            "received_power",
+            "link_margin"
+          ],
+          "status": "AWAITING_CONFIRMATION"
+        },
+        "candidates_before": [
+          "received_power",
+          "fspl_ghz",
+          "link_margin"
+        ],
+        "candidates_after": [
+          "received_power",
+          "fspl_ghz",
+          "link_margin"
+        ],
+        "models_before": [
+          "fspl_ghz",
+          "received_power",
+          "link_margin"
+        ],
+        "models_after": [
+          "fspl_ghz",
+          "received_power",
+          "link_margin"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      },
+      {
+        "id": "offline_link_margin_2",
+        "before": {
+          "targets": [
+            "link_margin"
+          ],
+          "final_target": "link_margin",
+          "chain": [
+            "fspl_ghz",
+            "received_power",
+            "link_margin"
+          ],
+          "status": "AWAITING_CONFIRMATION"
+        },
+        "after": {
+          "targets": [
+            "link_margin"
+          ],
+          "final_target": "link_margin",
+          "chain": [
+            "fspl_ghz",
+            "received_power",
+            "link_margin"
+          ],
+          "status": "AWAITING_CONFIRMATION"
+        },
+        "candidates_before": [
+          "received_power",
+          "fspl_ghz",
+          "link_margin"
+        ],
+        "candidates_after": [
+          "received_power",
+          "fspl_ghz",
+          "link_margin"
+        ],
+        "models_before": [
+          "fspl_ghz",
+          "received_power",
+          "link_margin"
+        ],
+        "models_after": [
+          "fspl_ghz",
+          "received_power",
+          "link_margin"
+        ],
+        "eligible_before": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ],
+        "eligible_after": [
+          "link_margin",
+          "received_power",
+          "fspl_ghz"
+        ]
+      }
+    ],
+    "text_case_count": 28,
+    "candidate_changed_count": 19,
+    "signature_unchanged_count": 28,
+    "models_unchanged_count": 28,
+    "eligible_unchanged_count": 28
+  },
+  "integrity": {
+    "existing_card_count": 13,
+    "existing_cards_equal_to_head": true,
+    "appended_card_id": "fspl_mhz",
+    "teacher_source_git_blob": "7530573b85619b3b40e3ae8432876a6e7bfecdee",
+    "teacher_source_index_and_working_git_hash_equal_to_source_ref": true,
+    "unchanged_paths": [
+      "formula_rag/core.py",
+      "planning/services/plans.py",
+      "tests/eval/teacher_cases.jsonl",
+      "tests/test_teacher_cases_format.py"
+    ],
+    "original_fixture_assertions_unchanged": true,
+    "count_assertion_adjustment": {
+      "file": "tests/test_planning_web.py",
+      "before": 9,
+      "after": 12,
+      "reason": "3 new public modulation records; quantity adjustment allowed by T2"
+    }
+  },
+  "test_results": {
+    "teacher_tools_python": {
+      "count": 23,
+      "status": "passed",
+      "reported_by": "root"
+    },
+    "node_full": {
+      "count": 70,
+      "status": "passed",
+      "reported_by": "root",
+      "log": "docs/codex/evidence/2026-10-01-T2-node.log"
+    },
+    "python_full": {
+      "count": 487,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "duration_seconds": 136.053,
+      "status": "passed",
+      "log": "docs/codex/evidence/2026-10-01-T2-python.log"
+    },
+    "python_first": {
+      "count": 487,
+      "failures": 1,
+      "skipped": 1,
+      "duration_seconds": 141.748,
+      "failure": "public fact count expected 9, actual 12",
+      "log": "docs/codex/evidence/2026-10-01-T2-python-first.log"
+    }
+  },
+  "commit_files": [
+    "docs/codex/evidence/2026-10-01-T2-node.log",
+    "docs/codex/evidence/2026-10-01-T2-python-first.log",
+    "docs/codex/evidence/2026-10-01-T2-python.log",
+    "docs/codex/evidence/2026-10-01-T2-tools.json",
+    "docs/codex/evidence/2026-10-01-T2-tools.md",
+    "docs/design/TEACHER_CASES.md",
+    "formula_rag/registry.py",
+    "formula_rag/schema.py",
+    "knowledge/facts/modulations.json",
+    "knowledge/facts/typical_values.json",
+    "knowledge/formulas.json",
+    "knowledge/tools.json",
+    "planning/knowledge/facts.py",
+    "planning/services/reference_models.py",
+    "planning/web/i18n-en.mjs",
+    "planning/web/library.mjs",
+    "planning/web_server.py",
+    "tests/planning_library.test.mjs",
+    "tests/teacher_fixtures.py",
+    "tests/test_entity_followup.py",
+    "tests/test_knowledge_api.py",
+    "tests/test_knowledge_drafts.py",
+    "tests/test_m1_facts.py",
+    "tests/test_planning_web.py",
+    "tests/test_teacher_tools.py",
+    "tests/test_week4_cards.py"
+  ]
+}
