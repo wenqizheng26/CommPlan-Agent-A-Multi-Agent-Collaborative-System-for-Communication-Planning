@@ -6,7 +6,10 @@ from planning.services.plans import TARGETS
 
 
 # A feasibility question is the model's reading of "link margin"; the rules have no keyword for it.
-FEASIBILITY = r'can.{0,15}(?:link|communicat)|is.{0,15}(?:feasible|sufficient)|能(?:不能)?通|能否(?:打)?通|通不通|够不够|够用|行不行|可行吗|能否满足|能不能满足|是否满足|满不满足|能满足吗'
+FEASIBILITY = r'can.{0,15}(?:link|communicat)|is.{0,15}(?:feasible|sufficient)|能(?:不能)?通|能否(?:打)?通|通不通|够不够|够用|行不行|可行吗|能否满足|能不能满足|是否满足|满不满足|能满足吗|稳定|更稳|稳不稳|可靠|能(?:不能|否)?传|传(?:视频|图像|数据|语音)|连到|连通|建链|more (?:stable|reliable)|stabl|reliab'
+# A link request that names no quantity ("连到乡镇，传视频，要稳定") or names a modulation asks whether
+# the link holds: link margin is offered to the model even when its card shares no word with the text.
+LINK_REQUEST = re.compile(FEASIBILITY + r'|(?<![A-Za-z0-9])(?:[BQ]PSK|\d+\s*-?\s*(?:QAM|PSK)|QAM\s*-?\s*\d+)', re.I)
 
 
 def validate_target_semantics(model):

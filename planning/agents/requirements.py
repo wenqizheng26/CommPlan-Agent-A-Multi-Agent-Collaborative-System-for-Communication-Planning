@@ -17,7 +17,7 @@ from planning.services.requirement_facts import sources_for, band_issues, fact_q
 from planning.services.requirement_quantities import (find_quantities, ground_labels, summary, LABEL_FIELDS,
     SOLVE_UNKNOWNS)
 from planning.services.requirement_evidence import snapshot_for, evidence_for
-from planning.services.requirement_policy import validate_target_semantics, intent_conflict, outside_scope
+from planning.services.requirement_policy import validate_target_semantics, intent_conflict, outside_scope, LINK_REQUEST
 from planning.services.plans import TARGETS, chain, final_target, plan_for, requires_free_space, bound_issues
 from planning.workflow.activity import observe
 
@@ -155,6 +155,9 @@ class RequirementsAgent:
         eligible = eligible[:found.top_n]
         self.last_retrieval['candidate_used'] = [h['id'] for h in eligible]
         usable = {h['id']: h['rank'] for h in eligible}
+        if 'link_margin' in by_id and 'link_margin' not in usable and LINK_REQUEST.search(request['raw_text']):
+            usable['link_margin'] = max(usable.values(), default=0) + 1
+            diagnostics.append(diagnostic('LINK_REQUEST', '原文是建链或能否通信的问题，链路余量列为候选。'))
         # A manual target is a direct lookup, not a semantic retrieval claim.
         if request['target'] in TARGETS and request['target'] in by_id:
             usable[request['target']] = 1
