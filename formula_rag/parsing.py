@@ -60,7 +60,9 @@ EN_FIELDS = {
 for key,aliases in EN_FIELDS.items():
     FIELDS[key][2].extend(aliases + [key])
 NUMBER = r'[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?'
-UNITS = r'(?:1(?![0-9])|dBm/Hz|Mbit/s|kbit/s|bit/s|Mb/s|kb/s|Mbps|kbps|bps|km/h|m/s|千米每小时|公里每小时|米每秒|GHz|MHz|kHz|Hz|吉赫兹|兆赫兹|千赫兹|赫兹|dBm|dBi|dBd|dB|mW|W|毫瓦|瓦|km|千米|公里|m|米|℃|°C|摄氏度|K|开尔文)'
+# The dimensionless unit "1" (ν, k) must stand apart and end its clause, so a year (2021),
+# a numbered site (11 号) or a count (XX-100 1 台) is never read as a value with unit 1.
+UNITS = r'(?:(?<=\s)1(?=\s*(?:$|[，,。；;！!？?、)）\n]))|dBm/Hz|Mbit/s|kbit/s|bit/s|Mb/s|kb/s|Mbps|kbps|bps|km/h|m/s|千米每小时|公里每小时|米每秒|GHz|MHz|kHz|Hz|吉赫兹|兆赫兹|千赫兹|赫兹|dBm|dBi|dBd|dB|mW|W|毫瓦|瓦|km|千米|公里|m|米|℃|°C|摄氏度|K|开尔文)'
 QUANTITY = re.compile(rf'(?<![\w.])(?P<value>{NUMBER})\s*(?P<unit>{UNITS})(?![A-Za-z/\d])', re.I)
 ALIAS_UNIT = {'吉赫兹': 'ghz', '兆赫兹': 'mhz', '千赫兹': 'khz', '赫兹': 'hz',
               '公里': 'km', '千米': 'km', '米': 'm', '千米每小时': 'km/h',

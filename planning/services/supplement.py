@@ -33,7 +33,7 @@ CONDITION = re.compile(r'(?:按|采用|使用)?(?:理想)?自由空间(?:模型|
 LABEL_CHOICES = list(FIELDS) + [REQUIREMENT, OTHER]
 # Words that make a change tentative; the model's "apply" cannot override them.
 HEDGE = re.compile(r'(?i)\b(?:maybe|perhaps|possibly|approximately|about|roughly|if|not|unknown|uncertain)\b|don.t|可能|也许|或许|大概|大约|估计|差不多|左右|上下|或者|也可以|如果|假如|是否|待定|暂定|不确定')
-FILLER = re.compile(r'(?i)(?:please|thanks|thank you|and)|(?:另外|同时|然后|还有|并且|而且|再|也|请|麻烦|谢谢|好的|嗯|吧|了|的|\s)*')
+FILLER = re.compile(r'(?i)(?:please|thank you|thanks|and|另外|同时|然后|还有|并且|而且|再|也|请|麻烦|谢谢|好的|嗯|吧|了|的|\s)*')
 PARTS = re.compile(r'[^，,；;。\n！!？?]+')
 
 
