@@ -166,6 +166,24 @@ class TeacherPathTests(unittest.TestCase):
         self.assertEqual(fallback['mode'], 'deterministic_fallback')
         self.assertEqual({x['field']: x['reason'] for x in fallback['items']}['tx_power_dbm'], '典型值表的默认值')
 
+    def test_the_review_sees_the_comparison_and_may_explain_it_with_its_numbers(self):
+        from planning.agents.review import ReviewAgent, facts_for
+        _, done = self.run_case('teacher_03', **manual(TEXT3))
+        facts = facts_for(done['result'], done['confirmed_snapshot'], done['validations'])
+        c = facts['comparison']
+        self.assertEqual([(r['modulation'], r['rx_sensitivity']['value'], r['link_margin']['value']) for r in c['rows']],
+                         [('QPSK', -100, 22.894), ('16QAM', -95, 17.894)])
+        self.assertEqual((c['difference']['value'], c['recommend']['modulation']), (5.0, 'QPSK'))
+        threshold = next(i for i in facts['inputs'] if i['id'] == 'in:rx_threshold_dbm')
+        self.assertEqual(threshold['source'], '调制表（模拟参数） QPSK')
+        answer = ('推荐 QPSK：余量 22.89 dB，16QAM 为 17.89 dB，相差 5.00 dB。两者接收电平都是 -77.11 dBm，'
+                  '16QAM 阶数更高、灵敏度 -95 dBm 高于 QPSK 的 -100 dBm，余量因此更小。')
+        def selector(role, prompt, view, schema):
+            self.assertIn('comparison', schema['properties']['opinions']['items']['properties']['refs']['items']['enum'])
+            return dict(output=dict(decision='pass', answer=answer, opinions=[], steps=[]), raw_output='', model='stub', usage={})
+        assessment = ReviewAgent(selector).run(done['result'], done['confirmed_snapshot'])
+        self.assertEqual((assessment['role']['mode'], assessment['role']['proposal']['answer']), ('stub', answer))
+
 
 if __name__ == '__main__':
     unittest.main()
