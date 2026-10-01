@@ -85,8 +85,11 @@ def sources_for(request, entities, cards, final, observed, root=None):
 
     observed holds the inputs the text and the form already give. The distance is taken from
     coordinates only when both sites resolve; the radio horizon then runs next to check it.
+    A distance the user states is used as is: the site names are then only labels, so "A 楼顶"
+    is not matched to the library's A 站 (TEACHER_CASES).
     """
-    sites, devices, issues = resolve(entities, root)
+    labels = [e['mention'] for e in entities if e['kind'] == 'site'] if 'distance_km' in observed else []
+    sites, devices, issues = resolve([e for e in entities if not (labels and e['kind'] == 'site')], root)
     facts = fact_observations(request, sites, devices)
     order, leaves = [], []
     if final:
@@ -102,6 +105,8 @@ def sources_for(request, entities, cards, final, observed, root=None):
     if len(sites) == 2 and 'slant_range_wgs84' in order:
         titles = '、'.join(dict.fromkeys(s['source']['title'] for s in sites))
         notes.append(f"两端站点 {sites[0]['names'][0]}、{sites[1]['names'][0]} 的坐标与天线高度取自{titles}。")
+    if labels:
+        notes.append('距离按原文；' + '、'.join(f'“{m}”' for m in dict.fromkeys(labels)) + '只作标签，未查站点库。')
     if len(devices) == 1 and any(o['kind'] == 'device' for f in facts.values() for o in f):
         notes.append(f"两端电台均按 {devices[0]['model']}，参数取自{devices[0]['source']['title']}。")
     for name, (origin,) in defaults.items():
@@ -112,7 +117,8 @@ def sources_for(request, entities, cards, final, observed, root=None):
     for extra in (facts, defaults):
         for field, origins in extra.items():
             sources.setdefault(field, []).extend(origins)
-    return dict(order=order, leaves=leaves, sources=sources, notes=notes, issues=issues, sites=sites, devices=devices)
+    return dict(order=order, leaves=leaves, sources=sources, notes=notes, issues=issues, sites=sites, devices=devices,
+                labels=list(dict.fromkeys(labels)))
 
 
 def plan_goal(requirement, solve, final, leaves):

@@ -114,6 +114,22 @@ class FactSourceTests(unittest.TestCase):
         self.assertNotIn('checks', r['calculation_plan_proposal'])
         self.assertEqual(check_report(r, q, self.cards, ROOT), r)
 
+    def test_with_a_stated_distance_site_names_are_only_labels(self):
+        for a, b in (('A 楼顶', 'B 楼顶'), ('石家庄山顶基站', '乡镇')):
+            text = (f'按自由空间基准计算{a}到{b}的链路余量：频率5.8GHz，距离10km，发射功率20dBm，'
+                    '发射天线增益18dBi，接收天线增益18dBi，接收灵敏度-100dBm。')
+            q = request(text)
+            clause = text[text.index(a):text.index('的链路')]
+            r = RequirementsAgent(ROOT, selector=model(sites=[dict(mention=a, evidence=clause),
+                                                              dict(mention=b, evidence=clause)])).run(q)
+            with self.subTest(a=a):
+                self.assertEqual(r['execution_status'], 'AWAITING_CONFIRMATION', r['questions'])
+                self.assertNotIn('ENTITY_UNKNOWN', [d['code'] for d in r['diagnostics']])
+                self.assertFalse([p for p in r['parameters_proposal'] if p['canonical_name'].startswith(('lat', 'lon', 'antenna', 'ground'))])
+                self.assertEqual(r['calculation_plan_proposal']['selected_model'], ['fspl_ghz', 'received_power', 'link_margin'])
+                self.assertIn(f'距离按原文；“{a}”、“{b}”只作标签，未查站点库。', r['calculation_plan_proposal']['assumptions'])
+                self.assertEqual(check_report(r, q, self.cards, ROOT), r)
+
     def test_a_changed_record_value_fails_the_replay(self):
         q, r = self.run_agent(ask())
         bad = copy.deepcopy(r)
