@@ -509,3 +509,19 @@ td.num,span.num{text-align:right;font-variant-numeric:tabular-nums}
 .assumption-edit{display:flex;gap:6px;align-items:center;grid-column:1/-1}.assumption-edit input{width:7em;min-width:0}.model-answer{border-left:3px solid #176e8f;padding:12px;background:#eef7fa}.model-answer p{font-size:16px;line-height:1.7}.solve svg{display:block;width:100%;height:auto;margin-top:12px}.solve svg text{font-size:12px;fill:currentColor}.step-note,.horizon-check{font-size:13px;line-height:1.7;padding:8px 12px;color:#47566a}.tag.site,.tag.device{background:#edf4ee}.tag.default{background:#fff4d7}.warn-text{color:#a43324}
 /* English page: hidden until the source text is swapped (lang.js, i18n.mjs). */
 html.translating body{visibility:hidden}
+
+/* Execution records remain in the conversation thread as activity arrives. */
+.execution-records{margin-top:18px;padding-top:14px;border-top:1px solid var(--hairline)}
+.execution-records h3{font-size:14px;margin:0 0 10px}
+.record-card{margin:8px 0;padding:12px;border-radius:var(--radius-sm);background:var(--fill);border-left:3px solid var(--text-3);font-size:12.5px;line-height:1.65;overflow-wrap:anywhere}
+.record-card.model{border-left-color:var(--cap)}
+.record-card.tool{border-left-color:var(--ok-dot)}
+.record-card p{margin:4px 0}
+.record-card .record-kind{font-size:11px;font-weight:600;color:var(--text-2)}
+.record-card details{padding:0;margin-top:8px;border:0}
+.record-card summary{font-size:12px;color:var(--accent)}
+.record-card pre{max-height:280px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:10px;background:var(--surface);font-size:11.5px;line-height:1.6}
+.record-card.failed{border-left-color:var(--bad-dot)}
+.record-results{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;margin-top:8px}
+.record-results dt,.record-results dd{margin:0;font-size:12px}
+.record-results dd{text-align:right;font-variant-numeric:tabular-nums}
