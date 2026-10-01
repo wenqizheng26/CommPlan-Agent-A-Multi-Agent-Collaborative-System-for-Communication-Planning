@@ -3,6 +3,8 @@
 
 // Page frame, header, chat panel and commands (index.html, app.js).
 const PAGE={
+ '添加附件':'Add attachment',
+ '附件进入资料库；抽取并审核后才能参与计算。':'Attachments enter the library. Extract and review them before using their data in calculations.',
  '通信筹划 · Planning Workbench':'CommPlan · Planning Workbench','通信筹划':'CommPlan','多智能体 · 本机离线':'Multi-agent · local, offline',
  '当前任务':'Current task','未开始':'Not started','设置载入中':'Loading settings','资料':'Library','历史任务':'Task history',
  '导出 JSON':'Export JSON','性能':'Performance','按编号恢复':'Restore by ID','取消任务':'Cancel task','＋ 新建任务':'+ New task',
@@ -60,6 +62,7 @@ const PAGE_PATTERNS=[
  [/^目标 · (.+)$/,'Target · $1'],[/^条件 · (.+)$/,'Condition · $1'],
  [/^文档读取失败：([\s\S]+)$/,'Could not read the documents: $1'],[/^草稿读取失败：([\s\S]+)$/,'Could not read the drafts: $1'],
  [/^抽取中 · (\d+) s$/,'Extracting · $1 s'],[/^抽取失败：([\s\S]+)$/,'Extraction failed: $1'],
+ [/^已添加：(.+)。请选择片段，抽取并核对草稿后填写审核人，通过后才能参与计算。$/,'Added: $=1. Select sections, extract and check the draft, then enter a reviewer. Only approved data can be used in calculations.'],
  [/^已添加：(.+)$/,'Added: $1'],[/^添加失败：([\s\S]+)$/,'Could not add: $1'],
  [/^已入库：(.+)$/,'Added to the library: $1'],[/^已驳回：(.+)$/,'Rejected: $1'],
  [/^(.+) · 去处理$/,'$1 · go to it'],[/^(\d+) 条记录$/,'$1 records'],
@@ -503,6 +506,7 @@ const SERVER_PATTERNS=[
  [/^按已确认自由空间条件，路径损耗 (\S+) dB。$/,'Under the confirmed free-space conditions, the path loss is $1 dB.'],
  [/^按已确认自由空间条件，接收信号电平 (\S+) dBm。$/,'Under the confirmed free-space conditions, the received signal level is $1 dBm.'],
  [/^按已确认输入，接收信号电平 (\S+) dBm。$/,'With the confirmed inputs, the received signal level is $1 dBm.'],
+ [/^按已确认输入，(.+) (\S+) (m|1|dB)。$/,'With the confirmed inputs, $1 is $2 $3.'],
  [/^按已确认自由空间条件，([\s\S]+)。$/,'Under the confirmed free-space conditions: $1.'],
  [/^满足不低于 (\S+) dB 的要求$/,'meets the requirement of at least $1 dB'],[/^低于要求的 (\S+) dB$/,'below the required $1 dB'],
  [/^发射功率至少需 (.+) 才能满足$/,'the transmit power must be at least $1'],[/^发射功率至多需 (.+) 才能满足$/,'the transmit power must be at most $1'],
@@ -516,6 +520,37 @@ const SERVER_PATTERNS=[
 
 // Knowledge data: formula cards, sites, radios and documents.
 const KNOWLEDGE={
+ "载波频率":"Carrier frequency",
+ "第一端天线到障碍物的距离":"Distance from the first antenna to the obstacle",
+ "第二端天线到障碍物的距离":"Distance from the second antenna to the obstacle",
+ "第一菲涅耳区半径":"First Fresnel zone radius",
+ "按频率与障碍物到两端天线的距离计算第一菲涅耳区半径；不包含障碍物高度或地球曲率。":"Calculate the first Fresnel zone radius from frequency and distances to the two antennas; obstacle height and Earth curvature are excluded.",
+ "P.530 §2.2.2：余隙至少为第一菲涅耳区半径的 60%，以达到自由空间传播条件。":"P.530 section 2.2.2: clearance should be at least 60% of the first Fresnel zone radius to achieve free-space propagation conditions.",
+ "由 sqrt(λ*d1*d2/(d1+d2)) 换算，频率 GHz、距离 km、输出 m；17.3 是舍入系数，λ 使用精确光速时系数约为 17.3145。":"Converted from sqrt(λ*d1*d2/(d1+d2)), with frequency in GHz, distances in km and output in m; 17.3 is rounded, while exact light speed gives about 17.3145.",
+ "单刃形绕射参数 ν":"Single knife-edge diffraction parameter ν",
+ "计算障碍物相对两端天线连线高度对应的无量纲绕射参数。":"Calculate the dimensionless diffraction parameter for obstacle height relative to the antenna-to-antenna line.",
+ "障碍物顶端高出两端天线连线为正，低于为负":"Obstacle top above the antenna-to-antenna line is positive; below is negative",
+ "此处 h 为障碍物高出连线的高度，与 P.530 式 (2) 中表示余隙的 h 符号相反。":"Here h is obstacle height above the line; its sign is opposite to clearance h in P.530 equation (2).",
+ "本机无原文，按 2026-09-28 调研时在 ITU 官网核对的内容；ν=h*sqrt((2/λ)*(1/d1+1/d2))，λ=0.299792458/f m，距离从 km 换成 m。":"No original is available locally; based on the content checked on the ITU website during research on 2026-09-28. ν=h*sqrt((2/λ)*(1/d1+1/d2)), λ=0.299792458/f m, distances converted from km to m.",
+ "单刃形绕射附加损耗":"Single knife-edge additional diffraction loss",
+ "按 ν 估算单刃形绕射损耗；本近似式仅用于 ν > −0.78。":"Estimate single knife-edge diffraction loss from ν; this approximation applies only for ν > −0.78.",
+ "无量纲单刃形绕射参数 ν":"Dimensionless single knife-edge diffraction parameter ν",
+ "只描述单个理想刃形障碍物，不代表多障碍物或圆滑障碍物的损耗。":"Describes a single ideal knife edge; it does not represent multiple or rounded obstacles.",
+ "本机无原文，按 2026-09-28 调研时在 ITU 官网核对的内容；直接使用 J(ν) 的 dB 近似式，输入无量纲。":"No original is available locally; based on the content checked on the ITU website during research on 2026-09-28. Uses the dB approximation for J(ν) directly, with dimensionless input.",
+ "光滑海面球面地球两径附加损耗":"Smooth-sea spherical-Earth two-ray additional loss",
+ "计算海面镜面反射相对自由空间的附加损耗，负值为增强，最小约 −6.02 dB；计入等效地球曲率。":"Calculate additional loss relative to free space from specular sea reflection, including effective Earth curvature; negative values mean enhancement, with a minimum of about −6.02 dB.",
+ "两端路径距离":"Path distance between the two antennas",
+ "第一端天线高出海面的高度，已含站址高程":"First antenna height above sea level, including site elevation",
+ "第二端天线高出海面的高度，已含站址高程":"Second antenna height above sea level, including site elevation",
+ "等效地球半径系数 k":"Effective Earth radius factor k",
+ "光滑海面、单一镜面反射点，只在视距内使用；反射点处等效高度必须大于 0。":"Use only within line of sight over a smooth sea with a single specular reflection point; effective heights at the reflection point must be positive.",
+ "反射系数 −1 是水平极化、小掠射角下的近似，实际随海况与极化变化；P.530 §6.1.2.4 指出掠射角大于约 0.7° 时，垂直极化的反射比水平极化弱 2–17 dB。":"A reflection coefficient of −1 approximates horizontal polarization at small grazing angles; the actual value depends on sea state and polarization. P.530 section 6.1.2.4 reports vertical reflection 2–17 dB weaker than horizontal above about 0.7° grazing angle.",
+ "P.530 建议在 k 从 ke(99.9%) 到无穷大的范围内检查；此卡一次计算一个 k。":"P.530 recommends checking k from ke(99.9%) to infinity; this card evaluates one k at a time.",
+ "合成场比小于 0.1 时拒绝计算，避免反射系数 −1 时接近干涉零点的无界深衰落。":"Reject a combined-field ratio below 0.1 to avoid unbounded deep fades near interference nulls with reflection coefficient −1.",
+ "采用球面地球反射点与曲率修正高度，f 为 GHz、d 为 km、h 为 m；式 (126) 使用 0.3 而非精确光速。k 趋向无穷大时回到平地面两径；30 km 演示路径不可忽略曲率。":"Uses the spherical-Earth reflection point and curvature-corrected heights, with f in GHz, d in km and h in m. Equation (126) uses 0.3 rather than exact light speed. Infinite k approaches flat-Earth two-ray geometry; curvature cannot be ignored for the 30 km demonstration path.",
+ "a_e=k*6375 km；m=d²*10³/(4*a_e*(h1+h2))，c=(h1−h2)/(h1+h2)，b=2*sqrt((m+1)/(3*m))*cos(π/3+acos((3*c/2)*sqrt(3*m/(m+1)³))/3)；d1=d*(1+b)/2，d2=d*(1−b)/2；h1′=h1−d1²/(12.74*k)，h2′=h2−d2²/(12.74*k)，任一 ≤0 时拒绝；τ=(2*f/0.3)*h1′*h2′*10⁻³/d；场比 A=2*abs(sin(π*τ))，A<0.1 时拒绝；L=−20*log10(A) dB。":"a_e=k*6375 km; m=d²*10³/(4*a_e*(h1+h2)), c=(h1−h2)/(h1+h2), b=2*sqrt((m+1)/(3*m))*cos(π/3+acos((3*c/2)*sqrt(3*m/(m+1)³))/3); d1=d*(1+b)/2, d2=d*(1−b)/2; h1′=h1−d1²/(12.74*k), h2′=h2−d2²/(12.74*k), reject either ≤0; τ=(2*f/0.3)*h1′*h2′*10⁻³/d; field ratio A=2*abs(sin(π*τ)), reject A<0.1; L=−20*log10(A) dB.",
+ "标准大气典型值；须显式输入或确认，不自动应用。":"Typical standard-atmosphere value; must be explicitly supplied or confirmed, never applied automatically.",
+
  '自由空间基本传输损耗':'Free-space basic transmission loss','单程最大多普勒频移上界':'One-way maximum Doppler shift bound','指定温度与带宽的热噪声功率':'Thermal noise power at a given temperature and bandwidth',
  '链路预算接收电平':'Link-budget received level','扣除预留量后的链路电平余量':'Link margin after the reserve','指定温度的热噪声谱密度':'Thermal noise density at a given temperature',
  '由 Eb/N0 与比特率计算接收门限':'Receive threshold from Eb/N0 and bit rate','标准大气假设下的两端无线电视距':'Radio horizon of both ends in a standard atmosphere','WGS84 两端天线直线距离':'WGS84 slant range between the antennas',
@@ -559,5 +594,19 @@ const KNOWLEDGE_PATTERNS=[
  [/^(.+?) 手册（模拟）$/,'$1 manual (simulated)'],[/^(.+?) 手册$/,'$1 manual'],[/^(.+?)（模拟）$/,'$1 (simulated)'],
 ];
 
-export const EXACT={...PAGE,...FLOW,...PROGRESS,...DETAILS,...SETTINGS,...CHAT,...LIBRARY,...SERVER,...KNOWLEDGE};
+const COASTAL={
+ '支持：链路预算 · 菲涅耳半径 · 单刃形绕射 · 海面两径':'Supports: link budgets · Fresnel radius · knife-edge diffraction · sea two-ray',
+ '支持自由空间单链路预算、第一菲涅耳区半径、单刃形绕射及光滑海面两径附加损耗；须声明各模型条件，不代表真实海况下的可靠通信。':'Supports free-space link budgets, first Fresnel-zone radius, knife-edge diffraction and smooth-sea two-ray additional loss. Declare each model condition; these results do not guarantee reliable communication in real sea conditions.',
+ '起点到障碍物距离':'Distance from transmitter to obstacle','终点到障碍物距离':'Distance from receiver to obstacle',
+ '障碍物高出连线高度':'Obstacle height above the antenna line','起点天线海面高度':'Transmitter antenna height above sea',
+ '终点天线海面高度':'Receiver antenna height above sea','有效地球半径系数':'Effective Earth-radius factor',
+ '绕射参数':'Diffraction parameter','单刃形绕射参数':'Single knife-edge diffraction parameter',
+ '单刃形绕射损耗':'Single knife-edge diffraction loss','海面反射附加损耗':'Additional sea-reflection loss',
+ '海面反射附加损耗（相对自由空间）':'Sea-reflection loss relative to free space',
+ '单刃形障碍物':'Single knife-edge obstacle','光滑海面单点镜面反射':'Smooth sea with one specular reflection',
+ '请声明补充模型的适用条件':'Declare the supplementary model conditions',
+ '补充模型的适用条件尚未声明。':'The supplementary model conditions have not been declared.',
+ '请在需求中写明采用单刃形障碍物模型，或光滑海面单点镜面反射两径模型。':'State in the request that you use a single knife-edge model or a smooth-sea, single-reflection two-ray model.'
+};
+export const EXACT={...PAGE,...FLOW,...PROGRESS,...DETAILS,...SETTINGS,...CHAT,...LIBRARY,...SERVER,...KNOWLEDGE,...COASTAL};
 export const PATTERNS=[...PAGE_PATTERNS,...PROGRESS_PATTERNS,...DETAILS_PATTERNS,...SETTINGS_PATTERNS,...CHAT_PATTERNS,...LIBRARY_PATTERNS,...SERVER_PATTERNS,...KNOWLEDGE_PATTERNS];

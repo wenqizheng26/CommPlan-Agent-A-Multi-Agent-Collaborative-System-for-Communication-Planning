@@ -153,7 +153,8 @@ class PlanningWebTests(unittest.TestCase):
         self.assertEqual(code, 200)
         self.assertEqual(models['defaults']['chat'], 'qwen35-9b-q4')
         self.assertIn('bge-small-zh-v1.5', models['embeddings'])
-        self.assertEqual(models['corpus']['size'], 9)
+        from formula_rag.catalog import load_catalog
+        self.assertEqual(models['corpus']['size'], len(load_catalog(ROOT)))
         self.assertNotIn('weights', json.dumps(models))
 
         code, current = self.call('/api/settings')

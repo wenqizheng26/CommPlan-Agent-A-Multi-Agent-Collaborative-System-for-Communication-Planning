@@ -2,6 +2,39 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {install,t} from '../planning/web/i18n.mjs';
 import * as en from '../planning/web/i18n-en.mjs';
+import {readFileSync} from 'node:fs';
+
+test('attachment guidance translates while preserving the supplied document title',()=>{
+ install(en);
+ assert.equal(t('已添加：附件验收手册（模拟）。请选择片段，抽取并核对草稿后填写审核人，通过后才能参与计算。'),
+  'Added: 附件验收手册（模拟）. Select sections, extract and check the draft, then enter a reviewer. Only approved data can be used in calculations.');
+});
+
+test('confirmed supplementary results translate their registered labels',()=>{
+ install(en);
+ for(const text of ['按已确认输入，海面反射附加损耗（相对自由空间） 5.13 dB。','按已确认输入，第一菲涅耳区半径 33.50 m。',
+  '按已确认输入，绕射参数 0.60 1。','按已确认输入，单刃形绕射损耗 10.20 dB。']){
+  assert.match(t(text),/^With the confirmed inputs,/);
+  assert.doesNotMatch(t(text),/[\u3400-\u9fff]/u);
+ }
+});
+
+test('all four W4 cards translate each displayed Chinese sentence in full',()=>{
+ install(en);
+ const ids=['fresnel_radius','knife_edge_nu','knife_edge_loss','sea_reflection_two_ray'];
+ const cards=JSON.parse(readFileSync(new URL('../knowledge/formulas.json',import.meta.url),'utf8')).filter(c=>ids.includes(c.id));
+ assert.equal(cards.length,4);
+ for(const c of cards){
+  const texts=[c.title,c.description,...Object.values(c.parameters).flatMap(p=>[p.description,p.default?.note]),
+   ...c.applicability.notes,c.algorithm,...c.sources.map(s=>s.derivation)].filter(Boolean);
+  for(const text of texts){
+   if(!/[\u3400-\u9fff]/u.test(text))continue;
+   assert.ok(Object.hasOwn(en.EXACT,text),`${c.id}: ${text}`);
+   assert.notEqual(t(text),text);
+   assert.doesNotMatch(t(text),/[\u3400-\u9fff]/u);
+  }
+ }
+});
 
 test('without a dictionary the Chinese source is shown as is',()=>{
  install({});

@@ -20,19 +20,20 @@ from planning.services.requirement_quantities import find_quantities, count_quan
 
 POSITIVE = {'frequency_ghz': '频率', 'distance_km': '距离'}
 BUDGET = ('tx_power_dbm', 'tx_gain_dbi', 'rx_gain_dbi', 'tx_loss_db', 'rx_loss_db', 'extra_loss_db',
-          'path_loss_db', 'rx_power_dbm', 'rx_threshold_dbm', 'reserve_db')
+          'path_loss_db', 'rx_power_dbm', 'rx_threshold_dbm', 'reserve_db', 'd1_km','d2_km',
+          'obstacle_height_m','height1_above_sea_m','height2_above_sea_m','knife_edge_nu','k_factor')
 FIELDS = POSITIVE | {f: PARSED[f][0] for f in BUDGET}
 BUDGET_LABELS = '|'.join(sorted({a for f in BUDGET for a in PARSED[f][2]}, key=len, reverse=True))
 INPUT_KEYS = ('raw_text', 'manual_parameters', 'condition', 'target')
 NUMERIC = re.compile(rf'{NUMBER}\s*(?:{UNITS})(?![A-Za-z/\d])', re.I)
-CLAUSE = re.compile(rf'(?:请)?(?:把|将)?\s*(?:载波频率|频率|路径距离|距离|{BUDGET_LABELS}|frequency|distance|f|d)?\s*'
-                    rf'(?:修改为|设置为|确定为|改为|改成|设为|采用|使用|为|是|=|：|:)?\s*'
+CLAUSE = re.compile(rf'(?:(?:please\s+)?(?:change|set|update)\s+)?(?:请)?(?:把|将)?\s*(?:载波频率|频率|路径距离|距离|{BUDGET_LABELS}|frequency|distance|f|d)?\s*'
+                    rf'(?:修改为|设置为|确定为|改为|改成|设为|采用|使用|为|是|to|is|=|：|:)?\s*'
                     rf'{NUMBER}\s*(?:{UNITS})\s*', re.I)
 CONDITION = re.compile(r'(?:按|采用|使用)?(?:理想)?自由空间(?:模型|基准)(?:计算)?')
 LABEL_CHOICES = list(FIELDS) + [REQUIREMENT, OTHER]
 # Words that make a change tentative; the model's "apply" cannot override them.
-HEDGE = re.compile(r'可能|也许|或许|大概|大约|估计|差不多|左右|上下|或者|也可以|如果|假如|是否|待定|暂定|不确定')
-FILLER = re.compile(r'(?:另外|同时|然后|还有|并且|而且|再|也|请|麻烦|谢谢|好的|嗯|吧|了|的|\s)*')
+HEDGE = re.compile(r'(?i)\b(?:maybe|perhaps|possibly|approximately|about|roughly|if|not|unknown|uncertain)\b|don.t|可能|也许|或许|大概|大约|估计|差不多|左右|上下|或者|也可以|如果|假如|是否|待定|暂定|不确定')
+FILLER = re.compile(r'(?i)(?:please|thanks|thank you|and)|(?:另外|同时|然后|还有|并且|而且|再|也|请|麻烦|谢谢|好的|嗯|吧|了|的|\s)*')
 PARTS = re.compile(r'[^，,；;。\n！!？?]+')
 
 

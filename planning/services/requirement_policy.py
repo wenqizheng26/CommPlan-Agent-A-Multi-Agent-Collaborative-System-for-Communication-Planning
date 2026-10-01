@@ -6,14 +6,15 @@ from planning.services.plans import TARGETS
 
 
 # A feasibility question is the model's reading of "link margin"; the rules have no keyword for it.
-FEASIBILITY = r'能(?:不能)?通|能否(?:打)?通|通不通|够不够|够用|行不行|可行吗|能否满足|能不能满足|是否满足|满不满足|能满足吗'
+FEASIBILITY = r'can.{0,15}(?:link|communicat)|is.{0,15}(?:feasible|sufficient)|能(?:不能)?通|能否(?:打)?通|通不通|够不够|够用|行不行|可行吗|能否满足|能不能满足|是否满足|满不满足|能满足吗'
 
 
 def validate_target_semantics(model):
     for target in model.get('targets', []):
         require(not re.fullmatch(r'\s*(?:解释|介绍|什么是|定义|说明什么是|解释什么是).*(?:余量|损耗|功率|电平)[。？?]?\s*',target['evidence']),'MODEL_TARGET_CONCEPT')
+        require(not re.search(r'^(?:explain|define|describe|what does).*(?:loss|margin|power|radius)', target['evidence'].strip(), re.I), 'MODEL_TARGET_CONCEPT')
         parsed = extract_request(target['evidence'])
-        feasible = target['id'] == 'link_margin' and re.search(FEASIBILITY, target['evidence'])
+        feasible = target['id'] == 'link_margin' and re.search(FEASIBILITY, target['evidence'], re.I)
         margin_goal=(target['id']=='link_margin' and bool(re.search(r'(?:要求|需要|希望|至少|不低于|要留|留出|得有).{0,18}余量|余量.{0,18}(?:要求|需要|至少|不低于|达到|达标|[0-9]+\s*dB)',target['evidence'],re.I)))
         require(target['id'] in TARGETS and (parsed['targets'] == [target['id']] or bool(feasible) or margin_goal)
                 and not parsed['unsupported_targets'], 'MODEL_TARGET_SEMANTICS')
@@ -25,6 +26,10 @@ def intent_conflict(request, parsed):
         if re.search(r'(?:不要|不用|不必|无需|不)(?:再|进行)?(?:计算|求出|求|算)(?:.*?)(?:路径损耗|传播损耗|传输损耗)', clause):
             # An explicitly excluded task cannot be reinstated by a dropdown or
             # an affirmative clause elsewhere in the same request.
+            return True
+        if re.search(r'(?:do not|don.t|not to)\s+(?:calculate|compute|find)', clause, re.I):
+            return True
+        if re.search(r'(?:not|without)\s+(?:using\s+)?free[ -]space', clause, re.I):
             return True
         if re.search(r'(?:不采用|不用|不要用|不使用|不按|非|不是)(?:.*?自由空间)', clause):
             return True
@@ -43,6 +48,9 @@ def outside_scope(text, parsed, targets, conditions):
             continue
         if re.search(r'(?:真实|实际).{0,8}(?:海面|海上|海域).{0,8}(?:损耗|传播)', clause):
             return True
-        if re.search(r'双程|往返|雷达回波|双向雷达', clause):
+        if re.search(r'(?:actual|real).{0,20}(?:sea|ocean).{0,20}(?:loss|propagation)|(?:actual|real).{0,20}(?:loss|propagation).{0,20}(?:sea|ocean)', clause, re.I):
             return True
-    return 'non_free_space' in conditions and 'free_space_reference' not in conditions
+        if re.search(r'双程|往返|雷达回波|双向雷达|two[ -]way|round[ -]trip|radar echo', clause, re.I):
+            return True
+    supplements = bool(targets) and set(targets) <= {'fresnel_radius', 'knife_edge_nu', 'knife_edge_loss', 'sea_reflection_two_ray'}
+    return not supplements and 'non_free_space' in conditions and 'free_space_reference' not in conditions

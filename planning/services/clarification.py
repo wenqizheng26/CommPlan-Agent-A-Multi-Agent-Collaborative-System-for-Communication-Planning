@@ -16,14 +16,16 @@ BUDGET={'tx_power_dbm':'发射功率','tx_gain_dbi':'发射天线增益','rx_gai
         'tx_loss_db':'发射馈线损耗','rx_loss_db':'接收馈线损耗','extra_loss_db':'额外损耗',
         'path_loss_db':'路径损耗','rx_power_dbm':'接收信号电平','rx_threshold_dbm':'接收门限',
         'reserve_db':'预留余量'}
+COASTAL={f:FIELDS[f][0] for f in ('d1_km','d2_km','obstacle_height_m','height1_above_sea_m','height2_above_sea_m','knife_edge_nu','k_factor')}
+BUDGET.update(COASTAL)
 LABELS=NAMES|BUDGET
 
 
 def label_pattern(field):
     if field=='frequency_ghz':
-        return r'载波频率|工作频率|频率|载频'
+        return r'载波频率|工作频率|频率|载频|'+'|'.join(re.escape(a) for a in FIELDS[field][2])
     if field=='distance_km':
-        return r'路径距离|通信距离|链路距离|距离|相距'
+        return r'路径距离|通信距离|链路距离|距离|相距|'+'|'.join(re.escape(a) for a in FIELDS[field][2])
     return '|'.join(re.escape(a) for a in sorted(FIELDS[field][2]+[BUDGET[field]],key=len,reverse=True))
 
 
@@ -56,11 +58,17 @@ def issues_for(state):
     if not report.get('targets'):
         add('clarification','goal','你希望得到什么结果？','先明确目标，再判断能力与所需参数；选择不代表当前系统支持。',
             choices=[dict(value='fspl_ghz',label='路径损耗'),dict(value='received_power',label='接收信号电平'),dict(value='link_margin',label='链路余量'),
+                     dict(value='fresnel_radius',label='第一菲涅耳区半径'),dict(value='knife_edge_nu',label='绕射参数'),
+                     dict(value='knife_edge_loss',label='单刃形绕射损耗'),dict(value='sea_reflection_two_ray',label='海面反射附加损耗'),
                      dict(value='link_feasibility',label='判断能否通信'),dict(value='scheme_comparison',label='比较方案')])
         return issues
     if any(d['code']=='MISSING_CONDITION' for d in diagnostics):
         add('clarification','condition','是否明确只做自由空间基准？','自由空间基准不代表实际海面或遮挡环境。',
             choices=[dict(value='free_space_reference',label='是，只计算自由空间基准'),dict(value='non_free_space',label='否，需要实际环境传播评估')])
+    for d in diagnostics:
+        if d['code']=='MISSING_COASTAL_CONDITION':
+            add('clarification','task','请声明补充模型的适用条件',
+                '请在需求中写明采用单刃形障碍物模型，或光滑海面单点镜面反射两径模型。')
     params={p['canonical_name']:p for p in report.get('parameters_proposal',[])}
     approx={d['details'].get('field'):d['details'] for d in diagnostics if d['code']=='PARAMETER_APPROXIMATE'}
     # While a shared site name is open, the distance is not asked: the chosen site's coordinates give it.
@@ -238,7 +246,9 @@ def replace_parameter(request, report, field, answer):
     numeric=answer[slice(*spans[0])].strip()
     if field in BUDGET:  # the span may include the label; keep only the value and unit
         numeric=re.search(rf'{NUMBER}\s*(?:{UNITS})(?![A-Za-z/\d])',numeric,re.I).group()
-    replacement=LABELS[field]+numeric
+    from formula_rag.parsing import EN_FIELDS
+    label=EN_FIELDS.get(field,[LABELS[field]])[0]+' ' if not re.search(r'[\u3400-\u9fff]',request['raw_text']) else LABELS[field]
+    replacement=label+numeric
     if merged:
         for i,(start,end) in reversed(list(enumerate(merged))):
             text=text[:start]+(replacement if i==0 else '')+text[end:]

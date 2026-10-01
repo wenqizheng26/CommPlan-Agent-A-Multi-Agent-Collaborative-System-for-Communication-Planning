@@ -13,8 +13,8 @@ from planning.knowledge.facts import FactService
 from planning.requirements_contract import require
 from planning.services.requirement_quantities import find_quantities
 
-SWAP = re.compile(r'换|改用|改成|改为|替换|用\S{1,12}(?:呢|吧|试试|算)')
-HEDGE = re.compile(r'可能|也许|或许|要不|或者|还是|考虑|假如|如果|是否|会不会|能不能|行不行|不换|不要|别换|不用|不改|先不|比较|对比')
+SWAP = re.compile(r'换|改用|改成|改为|替换|用\S{1,12}(?:呢|吧|试试|算)|\b(?:switch|replace|swap|change|use)\b', re.I)
+HEDGE = re.compile(r'(?i)\b(?:maybe|perhaps|possibly|if|not|or|compare)\b|don.t|可能|也许|或许|要不|或者|还是|考虑|假如|如果|是否|会不会|能不能|行不行|不换|不要|别换|不用|不改|先不|比较|对比')
 DEVICE_LIKE = re.compile(r'(?<![A-Za-z0-9])[A-Za-z]{1,6}-?\d{2,5}[A-Za-z]?(?![A-Za-z0-9-])')
 SITE_LIKE = re.compile(r'(?<![A-Za-z])[A-Z]\s*站')
 NOT_DEVICES = {'WGS84'}
