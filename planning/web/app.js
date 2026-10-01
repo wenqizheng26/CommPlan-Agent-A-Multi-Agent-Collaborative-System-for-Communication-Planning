@@ -5,6 +5,7 @@ import {renderRight,nodeCard,el,labels,parameterNames,conditionNames,targetNames
 import {formatDomain} from './values.mjs';
 import {assumptionEdit} from './m1.mjs';
 import {renderConversation} from './conversation.mjs';
+import {renderRecords} from './records.mjs';
 import {renderQuestions,openQuestions} from './questions.mjs';
 import {summary,factorySettings,renderSettingsForm,switchView} from './settings.mjs';
 import {nodeLatency,stepTimes,runSummary,renderWaterfall,miniWaterfall,renderMetrics} from './timing.mjs';
@@ -119,6 +120,7 @@ function drawLeft(){
  $('supplement-form').hidden=mode!=='task';
  if(mode==='task')renderOriginal(s);
  renderConversation($('conversation-log'),mode==='task'?s:null,{open:folds});
+ renderRecords($('execution-records'),mode==='task'?s:null,historical?[]:activity);
  renderQuestions($('clarification-panel'),mode==='task'?s:null,{disabled:busy||dirty||editing||!!historical,onSubmit:answers=>submit('answer',answers).catch(e=>notice(e.message,true)),onEdit:startEdit});
  $('composer-hint').textContent=historical?'历史版本只读':'';
 }

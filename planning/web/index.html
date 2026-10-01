@@ -12,6 +12,7 @@
 <div class="form-actions"><button id="submit" class="primary" type="submit">开始筹划</button><button id="add-attachment" class="secondary" type="button" aria-haspopup="dialog">添加附件</button><input id="attachment-file" type="file" hidden accept=".md,.txt,.pdf,.docx,.pptx,.xlsx,.xls,.html,.htm"><button id="discard-edit" class="secondary" type="button" hidden>放弃修改</button></div><p class="hint">附件进入资料库；抽取并审核后才能参与计算。</p></form>
 <article id="original-card" class="original-card" hidden></article>
 <div id="conversation-log" class="conversation-log"></div>
+<section id="execution-records" class="execution-records" aria-label="执行记录" hidden></section>
 <section id="clarification-panel" class="clarification-panel" aria-live="polite" aria-label="待补充" hidden></section>
 </div>
 <form id="supplement-form" class="composer" hidden><label for="supplement-message" class="sr-only">补充或修改</label><textarea id="supplement-message" rows="2" maxlength="2000" placeholder="补充或修改，如：频率改为 3 GHz" required></textarea><div class="composer-row"><span id="composer-hint" class="hint"></span><button id="supplement-submit" class="primary compact" type="submit">提交</button></div></form>

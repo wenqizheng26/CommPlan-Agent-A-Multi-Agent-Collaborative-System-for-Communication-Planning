@@ -611,5 +611,16 @@ const COASTAL={
  '补充模型的适用条件尚未声明。':'The supplementary model conditions have not been declared.',
  '请在需求中写明采用单刃形障碍物模型，或光滑海面单点镜面反射两径模型。':'State in the request that you use a single knife-edge model or a smooth-sea, single-reflection two-ray model.'
 };
-export const EXACT={...PAGE,...FLOW,...PROGRESS,...DETAILS,...SETTINGS,...CHAT,...LIBRARY,...SERVER,...KNOWLEDGE,...COASTAL};
-export const PATTERNS=[...PAGE_PATTERNS,...PROGRESS_PATTERNS,...DETAILS_PATTERNS,...SETTINGS_PATTERNS,...CHAT_PATTERNS,...LIBRARY_PATTERNS,...SERVER_PATTERNS,...KNOWLEDGE_PATTERNS];
+const RECORDS={
+ '执行记录':'Execution records','模型调用':'Model call','工具计算':'Tool calculation','链路余量计算':'Link-margin calculation',
+ '历史版本只显示工具计算':'Historical versions show tool calculations only','暂无执行记录。':'No execution records yet.',
+ '查看 prompt 与 response':'View prompt and response','正在读取调用日志…':'Loading call logs…',
+ '日志中没有对应记录':'No matching record in the logs','调用日志读取失败，请收起后重试。':'Could not load call logs. Collapse and reopen to retry.',
+ '合并补充':'Merge supplementary input','换用追问':'Use a follow-up question','写计划与适用性评估':'Write the plan and assess applicability',
+ '解释与审查':'Explain and review','资料抽取':'Extract source data','调制方式':'Modulation',
+ '接收灵敏度':'Receiver sensitivity','要求余量':'Required margin','是否满足':'Meets requirement',
+ '本机模型':'Local model'
+};
+export const EXACT={...PAGE,...FLOW,...PROGRESS,...DETAILS,...SETTINGS,...CHAT,...LIBRARY,...SERVER,...KNOWLEDGE,...COASTAL,...RECORDS};
+const RECORDS_PATTERNS=[[/^(调制方式|接收灵敏度|要求余量) = ([\s\S]+)$/,'$1 = $=2']];
+export const PATTERNS=[...PAGE_PATTERNS,...PROGRESS_PATTERNS,...DETAILS_PATTERNS,...SETTINGS_PATTERNS,...CHAT_PATTERNS,...LIBRARY_PATTERNS,...SERVER_PATTERNS,...KNOWLEDGE_PATTERNS,...RECORDS_PATTERNS];
