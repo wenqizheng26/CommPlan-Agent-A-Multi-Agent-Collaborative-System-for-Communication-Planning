@@ -129,6 +129,15 @@ class ParsingTests(unittest.TestCase):
         self.assertEqual(result['parameters']['bandwidth_hz'], 1000000)
         self.assertNotIn('frequency_ghz', result['parameters'])
 
+    def test_unit_one_only_stands_apart_at_a_clause_end(self):
+        from planning.services.requirement_quantities import find_quantities
+        read = lambda text: [(q['value'], q['unit']) for q in find_quantities(text)]
+        self.assertEqual(read('2021 年 A站到B站，频率 2 GHz'), [(2, 'GHz')])
+        self.assertEqual(read('11 号站到 B 站 10 km'), [(10, 'km')])
+        self.assertEqual(read('用 XX-100 1 台'), [])
+        self.assertEqual(read('绕射参数0 1。'), [(0, '1')])
+        self.assertEqual(read('绕射参数 0.84 1'), [(0.84, '1')])
+
 
 if __name__ == '__main__':
     unittest.main()
