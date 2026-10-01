@@ -2,7 +2,7 @@ import {t} from './i18n.mjs';
 // Catalog labels refer to the two-page source Visio; status is runtime evidence.
 export const nodes = {
  input:['任务输入','原文与补充条件','overview'],
- requirements:['需求与规划 Agent','模型抽取，程序核对','overview'],
+ requirements:['Requirement Agent','需求与规划：模型抽取，程序核对','overview'],
  parse:['解析需求','程序抽取参数与单位','parameters'],
  retrieval:['检索专业依据','词项检索 · 保留出处','evidence'],
  interpretation:['意图建议（可选）','本机 LLM · 可明确降级','overview'],
@@ -15,9 +15,9 @@ export const nodes = {
  gap:['模型或依据缺口','说明缺口，停止计算','evidence'],
  failure:['异常处理','失败原因与下一步','overview'],
  explanation:['LLM 解释与审查','已接入 · 数字核对','result'],
- orchestrator:['总控 Agent','受控策略 · 退回与重算有上限','overview'],
- compute_agent:['专业计算 Agent','模型写计划、评估适用性，程序计算','formula'],
- validator_agent:['验证与解释 Agent','硬校验 + 可选结构化审查','result'],
+ orchestrator:['Coordinator Agent','总控：受控策略 · 退回与重算有上限','overview'],
+ compute_agent:['LinkBudget Agent','专业计算：模型写计划、评估适用性，程序计算','formula'],
+ validator_agent:['Report Agent','验证与解释：硬校验 + 结构化审查与解释','result'],
  review:['结构化审查','引用结果与已确认假设','result'],
  model:['链路损耗计算模型','登记公式与程序','formula'],
  llm:['共享大模型 LLM','可选 · 需求、计算与审查','overview'],
@@ -138,7 +138,8 @@ const architectureEdges=[
  ['state','orchestrator','state','M12 425H6V108H160','',0,0,true],
 ];
 // Static descriptions live in the detail panel; the diagram keeps only integration caveats.
-const nodeText={validator_agent:'解释与审查已接入',rag:'文档与公式检索'};
+// The teacher's agent names are the titles; the second line says each role in Chinese.
+const nodeText={orchestrator:'总控 · 调度各 Agent',requirements:'需求与规划',compute_agent:'专业计算 · 写计划',validator_agent:'验证、解释与报告',rag:'文档与公式检索'};
 const integration={orchestrator:'部分接入',llm:'可选'};
 const titles={input:'用户输入通信需求'};
 function box(x,y,w,h,r){return `M${x+r} ${y}H${x+w-r}Q${x+w} ${y} ${x+w} ${y+r}V${y+h-r}Q${x+w} ${y+h} ${x+w-r} ${y+h}H${x+r}Q${x} ${y+h} ${x} ${y+h-r}V${y+r}Q${x} ${y} ${x+r} ${y}Z`;}
