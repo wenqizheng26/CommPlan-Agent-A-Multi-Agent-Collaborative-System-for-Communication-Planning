@@ -131,9 +131,31 @@ function draftList(host,ctx){
  if(!ctx.drafts.length){host.append(el('p','暂无草稿','hint'));return;}
  for(const d of ctx.drafts)host.append(draftCard(d,ctx));
 }
+export function renderModulations(host,records){
+ const head=el('div',undefined,'lib-head');
+ head.append(el('h3','调制灵敏度'),el('span','模拟参数，可配置','hint'));
+ const table=el('table'),thead=el('thead'),labels=el('tr'),body=el('tbody');
+ labels.append(el('th','调制方式'),el('th','灵敏度（dBm）'));thead.append(labels);
+ for(const record of records.filter(r=>r.type==='modulation')){
+  const row=el('tr');row.append(raw('td',record.names[0]),el('td',String(record.rx_sensitivity_dbm),'num'));body.append(row);
+ }
+ table.append(thead,body);host.replaceChildren(head,table);
+}
+function modulationSection(ctx){
+ const section=el('section',undefined,'lib-drafts');
+ if(ctx.facts){renderModulations(section,ctx.facts.records||ctx.facts);return section;}
+ section.append(el('p','正在读取调制灵敏度…','hint'));
+ // This read-only table loads its own presentation data; the task input remains untouched.
+ fetch('/api/facts').then(response=>{
+  if(!response.ok)throw new Error('facts');return response.json();
+ }).then(data=>renderModulations(section,data.records)).catch(()=>{
+  section.replaceChildren(el('p','调制灵敏度读取失败，请重新打开资料页。','warn-text'));
+ });
+ return section;
+}
 export function renderLibrary(host,ctx){
  const docs=el('section',undefined,'lib-column'),sections=el('section',undefined,'lib-column'),drafts=el('section',undefined,'lib-drafts');
  documentList(docs,ctx);sectionList(sections,ctx);draftList(drafts,ctx);
  const top=el('div',undefined,'lib-top');top.append(docs,sections);
- host.replaceChildren(...(ctx.message?[el('p',ctx.message,'lib-message')]:[]),top,drafts);
+ host.replaceChildren(...(ctx.message?[el('p',ctx.message,'lib-message')]:[]),top,drafts,modulationSection(ctx));
 }

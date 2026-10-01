@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {fieldLabel,shownValue,draftTitle,exampleLine,preview} from '../planning/web/library.mjs';
+import {fieldLabel,shownValue,draftTitle,exampleLine,preview,renderModulations,renderLibrary} from '../planning/web/library.mjs';
+import {install,t} from '../planning/web/i18n.mjs';
+import * as en from '../planning/web/i18n-en.mjs';
+import {readFileSync} from 'node:fs';
 import {lastSwap,previousVersion,comparisonLine} from '../planning/web/compare.mjs';
 
 test('draft fields read as names a reviewer knows',()=>{
@@ -25,6 +28,65 @@ test('the formula example line shows the computed and the written result',()=>{
 test('a section preview starts at its own text, not the headings the locator names',()=>{
  assert.equal(preview('# XX-300 手册（模拟）\n## §1 规格表\n| 型号 | 功率 |\n| --- | ---: |\n\n\n\n额定发射功率'),'| 型号 | 功率 |\n| --- | ---: |\n\n额定发射功率');
  assert.equal(preview('<!-- page 3 -->\n正文'),'正文');
+});
+
+class LibraryElement{
+ constructor(tag){this.tag=tag;this.children=[];this.textContent='';this.attributes={};}
+ append(...children){this.children.push(...children);}
+ replaceChildren(...children){this.children=children;}
+ setAttribute(name,value){this.attributes[name]=value;}
+ addEventListener(){}
+}
+function walkLibrary(node){return [node,...node.children.flatMap(walkLibrary)];}
+const modulations=JSON.parse(readFileSync(new URL('../knowledge/facts/modulations.json',import.meta.url),'utf8'));
+test('the library modulation table shows configured sensitivities and has no edit controls',()=>{
+ const previous=globalThis.document;
+ globalThis.document={createElement:tag=>new LibraryElement(tag)};
+ try{
+  const host=new LibraryElement('section');
+  renderModulations(host,[{type:'device',names:['radio'],rx_sensitivity_dbm:-1},...modulations]);
+  const nodes=walkLibrary(host),text=nodes.map(n=>n.textContent);
+  assert.ok(text.includes('调制灵敏度'));assert.ok(text.includes('模拟参数，可配置'));
+  assert.deepEqual(nodes.filter(n=>n.tag==='td').map(n=>n.textContent),['QPSK','-100','16QAM','-95','64QAM','-90']);
+  assert.equal(nodes.some(n=>['button','input','select','textarea'].includes(n.tag)),false);
+  assert.equal(nodes.filter(n=>n.tag==='td'&&n.translate===false).length,3);
+  renderModulations(host,[{...modulations[0],rx_sensitivity_dbm:-101}]);
+  assert.ok(walkLibrary(host).some(n=>n.textContent==='-101'));
+ }finally{globalThis.document=previous;}
+});
+test('the real library rendering includes the read-only modulation table after its existing sections',()=>{
+ const previous=globalThis.document;
+ globalThis.document={createElement:tag=>new LibraryElement(tag)};
+ try{
+  const host=new LibraryElement('div');
+  renderLibrary(host,{library:{formats:[],documents:[]},drafts:[],chosen:new Set(),reviewer:'',facts:{records:modulations}});
+  assert.ok(walkLibrary(host.children.at(-1)).some(n=>n.textContent==='调制灵敏度'));
+  assert.equal(host.children.length,3);
+ }finally{globalThis.document=previous;}
+});
+test('every modulation table sentence translates in full',()=>{
+ install(en);
+ for(const label of ['调制灵敏度','调制方式','灵敏度（dBm）','模拟参数，可配置','正在读取调制灵敏度…','调制灵敏度读取失败，请重新打开资料页。']){
+  assert.notEqual(t(label),label);assert.doesNotMatch(t(label),/[\u3400-\u9fff]/u);
+ }
+ assert.equal(t('QPSK'),'QPSK');assert.equal(t('16QAM'),'16QAM');
+});
+test('the displayed library loads sensitivities through the facts API and reports a failed read',async()=>{
+ const previousDocument=globalThis.document,previousFetch=globalThis.fetch;
+ globalThis.document={createElement:tag=>new LibraryElement(tag)};
+ try{
+  let requested;
+  globalThis.fetch=async url=>{requested=url;return {ok:true,json:async()=>({records:modulations})};};
+  const host=new LibraryElement('div'),ctx={library:{formats:[],documents:[]},drafts:[],chosen:new Set(),reviewer:''};
+  renderLibrary(host,ctx);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(requested,'/api/facts');
+  assert.ok(walkLibrary(host).some(n=>n.textContent==='-100'));
+  globalThis.fetch=async()=>({ok:false});
+  renderLibrary(host,ctx);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.ok(walkLibrary(host).some(n=>n.textContent==='调制灵敏度读取失败，请重新打开资料页。'));
+ }finally{globalThis.document=previousDocument;globalThis.fetch=previousFetch;}
 });
 
 const ask=radio=>({raw_text:`A 站到 B 站用 ${radio} 电台`,manual_parameters:{},condition:null,target:null});

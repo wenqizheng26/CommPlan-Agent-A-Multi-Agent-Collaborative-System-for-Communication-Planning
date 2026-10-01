@@ -10,6 +10,7 @@ from planning.agents.extraction import extract
 from planning.knowledge.drafts import DraftStore
 from planning.knowledge.facts import FactService, fact_manifest
 from planning.retrieval.documents import DocumentStore
+from tests.teacher_fixtures import copy_teacher_dependencies
 
 ROOT = Path(__file__).resolve().parents[1]
 TABLE = '| XX-300 | 40 | 6 | -97 | 1.0–3.0 |'
@@ -28,6 +29,7 @@ class DraftTests(unittest.TestCase):
         for folder in ('knowledge/documents', 'knowledge/facts'):
             shutil.copytree(ROOT / folder, self.root / folder)
         shutil.copy(ROOT / 'knowledge/formulas.json', self.root / 'knowledge/formulas.json')
+        copy_teacher_dependencies(self.root)
         self.store = DraftStore(self.root)
         chunks = [c for c in DocumentStore(self.root).chunks if c['doc_id'] == 'sim-xx300']
         self.spec = next(c['id'] for c in chunks if TABLE in c['description'])

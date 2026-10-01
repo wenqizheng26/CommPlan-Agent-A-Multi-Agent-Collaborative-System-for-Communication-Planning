@@ -1,0 +1,55 @@
+[
+  {
+    "id": "calc_link_margin",
+    "title": "链路余量计算",
+    "description": "用 MHz 频率口径的自由空间损耗、接收功率和调制灵敏度计算单链路余量；数值来自登记公式卡。",
+    "steps": ["fspl_mhz", "received_power", "link_margin"],
+    "assumptions": ["只算自由空间，不计遮挡与损耗", "发射馈线损耗、接收馈线损耗、额外损耗和预留量都按 0 计"],
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "distance_km": {"type": "number", "exclusiveMinimum": 0, "description": "链路距离，单位 km"},
+        "frequency_mhz": {"type": "number", "exclusiveMinimum": 0, "description": "载波频率，单位 MHz"},
+        "tx_power_dbm": {"type": "number", "description": "发射功率，单位 dBm"},
+        "tx_gain_dbi": {"type": "number", "description": "发射天线增益，单位 dBi"},
+        "rx_gain_dbi": {"type": "number", "description": "接收天线增益，单位 dBi"},
+        "modulation": {"type": "string", "x-enum-from": "modulations", "description": "调制表中的规范名称，与直接给出的灵敏度二选一"},
+        "rx_sensitivity_dbm": {"type": "number", "description": "接收灵敏度，单位 dBm，与调制方式二选一"},
+        "required_margin_db": {"type": "number", "minimum": 0, "description": "要求的链路余量，单位 dB；省略时按 0 计"}
+      },
+      "required": ["distance_km", "frequency_mhz", "tx_power_dbm", "tx_gain_dbi", "rx_gain_dbi"],
+      "oneOf": [{"required": ["modulation"]}, {"required": ["rx_sensitivity_dbm"]}],
+      "additionalProperties": false
+    },
+    "output_schema": {
+      "type": "object",
+      "properties": {
+        "path_loss_db": {"type": "number", "description": "自由空间路径损耗，单位 dB"},
+        "rx_power_dbm": {"type": "number", "description": "接收信号电平，单位 dBm"},
+        "rx_sensitivity_dbm": {"type": "number", "description": "采用的接收灵敏度，单位 dBm"},
+        "sensitivity_source": {"type": "string", "enum": ["modulation_table", "argument"]},
+        "link_margin_db": {"type": "number", "description": "链路余量，单位 dB"},
+        "required_margin_db": {"type": "number", "minimum": 0, "description": "用于满足判断的要求余量，单位 dB"},
+        "meets": {"type": "boolean"},
+        "modulation": {"type": "string", "x-enum-from": "modulations"},
+        "simulated": {"type": "boolean", "enum": [true]}
+      },
+      "required": ["path_loss_db", "rx_power_dbm", "rx_sensitivity_dbm", "sensitivity_source", "link_margin_db", "required_margin_db", "meets"],
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {"sensitivity_source": {"enum": ["modulation_table"]}},
+          "required": ["modulation", "simulated"]
+        },
+        {
+          "properties": {
+            "path_loss_db": {}, "rx_power_dbm": {}, "rx_sensitivity_dbm": {},
+            "sensitivity_source": {"enum": ["argument"]}, "link_margin_db": {},
+            "required_margin_db": {}, "meets": {}
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+]

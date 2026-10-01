@@ -11,6 +11,7 @@ from urllib.request import Request, urlopen
 from planning import web_server
 from tests.test_document_convert import pdf
 from tests.test_knowledge_drafts import TABLE, model
+from tests.teacher_fixtures import copy_teacher_dependencies
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -23,6 +24,7 @@ class KnowledgeApiTests(unittest.TestCase):
         for folder in ('knowledge/documents', 'knowledge/facts', 'config'):
             shutil.copytree(ROOT / folder, self.root / folder)
         shutil.copy(ROOT / 'knowledge/formulas.json', self.root / 'knowledge/formulas.json')
+        copy_teacher_dependencies(self.root)
         self.server = web_server.create_server(self.root, Path(temp.name) / 'web.sqlite', port=0)
         thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         thread.start()
