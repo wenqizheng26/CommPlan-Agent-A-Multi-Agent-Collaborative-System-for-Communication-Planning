@@ -1,5 +1,7 @@
 # CommPlan-Agent 当前交接（2026-09-30）
 
+- 2026-10-01 T1 已冻结：`bf4c71e`，Python 464 项（1 skip）、Node 66 项通过；工作区 `CommPlan-Agent-M1-codex`，分支 `codex/m1-teacher`。见 [T1 证据](evidence/2026-10-01-T1-cases.md)。T2 接着执行，任务单从 `claude/calc-plans` 只读，不复制；不推送、不合并、不开 PR。
+
 ## Codex 接手后续实现（2026-09-30，优先于下方旧分工）
 
 - 用户在 W4-1/2 完成后说“你来做”，授权 Codex 接手四卡计算规划、英文需求与附件入口；在当前 `codex/m1-week4-tasks` 继续，不推送、不合并、不开 PR，每项单独提交。
