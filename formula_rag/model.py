@@ -91,7 +91,7 @@ class LocalSelector:
                 {'target': manual_target, 'condition': manual_condition}, ensure_ascii=False)
         if correction:
             payload['messages'][-1]['content'] += '\n上一次输出的程序校验反馈（请据此修正，仍须遵守原文引用规则）：'+json.dumps(correction,ensure_ascii=False)
-        envelope, content = chat(payload, self.url, timeout=self.timeout, context=self.context)
+        envelope, content = chat(payload, self.url, timeout=self.timeout, context=self.context, agent='requirements')
         selected = parse_output(content)
         if not isinstance(selected, dict) or not isinstance(selected.get('selected_ids'), list):
             raise ValueError('本地模型没有返回规定的公式标识列表')

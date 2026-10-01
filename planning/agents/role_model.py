@@ -85,7 +85,7 @@ class LocalRoleSelector:
                 'name': role, 'strict': True, 'schema': schema}},
             messages=[{'role': 'system', 'content': prompt},
                       {'role': 'user', 'content': json.dumps(view, ensure_ascii=False)}])
-        envelope, content = chat(payload, *([b.url] if b else []),
+        envelope, content = chat(payload, *([b.url] if b else []), agent=role,
                                  **(dict(timeout=b.timeout_s, context=b.context) if b else {}))
         return dict(output=parse_output(content), raw_output=content, model=envelope.get('model'),
                     usage=envelope.get('usage', {}), latency_ms=envelope.get('latency_ms'))

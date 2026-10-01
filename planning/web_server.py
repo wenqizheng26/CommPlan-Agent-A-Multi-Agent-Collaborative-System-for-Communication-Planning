@@ -177,6 +177,9 @@ def create_server(root, db_path=None, port=18082):
                         identifier(parts[2])
                         self.respond(200,{'events':service.activity.events(parts[2]),
                                          'available':service.activity.available,'authoritative':False})
+                    elif len(parts)==4 and parts[3]=='model-calls':
+                        identifier(parts[2])
+                        self.respond(200,{'calls':service.model_calls.calls(parts[2]),'file':service.model_calls.path.name})
                     else:
                         self.error(404,'NOT_FOUND')
                 except ValueError as exc:

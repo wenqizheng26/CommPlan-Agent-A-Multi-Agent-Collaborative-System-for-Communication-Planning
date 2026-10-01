@@ -86,7 +86,7 @@ class LocalSupplementSelector:
                 {'role':'user','content':'当前任务：按自由空间基准计算链路余量，频率2GHz，距离10km，发射功率33dBm。\n补充：接收端天线换成12dBi的，发射功率也调到40dBm\n数量表：q1=12dBi；q2=40dBm'},
                 {'role':'assistant','content':'{"action":"apply","quantities":[{"id":"q1","field":"rx_gain_dbi"},{"id":"q2","field":"tx_power_dbm"}]}'},
                 {'role':'user','content':'当前任务：'+current_text+'\n补充：'+message+'\n数量表：'+table}])
-        envelope, content=chat(payload, *([b.url] if b else []), **(dict(timeout=b.timeout_s, context=b.context) if b else {}))
+        envelope, content=chat(payload, *([b.url] if b else []), agent='supplement', **(dict(timeout=b.timeout_s, context=b.context) if b else {}))
         self.last_envelope = envelope
         return parse_output(content)
 

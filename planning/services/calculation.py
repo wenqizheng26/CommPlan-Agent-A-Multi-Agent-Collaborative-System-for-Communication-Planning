@@ -125,6 +125,9 @@ def execute(snapshot, review, cards, proposal, observer=None, attempt=1, root=No
         observe(observer,'model','failed',caller='compute_agent')
         raise
     observe(observer,'model','completed',caller='compute_agent',model_id=card['id'])
+    if not domain_mode:
+        observe(observer,'tool','completed',caller='compute_agent',step_id='fspl-step',tool_id=card['id'],
+                inputs=parameters,output=outputs[0])
     output = dict(result_id=snapshot['snapshot_id']+':result'+('' if attempt==1 else f':attempt-{attempt}'), task_id=snapshot['task_id'],
                   revision=snapshot['revision'], snapshot_id=snapshot['snapshot_id'],
                   snapshot_hash=snapshot['content_hash'], plan_hash=report['calculation_plan_proposal']['plan_hash'],
@@ -154,6 +157,9 @@ def execute_plan(snapshot, cards, observer, attempt):
         observe(observer,'model','failed',caller='compute_agent')
         raise
     observe(observer,'model','completed',caller='compute_agent',model_id=final['id'],steps=len(steps))
+    for step in steps:  # each tool call, for the page to list as it happens
+        observe(observer,'tool','completed',caller='compute_agent',step_id=step['step_id'],tool_id=step['tool_id'],
+                inputs=step['inputs'],output=step['output'])
     extra = {}
     if plan.get('requirement'):
         # A margin requirement is compared, never deducted; only an unmet one is solved for.

@@ -1,12 +1,29 @@
 """Shared bounded loopback transport with actionable, source-preserving errors."""
 import json
 import time
+from datetime import datetime, timezone
 import urllib.error
 import urllib.request
 from contextvars import ContextVar
 
 operation_deadline = ContextVar('model_operation_deadline', default=None)
 operation_cancel = ContextVar('model_operation_cancel', default=None)
+# A command sets a writer; every model call it makes is then recorded with its prompt and response.
+call_log = ContextVar('model_call_log', default=None)
+
+
+def record_call(agent, payload, started, content=None, envelope=None, error=None):
+    writer = call_log.get()
+    if writer is None:
+        return
+    try:
+        writer(dict(at=datetime.now(timezone.utc).isoformat(), agent=agent, model=payload.get('model'),
+                    served=(envelope or {}).get('model'), messages=payload.get('messages'),
+                    response=content if error is None else getattr(error, 'raw_output', '') or str(error)[:4000],
+                    status='ok' if error is None else getattr(error, 'code', type(error).__name__),
+                    latency_ms=round((time.perf_counter() - started) * 1000), usage=(envelope or {}).get('usage') or {}))
+    except Exception:
+        pass  # the log is an observation; losing a line must not fail the call
 
 class ModelResponseError(ValueError):
     def __init__(self, code, reason, raw_output='', retryable=False):
@@ -27,7 +44,7 @@ def estimate_tokens(payload):
     return sum(1.5 if ord(c)>127 else 0.34 for c in content)+payload.get('max_tokens',700)+500
 
 
-def chat(payload, url='http://127.0.0.1:18081/v1/chat/completions', *, timeout=30, context=4096):
+def chat(payload, url='http://127.0.0.1:18081/v1/chat/completions', *, timeout=30, context=4096, agent=None):
     check_cancelled()
     deadline=operation_deadline.get()
     remaining=deadline-time.monotonic() if deadline else timeout
@@ -40,6 +57,16 @@ def chat(payload, url='http://127.0.0.1:18081/v1/chat/completions', *, timeout=3
     request=urllib.request.Request(url,json.dumps(body,ensure_ascii=False).encode(),{'Content-Type':'application/json'})
     opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
     started=time.perf_counter()
+    try:
+        envelope,content=exchange(payload,request,opener,timeout,remaining,started)
+    except BaseException as exc:
+        record_call(agent,payload,started,error=exc)
+        raise
+    record_call(agent,payload,started,content,envelope)
+    return envelope,content
+
+
+def exchange(payload, request, opener, timeout, remaining, started):
     try:
         with opener.open(request,timeout=min(timeout,max(0.1,remaining))) as response:
             raw=response.read(1024*1024).decode('utf-8')

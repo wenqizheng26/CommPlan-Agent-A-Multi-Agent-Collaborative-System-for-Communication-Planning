@@ -15,6 +15,7 @@ from planning.workflow.planning_graph import build_planning_graph
 from planning.workflow.task_store import TaskStore
 from planning.workflow.requirements_graph import stamp
 from planning.workflow.activity import ActivityStore, observe
+from planning.workflow.model_log import ModelCallLog
 from planning.services.supplement import merge_supplement, conversation_of, edited_conversation
 from planning.services.clarification import apply_answers, attach_issues
 from planning.services.supplement import LocalSupplementSelector
@@ -80,6 +81,7 @@ class TaskService:
         self.root=Path(root)
         self.store=TaskStore(db_path)
         self.activity=ActivityStore(db_path)
+        self.model_calls=ModelCallLog(db_path)
         self.registry=Registry(self.root)
         self.settings=SettingsStore(db_path,self.registry)
         self._retrieval={}
@@ -157,7 +159,8 @@ class TaskService:
         # Text the models write for the user follows the page language of this command.
         language_token=output_language.set(c.get('lang','zh'))
         try:
-            return self._apply_observed(c,running)
+            with self.model_calls.recording(c):
+                return self._apply_observed(c,running)
         finally:
             operation_deadline.reset(deadline_token)
             operation_cancel.reset(cancel_token)
