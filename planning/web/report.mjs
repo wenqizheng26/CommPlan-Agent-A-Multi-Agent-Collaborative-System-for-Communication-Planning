@@ -58,7 +58,7 @@ function comparisonFor(comparison){
 }
 
 function metadataFor(state,events,tools){
- const current=relevantEvents(state,events),final=state.final_report||{};
+ const current=relevantEvents(state,events),final=state.final_report||{},toolEvents=current.filter(e=>e.node==='tool'&&e.phase==='completed');
  const models=[...new Set(current.filter(e=>e.node==='llm').map(e=>e.details?.model_id).filter(Boolean))];
  const modes={...state.report?.component_modes,...final.component_modes};
  const modelModes=Object.entries(modes).filter(([key])=>['interpretation','calculation','review','suggestion','supplement'].includes(key));
@@ -67,8 +67,10 @@ function metadataFor(state,events,tools){
   completed_at:final.generated_at||state.result?.finished_at||null,
   models:models.length?models:deterministic?['确定性模式（无模型调用）']:modelModes.map(([key,mode])=>`${key}: ${roleModeNames[mode]||mode}`),
   model_calls:current.length?current.filter(e=>e.node==='llm'&&e.phase==='started').length:deterministic?0:null,
-  tool_calls:current.length?current.filter(e=>e.node==='tool'&&e.phase==='completed').length:tools.length,
-  count_note:current.length?'调用次数按当前版本的活动事件统计；模型重试不单独计数。':'没有活动记录，工具次数按保存的调用记录统计。'};
+  // States from before the tool events logged formula steps as node 'model'; count their saved calls instead.
+  tool_calls:toolEvents.length?toolEvents.length:tools.length,
+  count_note:!current.length?'没有活动记录，工具次数按保存的调用记录统计。':toolEvents.length?'调用次数按当前版本的活动事件统计；模型重试不单独计数。':
+   '模型调用按当前版本的活动事件统计；工具次数按保存的调用记录统计。'};
 }
 
 // Pure projection of the saved state. Events/context are optional for historical states.

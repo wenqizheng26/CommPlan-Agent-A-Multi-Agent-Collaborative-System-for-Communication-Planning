@@ -638,17 +638,19 @@ const REPORT={
  '报告':'Report','通信筹划报告':'Communication planning report','打印 / 存为 PDF':'Print / save as PDF','关闭报告':'Close report',
  '原始输入':'Original input','解析字段':'Parsed fields','缺失项与补全':'Missing fields and completion','工具调用参数':'Tool call arguments',
  '计算结果':'Calculation results','对比表':'Comparison table','模型解释':'Model explanation','附注':'Notes','无':'None',
- '参数':'Parameter','值':'Value','单位':'Unit','来源':'Source','缺失项':'Missing field','补全回答':'Completion answer',
- '调用参数':'Call arguments','调用结果':'Call result','步骤说明':'Step explanation','审查意见':'Review',
- '任务编号':'Task ID','版本':'Revision','完成时间':'Completion time','模型名':'Model name','模型调用次数':'Model calls','工具计算次数':'Tool calculations',
+ '单位':'Unit','缺失项':'Missing field','补全回答':'Completion answer',
+ '调用参数':'Call arguments','调用结果':'Call result','步骤说明':'Step explanation',
+ '版本':'Revision','完成时间':'Completion time','模型名':'Model name','模型调用次数':'Model calls','工具计算次数':'Tool calculations',
  '调用次数来自当前版本的活动记录。':'Call counts come from the activity records for this revision.',
  '没有活动记录，模型调用次数未知。':'No activity records; the model call count is unknown.',
  '调用次数按当前版本的活动事件统计；模型重试不单独计数。':'Call counts use the activity events for this revision; model retries are not counted separately.',
  '没有活动记录，工具次数按保存的调用记录统计。':'No activity records; tool counts use the saved call records.',
+ '模型调用按当前版本的活动事件统计；工具次数按保存的调用记录统计。':'Model calls use the activity events for this revision; tool counts use the saved call records.',
  '确定性模式（无模型调用）':'Deterministic mode (no model calls)','路径损耗 dB':'Path loss dB',
  '灵敏度来源':'Sensitivity source','调制表':'Modulation table','是':'Yes','否':'No','数值不变':'values unchanged',
- '默认补全':'Default value','需确认':'Please confirm','模拟参数':'Simulated values','可配置':'Configurable'
+ '需确认':'Please confirm','模拟参数':'Simulated values','可配置':'Configurable'
 };
+// '参数', '值', '来源', '审查意见', '任务编号', '默认补全' keep their earlier entries; REPORT spreads last and would override them.
 const REPORT_PATTERNS=[
  [/^((?:interpretation|calculation|review|suggestion|supplement): )([^·]+)$/,'$=1$2']
 ];

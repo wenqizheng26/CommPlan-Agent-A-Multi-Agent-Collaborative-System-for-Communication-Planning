@@ -210,6 +210,16 @@ test('absent event history falls back to saved tool calls and keeps unknown mode
  assert.equal(deterministic.metadata.model_calls,0);assert.ok(deterministic.metadata.models[0].includes('确定性'));
 });
 
+test('states from before the tool events count their saved calls, not zero',()=>{
+ // Older runs logged formula steps as node 'model', so the revision has events but no tool events.
+ const f=fixture('margin'),state=f.state;
+ const events=[...f.events.filter(e=>e.node!=='tool'),eventFor(state,'llm','started',{model_id:'local-first'}),
+  eventFor(state,'model','started',{}),eventFor(state,'model','completed',{})];
+ const model=reportModel(state,events);
+ assert.equal(model.metadata.tool_calls,3);assert.equal(model.metadata.model_calls,1);
+ assert.ok(model.metadata.count_note.includes('保存的调用记录'));
+});
+
 test('user and model text is safe literal content marked translate=no, including completion answers',()=>withDOM(()=>{
  const state=structuredClone(fixture('defaults').state),payload='<img src=x onerror=alert(1)> 用户原文';
  state.conversation.original_input.raw_text=payload;state.final_report.answer={text:'<script>alert(1)</script> 模型原话'};
