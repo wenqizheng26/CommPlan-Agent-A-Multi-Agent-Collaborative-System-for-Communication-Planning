@@ -24,13 +24,13 @@ def model_paths(asset_root, model):
     return None
 
 
-def model_command(asset_root, cpu=False, *, registry_root=None):
+def model_command(asset_root, cpu=False, *, registry_root=None, model_id=None):
     project_root = Path(registry_root) if registry_root else Path(__file__).resolve().parent
     registry = Registry(project_root)
-    model = registry.models[registry.defaults['chat']]
+    model = registry.models[model_id or registry.defaults['chat']]
     paths = model_paths(asset_root, model)
     if paths is None:
-        raise FileNotFoundError(f"默认模型 {model['id']} 的权重或 llama-server 不在资源目录中")
+        raise FileNotFoundError(f"模型 {model['id']} 的权重或 llama-server 不在资源目录中")
     executable, weights = paths
     endpoint = urlparse(model['endpoint'])
     if endpoint.hostname != '127.0.0.1' or endpoint.port is None:

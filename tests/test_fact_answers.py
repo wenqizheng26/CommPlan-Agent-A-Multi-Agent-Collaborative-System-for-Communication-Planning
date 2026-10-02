@@ -49,6 +49,8 @@ class FactAnswerTests(unittest.TestCase):
         state = self.create(ask('港口'))
         issue = next(i for i in state['input_issues'] if i['field'] == 'entity')
         self.assertEqual([c['value'] for c in issue['choices']], ['东港站', '西港站'])
+        # The distance follows from the chosen site, so it is not asked alongside the choice.
+        self.assertNotIn('distance_km', [i['field'] for i in state['input_issues']])
         state = self.answer(state, 'entity', '东港站')
         self.assertIn('A 站到 东港站用 XX-100', state['request']['raw_text'])
         self.assertEqual(state['status'], 'AWAITING_CONFIRMATION', state['report']['questions'])

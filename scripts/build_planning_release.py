@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 VERSION = "0.1.0-demo"
 VALIDATION_RECORD = "docs/demo/VALIDATION.md"
 ROOT_FILES = {
-    "LICENSE", "README.md", "THIRD_PARTY.md", "requirements-planning.txt",
+    "LICENSE", "README.md", "THIRD_PARTY.md", "requirements-planning.txt", "requirements-docs.txt",
     "runtime_config.json", "setup_planning.cmd", "启动.cmd", "start.cmd",
     "start_commplan.py", "stop_commplan.py", "停止服务.cmd", "launch.py",
     "knowledge/formulas.json", "config/models.json", "planning/README.md", VALIDATION_RECORD,
@@ -25,7 +25,7 @@ ROOT_FILES = {
     "knowledge/facts/sites.json", "knowledge/facts/devices.json",
     "knowledge/documents/manifest.json", "knowledge/documents/glossary.json",
     "knowledge/documents/simulated/站址表.md", "knowledge/documents/simulated/XX-100 手册.md",
-    "knowledge/documents/simulated/XX-200 手册.md",
+    "knowledge/documents/simulated/XX-200 手册.md", "knowledge/documents/simulated/XX-300 手册.md",
 }
 SOURCE_FILES = set("""
 formula_rag/__init__.py formula_rag/applicability.py formula_rag/catalog.py
@@ -38,7 +38,7 @@ planning/agents/orchestrator.py planning/agents/requirements.py planning/agents/
 planning/agents/role_model.py planning/build_info.py planning/demo.py
 planning/agents/planner.py
 planning/knowledge/__init__.py planning/knowledge/facts.py
-planning/retrieval/documents.py planning/retrieval/http_encoder.py
+planning/retrieval/convert.py planning/retrieval/documents.py planning/retrieval/http_encoder.py
 planning/services/fact_fields.py planning/services/number_check.py
 planning/services/requirement_facts.py planning/services/requirement_quantities.py planning/services/solve.py
 planning/examples/complete.json planning/examples/conflict.json planning/examples/missing.json
@@ -56,7 +56,10 @@ planning/web/app.js planning/web/conversation.mjs planning/web/details.mjs
 planning/web/m1.mjs
 planning/web/drafts.mjs planning/web/flow.mjs planning/web/index.html
 planning/web/model-status.mjs planning/web/progress.mjs planning/web/settings.mjs planning/web/timing.mjs planning/web/questions.mjs
-planning/web/roles.mjs planning/web/text.mjs planning/web/values.mjs
+planning/web/roles.mjs planning/web/text.mjs planning/web/values.mjs planning/web/marquee.mjs
+planning/web/library.mjs planning/web/compare.mjs
+planning/agents/extraction.py planning/knowledge/drafts.py planning/knowledge/sources.py
+planning/services/entity_followup.py
 planning/workflow/__init__.py planning/workflow/activity.py
 planning/workflow/planning_graph.py planning/workflow/requirements_graph.py
 planning/workflow/task_service.py planning/workflow/task_store.py

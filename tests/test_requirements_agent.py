@@ -148,6 +148,22 @@ class RequirementsTests(unittest.TestCase):
         with patch.object(a.retrieval,'search',return_value=retrieved([('fspl_ghz',0)])):
             self.assertEqual(a.run(request())['execution_status'],'NEEDS_MODEL')
 
+    def test_a_link_request_offers_link_margin_to_the_model(self):
+        class Offered(Exception):
+            pass
+        def offered(text):
+            def selector(raw, cards, **kwargs):
+                raise Offered([c['id'] for c in cards])
+            a=self.agent(selector=selector)
+            with patch.object(a.retrieval,'search',return_value=retrieved([('received_power',2),('fspl_ghz',1)])):
+                with self.assertRaises(Offered) as caught:
+                    a.run(request(text))
+            return caught.exception.args[0]
+        for text in ('从石家庄山顶基站连到乡镇，想用 5.8G，传视频，要稳定，功率和天线还没定。',
+                     'A 到 B 距离 8 公里，频率 2.4GHz，分别用 QPSK 和 16QAM 算，哪个更稳？'):
+            self.assertIn('link_margin', offered(text), text)
+        self.assertNotIn('link_margin', offered('按自由空间基准，频率2GHz，距离1km，求路径损耗。'))
+
     def test_direct_lookup_manual_units_and_missing_fields(self):
         q=request(''); q.update(target='fspl_ghz',condition='free_space_reference',manual_parameters={
             'frequency_ghz':{'value':2000,'unit':'MHz'},'distance_km':{'value':1000,'unit':'m'}})

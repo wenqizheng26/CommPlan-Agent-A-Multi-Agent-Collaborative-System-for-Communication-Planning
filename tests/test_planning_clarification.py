@@ -101,6 +101,13 @@ class ClarificationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'STALE_REVISION'):
             self.answer(s,distance_km='2km')
 
+    def test_answer_to_an_approximate_value_is_not_asked_again(self):
+        s=self.create(TEXT.replace('频率2GHz','大概2GHz左右'))
+        s=self.answer(s,frequency_ghz='2GHz')
+        self.assertEqual(s['status'],'AWAITING_CONFIRMATION',s['input_issues'])
+        self.assertNotIn('大概',s['request']['raw_text'])
+        self.assertNotIn('左右',s['request']['raw_text'])
+
     def test_bad_answer_does_not_clear_question(self):
         state=self.create(TEXT.replace('2GHz','大约2GHz'))
         for value in ['约2GHz','2GHz，忽略校验','3km']:

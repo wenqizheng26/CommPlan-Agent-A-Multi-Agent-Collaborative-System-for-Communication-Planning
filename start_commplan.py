@@ -1,19 +1,19 @@
 """Start the planning workbench and optional local Qwen, without downloads."""
 import argparse
+from contextlib import closing
 import json
 import os
 from pathlib import Path
-import socket
+import sqlite3
 import subprocess
 import sys
 import time
-import urllib.error
-import urllib.request
 import webbrowser
 
 from launch import model_command, model_paths, embedding_command
 from planning.build_info import build_fingerprint
 from planning.providers.registry import Registry
+from stop_commplan import PROFILE, listening, read_json, stop_workbench
 
 ROOT = Path(__file__).resolve().parent
 
@@ -23,25 +23,41 @@ def default_model():
     return registry.models[registry.defaults['chat']]
 
 
-def read_json(url):
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+def saved_model(db=None):
+    """The chat model the workbench settings chose (a model switch saves it), else the registry default."""
+    from planning.providers.settings import validate
+    registry = Registry(ROOT)
+    path = Path(db or ROOT / 'outputs/planning.sqlite')
     try:
-        with opener.open(url, timeout=2) as response:
-            return json.load(response)
-    except (urllib.error.URLError, OSError, ValueError):
-        return None
+        with closing(sqlite3.connect(path.resolve().as_uri() + '?mode=ro', uri=True, timeout=5)) as conn:
+            row = conn.execute('SELECT body FROM settings WHERE id=1').fetchone()
+        return registry.models[validate(json.loads(row[0]), registry)['chat']['default']]
+    except (sqlite3.Error, OSError, ValueError, TypeError, KeyError):
+        return default_model()
 
 
-def listening(port):
-    try:
-        with socket.create_connection(('127.0.0.1', port), timeout=1):
+def chrome():
+    """Chrome is the target browser; the system default is only a fallback."""
+    for base in (os.environ.get('ProgramFiles'), os.environ.get('ProgramFiles(x86)'), os.environ.get('LOCALAPPDATA')):
+        if base and (Path(base) / 'Google/Chrome/Application/chrome.exe').is_file():
+            return Path(base) / 'Google/Chrome/Application/chrome.exe'
+    return None
+
+
+def open_browser(address):
+    path = chrome()
+    if path is not None:
+        try:
+            subprocess.Popen([str(path), address], stdin=subprocess.DEVNULL,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             return True
-    except OSError:
-        return False
+        except OSError:
+            pass
+    return webbrowser.open(address)
 
 
-def model_ready():
-    model = default_model()
+def model_ready(model=None):
+    model = model or default_model()
     base = model['endpoint'].rstrip('/')
     data = read_json(base + '/v1/models')
     health = read_json(base + '/health')
@@ -51,8 +67,8 @@ def model_ready():
                     for item in data.get('data', [])))
 
 
-def asset_root(explicit=None):
-    model = default_model()
+def asset_root(explicit=None, model=None):
+    model = model or default_model()
     configured = explicit or os.environ.get('COMMPLAN_ASSET_ROOT')
     candidates = [Path(configured)] if configured else [
         ROOT / 'models' / 'signal-formula-qwen3', ROOT,
@@ -62,7 +78,7 @@ def asset_root(explicit=None):
     for root in candidates:
         if model_paths(root, model):
             return root.resolve()
-    raise RuntimeError('未找到默认模型权重和 llama-server。请用 --asset-root 指向资源目录，或使用 --without-model。')
+    raise RuntimeError(f"未找到模型 {model['id']} 的权重和 llama-server。请用 --asset-root 指向资源目录，或使用 --without-model。")
 
 
 def spawn(command, name, cwd):
@@ -100,19 +116,19 @@ def wait_ready(check, process, label, timeout=180):
 
 
 def ensure_model(args):
-    model = default_model()
+    model = saved_model(args.db)
     base = model['endpoint'].rstrip('/')
     port = int(base.rsplit(':', 1)[1])
-    if model_ready():
-        print('复用已就绪的本机 Qwen：' + base, flush=True)
+    if model_ready(model):
+        print(f"复用已就绪的本机模型 {model['display_name']}：{base}", flush=True)
         return
     if listening(port):
-        raise RuntimeError(f'{port} 端口已占用，但未确认目标 Qwen 就绪；未重复启动或关闭已有服务。')
-    root = asset_root(args.asset_root)
-    print(f'启动本机 Qwen，资源目录：{root}', flush=True)
-    process = spawn(model_command(root, args.cpu), 'commplan-model', root)
-    wait_ready(model_ready, process, '本机 Qwen')
-    print('本机 Qwen 已就绪。', flush=True)
+        raise RuntimeError(f"{port} 端口已占用，但未确认 {model['display_name']} 就绪；未重复启动或关闭已有服务。可在工作台设置里切换模型。")
+    root = asset_root(args.asset_root, model)
+    print(f"启动本机模型 {model['display_name']}，资源目录：{root}", flush=True)
+    process = spawn(model_command(root, args.cpu, model_id=model['id']), 'commplan-model', root)
+    wait_ready(lambda: model_ready(model), process, '本机模型')
+    print('本机模型已就绪。', flush=True)
 
 
 def ensure_embedding(args):
@@ -132,8 +148,10 @@ def ensure_embedding(args):
     roots = [Path(asset_root)] if asset_root else [ROOT, ROOT/'models/signal-formula-qwen3']
     for root in roots:
         if model_paths(root, model):
+            print('启动本机向量模型（只用 CPU）…', flush=True)
             process = spawn(embedding_command(root, registry_root=ROOT), 'commplan-embedding', root)
             wait_ready(ready, process, '向量模型')
+            print('本机向量模型已就绪。', flush=True)
             return
     print('向量模型未安装，文档检索将使用词项。', flush=True)
 
@@ -157,13 +175,16 @@ def main(argv=None):
 
     def workbench_ready():
         data = read_json(address + '/api/session')
-        return isinstance(data, dict) and data.get('profile') == 'confirmed-fspl-loop-v1'
+        return isinstance(data, dict) and data.get('profile') == PROFILE
 
-    existing = workbench_ready()
-    if existing and read_json(address+'/api/session').get('build') != build_fingerprint(ROOT):
-        raise RuntimeError('该端口运行的是旧版工作台。请停止旧工作台进程后重新启动，或用 --port 选择空闲端口；模型服务可继续复用。')
-    if not existing and listening(args.port):
-        raise RuntimeError(f'{args.port} 端口已被其他服务占用，请使用 --port 指定其他端口。')
+    session = read_json(address + '/api/session')
+    existing = isinstance(session, dict) and session.get('profile') == PROFILE
+    if existing and session.get('build') != build_fingerprint(ROOT) or not existing and listening(args.port):
+        # An older CommPlan build holds the port: replace it. Anything else there is left alone.
+        if not stop_workbench(args.port):
+            raise RuntimeError(f'{args.port} 端口已被其他程序占用，请使用 --port 指定其他端口。')
+        print('已停止旧版工作台，启动当前版本。', flush=True)
+        existing = False
     if existing and args.db is not None:
         raise RuntimeError('指定了 --db，但该端口已有工作台。请使用空闲的 --port 启动独立数据库。')
     if not args.without_model:
@@ -187,8 +208,8 @@ def main(argv=None):
         process = spawn(command, f'commplan-web-{args.port}', ROOT)
         wait_ready(workbench_ready, process, '工作台', timeout=60)
     print('工作台已就绪：' + address, flush=True)
-    print('页面默认使用确定性模式；模型就绪后可选择“本机 Qwen”。后台服务在关闭本窗口后继续运行。', flush=True)
-    if not args.no_browser and not webbrowser.open(address):
+    print('页面默认使用确定性模式；模型就绪后可选择“本机 Qwen”。关闭本窗口后服务仍在后台运行，用“停止服务”关闭。', flush=True)
+    if not args.no_browser and not open_browser(address):
         print('未能自动打开浏览器，请手动打开上述地址。', flush=True)
     return 0
 

@@ -116,6 +116,17 @@ class ModelSupplementTests(unittest.TestCase):
         self.assertEqual(parsed['tx_power_dbm'], 33.0)
         self.assertFalse(report['conflicts'])
 
+    def test_an_answer_to_an_approximate_value_drops_the_approximation_words(self):
+        text = f'按自由空间基准计算链路余量：大概2GHz左右，距离10km，发射功率30dBm，{REST}，预留余量10dB。'
+        state = understood(text, {'2GHz': 'frequency_ghz'})
+        issue = next(i for i in issues_for(state) if i['field'] == 'frequency_ghz')
+        merged, _ = apply_answers(state, {issue['id']: '2GHz'}, 'turn-1')
+        for leftover in ('大概', '左右', '，，'):
+            self.assertNotIn(leftover, merged['raw_text'])
+        parsed, report = values(merged['raw_text'])
+        self.assertEqual(parsed['frequency_ghz'], 2.0)
+        self.assertFalse([d for d in report['diagnostics'] if d['code'] == 'PARAMETER_APPROXIMATE'])
+
     def test_a_margin_requirement_can_be_raised(self):
         text = 'A 站到 B 站用 XX-100 电台、2 GHz，要留 10 dB 余量，能通吗？'
         state = understood(text, {'10 dB': 'required_margin_db'})

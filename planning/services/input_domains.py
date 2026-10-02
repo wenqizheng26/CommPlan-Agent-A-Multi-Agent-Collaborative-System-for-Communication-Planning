@@ -5,10 +5,10 @@ import re
 from formula_rag.parsing import NUMBER, convert, FIELDS
 
 UNIT = r'(?:GHz|MHz|kHz|Hz|吉赫兹|兆赫兹|千赫兹|赫兹|km|千米|公里|m|米)'
-PAIR = re.compile(rf'(?<![0-9A-Za-z_.-])(?P<a>{NUMBER})\s*(?P<u>{UNIT})?\s*(?P<op>\+/-|\+-|±|至|到|~|～|–|—|-(?!\d*[eE]))\s*(?P<b>{NUMBER})\s*(?P<v>{UNIT})(?![A-Za-z/\d])', re.I)
-CHOICES = re.compile(rf'(?<![0-9A-Za-z_.-]){NUMBER}\s*(?:{UNIT})?(?:\s*(?:或者|或|、)\s*{NUMBER}\s*(?:{UNIT})?)+', re.I)
+PAIR = re.compile(rf'(?<![0-9A-Za-z_.-])(?P<a>{NUMBER})\s*(?P<u>{UNIT})?\s*(?P<op>\+/-|\+-|±|至|到|to|~|～|–|—|-(?!\d*[eE]))\s*(?P<b>{NUMBER})\s*(?P<v>{UNIT})(?![A-Za-z/\d])', re.I)
+CHOICES = re.compile(rf'(?<![0-9A-Za-z_.-]){NUMBER}\s*(?:{UNIT})?(?:\s*(?:或者|或|、|or)\s*{NUMBER}\s*(?:{UNIT})?)+', re.I)
 TOKEN = re.compile(rf'(?P<n>{NUMBER})\s*(?P<u>{UNIT})?', re.I)
-APPROX = re.compile(rf'(?:大约|大概|差不多|近似|约)\s*{NUMBER}\s*{UNIT}|{NUMBER}\s*{UNIT}\s*(?:左右|上下)', re.I)
+APPROX = re.compile(rf'(?:大约|大概|差不多|近似|约|approximately|about|roughly)\s*{NUMBER}\s*{UNIT}|{NUMBER}\s*{UNIT}\s*(?:左右|上下)', re.I)
 
 
 def numbers(value):
@@ -63,13 +63,13 @@ def field_for(unit):
 def labelled_field(text, start, unit):
     prefix = re.split(r'[，,。；;\n？?！!]', text[:start])[-1]
     labels = [(m.start(), field) for field, (_, _, aliases) in FIELDS.items()
-              for alias in aliases for m in re.finditer(re.escape(alias), prefix)]
+              for alias in aliases for m in re.finditer(re.escape(alias), prefix, re.I)]
     if labels:
         field = max(labels)[1]
         if field not in {'frequency_ghz', 'distance_km'} or field != field_for(unit):
             raise ValueError('DOMAIN_LABEL_MISMATCH')
         return field
-    if re.search(r'高度|宽度|长度|半径|波长|海拔|带宽', prefix):
+    if re.search(r'高度|宽度|长度|半径|波长|海拔|带宽|height|width|length|radius|wavelength|altitude|bandwidth', prefix, re.I):
         raise ValueError('DOMAIN_LABEL_MISMATCH')
     return field_for(unit)
 

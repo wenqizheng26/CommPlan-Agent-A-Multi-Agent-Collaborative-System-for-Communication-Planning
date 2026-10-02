@@ -9,19 +9,24 @@ from planning.services.supplement import input_of, conversation_of
 from planning.services.fact_fields import FACT_FIELDS
 
 NAMES={'frequency_ghz':'载波频率','distance_km':'路径距离'}
+SUGGESTED='（默认补全）'
+APPROX_BEFORE=re.compile(r'(?:大约|大概|差不多|近似|约)\s*$')
+APPROX_AFTER=re.compile(r'\s*(?:左右|上下)')
 # Link-budget inputs: one confirmed scalar each, any sign; card bounds are checked by planning.
 BUDGET={'tx_power_dbm':'发射功率','tx_gain_dbi':'发射天线增益','rx_gain_dbi':'接收天线增益',
         'tx_loss_db':'发射馈线损耗','rx_loss_db':'接收馈线损耗','extra_loss_db':'额外损耗',
         'path_loss_db':'路径损耗','rx_power_dbm':'接收信号电平','rx_threshold_dbm':'接收门限',
         'reserve_db':'预留余量'}
+COASTAL={f:FIELDS[f][0] for f in ('d1_km','d2_km','obstacle_height_m','height1_above_sea_m','height2_above_sea_m','knife_edge_nu','k_factor')}
+BUDGET.update(COASTAL)
 LABELS=NAMES|BUDGET
 
 
 def label_pattern(field):
     if field=='frequency_ghz':
-        return r'载波频率|工作频率|频率|载频'
+        return r'载波频率|工作频率|频率|载频|'+'|'.join(re.escape(a) for a in FIELDS[field][2])
     if field=='distance_km':
-        return r'路径距离|通信距离|链路距离|距离|相距'
+        return r'路径距离|通信距离|链路距离|距离|相距|'+'|'.join(re.escape(a) for a in FIELDS[field][2])
     return '|'.join(re.escape(a) for a in sorted(FIELDS[field][2]+[BUDGET[field]],key=len,reverse=True))
 
 
@@ -38,12 +43,18 @@ def issues_for(state):
     if state['status'] not in {'AWAITING_INPUT','NEEDS_MODEL'}:
         return []
     issues=[]
+    # Default completion: a suggested table value prefills its question (TEACHER_CASES).
+    suggested={x['field']:x for x in (report.get('suggestions') or {}).get('items',[])}
     def add(kind,field,title,detail,excerpt='',choices=()):
         key='issue-'+digest([kind,field,excerpt])[:20]
         if any(i['id']==key for i in issues):
             return
         issues.append(dict(id=key,kind=kind,field=field,title=title,detail=detail,excerpt=excerpt,
                            choices=list(choices),status='open',blocking=True,source='requirements'))
+        if field in suggested:
+            x=suggested[field]
+            issues[-1]['suggestion']=dict(value=suggestion_answer(x),display=suggestion_display(x),reason=x['reason'],
+                                          note='默认补全，需确认')
     if state['status']=='NEEDS_MODEL':
         add('capability','task','需求明确，但当前模型不支持','当前支持自由空间条件下的路径损耗、接收信号电平与链路余量。可编辑任务重新定义目标；系统不会擅自替换你的需求。')
         return issues
@@ -54,13 +65,21 @@ def issues_for(state):
     if not report.get('targets'):
         add('clarification','goal','你希望得到什么结果？','先明确目标，再判断能力与所需参数；选择不代表当前系统支持。',
             choices=[dict(value='fspl_ghz',label='路径损耗'),dict(value='received_power',label='接收信号电平'),dict(value='link_margin',label='链路余量'),
+                     dict(value='fresnel_radius',label='第一菲涅耳区半径'),dict(value='knife_edge_nu',label='绕射参数'),
+                     dict(value='knife_edge_loss',label='单刃形绕射损耗'),dict(value='sea_reflection_two_ray',label='海面反射附加损耗'),
                      dict(value='link_feasibility',label='判断能否通信'),dict(value='scheme_comparison',label='比较方案')])
         return issues
     if any(d['code']=='MISSING_CONDITION' for d in diagnostics):
         add('clarification','condition','是否明确只做自由空间基准？','自由空间基准不代表实际海面或遮挡环境。',
             choices=[dict(value='free_space_reference',label='是，只计算自由空间基准'),dict(value='non_free_space',label='否，需要实际环境传播评估')])
+    for d in diagnostics:
+        if d['code']=='MISSING_COASTAL_CONDITION':
+            add('clarification','task','请声明补充模型的适用条件',
+                '请在需求中写明采用单刃形障碍物模型，或光滑海面单点镜面反射两径模型。')
     params={p['canonical_name']:p for p in report.get('parameters_proposal',[])}
     approx={d['details'].get('field'):d['details'] for d in diagnostics if d['code']=='PARAMETER_APPROXIMATE'}
+    # While a shared site name is open, the distance is not asked: the chosen site's coordinates give it.
+    site_choice=any(d['code']=='ENTITY_AMBIGUOUS' and d['details'].get('kind')=='site' for d in diagnostics)
     for field,p in params.items():
         if field not in NAMES:
             continue
@@ -70,14 +89,21 @@ def issues_for(state):
         elif field in approx:
             add('clarification',field,NAMES[field]+'的近似范围是什么？','填写明确范围（例如 2±0.1GHz），或明确按单值计算（例如 2GHz）。',excerpt=approx[field]['excerpt'])
         elif p['status']=='missing':
-            add('missing',field,'请补充'+NAMES[field],'可输入单值、区间或离散候选，必须包含单位。')
+            if not (field=='distance_km' and site_choice):
+                add('missing',field,'请补充'+NAMES[field],'可输入单值、区间或离散候选，必须包含单位。')
         elif min(numbers(p['value']))<=0:
             add('invalid',field,NAMES[field]+'必须大于零','区间的所有端点与候选都必须大于零。')
+    # The link tool takes the sensitivity from the modulation table: the modulation is chosen, not typed in dBm.
+    modulation=next((d for d in diagnostics if d['code'] in {'MODULATION_NEEDED','MODULATION_UNKNOWN'}),None)
+    if modulation:
+        det=modulation['details']
+        add('choice','modulation','选择调制方式',d_text(modulation),excerpt=det.get('mention',''),
+            choices=[dict(value=name,label=name) for name in det['choices']])
     # Link-budget inputs are answered one field at a time, like frequency and distance.
     unit=lambda f: FIELDS[f][1]
     for field in BUDGET:  # link order, transmitter first
         p=params.get(field)
-        if not p:
+        if not p or (modulation and field=='rx_threshold_dbm' and p['status']=='missing'):
             continue
         if p['status']=='conflicting':
             add('conflict',field,BUDGET[field]+'有多个冲突来源',f'输入最终采用的单个数值（含单位，例如 {example(field)}）。',
@@ -129,6 +155,19 @@ def issues_for(state):
     return issues
 
 
+def suggestion_answer(item):
+    """The answer that adopts a suggestion, in the form the question accepts."""
+    return str(item['value']) if item['field']=='modulation' else f"{item['value']:g}{item['unit']}"
+
+
+def suggestion_display(item):
+    return str(item['value']) if item['field']=='modulation' else f"{item['value']:g} {item['unit']}"
+
+
+def d_text(diagnostic):
+    return diagnostic['message']+'接收灵敏度按调制表取值（模拟参数，可配置）。'
+
+
 def attach_issues(state,previous=None):
     new=issues_for(state)
     previous=previous or {}
@@ -166,11 +205,22 @@ def strip_labelled(request, report, fields):
                 spans.append(a['span'])
     text = request['raw_text']
     for a, b in sorted(spans, reverse=True):
+        a, b = with_approximation(text, a, b)
+        # Do not leave two separators side by side ("用XX-100，，得留").
+        if 0 < a and b < len(text) and text[a-1] in '，,' and text[b] in '，,。':
+            a -= 1
         text = text[:a] + text[b:]
     request['raw_text'] = text
 
 
-def replace_parameter(request, report, field, answer):
+def with_approximation(text, start, end):
+    """Widen a value span over the approximation words around it, as in "大概2GHz左右"."""
+    before = APPROX_BEFORE.search(text, 0, start)
+    after = APPROX_AFTER.match(text, end)
+    return (before.start() if before else start), (after.end() if after else end)
+
+
+def replace_parameter(request, report, field, answer, mark=''):
     probe=dict(schema_version='1.0.0',task_id='answer',revision=0,request_id='answer',raw_text=answer,
                manual_parameters={},condition=None,target=None)
     require(field in LABELS,'ANSWER_REQUIRES_EDIT')
@@ -214,7 +264,7 @@ def replace_parameter(request, report, field, answer):
         if d['code']=='PARAMETER_APPROXIMATE' and d['details'].get('field')==field:
             remove.append(d['details']['span'])
     merged=[]
-    for start,end in sorted(remove):
+    for start,end in sorted(with_approximation(text,*span) for span in remove):
         if merged and start <= merged[-1][1]:
             merged[-1][1]=max(end,merged[-1][1])
         else:
@@ -222,7 +272,9 @@ def replace_parameter(request, report, field, answer):
     numeric=answer[slice(*spans[0])].strip()
     if field in BUDGET:  # the span may include the label; keep only the value and unit
         numeric=re.search(rf'{NUMBER}\s*(?:{UNITS})(?![A-Za-z/\d])',numeric,re.I).group()
-    replacement=LABELS[field]+numeric
+    from formula_rag.parsing import EN_FIELDS
+    label=EN_FIELDS.get(field,[LABELS[field]])[0]+' ' if not re.search(r'[\u3400-\u9fff]',request['raw_text']) else LABELS[field]
+    replacement=label+numeric+mark
     if merged:
         for i,(start,end) in reversed(list(enumerate(merged))):
             text=text[:start]+(replacement if i==0 else '')+text[end:]
@@ -269,6 +321,9 @@ def apply_answers(current,answers,event_id):
     for key,value in answers.items():
         require(type(value) is str and 0<len(value.strip())<=500,'INVALID_ANSWER')
         issue=issues[key];field=issue['field'];value=value.strip()
+        # Adopting the prefilled suggestion: the value is marked in the text as a default completion.
+        adopted=bool(issue.get('suggestion')) and value==issue['suggestion']['value']
+        mark=SUGGESTED if adopted else ''
         if issue['kind']=='pending' and value=='withdraw':
             conversation['pending']=[p for p in conversation['pending'] if p['turn_id']!=issue['excerpt']]
         elif field=='goal':
@@ -278,13 +333,22 @@ def apply_answers(current,answers,event_id):
             require(value in {c['value'] for c in issue['choices']},'INVALID_ANSWER_CHOICE')
             request['condition']=value
         elif field in LABELS:
-            accepted=replace_parameter(request,current['report'],field,value)
+            accepted=replace_parameter(request,current['report'],field,value,mark)
             if field in record_fields(current['report']):
                 # The user settled a text-versus-record conflict; the chosen value now overrides the record.
                 request['manual_parameters'][field]={'value':accepted['value'],'unit':accepted['unit']}
             conversation['pending']=[p for p in conversation['pending'] if p.get('field')!=field]
         elif field in FACT_FIELDS:
             request['manual_parameters'][field]=fact_value(field,value)
+        elif field=='modulation':
+            require(value in {c['value'] for c in issue['choices']},'INVALID_ANSWER_CHOICE')
+            spans=[d['details']['span'] for d in current['report']['diagnostics']
+                   if d['code']=='MODULATION_UNKNOWN' and d['details']['mention']==issue['excerpt']]
+            if spans:  # the name the table lacks is replaced in place
+                start,end=spans[0]
+                request['raw_text']=request['raw_text'][:start]+value+request['raw_text'][end:]
+            else:
+                request['raw_text']=request['raw_text'].rstrip()+'\n调制方式 '+value+mark+'。'
         elif field=='entity':
             require(value in {c['value'] for c in issue['choices']},'INVALID_ANSWER_CHOICE')
             [span]=[d['details']['span'] for d in current['report']['diagnostics']
@@ -293,11 +357,13 @@ def apply_answers(current,answers,event_id):
         else:
             raise ValueError('ANSWER_REQUIRES_EDIT')
         display=next((c['label'] for c in issue['choices'] if c['value']==value),value)
-        answered.append(dict(issue_id=key,title=issue['title'],answer=value,display=display))
+        answered.append(dict(issue_id=key,title=issue['title'],answer=value,display=display+mark,
+                             **({'suggested':True,'reason':issue['suggestion']['reason']} if adopted else {})))
     request['raw_text']=re.sub(r'(?:载波频率|频率|路径距离|距离)\s*(?=[，,。；;\n]|$)', '',request['raw_text'])
     require(len(request['raw_text'])<=12000,'MERGED_TEXT_TOO_LONG')
     conversation['turns'].append(dict(turn_id=event_id,number=len(conversation['turns'])+1,kind='answer',
         message='；'.join(x['title']+'：'+x['display'] for x in answered),before=before,after=copy.deepcopy(request),
-        changes=[dict(field='task',before=before['raw_text'],after=request['raw_text'])],questions=[],mode='user_answer',
+        changes=[dict(field='task',before=before['raw_text'],after=request['raw_text'])],questions=[],
+        mode='suggestion' if all(x.get('suggested') for x in answered) else 'user_answer',
         applied=True,answers=answered))
     return request,conversation

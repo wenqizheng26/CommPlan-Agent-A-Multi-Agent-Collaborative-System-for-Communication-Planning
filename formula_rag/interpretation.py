@@ -5,7 +5,7 @@ from .parsing import extract_request
 CONDITION_LABELS = {
     'free_space': '理想自由空间模型', 'free_space_reference': '自由空间基准',
     'non_free_space': '存在其他传播机制', 'maximum_doppler': '最大多普勒上界',
-    'two_way': '双程传播',
+    'two_way': '双程传播', 'single_knife_edge': '单刃形障碍物', 'smooth_sea': '光滑海面单点镜面反射',
 }
 
 
@@ -34,13 +34,13 @@ def merge_interpretation(request, model, candidate_ids, manual_target=None, manu
             continue
         enclosing = [c for c in clauses if item['evidence'] in c]
         # "能不能通""够不够" ask a question; they are not negations.
-        if any(re.search(r'不(?:是|要|用|必|想|需)|不能|并非|无需', re.sub(r'(.)不\1', '', c)) for c in enclosing):
+        if any(re.search(r'不(?:是|要|用|必|想|需)|不能|并非|无需|\bnot\b|do(?:es)?n.t', re.sub(r'(.)不\1', '', c), re.I) for c in enclosing):
             info['rejected'].append({'kind': 'target', 'reason': '目标证据处于否定语境'})
             continue
         if request.get('unsupported_targets'):
             info['rejected'].append({'kind': 'target', 'reason': '不能用相似公式替代未支持的待求量'})
             continue
-        if not re.search(r'计算|求|算|多大|多少|多强|够不够|够用|能否|能通|通不通|行不行|可行|满足|还剩|还有|上界|损耗|余量|功率|频移|底噪', item['evidence']):
+        if not re.search(r'计算|求|算|多大|多少|多强|够不够|够用|能否|能通|通不通|行不行|可行|满足|还剩|还有|上界|损耗|余量|功率|频移|底噪|稳定|更稳|稳不稳|可靠|连到|连通|建链|传(?:视频|图像|数据|语音)|calculate|compute|find|determine|what is|can.{0,12}link|margin|loss|power|radius|diffraction|stabl|reliab', item['evidence'], re.I):
             info['rejected'].append({'kind': 'target', 'reason': '证据未明确计算意图'})
             continue
         targets.append(item)

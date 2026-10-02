@@ -33,7 +33,7 @@ def check_labels(text, labels):
             a0, b0 = a['span']
             require(0 <= a0 < b0 <= len(text), 'LABEL_NOT_GROUNDED')
             if a['kind'] == 'solve':
-                require(a['unknown'] in SOLVE_UNKNOWNS and re.search(r'功率|发射电平', text[a0:b0]), 'LABEL_NOT_GROUNDED')
+                require(a['unknown'] in SOLVE_UNKNOWNS and re.search(r'功率|发射电平|transmit power|tx power', text[a0:b0], re.I), 'LABEL_NOT_GROUNDED')
             else:
                 require(text[a0:b0] == a['mention'], 'LABEL_NOT_GROUNDED')
 from planning.services.plans import SUPPORTED, TARGETS, chain, final_target, plan_for, requires_free_space, bound_issues
@@ -49,7 +49,10 @@ def check_source_labels(parameters, text):
     """
     labels={'frequency_ghz':r'载波频率|工作频率|频率|载频',
             'distance_km':r'路径距离|通信距离|链路距离|距离|相距',
-            'other':r'带宽|高度|海拔|波长|半径|宽度'}
+            'other':r'带宽|高度|海拔|波长|半径|宽度|bandwidth|height|altitude|wavelength|radius|width'}
+    from formula_rag.parsing import EN_FIELDS
+    for key in ('frequency_ghz','distance_km'):
+        labels[key] += '|' + '|'.join(re.escape(a) for a in EN_FIELDS[key])
     for p in parameters:
         field=p['canonical_name']
         if field not in {'frequency_ghz','distance_km'}:continue
@@ -59,7 +62,7 @@ def check_source_labels(parameters, text):
             require(0<=start<end<=len(text),'SOURCE_SPAN_INVALID')
             clause_start=max([0]+[m.end() for m in re.finditer(r'[，,。；;\n]',text[:start])])
             fragment=text[clause_start:end]
-            occurrences=[(m.start(),kind) for kind,pattern in labels.items() for m in re.finditer(pattern,fragment)]
+            occurrences=[(m.start(),kind) for kind,pattern in labels.items() for m in re.finditer(pattern,fragment,re.I)]
             if occurrences:
                 require(max(occurrences)[1]==field,'SOURCE_LABEL_MISMATCH')
 
@@ -123,7 +126,8 @@ def check_report(report, request, cards, root=None):
         order = facts['order']
         require([c['model_id'] for c in candidates] == order, 'PLAN_CANDIDATES')
         wanted, solve_if_unmet = plan_goal(r['requirement'], r['solve'], final, facts['leaves'])
-        expected = plan_for(request, order, cards, parameters, r['evidence_ids'], wanted, solve_if_unmet, facts['notes'])
+        expected = plan_for(request, order, cards, parameters, r['evidence_ids'], wanted, solve_if_unmet, facts['notes'],
+                            facts['tool'], facts['variants'])
         if 'planning_role' in r:
             from planning.agents.planner import (equivalent_plan, compile_proposal, decorate_plan, validate_assessment,
                                                  planning_view, available_cards)
@@ -131,7 +135,7 @@ def check_report(report, request, cards, root=None):
             require(type(role) is dict and role.get('mode') in {'llm','stub','deterministic','deterministic_fallback'},'PLAN_ROLE')
             # The facts the model was shown are rebuilt from the program's own plan; H4 is replayed against them.
             base=dict(r,calculation_plan_proposal=expected)
-            shown=planning_view(request,base,available_cards(cards),root)
+            shown=planning_view(request,base,available_cards(cards,expected),root)
             validate_assessment(role['proposal']['assessment'],base,stored=True,facts=shown)
             equivalent_plan(r['calculation_plan_proposal'],expected)
             replay=decorate_plan(compile_proposal(role['proposal'],base,cards,shown),role)
@@ -163,14 +167,16 @@ def check_report(report, request, cards, root=None):
         require(parsed['target_origin']=='explicit_text' or interpreted['targets'] != parsed['targets'] or any(d['code']=='MODEL_CALL' and any(a.get('kind')=='target' for a in d['details'].get('accepted',[])) for d in r['diagnostics']), 'TARGET_NOT_GROUNDED')
     require(final_target(target, cards) is not None and not parsed['unsupported_targets'], 'UNSUPPORTED_SCOPE')
     require(r['targets'] == target, 'TARGET_MISMATCH')
-    conditions = set(interpreted['conditions'])
+    conditions = set(interpreted['conditions']) | set(facts['conditions'])
     if request['condition']:
         conditions.add(request['condition'])
         if request['condition']=='free_space_reference':
             conditions.add('free_space')
     require(r['conditions']==sorted(conditions) and ('free_space' in conditions or not requires_free_space(order, cards)), 'CONDITION_MISMATCH')
     require(not outside_scope(request['raw_text'],parsed,target,conditions), 'UNSUPPORTED_SCOPE')
-    require('non_free_space' not in conditions or 'free_space_reference' in conditions, 'MODEL_NOT_APPLICABLE')
+    require(not outside_scope(request['raw_text'], parsed, target, conditions), 'MODEL_NOT_APPLICABLE')
+    from planning.services.coastal import missing_conditions
+    require(not missing_conditions(order, conditions), 'CONDITION_MISMATCH')
     require(not any(d['code'] in {'INPUT_PARSE_ISSUE','SOURCE_AMBIGUOUS','PARAMETER_APPROXIMATE','LABEL_CONFLICT'} for d in issues), 'INPUT_NOT_RESOLVED')
     values = {p['canonical_name']:p['value'] for p in parameters if p['value'] is not None}
     require(not facts['issues'] and not band_issues(facts['devices'], values), 'ENTITY_NOT_RESOLVED')

@@ -1,0 +1,4146 @@
+{
+  "fixture": {
+    "kind": "synthetic_model_observation",
+    "contract": "docs/codex/TEACHER_TASKS.md:page data items 1 and 2",
+    "note": "All model activities, names, messages, responses, times, usage and failures are test doubles; no real model was called. State copies the real deterministic MARGIN fixture. Composite tool events are synthetic per the future page contract; their numbers were computed by the existing calc_link_margin registry, not emitted by a live task.",
+    "expected": {
+      "cards": 6,
+      "statuses": [
+        "completed",
+        "failed",
+        "running"
+      ],
+      "requirements_call_ids": [
+        "fixture-requirements-attempt-1",
+        "fixture-requirements-attempt-2"
+      ],
+      "model_cards": 3,
+      "tool_cards": 3
+    }
+  },
+  "state": {
+    "request": {
+      "schema_version": "1.0.0",
+      "task_id": "teacher-ui-margin-completed",
+      "revision": 0,
+      "request_id": "teacher-ui-margin-create",
+      "raw_text": "按自由空间基准计算链路余量：频率2GHz，距离10km，发射功率30dBm，发射天线增益10dBi，接收天线增益10dBi，发射馈线损耗2dB，接收馈线损耗2dB，额外损耗0dB，接收灵敏度-100dBm，预留余量10dB。",
+      "manual_parameters": {},
+      "condition": null,
+      "target": null
+    },
+    "report": {
+      "schema_version": "1.0.0",
+      "profile": "requirements-slice-v1",
+      "task_id": "teacher-ui-margin-completed",
+      "revision": 0,
+      "request_id": "teacher-ui-margin-create",
+      "parameters_proposal": [
+        {
+          "parameter_id": "teacher-ui-margin-create:distance_km",
+          "canonical_name": "distance_km",
+          "value": 10.0,
+          "unit": "km",
+          "original_value": 10.0,
+          "original_unit": "km",
+          "status": "user_provided",
+          "origins": [
+            {
+              "kind": "user_text",
+              "source_ref": "teacher-ui-margin-create:raw_text",
+              "span": [
+                21,
+                27
+              ],
+              "value": 10.0,
+              "unit": "km",
+              "origin_id": "teacher-ui-margin-create:distance_km:origin:0"
+            }
+          ],
+          "evidence_ids": [],
+          "created_revision": 0
+        },
+        {
+          "parameter_id": "teacher-ui-margin-create:extra_loss_db",
+          "canonical_name": "extra_loss_db",
+          "value": 0.0,
+          "unit": "dB",
+          "original_value": 0.0,
+          "original_unit": "dB",
+          "status": "user_provided",
+          "origins": [
+            {
+              "kind": "user_text",
+              "source_ref": "teacher-ui-margin-create:raw_text",
+              "span": [
+                82,
+                89
+              ],
+              "value": 0.0,
+              "unit": "dB",
+              "origin_id": "teacher-ui-margin-create:extra_loss_db:origin:0"
+            }
+          ],
+          "evidence_ids": [],
+          "created_revision": 0
+        },
+        {
+          "parameter_id": "teacher-ui-margin-create:frequency_ghz",
+          "canonical_name": "frequency_ghz",
+          "value": 2.0,
+          "unit": "GHz",
+          "original_value": 2.0,
+          "original_unit": "GHz",
+          "status": "user_provided",
+          "origins": [
+            {
+              "kind": "user_text",
+              "source_ref": "teacher-ui-margin-create:raw_text",
+              "span": [
+                14,
+                20
+              ],
+              "value": 2.0,
+              "unit": "GHz",
+              "origin_id": "teacher-ui-margin-create:frequency_ghz:origin:0"
+            }
+          ],
+          "evidence_ids": [],
+          "created_revision": 0
+        },
+        {
+          "parameter_id": "teacher-ui-margin-create:reserve_db",
+          "canonical_name": "reserve_db",
+          "value": 10.0,
+          "unit": "dB",
+          "original_value": 10.0,
+          "original_unit": "dB",
+          "status": "user_provided",
+          "origins": [
+            {
+              "kind": "user_text",
+              "source_ref": "teacher-ui-margin-create:raw_text",
+              "span": [
+                103,
+                111
+              ],
+              "value": 10.0,
+              "unit": "dB",
+              "origin_id": "teacher-ui-margin-create:reserve_db:origin:0"
+            }
+          ],
+          "evidence_ids": [],
+          "created_revision": 0
+        },
+        {
+          "parameter_id": "teacher-ui-margin-create:rx_gain_dbi",
+          "canonical_name": "rx_gain_dbi",
+          "value": 10.0,
+          "unit": "dBi",
+          "original_value": 10.0,
+          "original_unit": "dBi",
+          "status": "user_provided",
+          "origins": [
+            {
+              "kind": "user_text",
+              "source_ref": "teacher-ui-margin-create:raw_text",
+              "span": [
+                50,
+                61
+              ],
+              "value": 10.0,
+              "unit": "dBi",
+              "origin_id": "teacher-ui-margin-create:rx_gain_dbi:origin:0"
+            }
+          ],
+          "evidence_ids": [],
+          "created_revision": 0
+        },
+        {
+          "parameter_id": "teacher-ui-margin-create:rx_loss_db",
+          "canonical_name": "rx_loss_db",
+          "value": 2.0,
+          "unit": "dB",
+          "original_value": 2.0,
+          "original_unit": "dB",
+          "status": "user_provided",
+          "origins": [
+            {
+              "kind": "user_text",
+              "source_ref": "teacher-ui-margin-create:raw_text",
+              "span": [
+                72,
+                81
+              ],
+              "value": 2.0,
+              "unit": "dB",
+              "origin_id": "teacher-ui-margin-create:rx_loss_db:origin:0"
+            }
+          ],
+          "evidence_ids": [],
+          "created_revision": 0
+        },
+        {
+          "parameter_id": "teacher-ui-margin-create:rx_threshold_dbm",
+          "canonical_name": "rx_threshold_dbm",
+          "value": -100.0,
+          "unit": "dBm",
+          "original_value": -100.0,
+          "original_unit": "dBm",
+          "status": "user_provided",
+          "origins": [
+            {
+              "kind": "user_text",
+              "source_ref": "teacher-ui-margin-create:raw_text",
+              "span": [
+                90,
+                102
+              ],
+              "value": -100.0,
+              "unit": "dBm",
+              "origin_id": "teacher-ui-margin-create:rx_threshold_dbm:origin:0"
+            }
+          ],
+          "evidence_ids": [],
+          "created_revision": 0
+        },
+        {
+          "parameter_id": "teacher-ui-margin-create:tx_gain_dbi",
+          "canonical_name": "tx_gain_dbi",
+          "value": 10.0,
+          "unit": "dBi",
+          "original_value": 10.0,
+          "original_unit": "dBi",
+          "status": "user_provided",
+          "origins": [
+            {
+              "kind": "user_text",
+              "source_ref": "teacher-ui-margin-create:raw_text",
+              "span": [
+                38,
+                49
+              ],
+              "value": 10.0,
+              "unit": "dBi",
+              "origin_id": "teacher-ui-margin-create:tx_gain_dbi:origin:0"
+            }
+          ],
+          "evidence_ids": [],
+          "created_revision": 0
+        },
+        {
+          "parameter_id": "teacher-ui-margin-create:tx_loss_db",
+          "canonical_name": "tx_loss_db",
+          "value": 2.0,
+          "unit": "dB",
+          "original_value": 2.0,
+          "original_unit": "dB",
+          "status": "user_provided",
+          "origins": [
+            {
+              "kind": "user_text",
+              "source_ref": "teacher-ui-margin-create:raw_text",
+              "span": [
+                62,
+                71
+              ],
+              "value": 2.0,
+              "unit": "dB",
+              "origin_id": "teacher-ui-margin-create:tx_loss_db:origin:0"
+            }
+          ],
+          "evidence_ids": [],
+          "created_revision": 0
+        },
+        {
+          "parameter_id": "teacher-ui-margin-create:tx_power_dbm",
+          "canonical_name": "tx_power_dbm",
+          "value": 30.0,
+          "unit": "dBm",
+          "original_value": 30.0,
+          "original_unit": "dBm",
+          "status": "user_provided",
+          "origins": [
+            {
+              "kind": "user_text",
+              "source_ref": "teacher-ui-margin-create:raw_text",
+              "span": [
+                28,
+                37
+              ],
+              "value": 30.0,
+              "unit": "dBm",
+              "origin_id": "teacher-ui-margin-create:tx_power_dbm:origin:0"
+            }
+          ],
+          "evidence_ids": [],
+          "created_revision": 0
+        }
+      ],
+      "conflicts": [],
+      "missing_parameters": [],
+      "candidate_models": [
+        {
+          "model_id": "fspl_ghz",
+          "version": "1.0.0",
+          "status": "verified",
+          "evidence_ids": [
+            "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+            "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+            "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0"
+          ]
+        },
+        {
+          "model_id": "received_power",
+          "version": "1.0.0",
+          "status": "verified",
+          "evidence_ids": [
+            "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+            "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+            "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0"
+          ]
+        },
+        {
+          "model_id": "link_margin",
+          "version": "1.0.0",
+          "status": "verified",
+          "evidence_ids": [
+            "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+            "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+            "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0"
+          ]
+        }
+      ],
+      "calculation_plan_proposal": {
+        "plan_id": "teacher-ui-margin-create:plan",
+        "task_id": "teacher-ui-margin-completed",
+        "revision": 0,
+        "objective": "链路余量（链路预算）",
+        "selected_model": [
+          "fspl_ghz",
+          "received_power",
+          "link_margin"
+        ],
+        "required_parameters": [
+          "frequency_ghz",
+          "distance_km",
+          "tx_power_dbm",
+          "tx_gain_dbi",
+          "rx_gain_dbi",
+          "tx_loss_db",
+          "rx_loss_db",
+          "extra_loss_db",
+          "rx_threshold_dbm",
+          "reserve_db"
+        ],
+        "assumptions": [
+          "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+          "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。",
+          "所有项必须属于同一条单程链路、同一频率和一致功率参考面。",
+          "本式只做功率收支，不由正接收功率或正余量推断现场可用率。",
+          "接收电平和门限必须使用同一输入参考面，避免把已经扣减的损耗再次作为预留量扣减。",
+          "reserve_db 是此项目显式扣除的预留量；来源中的基本余量为接收功率减灵敏度。"
+        ],
+        "evidence_ids": [
+          "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+          "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+          "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0"
+        ],
+        "steps": [
+          {
+            "step_id": "fspl-step",
+            "tool_id": "fspl_ghz",
+            "inputs": {
+              "frequency_ghz": {
+                "kind": "parameter",
+                "ref": "teacher-ui-margin-create:frequency_ghz",
+                "unit": "GHz"
+              },
+              "distance_km": {
+                "kind": "parameter",
+                "ref": "teacher-ui-margin-create:distance_km",
+                "unit": "km"
+              }
+            },
+            "expected_unit": "dB",
+            "dependencies": [],
+            "required_conditions": [
+              "free_space"
+            ]
+          },
+          {
+            "step_id": "received_power-step",
+            "tool_id": "received_power",
+            "inputs": {
+              "tx_power_dbm": {
+                "kind": "parameter",
+                "ref": "teacher-ui-margin-create:tx_power_dbm",
+                "unit": "dBm"
+              },
+              "tx_gain_dbi": {
+                "kind": "parameter",
+                "ref": "teacher-ui-margin-create:tx_gain_dbi",
+                "unit": "dBi"
+              },
+              "rx_gain_dbi": {
+                "kind": "parameter",
+                "ref": "teacher-ui-margin-create:rx_gain_dbi",
+                "unit": "dBi"
+              },
+              "tx_loss_db": {
+                "kind": "parameter",
+                "ref": "teacher-ui-margin-create:tx_loss_db",
+                "unit": "dB"
+              },
+              "rx_loss_db": {
+                "kind": "parameter",
+                "ref": "teacher-ui-margin-create:rx_loss_db",
+                "unit": "dB"
+              },
+              "path_loss_db": {
+                "kind": "step",
+                "ref": "fspl-step",
+                "unit": "dB"
+              },
+              "extra_loss_db": {
+                "kind": "parameter",
+                "ref": "teacher-ui-margin-create:extra_loss_db",
+                "unit": "dB"
+              }
+            },
+            "expected_unit": "dBm",
+            "dependencies": [
+              "fspl-step"
+            ],
+            "required_conditions": []
+          },
+          {
+            "step_id": "link_margin-step",
+            "tool_id": "link_margin",
+            "inputs": {
+              "rx_power_dbm": {
+                "kind": "step",
+                "ref": "received_power-step",
+                "unit": "dBm"
+              },
+              "rx_threshold_dbm": {
+                "kind": "parameter",
+                "ref": "teacher-ui-margin-create:rx_threshold_dbm",
+                "unit": "dBm"
+              },
+              "reserve_db": {
+                "kind": "parameter",
+                "ref": "teacher-ui-margin-create:reserve_db",
+                "unit": "dB"
+              }
+            },
+            "expected_unit": "dB",
+            "dependencies": [
+              "received_power-step"
+            ],
+            "required_conditions": []
+          }
+        ],
+        "plan_hash": "0c4a377dc12bfa23a3f3756dd58d061742d922ea90b8ce5d2b63d9873cd422a8",
+        "origin": "program",
+        "assessment": {
+          "mode": "skipped",
+          "label": "未做模型适用性评估",
+          "notes": []
+        }
+      },
+      "evidence_ids": [
+        "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+        "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+        "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0"
+      ],
+      "evidence_refs": [
+        {
+          "evidence_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+          "kind": "formula_card",
+          "source_title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+          "source_url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+          "source_id": null,
+          "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+          "excerpt": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。",
+          "content_hash": "2ed0e6930cf489981f389e87e7adcdb1af4b49eed9b495527ed2c5598898ba6d",
+          "catalog_id": "fspl_ghz",
+          "card_version": "1.0.0",
+          "status": "verified",
+          "knowledge_snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+          "parameter_names": [
+            "frequency_ghz",
+            "distance_km"
+          ],
+          "relevance_rank": 2
+        },
+        {
+          "evidence_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+          "kind": "formula_card",
+          "source_title": "NASA, State-of-the-Art of Small Spacecraft Technology, Ground Data Systems and Mission Operations",
+          "source_url": "https://www.nasa.gov/smallsat-institute/sst-soa/ground-data-systems-and-mission-operations/",
+          "source_id": null,
+          "locator": "11.3.1 Frequency Selection: Link Budget",
+          "excerpt": "按发射功率加收发天线增益、减去馈线、路径及额外损耗计算接收功率。路径损耗必须来自适用模型、测量或用户明确提供；此式不会根据环境自动估出路径损耗。",
+          "content_hash": "821fd133e0ce21c6ae15f6db03960cbc0da4b74c7fac1da041a639ba8b6525da",
+          "catalog_id": "received_power",
+          "card_version": "1.0.0",
+          "status": "verified",
+          "knowledge_snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+          "parameter_names": [
+            "tx_power_dbm",
+            "tx_gain_dbi",
+            "rx_gain_dbi",
+            "tx_loss_db",
+            "rx_loss_db",
+            "path_loss_db",
+            "extra_loss_db"
+          ],
+          "relevance_rank": 1
+        },
+        {
+          "evidence_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0",
+          "kind": "formula_card",
+          "source_title": "Texas Instruments SWRA479A, Achieving Optimum Radio Range (2017)",
+          "source_url": "https://www.ti.com/lit/an/swra479a/swra479a.pdf",
+          "source_id": null,
+          "locator": "page 4, section 2.4: link margin definition",
+          "excerpt": "计算接收电平高于接收门限的余量，再扣除用户指定的工程预留量。接收门限必须对应同一调制、码率及误码或丢包要求；正余量不等于已经验证现场可靠度。",
+          "content_hash": "2c81c3ffffc81a18ca2f0b5f66985f9ec91091e8a80433d935ed4fbd4af1c40a",
+          "catalog_id": "link_margin",
+          "card_version": "1.0.0",
+          "status": "verified",
+          "knowledge_snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+          "parameter_names": [
+            "rx_power_dbm",
+            "rx_threshold_dbm",
+            "reserve_db"
+          ],
+          "relevance_rank": 3
+        }
+      ],
+      "knowledge_snapshot": {
+        "snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+        "catalog_hash": "51840382feae5e0045dfe1f965619164505360dfcc3961e9e17719c132e95255",
+        "source_manifest_hash": "cc4caaa18b921650cff98ff65ff83c33d9979d0dcc953db217e267e06c8e1c52",
+        "embedding_weights_hash": null,
+        "tokenizer_config_hash": null,
+        "encoder_rule_version": "not-used",
+        "retrieval_rule_version": "requirements-lexical-v1"
+      },
+      "questions": [],
+      "assumptions": [
+        "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+        "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。",
+        "所有项必须属于同一条单程链路、同一频率和一致功率参考面。",
+        "本式只做功率收支，不由正接收功率或正余量推断现场可用率。",
+        "接收电平和门限必须使用同一输入参考面，避免把已经扣减的损耗再次作为预留量扣减。",
+        "reserve_db 是此项目显式扣除的预留量；来源中的基本余量为接收功率减灵敏度。"
+      ],
+      "conditions": [
+        "free_space",
+        "free_space_reference"
+      ],
+      "targets": [
+        "link_margin"
+      ],
+      "requirement": null,
+      "solve": null,
+      "entities": [],
+      "execution_status": "AWAITING_CONFIRMATION",
+      "component_modes": {
+        "interpretation": "deterministic",
+        "retrieval": "lexical_fallback"
+      },
+      "runtime_health": "ready",
+      "diagnostics": [
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "frequency_ghz",
+            "excerpt": "频率2GHz",
+            "span": [
+              14,
+              20
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "distance_km",
+            "excerpt": "距离10km",
+            "span": [
+              21,
+              27
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "tx_power_dbm",
+            "excerpt": "发射功率30dBm",
+            "span": [
+              28,
+              37
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "tx_gain_dbi",
+            "excerpt": "发射天线增益10dBi",
+            "span": [
+              38,
+              49
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "rx_gain_dbi",
+            "excerpt": "接收天线增益10dBi",
+            "span": [
+              50,
+              61
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "tx_loss_db",
+            "excerpt": "发射馈线损耗2dB",
+            "span": [
+              62,
+              71
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "rx_loss_db",
+            "excerpt": "接收馈线损耗2dB",
+            "span": [
+              72,
+              81
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "extra_loss_db",
+            "excerpt": "额外损耗0dB",
+            "span": [
+              82,
+              89
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "rx_threshold_dbm",
+            "excerpt": "接收灵敏度-100dBm",
+            "span": [
+              90,
+              102
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "reserve_db",
+            "excerpt": "预留余量10dB",
+            "span": [
+              103,
+              111
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_REVIEW_LIMITATION",
+          "message": "来源状态来自库内登记，本次没有独立复核原始文献。",
+          "details": {}
+        }
+      ],
+      "planning_role": {
+        "proposal": {
+          "steps": [
+            {
+              "card": "fspl_ghz",
+              "why": "按登记公式连接所需物理量"
+            },
+            {
+              "card": "received_power",
+              "why": "按登记公式连接所需物理量"
+            },
+            {
+              "card": "link_margin",
+              "why": "按登记公式连接所需物理量"
+            }
+          ],
+          "assessment": {
+            "verdict": "review",
+            "notes": [
+              {
+                "kind": "goal",
+                "text": "程序按目标连接计算步骤；未做模型适用性评估。",
+                "refs": [
+                  "target"
+                ]
+              }
+            ]
+          }
+        },
+        "mode": "deterministic",
+        "attempts": 0,
+        "diagnostics": [],
+        "origin": "program",
+        "agrees_with_program": true
+      }
+    },
+    "review": {
+      "schema_version": "1.0.0",
+      "profile": "confirmed-fspl-loop-v1",
+      "request": {
+        "schema_version": "1.0.0",
+        "task_id": "teacher-ui-margin-completed",
+        "revision": 0,
+        "request_id": "teacher-ui-margin-create",
+        "raw_text": "按自由空间基准计算链路余量：频率2GHz，距离10km，发射功率30dBm，发射天线增益10dBi，接收天线增益10dBi，发射馈线损耗2dB，接收馈线损耗2dB，额外损耗0dB，接收灵敏度-100dBm，预留余量10dB。",
+        "manual_parameters": {},
+        "condition": null,
+        "target": null
+      },
+      "report": {
+        "schema_version": "1.0.0",
+        "profile": "requirements-slice-v1",
+        "task_id": "teacher-ui-margin-completed",
+        "revision": 0,
+        "request_id": "teacher-ui-margin-create",
+        "parameters_proposal": [
+          {
+            "parameter_id": "teacher-ui-margin-create:distance_km",
+            "canonical_name": "distance_km",
+            "value": 10.0,
+            "unit": "km",
+            "original_value": 10.0,
+            "original_unit": "km",
+            "status": "user_provided",
+            "origins": [
+              {
+                "kind": "user_text",
+                "source_ref": "teacher-ui-margin-create:raw_text",
+                "span": [
+                  21,
+                  27
+                ],
+                "value": 10.0,
+                "unit": "km",
+                "origin_id": "teacher-ui-margin-create:distance_km:origin:0"
+              }
+            ],
+            "evidence_ids": [],
+            "created_revision": 0
+          },
+          {
+            "parameter_id": "teacher-ui-margin-create:extra_loss_db",
+            "canonical_name": "extra_loss_db",
+            "value": 0.0,
+            "unit": "dB",
+            "original_value": 0.0,
+            "original_unit": "dB",
+            "status": "user_provided",
+            "origins": [
+              {
+                "kind": "user_text",
+                "source_ref": "teacher-ui-margin-create:raw_text",
+                "span": [
+                  82,
+                  89
+                ],
+                "value": 0.0,
+                "unit": "dB",
+                "origin_id": "teacher-ui-margin-create:extra_loss_db:origin:0"
+              }
+            ],
+            "evidence_ids": [],
+            "created_revision": 0
+          },
+          {
+            "parameter_id": "teacher-ui-margin-create:frequency_ghz",
+            "canonical_name": "frequency_ghz",
+            "value": 2.0,
+            "unit": "GHz",
+            "original_value": 2.0,
+            "original_unit": "GHz",
+            "status": "user_provided",
+            "origins": [
+              {
+                "kind": "user_text",
+                "source_ref": "teacher-ui-margin-create:raw_text",
+                "span": [
+                  14,
+                  20
+                ],
+                "value": 2.0,
+                "unit": "GHz",
+                "origin_id": "teacher-ui-margin-create:frequency_ghz:origin:0"
+              }
+            ],
+            "evidence_ids": [],
+            "created_revision": 0
+          },
+          {
+            "parameter_id": "teacher-ui-margin-create:reserve_db",
+            "canonical_name": "reserve_db",
+            "value": 10.0,
+            "unit": "dB",
+            "original_value": 10.0,
+            "original_unit": "dB",
+            "status": "user_provided",
+            "origins": [
+              {
+                "kind": "user_text",
+                "source_ref": "teacher-ui-margin-create:raw_text",
+                "span": [
+                  103,
+                  111
+                ],
+                "value": 10.0,
+                "unit": "dB",
+                "origin_id": "teacher-ui-margin-create:reserve_db:origin:0"
+              }
+            ],
+            "evidence_ids": [],
+            "created_revision": 0
+          },
+          {
+            "parameter_id": "teacher-ui-margin-create:rx_gain_dbi",
+            "canonical_name": "rx_gain_dbi",
+            "value": 10.0,
+            "unit": "dBi",
+            "original_value": 10.0,
+            "original_unit": "dBi",
+            "status": "user_provided",
+            "origins": [
+              {
+                "kind": "user_text",
+                "source_ref": "teacher-ui-margin-create:raw_text",
+                "span": [
+                  50,
+                  61
+                ],
+                "value": 10.0,
+                "unit": "dBi",
+                "origin_id": "teacher-ui-margin-create:rx_gain_dbi:origin:0"
+              }
+            ],
+            "evidence_ids": [],
+            "created_revision": 0
+          },
+          {
+            "parameter_id": "teacher-ui-margin-create:rx_loss_db",
+            "canonical_name": "rx_loss_db",
+            "value": 2.0,
+            "unit": "dB",
+            "original_value": 2.0,
+            "original_unit": "dB",
+            "status": "user_provided",
+            "origins": [
+              {
+                "kind": "user_text",
+                "source_ref": "teacher-ui-margin-create:raw_text",
+                "span": [
+                  72,
+                  81
+                ],
+                "value": 2.0,
+                "unit": "dB",
+                "origin_id": "teacher-ui-margin-create:rx_loss_db:origin:0"
+              }
+            ],
+            "evidence_ids": [],
+            "created_revision": 0
+          },
+          {
+            "parameter_id": "teacher-ui-margin-create:rx_threshold_dbm",
+            "canonical_name": "rx_threshold_dbm",
+            "value": -100.0,
+            "unit": "dBm",
+            "original_value": -100.0,
+            "original_unit": "dBm",
+            "status": "user_provided",
+            "origins": [
+              {
+                "kind": "user_text",
+                "source_ref": "teacher-ui-margin-create:raw_text",
+                "span": [
+                  90,
+                  102
+                ],
+                "value": -100.0,
+                "unit": "dBm",
+                "origin_id": "teacher-ui-margin-create:rx_threshold_dbm:origin:0"
+              }
+            ],
+            "evidence_ids": [],
+            "created_revision": 0
+          },
+          {
+            "parameter_id": "teacher-ui-margin-create:tx_gain_dbi",
+            "canonical_name": "tx_gain_dbi",
+            "value": 10.0,
+            "unit": "dBi",
+            "original_value": 10.0,
+            "original_unit": "dBi",
+            "status": "user_provided",
+            "origins": [
+              {
+                "kind": "user_text",
+                "source_ref": "teacher-ui-margin-create:raw_text",
+                "span": [
+                  38,
+                  49
+                ],
+                "value": 10.0,
+                "unit": "dBi",
+                "origin_id": "teacher-ui-margin-create:tx_gain_dbi:origin:0"
+              }
+            ],
+            "evidence_ids": [],
+            "created_revision": 0
+          },
+          {
+            "parameter_id": "teacher-ui-margin-create:tx_loss_db",
+            "canonical_name": "tx_loss_db",
+            "value": 2.0,
+            "unit": "dB",
+            "original_value": 2.0,
+            "original_unit": "dB",
+            "status": "user_provided",
+            "origins": [
+              {
+                "kind": "user_text",
+                "source_ref": "teacher-ui-margin-create:raw_text",
+                "span": [
+                  62,
+                  71
+                ],
+                "value": 2.0,
+                "unit": "dB",
+                "origin_id": "teacher-ui-margin-create:tx_loss_db:origin:0"
+              }
+            ],
+            "evidence_ids": [],
+            "created_revision": 0
+          },
+          {
+            "parameter_id": "teacher-ui-margin-create:tx_power_dbm",
+            "canonical_name": "tx_power_dbm",
+            "value": 30.0,
+            "unit": "dBm",
+            "original_value": 30.0,
+            "original_unit": "dBm",
+            "status": "user_provided",
+            "origins": [
+              {
+                "kind": "user_text",
+                "source_ref": "teacher-ui-margin-create:raw_text",
+                "span": [
+                  28,
+                  37
+                ],
+                "value": 30.0,
+                "unit": "dBm",
+                "origin_id": "teacher-ui-margin-create:tx_power_dbm:origin:0"
+              }
+            ],
+            "evidence_ids": [],
+            "created_revision": 0
+          }
+        ],
+        "conflicts": [],
+        "missing_parameters": [],
+        "candidate_models": [
+          {
+            "model_id": "fspl_ghz",
+            "version": "1.0.0",
+            "status": "verified",
+            "evidence_ids": [
+              "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+              "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+              "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0"
+            ]
+          },
+          {
+            "model_id": "received_power",
+            "version": "1.0.0",
+            "status": "verified",
+            "evidence_ids": [
+              "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+              "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+              "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0"
+            ]
+          },
+          {
+            "model_id": "link_margin",
+            "version": "1.0.0",
+            "status": "verified",
+            "evidence_ids": [
+              "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+              "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+              "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0"
+            ]
+          }
+        ],
+        "calculation_plan_proposal": {
+          "plan_id": "teacher-ui-margin-create:plan",
+          "task_id": "teacher-ui-margin-completed",
+          "revision": 0,
+          "objective": "链路余量（链路预算）",
+          "selected_model": [
+            "fspl_ghz",
+            "received_power",
+            "link_margin"
+          ],
+          "required_parameters": [
+            "frequency_ghz",
+            "distance_km",
+            "tx_power_dbm",
+            "tx_gain_dbi",
+            "rx_gain_dbi",
+            "tx_loss_db",
+            "rx_loss_db",
+            "extra_loss_db",
+            "rx_threshold_dbm",
+            "reserve_db"
+          ],
+          "assumptions": [
+            "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+            "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。",
+            "所有项必须属于同一条单程链路、同一频率和一致功率参考面。",
+            "本式只做功率收支，不由正接收功率或正余量推断现场可用率。",
+            "接收电平和门限必须使用同一输入参考面，避免把已经扣减的损耗再次作为预留量扣减。",
+            "reserve_db 是此项目显式扣除的预留量；来源中的基本余量为接收功率减灵敏度。"
+          ],
+          "evidence_ids": [
+            "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+            "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+            "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0"
+          ],
+          "steps": [
+            {
+              "step_id": "fspl-step",
+              "tool_id": "fspl_ghz",
+              "inputs": {
+                "frequency_ghz": {
+                  "kind": "parameter",
+                  "ref": "teacher-ui-margin-create:frequency_ghz",
+                  "unit": "GHz"
+                },
+                "distance_km": {
+                  "kind": "parameter",
+                  "ref": "teacher-ui-margin-create:distance_km",
+                  "unit": "km"
+                }
+              },
+              "expected_unit": "dB",
+              "dependencies": [],
+              "required_conditions": [
+                "free_space"
+              ]
+            },
+            {
+              "step_id": "received_power-step",
+              "tool_id": "received_power",
+              "inputs": {
+                "tx_power_dbm": {
+                  "kind": "parameter",
+                  "ref": "teacher-ui-margin-create:tx_power_dbm",
+                  "unit": "dBm"
+                },
+                "tx_gain_dbi": {
+                  "kind": "parameter",
+                  "ref": "teacher-ui-margin-create:tx_gain_dbi",
+                  "unit": "dBi"
+                },
+                "rx_gain_dbi": {
+                  "kind": "parameter",
+                  "ref": "teacher-ui-margin-create:rx_gain_dbi",
+                  "unit": "dBi"
+                },
+                "tx_loss_db": {
+                  "kind": "parameter",
+                  "ref": "teacher-ui-margin-create:tx_loss_db",
+                  "unit": "dB"
+                },
+                "rx_loss_db": {
+                  "kind": "parameter",
+                  "ref": "teacher-ui-margin-create:rx_loss_db",
+                  "unit": "dB"
+                },
+                "path_loss_db": {
+                  "kind": "step",
+                  "ref": "fspl-step",
+                  "unit": "dB"
+                },
+                "extra_loss_db": {
+                  "kind": "parameter",
+                  "ref": "teacher-ui-margin-create:extra_loss_db",
+                  "unit": "dB"
+                }
+              },
+              "expected_unit": "dBm",
+              "dependencies": [
+                "fspl-step"
+              ],
+              "required_conditions": []
+            },
+            {
+              "step_id": "link_margin-step",
+              "tool_id": "link_margin",
+              "inputs": {
+                "rx_power_dbm": {
+                  "kind": "step",
+                  "ref": "received_power-step",
+                  "unit": "dBm"
+                },
+                "rx_threshold_dbm": {
+                  "kind": "parameter",
+                  "ref": "teacher-ui-margin-create:rx_threshold_dbm",
+                  "unit": "dBm"
+                },
+                "reserve_db": {
+                  "kind": "parameter",
+                  "ref": "teacher-ui-margin-create:reserve_db",
+                  "unit": "dB"
+                }
+              },
+              "expected_unit": "dB",
+              "dependencies": [
+                "received_power-step"
+              ],
+              "required_conditions": []
+            }
+          ],
+          "plan_hash": "0c4a377dc12bfa23a3f3756dd58d061742d922ea90b8ce5d2b63d9873cd422a8",
+          "origin": "program",
+          "assessment": {
+            "mode": "skipped",
+            "label": "未做模型适用性评估",
+            "notes": []
+          }
+        },
+        "evidence_ids": [
+          "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+          "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+          "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0"
+        ],
+        "evidence_refs": [
+          {
+            "evidence_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+            "kind": "formula_card",
+            "source_title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+            "source_url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+            "source_id": null,
+            "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+            "excerpt": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。",
+            "content_hash": "2ed0e6930cf489981f389e87e7adcdb1af4b49eed9b495527ed2c5598898ba6d",
+            "catalog_id": "fspl_ghz",
+            "card_version": "1.0.0",
+            "status": "verified",
+            "knowledge_snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+            "parameter_names": [
+              "frequency_ghz",
+              "distance_km"
+            ],
+            "relevance_rank": 2
+          },
+          {
+            "evidence_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+            "kind": "formula_card",
+            "source_title": "NASA, State-of-the-Art of Small Spacecraft Technology, Ground Data Systems and Mission Operations",
+            "source_url": "https://www.nasa.gov/smallsat-institute/sst-soa/ground-data-systems-and-mission-operations/",
+            "source_id": null,
+            "locator": "11.3.1 Frequency Selection: Link Budget",
+            "excerpt": "按发射功率加收发天线增益、减去馈线、路径及额外损耗计算接收功率。路径损耗必须来自适用模型、测量或用户明确提供；此式不会根据环境自动估出路径损耗。",
+            "content_hash": "821fd133e0ce21c6ae15f6db03960cbc0da4b74c7fac1da041a639ba8b6525da",
+            "catalog_id": "received_power",
+            "card_version": "1.0.0",
+            "status": "verified",
+            "knowledge_snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+            "parameter_names": [
+              "tx_power_dbm",
+              "tx_gain_dbi",
+              "rx_gain_dbi",
+              "tx_loss_db",
+              "rx_loss_db",
+              "path_loss_db",
+              "extra_loss_db"
+            ],
+            "relevance_rank": 1
+          },
+          {
+            "evidence_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0",
+            "kind": "formula_card",
+            "source_title": "Texas Instruments SWRA479A, Achieving Optimum Radio Range (2017)",
+            "source_url": "https://www.ti.com/lit/an/swra479a/swra479a.pdf",
+            "source_id": null,
+            "locator": "page 4, section 2.4: link margin definition",
+            "excerpt": "计算接收电平高于接收门限的余量，再扣除用户指定的工程预留量。接收门限必须对应同一调制、码率及误码或丢包要求；正余量不等于已经验证现场可靠度。",
+            "content_hash": "2c81c3ffffc81a18ca2f0b5f66985f9ec91091e8a80433d935ed4fbd4af1c40a",
+            "catalog_id": "link_margin",
+            "card_version": "1.0.0",
+            "status": "verified",
+            "knowledge_snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+            "parameter_names": [
+              "rx_power_dbm",
+              "rx_threshold_dbm",
+              "reserve_db"
+            ],
+            "relevance_rank": 3
+          }
+        ],
+        "knowledge_snapshot": {
+          "snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+          "catalog_hash": "51840382feae5e0045dfe1f965619164505360dfcc3961e9e17719c132e95255",
+          "source_manifest_hash": "cc4caaa18b921650cff98ff65ff83c33d9979d0dcc953db217e267e06c8e1c52",
+          "embedding_weights_hash": null,
+          "tokenizer_config_hash": null,
+          "encoder_rule_version": "not-used",
+          "retrieval_rule_version": "requirements-lexical-v1"
+        },
+        "questions": [],
+        "assumptions": [
+          "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+          "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。",
+          "所有项必须属于同一条单程链路、同一频率和一致功率参考面。",
+          "本式只做功率收支，不由正接收功率或正余量推断现场可用率。",
+          "接收电平和门限必须使用同一输入参考面，避免把已经扣减的损耗再次作为预留量扣减。",
+          "reserve_db 是此项目显式扣除的预留量；来源中的基本余量为接收功率减灵敏度。"
+        ],
+        "conditions": [
+          "free_space",
+          "free_space_reference"
+        ],
+        "targets": [
+          "link_margin"
+        ],
+        "requirement": null,
+        "solve": null,
+        "entities": [],
+        "execution_status": "AWAITING_CONFIRMATION",
+        "component_modes": {
+          "interpretation": "deterministic",
+          "retrieval": "lexical_fallback"
+        },
+        "runtime_health": "ready",
+        "diagnostics": [
+          {
+            "code": "SOURCE_EXCERPT",
+            "message": "用户原文来源",
+            "details": {
+              "field": "frequency_ghz",
+              "excerpt": "频率2GHz",
+              "span": [
+                14,
+                20
+              ]
+            }
+          },
+          {
+            "code": "SOURCE_EXCERPT",
+            "message": "用户原文来源",
+            "details": {
+              "field": "distance_km",
+              "excerpt": "距离10km",
+              "span": [
+                21,
+                27
+              ]
+            }
+          },
+          {
+            "code": "SOURCE_EXCERPT",
+            "message": "用户原文来源",
+            "details": {
+              "field": "tx_power_dbm",
+              "excerpt": "发射功率30dBm",
+              "span": [
+                28,
+                37
+              ]
+            }
+          },
+          {
+            "code": "SOURCE_EXCERPT",
+            "message": "用户原文来源",
+            "details": {
+              "field": "tx_gain_dbi",
+              "excerpt": "发射天线增益10dBi",
+              "span": [
+                38,
+                49
+              ]
+            }
+          },
+          {
+            "code": "SOURCE_EXCERPT",
+            "message": "用户原文来源",
+            "details": {
+              "field": "rx_gain_dbi",
+              "excerpt": "接收天线增益10dBi",
+              "span": [
+                50,
+                61
+              ]
+            }
+          },
+          {
+            "code": "SOURCE_EXCERPT",
+            "message": "用户原文来源",
+            "details": {
+              "field": "tx_loss_db",
+              "excerpt": "发射馈线损耗2dB",
+              "span": [
+                62,
+                71
+              ]
+            }
+          },
+          {
+            "code": "SOURCE_EXCERPT",
+            "message": "用户原文来源",
+            "details": {
+              "field": "rx_loss_db",
+              "excerpt": "接收馈线损耗2dB",
+              "span": [
+                72,
+                81
+              ]
+            }
+          },
+          {
+            "code": "SOURCE_EXCERPT",
+            "message": "用户原文来源",
+            "details": {
+              "field": "extra_loss_db",
+              "excerpt": "额外损耗0dB",
+              "span": [
+                82,
+                89
+              ]
+            }
+          },
+          {
+            "code": "SOURCE_EXCERPT",
+            "message": "用户原文来源",
+            "details": {
+              "field": "rx_threshold_dbm",
+              "excerpt": "接收灵敏度-100dBm",
+              "span": [
+                90,
+                102
+              ]
+            }
+          },
+          {
+            "code": "SOURCE_EXCERPT",
+            "message": "用户原文来源",
+            "details": {
+              "field": "reserve_db",
+              "excerpt": "预留余量10dB",
+              "span": [
+                103,
+                111
+              ]
+            }
+          },
+          {
+            "code": "SOURCE_REVIEW_LIMITATION",
+            "message": "来源状态来自库内登记，本次没有独立复核原始文献。",
+            "details": {}
+          }
+        ],
+        "planning_role": {
+          "proposal": {
+            "steps": [
+              {
+                "card": "fspl_ghz",
+                "why": "按登记公式连接所需物理量"
+              },
+              {
+                "card": "received_power",
+                "why": "按登记公式连接所需物理量"
+              },
+              {
+                "card": "link_margin",
+                "why": "按登记公式连接所需物理量"
+              }
+            ],
+            "assessment": {
+              "verdict": "review",
+              "notes": [
+                {
+                  "kind": "goal",
+                  "text": "程序按目标连接计算步骤；未做模型适用性评估。",
+                  "refs": [
+                    "target"
+                  ]
+                }
+              ]
+            }
+          },
+          "mode": "deterministic",
+          "attempts": 0,
+          "diagnostics": [],
+          "origin": "program",
+          "agrees_with_program": true
+        }
+      },
+      "model": {
+        "id": "link_margin",
+        "title": "扣除预留量后的链路电平余量",
+        "description": "计算接收电平高于接收门限的余量，再扣除用户指定的工程预留量。接收门限必须对应同一调制、码率及误码或丢包要求；正余量不等于已经验证现场可靠度。",
+        "version": "1.0.0",
+        "status": "verified",
+        "expression": "rx_power_dbm - rx_threshold_dbm - reserve_db",
+        "output": {
+          "name": "link_margin_db",
+          "unit": "dB"
+        },
+        "parameters": {
+          "rx_power_dbm": {
+            "unit": "dBm",
+            "description": "接收端输入参考面的信号电平"
+          },
+          "rx_threshold_dbm": {
+            "unit": "dBm",
+            "description": "满足指定通信质量的接收灵敏度或门限"
+          },
+          "reserve_db": {
+            "unit": "dB",
+            "description": "未计入接收电平或门限的工程预留量；不预留请显式填写 0",
+            "min": 0,
+            "default": {
+              "value": 0,
+              "unit": "dB",
+              "note": "要求余量单独比较，不预先扣除"
+            }
+          }
+        },
+        "applicability": {
+          "requires": [],
+          "notes": [
+            "接收电平和门限必须使用同一输入参考面，避免把已经扣减的损耗再次作为预留量扣减。",
+            "reserve_db 是此项目显式扣除的预留量；来源中的基本余量为接收功率减灵敏度。"
+          ]
+        },
+        "sources": [
+          {
+            "title": "Texas Instruments SWRA479A, Achieving Optimum Radio Range (2017)",
+            "url": "https://www.ti.com/lit/an/swra479a/swra479a.pdf",
+            "locator": "page 4, section 2.4: link margin definition",
+            "checked_date": "2026-09-14",
+            "derivation": "采用接收功率减灵敏度的定义；此项目再扣除显式 reserve_db。"
+          }
+        ],
+        "examples": [
+          {
+            "inputs": {
+              "rx_power_dbm": -51.48485018878651,
+              "rx_threshold_dbm": -62,
+              "reserve_db": 0
+            },
+            "expected": 10.51514981121349,
+            "tolerance": 1e-10
+          }
+        ]
+      },
+      "review_hash": "c604cf6d26fb3086e887612f57763ede50fb9ed5c6c3f89a7e05f8f9efd2304a"
+    },
+    "confirmed_snapshot": {
+      "schema_version": "1.0.0",
+      "profile": "confirmed-fspl-loop-v1",
+      "snapshot_id": "teacher-ui-margin-create:confirmed",
+      "task_id": "teacher-ui-margin-completed",
+      "revision": 0,
+      "review": {
+        "model": {
+          "applicability": {
+            "notes": [
+              "接收电平和门限必须使用同一输入参考面，避免把已经扣减的损耗再次作为预留量扣减。",
+              "reserve_db 是此项目显式扣除的预留量；来源中的基本余量为接收功率减灵敏度。"
+            ],
+            "requires": []
+          },
+          "description": "计算接收电平高于接收门限的余量，再扣除用户指定的工程预留量。接收门限必须对应同一调制、码率及误码或丢包要求；正余量不等于已经验证现场可靠度。",
+          "examples": [
+            {
+              "expected": 10.51514981121349,
+              "inputs": {
+                "reserve_db": 0,
+                "rx_power_dbm": -51.48485018878651,
+                "rx_threshold_dbm": -62
+              },
+              "tolerance": 1e-10
+            }
+          ],
+          "expression": "rx_power_dbm - rx_threshold_dbm - reserve_db",
+          "id": "link_margin",
+          "output": {
+            "name": "link_margin_db",
+            "unit": "dB"
+          },
+          "parameters": {
+            "reserve_db": {
+              "default": {
+                "note": "要求余量单独比较，不预先扣除",
+                "unit": "dB",
+                "value": 0
+              },
+              "description": "未计入接收电平或门限的工程预留量；不预留请显式填写 0",
+              "min": 0,
+              "unit": "dB"
+            },
+            "rx_power_dbm": {
+              "description": "接收端输入参考面的信号电平",
+              "unit": "dBm"
+            },
+            "rx_threshold_dbm": {
+              "description": "满足指定通信质量的接收灵敏度或门限",
+              "unit": "dBm"
+            }
+          },
+          "sources": [
+            {
+              "checked_date": "2026-09-14",
+              "derivation": "采用接收功率减灵敏度的定义；此项目再扣除显式 reserve_db。",
+              "locator": "page 4, section 2.4: link margin definition",
+              "title": "Texas Instruments SWRA479A, Achieving Optimum Radio Range (2017)",
+              "url": "https://www.ti.com/lit/an/swra479a/swra479a.pdf"
+            }
+          ],
+          "status": "verified",
+          "title": "扣除预留量后的链路电平余量",
+          "version": "1.0.0"
+        },
+        "profile": "confirmed-fspl-loop-v1",
+        "report": {
+          "assumptions": [
+            "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+            "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。",
+            "所有项必须属于同一条单程链路、同一频率和一致功率参考面。",
+            "本式只做功率收支，不由正接收功率或正余量推断现场可用率。",
+            "接收电平和门限必须使用同一输入参考面，避免把已经扣减的损耗再次作为预留量扣减。",
+            "reserve_db 是此项目显式扣除的预留量；来源中的基本余量为接收功率减灵敏度。"
+          ],
+          "calculation_plan_proposal": {
+            "assessment": {
+              "label": "未做模型适用性评估",
+              "mode": "skipped",
+              "notes": []
+            },
+            "assumptions": [
+              "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+              "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。",
+              "所有项必须属于同一条单程链路、同一频率和一致功率参考面。",
+              "本式只做功率收支，不由正接收功率或正余量推断现场可用率。",
+              "接收电平和门限必须使用同一输入参考面，避免把已经扣减的损耗再次作为预留量扣减。",
+              "reserve_db 是此项目显式扣除的预留量；来源中的基本余量为接收功率减灵敏度。"
+            ],
+            "evidence_ids": [
+              "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+              "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+              "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0"
+            ],
+            "objective": "链路余量（链路预算）",
+            "origin": "program",
+            "plan_hash": "0c4a377dc12bfa23a3f3756dd58d061742d922ea90b8ce5d2b63d9873cd422a8",
+            "plan_id": "teacher-ui-margin-create:plan",
+            "required_parameters": [
+              "frequency_ghz",
+              "distance_km",
+              "tx_power_dbm",
+              "tx_gain_dbi",
+              "rx_gain_dbi",
+              "tx_loss_db",
+              "rx_loss_db",
+              "extra_loss_db",
+              "rx_threshold_dbm",
+              "reserve_db"
+            ],
+            "revision": 0,
+            "selected_model": [
+              "fspl_ghz",
+              "received_power",
+              "link_margin"
+            ],
+            "steps": [
+              {
+                "dependencies": [],
+                "expected_unit": "dB",
+                "inputs": {
+                  "distance_km": {
+                    "kind": "parameter",
+                    "ref": "teacher-ui-margin-create:distance_km",
+                    "unit": "km"
+                  },
+                  "frequency_ghz": {
+                    "kind": "parameter",
+                    "ref": "teacher-ui-margin-create:frequency_ghz",
+                    "unit": "GHz"
+                  }
+                },
+                "required_conditions": [
+                  "free_space"
+                ],
+                "step_id": "fspl-step",
+                "tool_id": "fspl_ghz"
+              },
+              {
+                "dependencies": [
+                  "fspl-step"
+                ],
+                "expected_unit": "dBm",
+                "inputs": {
+                  "extra_loss_db": {
+                    "kind": "parameter",
+                    "ref": "teacher-ui-margin-create:extra_loss_db",
+                    "unit": "dB"
+                  },
+                  "path_loss_db": {
+                    "kind": "step",
+                    "ref": "fspl-step",
+                    "unit": "dB"
+                  },
+                  "rx_gain_dbi": {
+                    "kind": "parameter",
+                    "ref": "teacher-ui-margin-create:rx_gain_dbi",
+                    "unit": "dBi"
+                  },
+                  "rx_loss_db": {
+                    "kind": "parameter",
+                    "ref": "teacher-ui-margin-create:rx_loss_db",
+                    "unit": "dB"
+                  },
+                  "tx_gain_dbi": {
+                    "kind": "parameter",
+                    "ref": "teacher-ui-margin-create:tx_gain_dbi",
+                    "unit": "dBi"
+                  },
+                  "tx_loss_db": {
+                    "kind": "parameter",
+                    "ref": "teacher-ui-margin-create:tx_loss_db",
+                    "unit": "dB"
+                  },
+                  "tx_power_dbm": {
+                    "kind": "parameter",
+                    "ref": "teacher-ui-margin-create:tx_power_dbm",
+                    "unit": "dBm"
+                  }
+                },
+                "required_conditions": [],
+                "step_id": "received_power-step",
+                "tool_id": "received_power"
+              },
+              {
+                "dependencies": [
+                  "received_power-step"
+                ],
+                "expected_unit": "dB",
+                "inputs": {
+                  "reserve_db": {
+                    "kind": "parameter",
+                    "ref": "teacher-ui-margin-create:reserve_db",
+                    "unit": "dB"
+                  },
+                  "rx_power_dbm": {
+                    "kind": "step",
+                    "ref": "received_power-step",
+                    "unit": "dBm"
+                  },
+                  "rx_threshold_dbm": {
+                    "kind": "parameter",
+                    "ref": "teacher-ui-margin-create:rx_threshold_dbm",
+                    "unit": "dBm"
+                  }
+                },
+                "required_conditions": [],
+                "step_id": "link_margin-step",
+                "tool_id": "link_margin"
+              }
+            ],
+            "task_id": "teacher-ui-margin-completed"
+          },
+          "candidate_models": [
+            {
+              "evidence_ids": [
+                "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+                "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+                "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0"
+              ],
+              "model_id": "fspl_ghz",
+              "status": "verified",
+              "version": "1.0.0"
+            },
+            {
+              "evidence_ids": [
+                "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+                "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+                "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0"
+              ],
+              "model_id": "received_power",
+              "status": "verified",
+              "version": "1.0.0"
+            },
+            {
+              "evidence_ids": [
+                "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+                "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+                "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0"
+              ],
+              "model_id": "link_margin",
+              "status": "verified",
+              "version": "1.0.0"
+            }
+          ],
+          "component_modes": {
+            "interpretation": "deterministic",
+            "retrieval": "lexical_fallback"
+          },
+          "conditions": [
+            "free_space",
+            "free_space_reference"
+          ],
+          "conflicts": [],
+          "diagnostics": [
+            {
+              "code": "SOURCE_EXCERPT",
+              "details": {
+                "excerpt": "频率2GHz",
+                "field": "frequency_ghz",
+                "span": [
+                  14,
+                  20
+                ]
+              },
+              "message": "用户原文来源"
+            },
+            {
+              "code": "SOURCE_EXCERPT",
+              "details": {
+                "excerpt": "距离10km",
+                "field": "distance_km",
+                "span": [
+                  21,
+                  27
+                ]
+              },
+              "message": "用户原文来源"
+            },
+            {
+              "code": "SOURCE_EXCERPT",
+              "details": {
+                "excerpt": "发射功率30dBm",
+                "field": "tx_power_dbm",
+                "span": [
+                  28,
+                  37
+                ]
+              },
+              "message": "用户原文来源"
+            },
+            {
+              "code": "SOURCE_EXCERPT",
+              "details": {
+                "excerpt": "发射天线增益10dBi",
+                "field": "tx_gain_dbi",
+                "span": [
+                  38,
+                  49
+                ]
+              },
+              "message": "用户原文来源"
+            },
+            {
+              "code": "SOURCE_EXCERPT",
+              "details": {
+                "excerpt": "接收天线增益10dBi",
+                "field": "rx_gain_dbi",
+                "span": [
+                  50,
+                  61
+                ]
+              },
+              "message": "用户原文来源"
+            },
+            {
+              "code": "SOURCE_EXCERPT",
+              "details": {
+                "excerpt": "发射馈线损耗2dB",
+                "field": "tx_loss_db",
+                "span": [
+                  62,
+                  71
+                ]
+              },
+              "message": "用户原文来源"
+            },
+            {
+              "code": "SOURCE_EXCERPT",
+              "details": {
+                "excerpt": "接收馈线损耗2dB",
+                "field": "rx_loss_db",
+                "span": [
+                  72,
+                  81
+                ]
+              },
+              "message": "用户原文来源"
+            },
+            {
+              "code": "SOURCE_EXCERPT",
+              "details": {
+                "excerpt": "额外损耗0dB",
+                "field": "extra_loss_db",
+                "span": [
+                  82,
+                  89
+                ]
+              },
+              "message": "用户原文来源"
+            },
+            {
+              "code": "SOURCE_EXCERPT",
+              "details": {
+                "excerpt": "接收灵敏度-100dBm",
+                "field": "rx_threshold_dbm",
+                "span": [
+                  90,
+                  102
+                ]
+              },
+              "message": "用户原文来源"
+            },
+            {
+              "code": "SOURCE_EXCERPT",
+              "details": {
+                "excerpt": "预留余量10dB",
+                "field": "reserve_db",
+                "span": [
+                  103,
+                  111
+                ]
+              },
+              "message": "用户原文来源"
+            },
+            {
+              "code": "SOURCE_REVIEW_LIMITATION",
+              "details": {},
+              "message": "来源状态来自库内登记，本次没有独立复核原始文献。"
+            }
+          ],
+          "entities": [],
+          "evidence_ids": [
+            "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+            "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+            "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0"
+          ],
+          "evidence_refs": [
+            {
+              "card_version": "1.0.0",
+              "catalog_id": "fspl_ghz",
+              "content_hash": "2ed0e6930cf489981f389e87e7adcdb1af4b49eed9b495527ed2c5598898ba6d",
+              "evidence_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+              "excerpt": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。",
+              "kind": "formula_card",
+              "knowledge_snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+              "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+              "parameter_names": [
+                "frequency_ghz",
+                "distance_km"
+              ],
+              "relevance_rank": 2,
+              "source_id": null,
+              "source_title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+              "source_url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+              "status": "verified"
+            },
+            {
+              "card_version": "1.0.0",
+              "catalog_id": "received_power",
+              "content_hash": "821fd133e0ce21c6ae15f6db03960cbc0da4b74c7fac1da041a639ba8b6525da",
+              "evidence_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+              "excerpt": "按发射功率加收发天线增益、减去馈线、路径及额外损耗计算接收功率。路径损耗必须来自适用模型、测量或用户明确提供；此式不会根据环境自动估出路径损耗。",
+              "kind": "formula_card",
+              "knowledge_snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+              "locator": "11.3.1 Frequency Selection: Link Budget",
+              "parameter_names": [
+                "tx_power_dbm",
+                "tx_gain_dbi",
+                "rx_gain_dbi",
+                "tx_loss_db",
+                "rx_loss_db",
+                "path_loss_db",
+                "extra_loss_db"
+              ],
+              "relevance_rank": 1,
+              "source_id": null,
+              "source_title": "NASA, State-of-the-Art of Small Spacecraft Technology, Ground Data Systems and Mission Operations",
+              "source_url": "https://www.nasa.gov/smallsat-institute/sst-soa/ground-data-systems-and-mission-operations/",
+              "status": "verified"
+            },
+            {
+              "card_version": "1.0.0",
+              "catalog_id": "link_margin",
+              "content_hash": "2c81c3ffffc81a18ca2f0b5f66985f9ec91091e8a80433d935ed4fbd4af1c40a",
+              "evidence_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0",
+              "excerpt": "计算接收电平高于接收门限的余量，再扣除用户指定的工程预留量。接收门限必须对应同一调制、码率及误码或丢包要求；正余量不等于已经验证现场可靠度。",
+              "kind": "formula_card",
+              "knowledge_snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+              "locator": "page 4, section 2.4: link margin definition",
+              "parameter_names": [
+                "rx_power_dbm",
+                "rx_threshold_dbm",
+                "reserve_db"
+              ],
+              "relevance_rank": 3,
+              "source_id": null,
+              "source_title": "Texas Instruments SWRA479A, Achieving Optimum Radio Range (2017)",
+              "source_url": "https://www.ti.com/lit/an/swra479a/swra479a.pdf",
+              "status": "verified"
+            }
+          ],
+          "execution_status": "AWAITING_CONFIRMATION",
+          "knowledge_snapshot": {
+            "catalog_hash": "51840382feae5e0045dfe1f965619164505360dfcc3961e9e17719c132e95255",
+            "embedding_weights_hash": null,
+            "encoder_rule_version": "not-used",
+            "retrieval_rule_version": "requirements-lexical-v1",
+            "snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+            "source_manifest_hash": "cc4caaa18b921650cff98ff65ff83c33d9979d0dcc953db217e267e06c8e1c52",
+            "tokenizer_config_hash": null
+          },
+          "missing_parameters": [],
+          "parameters_proposal": [
+            {
+              "canonical_name": "distance_km",
+              "created_revision": 0,
+              "evidence_ids": [],
+              "original_unit": "km",
+              "original_value": 10.0,
+              "origins": [
+                {
+                  "kind": "user_text",
+                  "origin_id": "teacher-ui-margin-create:distance_km:origin:0",
+                  "source_ref": "teacher-ui-margin-create:raw_text",
+                  "span": [
+                    21,
+                    27
+                  ],
+                  "unit": "km",
+                  "value": 10.0
+                }
+              ],
+              "parameter_id": "teacher-ui-margin-create:distance_km",
+              "status": "user_provided",
+              "unit": "km",
+              "value": 10.0
+            },
+            {
+              "canonical_name": "extra_loss_db",
+              "created_revision": 0,
+              "evidence_ids": [],
+              "original_unit": "dB",
+              "original_value": 0.0,
+              "origins": [
+                {
+                  "kind": "user_text",
+                  "origin_id": "teacher-ui-margin-create:extra_loss_db:origin:0",
+                  "source_ref": "teacher-ui-margin-create:raw_text",
+                  "span": [
+                    82,
+                    89
+                  ],
+                  "unit": "dB",
+                  "value": 0.0
+                }
+              ],
+              "parameter_id": "teacher-ui-margin-create:extra_loss_db",
+              "status": "user_provided",
+              "unit": "dB",
+              "value": 0.0
+            },
+            {
+              "canonical_name": "frequency_ghz",
+              "created_revision": 0,
+              "evidence_ids": [],
+              "original_unit": "GHz",
+              "original_value": 2.0,
+              "origins": [
+                {
+                  "kind": "user_text",
+                  "origin_id": "teacher-ui-margin-create:frequency_ghz:origin:0",
+                  "source_ref": "teacher-ui-margin-create:raw_text",
+                  "span": [
+                    14,
+                    20
+                  ],
+                  "unit": "GHz",
+                  "value": 2.0
+                }
+              ],
+              "parameter_id": "teacher-ui-margin-create:frequency_ghz",
+              "status": "user_provided",
+              "unit": "GHz",
+              "value": 2.0
+            },
+            {
+              "canonical_name": "reserve_db",
+              "created_revision": 0,
+              "evidence_ids": [],
+              "original_unit": "dB",
+              "original_value": 10.0,
+              "origins": [
+                {
+                  "kind": "user_text",
+                  "origin_id": "teacher-ui-margin-create:reserve_db:origin:0",
+                  "source_ref": "teacher-ui-margin-create:raw_text",
+                  "span": [
+                    103,
+                    111
+                  ],
+                  "unit": "dB",
+                  "value": 10.0
+                }
+              ],
+              "parameter_id": "teacher-ui-margin-create:reserve_db",
+              "status": "user_provided",
+              "unit": "dB",
+              "value": 10.0
+            },
+            {
+              "canonical_name": "rx_gain_dbi",
+              "created_revision": 0,
+              "evidence_ids": [],
+              "original_unit": "dBi",
+              "original_value": 10.0,
+              "origins": [
+                {
+                  "kind": "user_text",
+                  "origin_id": "teacher-ui-margin-create:rx_gain_dbi:origin:0",
+                  "source_ref": "teacher-ui-margin-create:raw_text",
+                  "span": [
+                    50,
+                    61
+                  ],
+                  "unit": "dBi",
+                  "value": 10.0
+                }
+              ],
+              "parameter_id": "teacher-ui-margin-create:rx_gain_dbi",
+              "status": "user_provided",
+              "unit": "dBi",
+              "value": 10.0
+            },
+            {
+              "canonical_name": "rx_loss_db",
+              "created_revision": 0,
+              "evidence_ids": [],
+              "original_unit": "dB",
+              "original_value": 2.0,
+              "origins": [
+                {
+                  "kind": "user_text",
+                  "origin_id": "teacher-ui-margin-create:rx_loss_db:origin:0",
+                  "source_ref": "teacher-ui-margin-create:raw_text",
+                  "span": [
+                    72,
+                    81
+                  ],
+                  "unit": "dB",
+                  "value": 2.0
+                }
+              ],
+              "parameter_id": "teacher-ui-margin-create:rx_loss_db",
+              "status": "user_provided",
+              "unit": "dB",
+              "value": 2.0
+            },
+            {
+              "canonical_name": "rx_threshold_dbm",
+              "created_revision": 0,
+              "evidence_ids": [],
+              "original_unit": "dBm",
+              "original_value": -100.0,
+              "origins": [
+                {
+                  "kind": "user_text",
+                  "origin_id": "teacher-ui-margin-create:rx_threshold_dbm:origin:0",
+                  "source_ref": "teacher-ui-margin-create:raw_text",
+                  "span": [
+                    90,
+                    102
+                  ],
+                  "unit": "dBm",
+                  "value": -100.0
+                }
+              ],
+              "parameter_id": "teacher-ui-margin-create:rx_threshold_dbm",
+              "status": "user_provided",
+              "unit": "dBm",
+              "value": -100.0
+            },
+            {
+              "canonical_name": "tx_gain_dbi",
+              "created_revision": 0,
+              "evidence_ids": [],
+              "original_unit": "dBi",
+              "original_value": 10.0,
+              "origins": [
+                {
+                  "kind": "user_text",
+                  "origin_id": "teacher-ui-margin-create:tx_gain_dbi:origin:0",
+                  "source_ref": "teacher-ui-margin-create:raw_text",
+                  "span": [
+                    38,
+                    49
+                  ],
+                  "unit": "dBi",
+                  "value": 10.0
+                }
+              ],
+              "parameter_id": "teacher-ui-margin-create:tx_gain_dbi",
+              "status": "user_provided",
+              "unit": "dBi",
+              "value": 10.0
+            },
+            {
+              "canonical_name": "tx_loss_db",
+              "created_revision": 0,
+              "evidence_ids": [],
+              "original_unit": "dB",
+              "original_value": 2.0,
+              "origins": [
+                {
+                  "kind": "user_text",
+                  "origin_id": "teacher-ui-margin-create:tx_loss_db:origin:0",
+                  "source_ref": "teacher-ui-margin-create:raw_text",
+                  "span": [
+                    62,
+                    71
+                  ],
+                  "unit": "dB",
+                  "value": 2.0
+                }
+              ],
+              "parameter_id": "teacher-ui-margin-create:tx_loss_db",
+              "status": "user_provided",
+              "unit": "dB",
+              "value": 2.0
+            },
+            {
+              "canonical_name": "tx_power_dbm",
+              "created_revision": 0,
+              "evidence_ids": [],
+              "original_unit": "dBm",
+              "original_value": 30.0,
+              "origins": [
+                {
+                  "kind": "user_text",
+                  "origin_id": "teacher-ui-margin-create:tx_power_dbm:origin:0",
+                  "source_ref": "teacher-ui-margin-create:raw_text",
+                  "span": [
+                    28,
+                    37
+                  ],
+                  "unit": "dBm",
+                  "value": 30.0
+                }
+              ],
+              "parameter_id": "teacher-ui-margin-create:tx_power_dbm",
+              "status": "user_provided",
+              "unit": "dBm",
+              "value": 30.0
+            }
+          ],
+          "planning_role": {
+            "agrees_with_program": true,
+            "attempts": 0,
+            "diagnostics": [],
+            "mode": "deterministic",
+            "origin": "program",
+            "proposal": {
+              "assessment": {
+                "notes": [
+                  {
+                    "kind": "goal",
+                    "refs": [
+                      "target"
+                    ],
+                    "text": "程序按目标连接计算步骤；未做模型适用性评估。"
+                  }
+                ],
+                "verdict": "review"
+              },
+              "steps": [
+                {
+                  "card": "fspl_ghz",
+                  "why": "按登记公式连接所需物理量"
+                },
+                {
+                  "card": "received_power",
+                  "why": "按登记公式连接所需物理量"
+                },
+                {
+                  "card": "link_margin",
+                  "why": "按登记公式连接所需物理量"
+                }
+              ]
+            }
+          },
+          "profile": "requirements-slice-v1",
+          "questions": [],
+          "request_id": "teacher-ui-margin-create",
+          "requirement": null,
+          "revision": 0,
+          "runtime_health": "ready",
+          "schema_version": "1.0.0",
+          "solve": null,
+          "targets": [
+            "link_margin"
+          ],
+          "task_id": "teacher-ui-margin-completed"
+        },
+        "request": {
+          "condition": null,
+          "manual_parameters": {},
+          "raw_text": "按自由空间基准计算链路余量：频率2GHz，距离10km，发射功率30dBm，发射天线增益10dBi，接收天线增益10dBi，发射馈线损耗2dB，接收馈线损耗2dB，额外损耗0dB，接收灵敏度-100dBm，预留余量10dB。",
+          "request_id": "teacher-ui-margin-create",
+          "revision": 0,
+          "schema_version": "1.0.0",
+          "target": null,
+          "task_id": "teacher-ui-margin-completed"
+        },
+        "review_hash": "c604cf6d26fb3086e887612f57763ede50fb9ed5c6c3f89a7e05f8f9efd2304a",
+        "schema_version": "1.0.0"
+      },
+      "confirmed_by": "local_user",
+      "confirmed_at": "2026-10-01T17:11:14.088139+00:00",
+      "content_hash": "807e089cdb00f1d5140953f59b8da943acb147ae92f1ac2a3b6f0c0c1af5ff55"
+    },
+    "result": {
+      "result_id": "teacher-ui-margin-create:confirmed:result",
+      "task_id": "teacher-ui-margin-completed",
+      "revision": 0,
+      "snapshot_id": "teacher-ui-margin-create:confirmed",
+      "snapshot_hash": "807e089cdb00f1d5140953f59b8da943acb147ae92f1ac2a3b6f0c0c1af5ff55",
+      "plan_hash": "0c4a377dc12bfa23a3f3756dd58d061742d922ea90b8ce5d2b63d9873cd422a8",
+      "model_id": "link_margin",
+      "model_version": "1.0.0",
+      "formula": "rx_power_dbm - rx_threshold_dbm - reserve_db",
+      "normalized_inputs": {
+        "frequency_ghz": 2.0,
+        "distance_km": 10.0,
+        "tx_power_dbm": 30.0,
+        "tx_gain_dbi": 10.0,
+        "rx_gain_dbi": 10.0,
+        "tx_loss_db": 2.0,
+        "rx_loss_db": 2.0,
+        "extra_loss_db": 0.0,
+        "rx_threshold_dbm": -100.0,
+        "reserve_db": 10.0
+      },
+      "outputs": [
+        {
+          "name": "link_margin_db",
+          "value": 17.57940008672037,
+          "unit": "dB"
+        }
+      ],
+      "steps": [
+        {
+          "step_id": "fspl-step",
+          "tool_id": "fspl_ghz",
+          "version": "1.0.0",
+          "inputs": {
+            "distance_km": 10.0,
+            "frequency_ghz": 2.0
+          },
+          "output": {
+            "name": "path_loss_db",
+            "value": 118.42059991327963,
+            "unit": "dB"
+          }
+        },
+        {
+          "step_id": "received_power-step",
+          "tool_id": "received_power",
+          "version": "1.0.0",
+          "inputs": {
+            "extra_loss_db": 0.0,
+            "path_loss_db": 118.42059991327963,
+            "rx_gain_dbi": 10.0,
+            "rx_loss_db": 2.0,
+            "tx_gain_dbi": 10.0,
+            "tx_loss_db": 2.0,
+            "tx_power_dbm": 30.0
+          },
+          "output": {
+            "name": "rx_power_dbm",
+            "value": -72.42059991327963,
+            "unit": "dBm"
+          }
+        },
+        {
+          "step_id": "link_margin-step",
+          "tool_id": "link_margin",
+          "version": "1.0.0",
+          "inputs": {
+            "reserve_db": 10.0,
+            "rx_power_dbm": -72.42059991327963,
+            "rx_threshold_dbm": -100.0
+          },
+          "output": {
+            "name": "link_margin_db",
+            "value": 17.57940008672037,
+            "unit": "dB"
+          }
+        }
+      ],
+      "evidence_ids": [
+        "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+        "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+        "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0"
+      ],
+      "runtime_mode": "deterministic",
+      "tool_version": "confirmed-plan-v1/p1-1.0.0",
+      "started_at": "2026-10-01T17:11:14.218770+00:00",
+      "finished_at": "2026-10-01T17:11:14.246574+00:00",
+      "result_hash": "960f3ef8b7052c2cabb545431eafe983aee2b05d82f23626078773f427f2704d"
+    },
+    "validations": [
+      {
+        "validation_id": "teacher-ui-margin-create:confirmed:result:result_integrity",
+        "validator_id": "result_integrity",
+        "severity": "hard",
+        "passed": true,
+        "target_hash": "960f3ef8b7052c2cabb545431eafe983aee2b05d82f23626078773f427f2704d"
+      },
+      {
+        "validation_id": "teacher-ui-margin-create:confirmed:result:snapshot_identity",
+        "validator_id": "snapshot_identity",
+        "severity": "hard",
+        "passed": true,
+        "target_hash": "960f3ef8b7052c2cabb545431eafe983aee2b05d82f23626078773f427f2704d"
+      },
+      {
+        "validation_id": "teacher-ui-margin-create:confirmed:result:input_consistency",
+        "validator_id": "input_consistency",
+        "severity": "hard",
+        "passed": true,
+        "target_hash": "960f3ef8b7052c2cabb545431eafe983aee2b05d82f23626078773f427f2704d"
+      },
+      {
+        "validation_id": "teacher-ui-margin-create:confirmed:result:plan_identity",
+        "validator_id": "plan_identity",
+        "severity": "hard",
+        "passed": true,
+        "target_hash": "960f3ef8b7052c2cabb545431eafe983aee2b05d82f23626078773f427f2704d"
+      },
+      {
+        "validation_id": "teacher-ui-margin-create:confirmed:result:evidence_consistency",
+        "validator_id": "evidence_consistency",
+        "severity": "hard",
+        "passed": true,
+        "target_hash": "960f3ef8b7052c2cabb545431eafe983aee2b05d82f23626078773f427f2704d"
+      },
+      {
+        "validation_id": "teacher-ui-margin-create:confirmed:result:model_identity",
+        "validator_id": "model_identity",
+        "severity": "hard",
+        "passed": true,
+        "target_hash": "960f3ef8b7052c2cabb545431eafe983aee2b05d82f23626078773f427f2704d"
+      },
+      {
+        "validation_id": "teacher-ui-margin-create:confirmed:result:numeric_domain",
+        "validator_id": "numeric_domain",
+        "severity": "hard",
+        "passed": true,
+        "target_hash": "960f3ef8b7052c2cabb545431eafe983aee2b05d82f23626078773f427f2704d"
+      },
+      {
+        "validation_id": "teacher-ui-margin-create:confirmed:result:step_chain",
+        "validator_id": "step_chain",
+        "severity": "hard",
+        "passed": true,
+        "target_hash": "960f3ef8b7052c2cabb545431eafe983aee2b05d82f23626078773f427f2704d"
+      },
+      {
+        "validation_id": "teacher-ui-margin-create:confirmed:result:independent_magnitude",
+        "validator_id": "independent_magnitude",
+        "severity": "hard",
+        "passed": true,
+        "target_hash": "960f3ef8b7052c2cabb545431eafe983aee2b05d82f23626078773f427f2704d"
+      },
+      {
+        "validation_id": "teacher-ui-margin-create:confirmed:result:plan_checks",
+        "validator_id": "plan_checks",
+        "severity": "hard",
+        "passed": true,
+        "target_hash": "960f3ef8b7052c2cabb545431eafe983aee2b05d82f23626078773f427f2704d"
+      },
+      {
+        "validation_id": "teacher-ui-margin-create:confirmed:result:requirement_and_solve",
+        "validator_id": "requirement_and_solve",
+        "severity": "hard",
+        "passed": true,
+        "target_hash": "960f3ef8b7052c2cabb545431eafe983aee2b05d82f23626078773f427f2704d"
+      }
+    ],
+    "final_report": {
+      "report_id": "teacher-ui-margin-create:confirmed:result:report",
+      "result_id": "teacher-ui-margin-create:confirmed:result",
+      "result_hash": "960f3ef8b7052c2cabb545431eafe983aee2b05d82f23626078773f427f2704d",
+      "snapshot_id": "teacher-ui-margin-create:confirmed",
+      "snapshot_hash": "807e089cdb00f1d5140953f59b8da943acb147ae92f1ac2a3b6f0c0c1af5ff55",
+      "task_id": "teacher-ui-margin-completed",
+      "revision": 0,
+      "normalized_inputs": {
+        "frequency_ghz": 2.0,
+        "distance_km": 10.0,
+        "tx_power_dbm": 30.0,
+        "tx_gain_dbi": 10.0,
+        "rx_gain_dbi": 10.0,
+        "tx_loss_db": 2.0,
+        "rx_loss_db": 2.0,
+        "extra_loss_db": 0.0,
+        "rx_threshold_dbm": -100.0,
+        "reserve_db": 10.0
+      },
+      "outputs": [
+        {
+          "name": "link_margin_db",
+          "value": 17.57940008672037,
+          "unit": "dB"
+        }
+      ],
+      "steps": [
+        {
+          "step_id": "fspl-step",
+          "tool_id": "fspl_ghz",
+          "version": "1.0.0",
+          "inputs": {
+            "distance_km": 10.0,
+            "frequency_ghz": 2.0
+          },
+          "output": {
+            "name": "path_loss_db",
+            "value": 118.42059991327963,
+            "unit": "dB"
+          }
+        },
+        {
+          "step_id": "received_power-step",
+          "tool_id": "received_power",
+          "version": "1.0.0",
+          "inputs": {
+            "extra_loss_db": 0.0,
+            "path_loss_db": 118.42059991327963,
+            "rx_gain_dbi": 10.0,
+            "rx_loss_db": 2.0,
+            "tx_gain_dbi": 10.0,
+            "tx_loss_db": 2.0,
+            "tx_power_dbm": 30.0
+          },
+          "output": {
+            "name": "rx_power_dbm",
+            "value": -72.42059991327963,
+            "unit": "dBm"
+          }
+        },
+        {
+          "step_id": "link_margin-step",
+          "tool_id": "link_margin",
+          "version": "1.0.0",
+          "inputs": {
+            "reserve_db": 10.0,
+            "rx_power_dbm": -72.42059991327963,
+            "rx_threshold_dbm": -100.0
+          },
+          "output": {
+            "name": "link_margin_db",
+            "value": 17.57940008672037,
+            "unit": "dB"
+          }
+        }
+      ],
+      "model_id": "link_margin",
+      "model_version": "1.0.0",
+      "formula": "rx_power_dbm - rx_threshold_dbm - reserve_db",
+      "parameters": [
+        {
+          "canonical_name": "distance_km",
+          "created_revision": 0,
+          "evidence_ids": [],
+          "original_unit": "km",
+          "original_value": 10.0,
+          "origins": [
+            {
+              "kind": "user_text",
+              "origin_id": "teacher-ui-margin-create:distance_km:origin:0",
+              "source_ref": "teacher-ui-margin-create:raw_text",
+              "span": [
+                21,
+                27
+              ],
+              "unit": "km",
+              "value": 10.0
+            }
+          ],
+          "parameter_id": "teacher-ui-margin-create:distance_km",
+          "status": "user_provided",
+          "unit": "km",
+          "value": 10.0
+        },
+        {
+          "canonical_name": "extra_loss_db",
+          "created_revision": 0,
+          "evidence_ids": [],
+          "original_unit": "dB",
+          "original_value": 0.0,
+          "origins": [
+            {
+              "kind": "user_text",
+              "origin_id": "teacher-ui-margin-create:extra_loss_db:origin:0",
+              "source_ref": "teacher-ui-margin-create:raw_text",
+              "span": [
+                82,
+                89
+              ],
+              "unit": "dB",
+              "value": 0.0
+            }
+          ],
+          "parameter_id": "teacher-ui-margin-create:extra_loss_db",
+          "status": "user_provided",
+          "unit": "dB",
+          "value": 0.0
+        },
+        {
+          "canonical_name": "frequency_ghz",
+          "created_revision": 0,
+          "evidence_ids": [],
+          "original_unit": "GHz",
+          "original_value": 2.0,
+          "origins": [
+            {
+              "kind": "user_text",
+              "origin_id": "teacher-ui-margin-create:frequency_ghz:origin:0",
+              "source_ref": "teacher-ui-margin-create:raw_text",
+              "span": [
+                14,
+                20
+              ],
+              "unit": "GHz",
+              "value": 2.0
+            }
+          ],
+          "parameter_id": "teacher-ui-margin-create:frequency_ghz",
+          "status": "user_provided",
+          "unit": "GHz",
+          "value": 2.0
+        },
+        {
+          "canonical_name": "reserve_db",
+          "created_revision": 0,
+          "evidence_ids": [],
+          "original_unit": "dB",
+          "original_value": 10.0,
+          "origins": [
+            {
+              "kind": "user_text",
+              "origin_id": "teacher-ui-margin-create:reserve_db:origin:0",
+              "source_ref": "teacher-ui-margin-create:raw_text",
+              "span": [
+                103,
+                111
+              ],
+              "unit": "dB",
+              "value": 10.0
+            }
+          ],
+          "parameter_id": "teacher-ui-margin-create:reserve_db",
+          "status": "user_provided",
+          "unit": "dB",
+          "value": 10.0
+        },
+        {
+          "canonical_name": "rx_gain_dbi",
+          "created_revision": 0,
+          "evidence_ids": [],
+          "original_unit": "dBi",
+          "original_value": 10.0,
+          "origins": [
+            {
+              "kind": "user_text",
+              "origin_id": "teacher-ui-margin-create:rx_gain_dbi:origin:0",
+              "source_ref": "teacher-ui-margin-create:raw_text",
+              "span": [
+                50,
+                61
+              ],
+              "unit": "dBi",
+              "value": 10.0
+            }
+          ],
+          "parameter_id": "teacher-ui-margin-create:rx_gain_dbi",
+          "status": "user_provided",
+          "unit": "dBi",
+          "value": 10.0
+        },
+        {
+          "canonical_name": "rx_loss_db",
+          "created_revision": 0,
+          "evidence_ids": [],
+          "original_unit": "dB",
+          "original_value": 2.0,
+          "origins": [
+            {
+              "kind": "user_text",
+              "origin_id": "teacher-ui-margin-create:rx_loss_db:origin:0",
+              "source_ref": "teacher-ui-margin-create:raw_text",
+              "span": [
+                72,
+                81
+              ],
+              "unit": "dB",
+              "value": 2.0
+            }
+          ],
+          "parameter_id": "teacher-ui-margin-create:rx_loss_db",
+          "status": "user_provided",
+          "unit": "dB",
+          "value": 2.0
+        },
+        {
+          "canonical_name": "rx_threshold_dbm",
+          "created_revision": 0,
+          "evidence_ids": [],
+          "original_unit": "dBm",
+          "original_value": -100.0,
+          "origins": [
+            {
+              "kind": "user_text",
+              "origin_id": "teacher-ui-margin-create:rx_threshold_dbm:origin:0",
+              "source_ref": "teacher-ui-margin-create:raw_text",
+              "span": [
+                90,
+                102
+              ],
+              "unit": "dBm",
+              "value": -100.0
+            }
+          ],
+          "parameter_id": "teacher-ui-margin-create:rx_threshold_dbm",
+          "status": "user_provided",
+          "unit": "dBm",
+          "value": -100.0
+        },
+        {
+          "canonical_name": "tx_gain_dbi",
+          "created_revision": 0,
+          "evidence_ids": [],
+          "original_unit": "dBi",
+          "original_value": 10.0,
+          "origins": [
+            {
+              "kind": "user_text",
+              "origin_id": "teacher-ui-margin-create:tx_gain_dbi:origin:0",
+              "source_ref": "teacher-ui-margin-create:raw_text",
+              "span": [
+                38,
+                49
+              ],
+              "unit": "dBi",
+              "value": 10.0
+            }
+          ],
+          "parameter_id": "teacher-ui-margin-create:tx_gain_dbi",
+          "status": "user_provided",
+          "unit": "dBi",
+          "value": 10.0
+        },
+        {
+          "canonical_name": "tx_loss_db",
+          "created_revision": 0,
+          "evidence_ids": [],
+          "original_unit": "dB",
+          "original_value": 2.0,
+          "origins": [
+            {
+              "kind": "user_text",
+              "origin_id": "teacher-ui-margin-create:tx_loss_db:origin:0",
+              "source_ref": "teacher-ui-margin-create:raw_text",
+              "span": [
+                62,
+                71
+              ],
+              "unit": "dB",
+              "value": 2.0
+            }
+          ],
+          "parameter_id": "teacher-ui-margin-create:tx_loss_db",
+          "status": "user_provided",
+          "unit": "dB",
+          "value": 2.0
+        },
+        {
+          "canonical_name": "tx_power_dbm",
+          "created_revision": 0,
+          "evidence_ids": [],
+          "original_unit": "dBm",
+          "original_value": 30.0,
+          "origins": [
+            {
+              "kind": "user_text",
+              "origin_id": "teacher-ui-margin-create:tx_power_dbm:origin:0",
+              "source_ref": "teacher-ui-margin-create:raw_text",
+              "span": [
+                28,
+                37
+              ],
+              "unit": "dBm",
+              "value": 30.0
+            }
+          ],
+          "parameter_id": "teacher-ui-margin-create:tx_power_dbm",
+          "status": "user_provided",
+          "unit": "dBm",
+          "value": 30.0
+        }
+      ],
+      "conditions": [
+        "free_space",
+        "free_space_reference"
+      ],
+      "validation_ids": [
+        "teacher-ui-margin-create:confirmed:result:result_integrity",
+        "teacher-ui-margin-create:confirmed:result:snapshot_identity",
+        "teacher-ui-margin-create:confirmed:result:input_consistency",
+        "teacher-ui-margin-create:confirmed:result:plan_identity",
+        "teacher-ui-margin-create:confirmed:result:evidence_consistency",
+        "teacher-ui-margin-create:confirmed:result:model_identity",
+        "teacher-ui-margin-create:confirmed:result:numeric_domain",
+        "teacher-ui-margin-create:confirmed:result:step_chain",
+        "teacher-ui-margin-create:confirmed:result:independent_magnitude",
+        "teacher-ui-margin-create:confirmed:result:plan_checks",
+        "teacher-ui-margin-create:confirmed:result:requirement_and_solve"
+      ],
+      "conclusion": "按已确认自由空间条件，链路余量 17.58 dB（扣除预留余量后高于门限）。",
+      "limitations": [
+        "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+        "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。",
+        "所有项必须属于同一条单程链路、同一频率和一致功率参考面。",
+        "本式只做功率收支，不由正接收功率或正余量推断现场可用率。",
+        "接收电平和门限必须使用同一输入参考面，避免把已经扣减的损耗再次作为预留量扣减。",
+        "reserve_db 是此项目显式扣除的预留量；来源中的基本余量为接收功率减灵敏度。",
+        "当前只检查了明显异常的距离/波长组合，未完整验证天线远场条件；结果仅用于所声明的自由空间基准。",
+        "路径损耗按自由空间基准计算，未估计真实海面反射、散射或遮挡。",
+        "余量只表示所填预算条件下与接收门限的关系，不保证现场可靠通信。"
+      ],
+      "evidence_refs": [
+        {
+          "card_version": "1.0.0",
+          "catalog_id": "fspl_ghz",
+          "content_hash": "2ed0e6930cf489981f389e87e7adcdb1af4b49eed9b495527ed2c5598898ba6d",
+          "evidence_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+          "excerpt": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。",
+          "kind": "formula_card",
+          "knowledge_snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+          "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+          "parameter_names": [
+            "frequency_ghz",
+            "distance_km"
+          ],
+          "relevance_rank": 2,
+          "source_id": null,
+          "source_title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+          "source_url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+          "status": "verified"
+        },
+        {
+          "card_version": "1.0.0",
+          "catalog_id": "received_power",
+          "content_hash": "821fd133e0ce21c6ae15f6db03960cbc0da4b74c7fac1da041a639ba8b6525da",
+          "evidence_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+          "excerpt": "按发射功率加收发天线增益、减去馈线、路径及额外损耗计算接收功率。路径损耗必须来自适用模型、测量或用户明确提供；此式不会根据环境自动估出路径损耗。",
+          "kind": "formula_card",
+          "knowledge_snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+          "locator": "11.3.1 Frequency Selection: Link Budget",
+          "parameter_names": [
+            "tx_power_dbm",
+            "tx_gain_dbi",
+            "rx_gain_dbi",
+            "tx_loss_db",
+            "rx_loss_db",
+            "path_loss_db",
+            "extra_loss_db"
+          ],
+          "relevance_rank": 1,
+          "source_id": null,
+          "source_title": "NASA, State-of-the-Art of Small Spacecraft Technology, Ground Data Systems and Mission Operations",
+          "source_url": "https://www.nasa.gov/smallsat-institute/sst-soa/ground-data-systems-and-mission-operations/",
+          "status": "verified"
+        },
+        {
+          "card_version": "1.0.0",
+          "catalog_id": "link_margin",
+          "content_hash": "2c81c3ffffc81a18ca2f0b5f66985f9ec91091e8a80433d935ed4fbd4af1c40a",
+          "evidence_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0",
+          "excerpt": "计算接收电平高于接收门限的余量，再扣除用户指定的工程预留量。接收门限必须对应同一调制、码率及误码或丢包要求；正余量不等于已经验证现场可靠度。",
+          "kind": "formula_card",
+          "knowledge_snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+          "locator": "page 4, section 2.4: link margin definition",
+          "parameter_names": [
+            "rx_power_dbm",
+            "rx_threshold_dbm",
+            "reserve_db"
+          ],
+          "relevance_rank": 3,
+          "source_id": null,
+          "source_title": "Texas Instruments SWRA479A, Achieving Optimum Radio Range (2017)",
+          "source_url": "https://www.ti.com/lit/an/swra479a/swra479a.pdf",
+          "status": "verified"
+        }
+      ],
+      "component_modes": {
+        "interpretation": "deterministic",
+        "retrieval": "lexical_fallback",
+        "calculation": "deterministic",
+        "review": "deterministic",
+        "orchestrator": "bounded_policy"
+      },
+      "runtime_health": "ready",
+      "generated_at": "2026-10-01T17:11:14.306699+00:00",
+      "review": {
+        "assessment_hash": "7d0a035aea8699f77157d91d0b824b4b1291735ed712517bbabfa494a79b2822",
+        "decision": "pass",
+        "label": "通过",
+        "mode": "deterministic",
+        "summary": "声明的自由空间基准结果通过校验；不据此推断真实链路可用。",
+        "opinions": [],
+        "withheld": []
+      },
+      "answer": {
+        "text": null,
+        "mode": "deterministic",
+        "withheld": false
+      },
+      "explanation": []
+    },
+    "status": "COMPLETED",
+    "trace": [
+      {
+        "node": "receive_request",
+        "task_id": "teacher-ui-margin-completed",
+        "revision": 0,
+        "started_at": "2026-10-01T17:11:13.637204+00:00",
+        "finished_at": "2026-10-01T17:11:13.637204+00:00",
+        "status": "RECEIVED",
+        "reason_code": "",
+        "message": "",
+        "attempt": 1,
+        "component_modes": {}
+      },
+      {
+        "node": "propose_requirements",
+        "task_id": "teacher-ui-margin-completed",
+        "revision": 0,
+        "started_at": "2026-10-01T17:11:13.637204+00:00",
+        "finished_at": "2026-10-01T17:11:13.798874+00:00",
+        "status": "PROPOSED",
+        "reason_code": "",
+        "message": "",
+        "attempt": 1,
+        "component_modes": {}
+      },
+      {
+        "node": "check_requirements",
+        "task_id": "teacher-ui-margin-completed",
+        "revision": 0,
+        "started_at": "2026-10-01T17:11:13.799917+00:00",
+        "finished_at": "2026-10-01T17:11:13.822631+00:00",
+        "status": "AWAITING_CONFIRMATION",
+        "reason_code": "",
+        "message": "",
+        "attempt": 1,
+        "component_modes": {
+          "interpretation": "deterministic",
+          "retrieval": "lexical_fallback"
+        }
+      },
+      {
+        "node": "finish",
+        "task_id": "teacher-ui-margin-completed",
+        "revision": 0,
+        "started_at": "2026-10-01T17:11:13.823636+00:00",
+        "finished_at": "2026-10-01T17:11:13.823636+00:00",
+        "status": "AWAITING_CONFIRMATION",
+        "reason_code": "",
+        "message": "",
+        "attempt": 1,
+        "component_modes": {
+          "interpretation": "deterministic",
+          "retrieval": "lexical_fallback"
+        }
+      },
+      {
+        "node": "human_confirmation",
+        "status": "CONFIRMED",
+        "at": "2026-10-01T17:11:14.157218+00:00"
+      },
+      {
+        "node": "calculation",
+        "status": "CALCULATED",
+        "at": "2026-10-01T17:11:14.251844+00:00"
+      },
+      {
+        "node": "orchestrator",
+        "status": "tool_result_available",
+        "at": "2026-10-01T17:11:14.258105+00:00"
+      },
+      {
+        "node": "validate_result",
+        "status": "PASSED",
+        "at": "2026-10-01T17:11:14.275145+00:00"
+      },
+      {
+        "node": "review_result",
+        "status": "PASS",
+        "at": "2026-10-01T17:11:14.288052+00:00"
+      },
+      {
+        "node": "orchestrator",
+        "status": "review_passed",
+        "at": "2026-10-01T17:11:14.293525+00:00"
+      },
+      {
+        "node": "publish",
+        "status": "COMPLETED",
+        "at": "2026-10-01T17:11:14.312597+00:00"
+      }
+    ],
+    "failure": null,
+    "calculation_role": {
+      "proposal": {
+        "tool_id": "link_margin",
+        "plan_step_id": "link_margin-step",
+        "expected_revision": 0,
+        "snapshot_id": "teacher-ui-margin-create:confirmed"
+      },
+      "mode": "deterministic",
+      "attempts": 0,
+      "diagnostics": []
+    },
+    "review_assessment": {
+      "task_id": "teacher-ui-margin-completed",
+      "revision": 0,
+      "snapshot_id": "teacher-ui-margin-create:confirmed",
+      "result_id": "teacher-ui-margin-create:confirmed:result",
+      "result_hash": "960f3ef8b7052c2cabb545431eafe983aee2b05d82f23626078773f427f2704d",
+      "facts": {
+        "question": {
+          "id": "question",
+          "text": "按自由空间基准计算链路余量：频率2GHz，距离10km，发射功率30dBm，发射天线增益10dBi，接收天线增益10dBi，发射馈线损耗2dB，接收馈线损耗2dB，额外损耗0dB，接收灵敏度-100dBm，预留余量10dB。"
+        },
+        "inputs": [
+          {
+            "id": "in:frequency_ghz",
+            "name": "工作频率",
+            "value": 2.0,
+            "unit": "GHz",
+            "source": "原文“频率2GHz”"
+          },
+          {
+            "id": "in:distance_km",
+            "name": "通信距离",
+            "value": 10.0,
+            "unit": "km",
+            "source": "原文“距离10km”"
+          },
+          {
+            "id": "in:tx_power_dbm",
+            "name": "发射功率",
+            "value": 30.0,
+            "unit": "dBm",
+            "source": "原文“发射功率30dBm”"
+          },
+          {
+            "id": "in:tx_gain_dbi",
+            "name": "发射天线增益",
+            "value": 10.0,
+            "unit": "dBi",
+            "source": "原文“发射天线增益10dBi”"
+          },
+          {
+            "id": "in:rx_gain_dbi",
+            "name": "接收天线增益",
+            "value": 10.0,
+            "unit": "dBi",
+            "source": "原文“接收天线增益10dBi”"
+          },
+          {
+            "id": "in:tx_loss_db",
+            "name": "发馈线损耗",
+            "value": 2.0,
+            "unit": "dB",
+            "source": "原文“发射馈线损耗2dB”"
+          },
+          {
+            "id": "in:rx_loss_db",
+            "name": "收馈线损耗",
+            "value": 2.0,
+            "unit": "dB",
+            "source": "原文“接收馈线损耗2dB”"
+          },
+          {
+            "id": "in:extra_loss_db",
+            "name": "额外损耗",
+            "value": 0.0,
+            "unit": "dB",
+            "source": "原文“额外损耗0dB”"
+          },
+          {
+            "id": "in:rx_threshold_dbm",
+            "name": "接收门限",
+            "value": -100.0,
+            "unit": "dBm",
+            "source": "原文“接收灵敏度-100dBm”"
+          },
+          {
+            "id": "in:reserve_db",
+            "name": "预留余量（已在链路余量中扣除，不是要求值）",
+            "value": 10.0,
+            "unit": "dB",
+            "source": "原文“预留余量10dB”"
+          }
+        ],
+        "steps": [
+          {
+            "id": "step:fspl-step",
+            "name": "路径损耗",
+            "basis": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation，Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+            "uses": [
+              "in:distance_km",
+              "in:frequency_ghz"
+            ],
+            "outputs": [
+              {
+                "value": 118.421,
+                "unit": "dB"
+              }
+            ]
+          },
+          {
+            "id": "step:received_power-step",
+            "name": "接收信号电平",
+            "basis": "NASA, State-of-the-Art of Small Spacecraft Technology, Ground Data Systems and Mission Operations，11.3.1 Frequency Selection: Link Budget",
+            "uses": [
+              "in:extra_loss_db",
+              "step:fspl-step",
+              "in:rx_gain_dbi",
+              "in:rx_loss_db",
+              "in:tx_gain_dbi",
+              "in:tx_loss_db",
+              "in:tx_power_dbm"
+            ],
+            "outputs": [
+              {
+                "value": -72.4206,
+                "unit": "dBm"
+              }
+            ]
+          },
+          {
+            "id": "step:link_margin-step",
+            "name": "链路余量（已扣除预留余量）",
+            "basis": "Texas Instruments SWRA479A, Achieving Optimum Radio Range (2017)，page 4, section 2.4: link margin definition",
+            "uses": [
+              "in:reserve_db",
+              "step:received_power-step",
+              "in:rx_threshold_dbm"
+            ],
+            "outputs": [
+              {
+                "value": 17.5794,
+                "unit": "dB"
+              }
+            ]
+          }
+        ],
+        "result": {
+          "id": "result",
+          "outputs": [
+            {
+              "name": "链路余量（已扣除预留余量）",
+              "value": 17.5794,
+              "unit": "dB",
+              "meaning": "扣除预留余量后高于门限"
+            }
+          ]
+        },
+        "checks": {
+          "id": "checks",
+          "passed": 11,
+          "total": 11
+        },
+        "assumptions": [],
+        "scope": {
+          "id": "scope",
+          "conditions": [
+            "free_space",
+            "free_space_reference"
+          ]
+        }
+      },
+      "role": {
+        "proposal": {
+          "decision": "pass",
+          "answer": null,
+          "opinions": [],
+          "steps": [],
+          "hidden": []
+        },
+        "mode": "deterministic",
+        "attempts": 0,
+        "diagnostics": []
+      },
+      "assessment_hash": "7d0a035aea8699f77157d91d0b824b4b1291735ed712517bbabfa494a79b2822"
+    },
+    "calculation_attempts": 1,
+    "execution_results": [
+      {
+        "result_id": "teacher-ui-margin-create:confirmed:result",
+        "task_id": "teacher-ui-margin-completed",
+        "revision": 0,
+        "snapshot_id": "teacher-ui-margin-create:confirmed",
+        "snapshot_hash": "807e089cdb00f1d5140953f59b8da943acb147ae92f1ac2a3b6f0c0c1af5ff55",
+        "plan_hash": "0c4a377dc12bfa23a3f3756dd58d061742d922ea90b8ce5d2b63d9873cd422a8",
+        "model_id": "link_margin",
+        "model_version": "1.0.0",
+        "formula": "rx_power_dbm - rx_threshold_dbm - reserve_db",
+        "normalized_inputs": {
+          "frequency_ghz": 2.0,
+          "distance_km": 10.0,
+          "tx_power_dbm": 30.0,
+          "tx_gain_dbi": 10.0,
+          "rx_gain_dbi": 10.0,
+          "tx_loss_db": 2.0,
+          "rx_loss_db": 2.0,
+          "extra_loss_db": 0.0,
+          "rx_threshold_dbm": -100.0,
+          "reserve_db": 10.0
+        },
+        "outputs": [
+          {
+            "name": "link_margin_db",
+            "value": 17.57940008672037,
+            "unit": "dB"
+          }
+        ],
+        "steps": [
+          {
+            "step_id": "fspl-step",
+            "tool_id": "fspl_ghz",
+            "version": "1.0.0",
+            "inputs": {
+              "distance_km": 10.0,
+              "frequency_ghz": 2.0
+            },
+            "output": {
+              "name": "path_loss_db",
+              "value": 118.42059991327963,
+              "unit": "dB"
+            }
+          },
+          {
+            "step_id": "received_power-step",
+            "tool_id": "received_power",
+            "version": "1.0.0",
+            "inputs": {
+              "extra_loss_db": 0.0,
+              "path_loss_db": 118.42059991327963,
+              "rx_gain_dbi": 10.0,
+              "rx_loss_db": 2.0,
+              "tx_gain_dbi": 10.0,
+              "tx_loss_db": 2.0,
+              "tx_power_dbm": 30.0
+            },
+            "output": {
+              "name": "rx_power_dbm",
+              "value": -72.42059991327963,
+              "unit": "dBm"
+            }
+          },
+          {
+            "step_id": "link_margin-step",
+            "tool_id": "link_margin",
+            "version": "1.0.0",
+            "inputs": {
+              "reserve_db": 10.0,
+              "rx_power_dbm": -72.42059991327963,
+              "rx_threshold_dbm": -100.0
+            },
+            "output": {
+              "name": "link_margin_db",
+              "value": 17.57940008672037,
+              "unit": "dB"
+            }
+          }
+        ],
+        "evidence_ids": [
+          "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+          "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:received_power:0",
+          "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:link_margin:0"
+        ],
+        "runtime_mode": "deterministic",
+        "tool_version": "confirmed-plan-v1/p1-1.0.0",
+        "started_at": "2026-10-01T17:11:14.218770+00:00",
+        "finished_at": "2026-10-01T17:11:14.246574+00:00",
+        "result_hash": "960f3ef8b7052c2cabb545431eafe983aee2b05d82f23626078773f427f2704d"
+      }
+    ],
+    "review_history": [
+      {
+        "task_id": "teacher-ui-margin-completed",
+        "revision": 0,
+        "snapshot_id": "teacher-ui-margin-create:confirmed",
+        "result_id": "teacher-ui-margin-create:confirmed:result",
+        "result_hash": "960f3ef8b7052c2cabb545431eafe983aee2b05d82f23626078773f427f2704d",
+        "facts": {
+          "question": {
+            "id": "question",
+            "text": "按自由空间基准计算链路余量：频率2GHz，距离10km，发射功率30dBm，发射天线增益10dBi，接收天线增益10dBi，发射馈线损耗2dB，接收馈线损耗2dB，额外损耗0dB，接收灵敏度-100dBm，预留余量10dB。"
+          },
+          "inputs": [
+            {
+              "id": "in:frequency_ghz",
+              "name": "工作频率",
+              "value": 2.0,
+              "unit": "GHz",
+              "source": "原文“频率2GHz”"
+            },
+            {
+              "id": "in:distance_km",
+              "name": "通信距离",
+              "value": 10.0,
+              "unit": "km",
+              "source": "原文“距离10km”"
+            },
+            {
+              "id": "in:tx_power_dbm",
+              "name": "发射功率",
+              "value": 30.0,
+              "unit": "dBm",
+              "source": "原文“发射功率30dBm”"
+            },
+            {
+              "id": "in:tx_gain_dbi",
+              "name": "发射天线增益",
+              "value": 10.0,
+              "unit": "dBi",
+              "source": "原文“发射天线增益10dBi”"
+            },
+            {
+              "id": "in:rx_gain_dbi",
+              "name": "接收天线增益",
+              "value": 10.0,
+              "unit": "dBi",
+              "source": "原文“接收天线增益10dBi”"
+            },
+            {
+              "id": "in:tx_loss_db",
+              "name": "发馈线损耗",
+              "value": 2.0,
+              "unit": "dB",
+              "source": "原文“发射馈线损耗2dB”"
+            },
+            {
+              "id": "in:rx_loss_db",
+              "name": "收馈线损耗",
+              "value": 2.0,
+              "unit": "dB",
+              "source": "原文“接收馈线损耗2dB”"
+            },
+            {
+              "id": "in:extra_loss_db",
+              "name": "额外损耗",
+              "value": 0.0,
+              "unit": "dB",
+              "source": "原文“额外损耗0dB”"
+            },
+            {
+              "id": "in:rx_threshold_dbm",
+              "name": "接收门限",
+              "value": -100.0,
+              "unit": "dBm",
+              "source": "原文“接收灵敏度-100dBm”"
+            },
+            {
+              "id": "in:reserve_db",
+              "name": "预留余量（已在链路余量中扣除，不是要求值）",
+              "value": 10.0,
+              "unit": "dB",
+              "source": "原文“预留余量10dB”"
+            }
+          ],
+          "steps": [
+            {
+              "id": "step:fspl-step",
+              "name": "路径损耗",
+              "basis": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation，Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+              "uses": [
+                "in:distance_km",
+                "in:frequency_ghz"
+              ],
+              "outputs": [
+                {
+                  "value": 118.421,
+                  "unit": "dB"
+                }
+              ]
+            },
+            {
+              "id": "step:received_power-step",
+              "name": "接收信号电平",
+              "basis": "NASA, State-of-the-Art of Small Spacecraft Technology, Ground Data Systems and Mission Operations，11.3.1 Frequency Selection: Link Budget",
+              "uses": [
+                "in:extra_loss_db",
+                "step:fspl-step",
+                "in:rx_gain_dbi",
+                "in:rx_loss_db",
+                "in:tx_gain_dbi",
+                "in:tx_loss_db",
+                "in:tx_power_dbm"
+              ],
+              "outputs": [
+                {
+                  "value": -72.4206,
+                  "unit": "dBm"
+                }
+              ]
+            },
+            {
+              "id": "step:link_margin-step",
+              "name": "链路余量（已扣除预留余量）",
+              "basis": "Texas Instruments SWRA479A, Achieving Optimum Radio Range (2017)，page 4, section 2.4: link margin definition",
+              "uses": [
+                "in:reserve_db",
+                "step:received_power-step",
+                "in:rx_threshold_dbm"
+              ],
+              "outputs": [
+                {
+                  "value": 17.5794,
+                  "unit": "dB"
+                }
+              ]
+            }
+          ],
+          "result": {
+            "id": "result",
+            "outputs": [
+              {
+                "name": "链路余量（已扣除预留余量）",
+                "value": 17.5794,
+                "unit": "dB",
+                "meaning": "扣除预留余量后高于门限"
+              }
+            ]
+          },
+          "checks": {
+            "id": "checks",
+            "passed": 11,
+            "total": 11
+          },
+          "assumptions": [],
+          "scope": {
+            "id": "scope",
+            "conditions": [
+              "free_space",
+              "free_space_reference"
+            ]
+          }
+        },
+        "role": {
+          "proposal": {
+            "decision": "pass",
+            "answer": null,
+            "opinions": [],
+            "steps": [],
+            "hidden": []
+          },
+          "mode": "deterministic",
+          "attempts": 0,
+          "diagnostics": []
+        },
+        "assessment_hash": "7d0a035aea8699f77157d91d0b824b4b1291735ed712517bbabfa494a79b2822"
+      }
+    ],
+    "calculation_roles": [
+      {
+        "attempt": 1,
+        "role": {
+          "proposal": {
+            "tool_id": "link_margin",
+            "plan_step_id": "link_margin-step",
+            "expected_revision": 0,
+            "snapshot_id": "teacher-ui-margin-create:confirmed"
+          },
+          "mode": "deterministic",
+          "attempts": 0,
+          "diagnostics": []
+        }
+      }
+    ],
+    "routing_decisions": [
+      {
+        "action": "validate_result",
+        "reason_code": "tool_result_available",
+        "input_status": "VALIDATING_RESULT",
+        "calculation_attempts": 1,
+        "max_calculations": 2,
+        "mode": "bounded_policy"
+      },
+      {
+        "action": "publish",
+        "reason_code": "review_passed",
+        "input_status": "VALIDATING_REPORT",
+        "calculation_attempts": 1,
+        "max_calculations": 2,
+        "mode": "bounded_policy"
+      }
+    ],
+    "routed_action": "publish",
+    "schema_version": "1.0.0",
+    "profile": "confirmed-fspl-loop-v1",
+    "task_id": "teacher-ui-records-model",
+    "revision": 0,
+    "state_version": 2,
+    "mode": "deterministic",
+    "pending_interrupt": [],
+    "updated_at": "2026-10-01T17:11:14.313595+00:00",
+    "conversation": {
+      "field_sources": {},
+      "original_input": {
+        "condition": null,
+        "manual_parameters": {},
+        "raw_text": "按自由空间基准计算链路余量：频率2GHz，距离10km，发射功率30dBm，发射天线增益10dBi，接收天线增益10dBi，发射馈线损耗2dB，接收馈线损耗2dB，额外损耗0dB，接收灵敏度-100dBm，预留余量10dB。",
+        "target": null
+      },
+      "pending": [],
+      "turns": []
+    },
+    "run_settings": {
+      "requirements": {
+        "chat": null,
+        "mode": "deterministic",
+        "recorded_at": "2026-10-01T17:11:13.435340+00:00",
+        "retrieval": {
+          "embedding": null,
+          "mode": "lexical",
+          "top_k": 8,
+          "top_n": 3
+        },
+        "settings_version": 0
+      },
+      "calculation": {
+        "settings_version": 0,
+        "mode": "deterministic",
+        "recorded_at": "2026-10-01T17:11:13.977039+00:00",
+        "chat": null,
+        "retrieval": {
+          "mode": "lexical",
+          "embedding": null,
+          "top_k": 8,
+          "top_n": 3
+        }
+      }
+    },
+    "retrieval": {
+      "candidate_used": [
+        "link_margin",
+        "received_power",
+        "fspl_ghz"
+      ],
+      "corpus": {
+        "size": 14,
+        "version": "92187cb6bd0d"
+      },
+      "degraded": false,
+      "diagnostics": [],
+      "embedding_model_id": null,
+      "hits": [
+        {
+          "excerpt": "按发射功率加收发天线增益、减去馈线、路径及额外损耗计算接收功率。路径损耗必须来自适用模型、测量或用户明确提供；此式不会根据环境自动估出路径损耗。",
+          "id": "received_power",
+          "rank": 1,
+          "scores": {
+            "dense": null,
+            "fused": null,
+            "lexical": 0.460258,
+            "rerank": null
+          },
+          "source": {
+            "title": "NASA, State-of-the-Art of Small Spacecraft Technology, Ground Data Systems and Mission Operations",
+            "uri": "https://www.nasa.gov/smallsat-institute/sst-soa/ground-data-systems-and-mission-operations/",
+            "version": "1.0.0"
+          },
+          "source_type": "formula_card",
+          "title": "链路预算接收电平"
+        },
+        {
+          "excerpt": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。",
+          "id": "fspl_ghz",
+          "rank": 2,
+          "scores": {
+            "dense": null,
+            "fused": null,
+            "lexical": 0.272886,
+            "rerank": null
+          },
+          "source": {
+            "title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+            "uri": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+            "version": "1.0.0"
+          },
+          "source_type": "formula_card",
+          "title": "自由空间基本传输损耗"
+        },
+        {
+          "excerpt": "计算接收电平高于接收门限的余量，再扣除用户指定的工程预留量。接收门限必须对应同一调制、码率及误码或丢包要求；正余量不等于已经验证现场可靠度。",
+          "id": "link_margin",
+          "rank": 3,
+          "scores": {
+            "dense": null,
+            "fused": null,
+            "lexical": 0.245303,
+            "rerank": null
+          },
+          "source": {
+            "title": "Texas Instruments SWRA479A, Achieving Optimum Radio Range (2017)",
+            "uri": "https://www.ti.com/lit/an/swra479a/swra479a.pdf",
+            "version": "1.0.0"
+          },
+          "source_type": "formula_card",
+          "title": "扣除预留量后的链路电平余量"
+        },
+        {
+          "excerpt": "老师链路余量验收工具使用的自由空间路径损耗。频率用 MHz、距离用 km，使用 32.44 常数；单独计算自由空间路径损耗仍用 fspl_ghz，以保持 v0.1.0 的结果。",
+          "id": "fspl_mhz",
+          "rank": 4,
+          "scores": {
+            "dense": null,
+            "fused": null,
+            "lexical": 0.192167,
+            "rerank": null
+          },
+          "source": {
+            "title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+            "uri": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+            "version": "1.0.0"
+          },
+          "source_type": "formula_card",
+          "title": "老师验收口径的自由空间基本传输损耗"
+        },
+        {
+          "excerpt": "按频率与障碍物到两端天线的距离计算第一菲涅耳区半径；不包含障碍物高度或地球曲率。",
+          "id": "fresnel_radius",
+          "rank": 5,
+          "scores": {
+            "dense": null,
+            "fused": null,
+            "lexical": 0.098858,
+            "rerank": null
+          },
+          "source": {
+            "title": "ITU-R P.530-19",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19/en",
+            "version": "1.0.0"
+          },
+          "source_type": "formula_card",
+          "title": "第一菲涅耳区半径"
+        },
+        {
+          "excerpt": "按 ν 估算单刃形绕射损耗；本近似式仅用于 ν > −0.78。",
+          "id": "knife_edge_loss",
+          "rank": 6,
+          "scores": {
+            "dense": null,
+            "fused": null,
+            "lexical": 0.085769,
+            "rerank": null
+          },
+          "source": {
+            "title": "ITU-R P.526-16",
+            "uri": "https://www.itu.int/rec/R-REC-P.526-16/en",
+            "version": "1.0.0"
+          },
+          "source_type": "formula_card",
+          "title": "单刃形绕射附加损耗"
+        },
+        {
+          "excerpt": "按噪声谱密度、比特速率、所需 Eb/N0、接收机噪声系数和工程损失计算接收门限。参考噪声谱密度必须明确输入，或由显式参考温度计算；不会固定为-174。",
+          "id": "receiver_threshold",
+          "rank": 7,
+          "scores": {
+            "dense": null,
+            "fused": null,
+            "lexical": 0.079679,
+            "rerank": null
+          },
+          "source": {
+            "title": "NASA/TM-2002-212006, Appendix 1: Test Descriptions",
+            "uri": "https://ntrs.nasa.gov/api/citations/20030015751/downloads/20030015751.pdf",
+            "version": "1.0.0"
+          },
+          "source_type": "formula_card",
+          "title": "由 Eb/N0 与比特率计算接收门限"
+        },
+        {
+          "excerpt": "计算障碍物相对两端天线连线高度对应的无量纲绕射参数。",
+          "id": "knife_edge_nu",
+          "rank": 8,
+          "scores": {
+            "dense": null,
+            "fused": null,
+            "lexical": 0.078621,
+            "rerank": null
+          },
+          "source": {
+            "title": "ITU-R P.526-16",
+            "uri": "https://www.itu.int/rec/R-REC-P.526-16/en",
+            "version": "1.0.0"
+          },
+          "source_type": "formula_card",
+          "title": "单刃形绕射参数 ν"
+        }
+      ],
+      "latency_ms": {
+        "fusion": 0.02,
+        "lexical": 0.78,
+        "total": 0.87
+      },
+      "mode_requested": "lexical",
+      "mode_used": "lexical",
+      "reranker_id": null,
+      "top_k": 8,
+      "top_n": 3,
+      "used": [
+        "received_power",
+        "fspl_ghz",
+        "link_margin"
+      ]
+    },
+    "input_issues": [],
+    "resolved_input_issues": [],
+    "waiting_reason": null
+  },
+  "events": [
+    {
+      "seq": 1,
+      "run_id": "teacher-ui-model-fixture-run",
+      "task_id": "teacher-ui-records-model",
+      "event_id": "teacher-ui-model-fixture-command",
+      "revision": 0,
+      "node": "llm",
+      "phase": "started",
+      "at": "2026-10-01T10:00:00+00:00",
+      "details": {
+        "caller": "requirements",
+        "purpose": "intent",
+        "model_id": "fixture-local-model"
+      }
+    },
+    {
+      "seq": 2,
+      "run_id": "teacher-ui-model-fixture-run",
+      "task_id": "teacher-ui-records-model",
+      "event_id": "teacher-ui-model-fixture-command",
+      "revision": 0,
+      "node": "llm",
+      "phase": "completed",
+      "at": "2026-10-01T10:00:21.300000+00:00",
+      "details": {
+        "caller": "requirements",
+        "purpose": "intent",
+        "model_id": "fixture-local-model",
+        "latency_ms": 21300,
+        "usage": {
+          "prompt_tokens": 64,
+          "completion_tokens": 23
+        }
+      }
+    },
+    {
+      "seq": 3,
+      "run_id": "teacher-ui-model-fixture-run",
+      "task_id": "teacher-ui-records-model",
+      "event_id": "teacher-ui-model-fixture-command",
+      "revision": 0,
+      "node": "llm",
+      "phase": "started",
+      "at": "2026-10-01T10:00:22+00:00",
+      "details": {
+        "caller": "compute_agent",
+        "purpose": "compute_agent",
+        "model_id": "fixture-local-model",
+        "attempt": 1
+      }
+    },
+    {
+      "seq": 4,
+      "run_id": "teacher-ui-model-fixture-run",
+      "task_id": "teacher-ui-records-model",
+      "event_id": "teacher-ui-model-fixture-command",
+      "revision": 0,
+      "node": "llm",
+      "phase": "failed",
+      "at": "2026-10-01T10:00:25+00:00",
+      "details": {
+        "caller": "compute_agent",
+        "purpose": "compute_agent",
+        "model_id": "fixture-local-model",
+        "latency_ms": 3000,
+        "reason": "fixture timeout",
+        "attempt": 1
+      }
+    },
+    {
+      "seq": 5,
+      "run_id": "teacher-ui-model-fixture-run",
+      "task_id": "teacher-ui-records-model",
+      "event_id": "teacher-ui-model-fixture-command",
+      "revision": 0,
+      "node": "llm",
+      "phase": "started",
+      "at": "2026-10-01T10:00:26+00:00",
+      "details": {
+        "caller": "validator_agent",
+        "purpose": "validator_agent",
+        "model_id": "fixture-local-model"
+      }
+    },
+    {
+      "seq": 6,
+      "run_id": "teacher-ui-composite-fixture-run",
+      "task_id": "teacher-ui-records-model",
+      "event_id": "teacher-ui-composite-fixture-command",
+      "revision": 0,
+      "node": "tool",
+      "phase": "completed",
+      "at": "2026-10-01T10:00:27+00:00",
+      "details": {
+        "caller": "compute_agent",
+        "tool_id": "calc_link_margin",
+        "label": "QPSK",
+        "arguments": {
+          "distance_km": 10,
+          "frequency_mhz": 5800,
+          "tx_power_dbm": 20,
+          "tx_gain_dbi": 18,
+          "rx_gain_dbi": 18,
+          "modulation": "QPSK"
+        },
+        "result": {
+          "path_loss_db": 127.70855987125874,
+          "rx_power_dbm": -71.70855987125874,
+          "rx_sensitivity_dbm": -100,
+          "sensitivity_source": "modulation_table",
+          "link_margin_db": 28.291440128741257,
+          "required_margin_db": 0,
+          "meets": true,
+          "modulation": "QPSK",
+          "simulated": true
+        },
+        "steps": [
+          {
+            "card": "fspl_mhz",
+            "inputs": {
+              "distance_km": 10,
+              "frequency_mhz": 5800
+            },
+            "value": 127.70855987125874,
+            "unit": "dB",
+            "content_hash": "ef8a54c54fd58923fea7bb039f5829d33c3a2f906ae2879a766601b6c53496b4"
+          },
+          {
+            "card": "received_power",
+            "inputs": {
+              "tx_power_dbm": 20,
+              "tx_gain_dbi": 18,
+              "rx_gain_dbi": 18,
+              "tx_loss_db": 0,
+              "rx_loss_db": 0,
+              "extra_loss_db": 0,
+              "path_loss_db": 127.70855987125874
+            },
+            "value": -71.70855987125874,
+            "unit": "dBm",
+            "content_hash": "821fd133e0ce21c6ae15f6db03960cbc0da4b74c7fac1da041a639ba8b6525da"
+          },
+          {
+            "card": "link_margin",
+            "inputs": {
+              "rx_power_dbm": -71.70855987125874,
+              "rx_threshold_dbm": -100,
+              "reserve_db": 0
+            },
+            "value": 28.291440128741257,
+            "unit": "dB",
+            "content_hash": "2c81c3ffffc81a18ca2f0b5f66985f9ec91091e8a80433d935ed4fbd4af1c40a"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 7,
+      "run_id": "teacher-ui-composite-fixture-run",
+      "task_id": "teacher-ui-records-model",
+      "event_id": "teacher-ui-composite-fixture-command",
+      "revision": 0,
+      "node": "tool",
+      "phase": "completed",
+      "at": "2026-10-01T10:00:28+00:00",
+      "details": {
+        "caller": "compute_agent",
+        "tool_id": "calc_link_margin",
+        "label": "16QAM",
+        "arguments": {
+          "distance_km": 10,
+          "frequency_mhz": 5800,
+          "tx_power_dbm": 20,
+          "tx_gain_dbi": 18,
+          "rx_gain_dbi": 18,
+          "modulation": "16QAM"
+        },
+        "result": {
+          "path_loss_db": 127.70855987125874,
+          "rx_power_dbm": -71.70855987125874,
+          "rx_sensitivity_dbm": -95,
+          "sensitivity_source": "modulation_table",
+          "link_margin_db": 23.291440128741257,
+          "required_margin_db": 0,
+          "meets": true,
+          "modulation": "16QAM",
+          "simulated": true
+        },
+        "steps": [
+          {
+            "card": "fspl_mhz",
+            "inputs": {
+              "distance_km": 10,
+              "frequency_mhz": 5800
+            },
+            "value": 127.70855987125874,
+            "unit": "dB",
+            "content_hash": "ef8a54c54fd58923fea7bb039f5829d33c3a2f906ae2879a766601b6c53496b4"
+          },
+          {
+            "card": "received_power",
+            "inputs": {
+              "tx_power_dbm": 20,
+              "tx_gain_dbi": 18,
+              "rx_gain_dbi": 18,
+              "tx_loss_db": 0,
+              "rx_loss_db": 0,
+              "extra_loss_db": 0,
+              "path_loss_db": 127.70855987125874
+            },
+            "value": -71.70855987125874,
+            "unit": "dBm",
+            "content_hash": "821fd133e0ce21c6ae15f6db03960cbc0da4b74c7fac1da041a639ba8b6525da"
+          },
+          {
+            "card": "link_margin",
+            "inputs": {
+              "rx_power_dbm": -71.70855987125874,
+              "rx_threshold_dbm": -95,
+              "reserve_db": 0
+            },
+            "value": 23.291440128741257,
+            "unit": "dB",
+            "content_hash": "2c81c3ffffc81a18ca2f0b5f66985f9ec91091e8a80433d935ed4fbd4af1c40a"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 8,
+      "run_id": "teacher-ui-composite-fixture-run",
+      "task_id": "teacher-ui-records-model",
+      "event_id": "teacher-ui-composite-fixture-command",
+      "revision": 0,
+      "node": "tool",
+      "phase": "completed",
+      "at": "2026-10-01T10:00:29+00:00",
+      "details": {
+        "caller": "compute_agent",
+        "tool_id": "calc_link_margin",
+        "label": "64QAM",
+        "arguments": {
+          "distance_km": 10,
+          "frequency_mhz": 5800,
+          "tx_power_dbm": 20,
+          "tx_gain_dbi": 18,
+          "rx_gain_dbi": 18,
+          "modulation": "64QAM"
+        },
+        "result": {
+          "path_loss_db": 127.70855987125874,
+          "rx_power_dbm": -71.70855987125874,
+          "rx_sensitivity_dbm": -90,
+          "sensitivity_source": "modulation_table",
+          "link_margin_db": 18.291440128741257,
+          "required_margin_db": 0,
+          "meets": true,
+          "modulation": "64QAM",
+          "simulated": true
+        },
+        "steps": [
+          {
+            "card": "fspl_mhz",
+            "inputs": {
+              "distance_km": 10,
+              "frequency_mhz": 5800
+            },
+            "value": 127.70855987125874,
+            "unit": "dB",
+            "content_hash": "ef8a54c54fd58923fea7bb039f5829d33c3a2f906ae2879a766601b6c53496b4"
+          },
+          {
+            "card": "received_power",
+            "inputs": {
+              "tx_power_dbm": 20,
+              "tx_gain_dbi": 18,
+              "rx_gain_dbi": 18,
+              "tx_loss_db": 0,
+              "rx_loss_db": 0,
+              "extra_loss_db": 0,
+              "path_loss_db": 127.70855987125874
+            },
+            "value": -71.70855987125874,
+            "unit": "dBm",
+            "content_hash": "821fd133e0ce21c6ae15f6db03960cbc0da4b74c7fac1da041a639ba8b6525da"
+          },
+          {
+            "card": "link_margin",
+            "inputs": {
+              "rx_power_dbm": -71.70855987125874,
+              "rx_threshold_dbm": -90,
+              "reserve_db": 0
+            },
+            "value": 18.291440128741257,
+            "unit": "dB",
+            "content_hash": "2c81c3ffffc81a18ca2f0b5f66985f9ec91091e8a80433d935ed4fbd4af1c40a"
+          }
+        ]
+      }
+    }
+  ],
+  "model_calls": {
+    "calls": [
+      {
+        "call_id": "fixture-requirements-attempt-1",
+        "task_id": "teacher-ui-records-model",
+        "event_id": "teacher-ui-model-fixture-command",
+        "action": "create",
+        "revision": 0,
+        "agent": "requirements",
+        "agent_name": "Requirement",
+        "model": "fixture-local-model",
+        "served": null,
+        "messages": [
+          {
+            "role": "system",
+            "content": "TEST FIXTURE ONLY. Return a structured response."
+          },
+          {
+            "role": "user",
+            "content": "按自由空间基准计算链路余量：频率2GHz，距离10km，发射功率30dBm，发射天线增益10dBi，接收天线增益10dBi，发射馈线损耗2dB，接收馈线损耗2dB，额外损耗0dB，接收灵敏度-100dBm，预留余量10dB。"
+          }
+        ],
+        "response": "{invalid-json: retry}",
+        "status": "MODEL_OUTPUT_INVALID",
+        "latency_ms": 5000,
+        "usage": {},
+        "at": "2026-10-01T10:00:05+00:00"
+      },
+      {
+        "call_id": "fixture-requirements-attempt-2",
+        "task_id": "teacher-ui-records-model",
+        "event_id": "teacher-ui-model-fixture-command",
+        "action": "create",
+        "revision": 0,
+        "agent": "requirements",
+        "agent_name": "Requirement",
+        "model": "fixture-local-model",
+        "served": "fixture-local-model",
+        "messages": [
+          {
+            "role": "system",
+            "content": "TEST FIXTURE ONLY. Return a structured response."
+          },
+          {
+            "role": "user",
+            "content": "按自由空间基准计算链路余量：频率2GHz，距离10km，发射功率30dBm，发射天线增益10dBi，接收天线增益10dBi，发射馈线损耗2dB，接收馈线损耗2dB，额外损耗0dB，接收灵敏度-100dBm，预留余量10dB。"
+          }
+        ],
+        "response": "{\"selected_ids\":[\"link_margin\"],\"fixture_only\":true}",
+        "status": "ok",
+        "latency_ms": 15000,
+        "usage": {
+          "prompt_tokens": 64,
+          "completion_tokens": 23
+        },
+        "at": "2026-10-01T10:00:20+00:00"
+      },
+      {
+        "call_id": "fixture-linkbudget-failed",
+        "task_id": "teacher-ui-records-model",
+        "event_id": "teacher-ui-model-fixture-command",
+        "action": "confirm",
+        "revision": 0,
+        "agent": "compute_agent",
+        "agent_name": "LinkBudget",
+        "model": "fixture-local-model",
+        "served": null,
+        "messages": [
+          {
+            "role": "system",
+            "content": "TEST FIXTURE ONLY. Return a structured response."
+          },
+          {
+            "role": "user",
+            "content": "按自由空间基准计算链路余量：频率2GHz，距离10km，发射功率30dBm，发射天线增益10dBi，接收天线增益10dBi，发射馈线损耗2dB，接收馈线损耗2dB，额外损耗0dB，接收灵敏度-100dBm，预留余量10dB。"
+          }
+        ],
+        "response": "fixture timeout",
+        "status": "TimeoutError",
+        "latency_ms": 3000,
+        "usage": {},
+        "at": "2026-10-01T10:00:25+00:00"
+      }
+    ],
+    "file": "fixture-only.model-calls.jsonl"
+  },
+  "excluded_calls": [
+    {
+      "call_id": "fixture-outside-window",
+      "task_id": "teacher-ui-records-model",
+      "event_id": "teacher-ui-model-fixture-command",
+      "action": "create",
+      "revision": 0,
+      "agent": "requirements",
+      "agent_name": "Requirement",
+      "model": "fixture-local-model",
+      "served": "fixture-local-model",
+      "messages": [
+        {
+          "role": "system",
+          "content": "TEST FIXTURE ONLY. Return a structured response."
+        },
+        {
+          "role": "user",
+          "content": "按自由空间基准计算链路余量：频率2GHz，距离10km，发射功率30dBm，发射天线增益10dBi，接收天线增益10dBi，发射馈线损耗2dB，接收馈线损耗2dB，额外损耗0dB，接收灵敏度-100dBm，预留余量10dB。"
+        }
+      ],
+      "response": "{\"fixture_only\":true}",
+      "status": "ok",
+      "latency_ms": 1000,
+      "usage": {
+        "prompt_tokens": 64,
+        "completion_tokens": 23
+      },
+      "at": "2026-10-01T10:01:00+00:00"
+    },
+    {
+      "call_id": "fixture-wrong-revision",
+      "task_id": "teacher-ui-records-model",
+      "event_id": "teacher-ui-model-fixture-command",
+      "action": "create",
+      "revision": 1,
+      "agent": "requirements",
+      "agent_name": "Requirement",
+      "model": "fixture-local-model",
+      "served": "fixture-local-model",
+      "messages": [
+        {
+          "role": "system",
+          "content": "TEST FIXTURE ONLY. Return a structured response."
+        },
+        {
+          "role": "user",
+          "content": "按自由空间基准计算链路余量：频率2GHz，距离10km，发射功率30dBm，发射天线增益10dBi，接收天线增益10dBi，发射馈线损耗2dB，接收馈线损耗2dB，额外损耗0dB，接收灵敏度-100dBm，预留余量10dB。"
+        }
+      ],
+      "response": "{\"fixture_only\":true}",
+      "status": "ok",
+      "latency_ms": 1000,
+      "usage": {
+        "prompt_tokens": 64,
+        "completion_tokens": 23
+      },
+      "at": "2026-10-01T10:00:20+00:00"
+    },
+    {
+      "call_id": "fixture-other-task",
+      "task_id": "another-fixture-task",
+      "event_id": "teacher-ui-model-fixture-command",
+      "action": "create",
+      "revision": 0,
+      "agent": "requirements",
+      "agent_name": "Requirement",
+      "model": "fixture-local-model",
+      "served": "fixture-local-model",
+      "messages": [
+        {
+          "role": "system",
+          "content": "TEST FIXTURE ONLY. Return a structured response."
+        },
+        {
+          "role": "user",
+          "content": "按自由空间基准计算链路余量：频率2GHz，距离10km，发射功率30dBm，发射天线增益10dBi，接收天线增益10dBi，发射馈线损耗2dB，接收馈线损耗2dB，额外损耗0dB，接收灵敏度-100dBm，预留余量10dB。"
+        }
+      ],
+      "response": "{\"fixture_only\":true}",
+      "status": "ok",
+      "latency_ms": 1000,
+      "usage": {
+        "prompt_tokens": 64,
+        "completion_tokens": 23
+      },
+      "at": "2026-10-01T10:00:20+00:00"
+    }
+  ]
+}

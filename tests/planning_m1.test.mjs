@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {assessmentNoteText,originLabel,assumptionEdit,answerPresentation,horizonPresentation,solvePresentation,planPresentation} from '../planning/web/m1.mjs';
+import {assessmentNoteText,originLabel,assumptionEdit,answerPresentation,horizonPresentation,solvePresentation,planPresentation,comparisonPresentation} from '../planning/web/m1.mjs';
 
 test('plan titles distinguish preview, program, model and fallback with advisory assessment',()=>{
  assert.equal(planPresentation({status:'AWAITING_INPUT'}).title,'计划预览 · 程序拼链');
@@ -25,6 +25,29 @@ test('knowledge labels mark only records verified as simulated',()=>{
  assert.equal(originLabel({...p,origins:[{kind:'manual_form'}]}).editable,false);
  const cards={received_power:{parameters:{tx_power_dbm:{default:{value:37,unit:'dBm'}}}}};
  assert.equal(originLabel({...p,origins:[{kind:'manual_form'}]}, {},cards).tag,'手填（原假设 37 dBm）');
+});
+
+test('teacher sources: modulation table, adopted suggestion, and the link tool zero losses',()=>{
+ const text='发射功率20dBm（默认补全），调制方式 QPSK（默认补全）。';
+ const typed={canonical_name:'tx_power_dbm',origins:[{kind:'user_text',span:[0,9]}]};
+ assert.equal(originLabel(typed,{},{},text).tag,'默认补全');
+ assert.equal(originLabel(typed,{},{},text).kind,'suggested');
+ assert.equal(originLabel(typed,{},{},'发射功率20dBm。').tag,'原文');
+ const table={canonical_name:'rx_threshold_dbm',origins:[{kind:'modulation',source_ref:'modulation:qpsk#rx_sensitivity_dbm'}]};
+ assert.equal(originLabel(table,{},{},text).tag,'调制表 QPSK · 模拟参数 · 默认补全');
+ assert.equal(originLabel(table,{},{},'用QPSK').tag,'调制表 QPSK · 模拟参数');
+ const zero={canonical_name:'tx_loss_db',origins:[{kind:'default',source_ref:'tool:calc_link_margin#tx_loss_db'}]};
+ assert.equal(originLabel(zero).tag,'假设');
+ assert.equal(originLabel(zero).editable,false);
+});
+
+test('comparison lists each modulation and marks the recommendation',()=>{
+ assert.equal(comparisonPresentation(null),null);
+ const row=(label,s,m)=>({label,rx_sensitivity_dbm:s,path_loss_db:118.106,rx_power_dbm:-77.106,link_margin_db:m,meets:m>=0});
+ const view=comparisonPresentation({parameter:'rx_threshold_dbm',rows:[row('QPSK',-100,22.894),row('16QAM',-95,17.894)],margin_diff_db:5,recommend:'QPSK'});
+ assert.deepEqual(view.rows.map(r=>[r.label,r.best]),[['QPSK',true],['16QAM',false]]);
+ assert.deepEqual(view.rows[1].cells,['16QAM','-95','-77.11','17.89','满足']);
+ assert.equal(view.summary,'相差 5.00 dB · 推荐 QPSK（余量最大）');
 });
 
 test('assumption edit preserves original input and other manual values but never results',()=>{

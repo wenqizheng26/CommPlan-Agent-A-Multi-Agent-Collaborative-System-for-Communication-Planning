@@ -10,6 +10,7 @@ from unittest.mock import patch
 from formula_rag.catalog import load_catalog
 from formula_rag.core import evaluate
 from planning.knowledge.facts import FactService
+from tests.teacher_fixtures import copy_teacher_dependencies
 from planning.services.requirement_evidence import snapshot_for
 
 
@@ -70,6 +71,7 @@ class M1FactTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             shutil.copytree(ROOT / 'knowledge', root / 'knowledge')
+            copy_teacher_dependencies(root)
             before = snapshot_for(load_catalog(root), root)
             for relative in ('knowledge/facts/sites.json', 'knowledge/documents/simulated/站址表.md'):
                 target = root / relative
@@ -82,6 +84,7 @@ class M1FactTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             shutil.copytree(ROOT / 'knowledge', root / 'knowledge')
+            copy_teacher_dependencies(root)
             path = root / 'knowledge/facts/sites.json'
             records = json.loads(path.read_text(encoding='utf-8'))
             draft = copy.deepcopy(records[0])

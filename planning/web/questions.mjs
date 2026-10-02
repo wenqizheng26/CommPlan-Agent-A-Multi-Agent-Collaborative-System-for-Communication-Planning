@@ -1,4 +1,4 @@
-import {el} from './details.mjs';
+import {el,raw} from './details.mjs';
 
 import {draftStore} from './drafts.mjs';
 let storage;try{storage=globalThis.localStorage;}catch{}
@@ -19,18 +19,28 @@ export function renderQuestions(host,state,{disabled=false,onSubmit,onEdit}={}){
   const simple=q.kind==='missing'&&q.field!=='task',row=el('div',undefined,`q-row ${simple?'simple':'wide'} kind-${q.kind}`);
   const label=el('label',q.title.replace(/^请补充/,''));label.htmlFor='answer-'+q.id;row.append(label);
   if(!simple&&q.detail)row.append(el('p',q.detail,'hint'));
-  if(q.excerpt&&!q.excerpt.startsWith('issue-')&&q.kind!=='pending')row.append(el('blockquote',q.excerpt));
+  if(q.excerpt&&!q.excerpt.startsWith('issue-')&&q.kind!=='pending')row.append(raw('blockquote',q.excerpt));
   if(q.field==='task'){const b=el('button','编辑原文','secondary compact');b.type='button';b.disabled=disabled;b.addEventListener('click',onEdit);row.append(b);}
   else{
    const input=el(q.choices.length?'select':'input');input.id='answer-'+q.id;input.dataset.field=q.field;input.disabled=disabled;
    if(q.choices.length){const blank=el('option','—');blank.value='';input.append(blank);for(const choice of q.choices){const o=el('option',choice.label);o.value=choice.value;if(q.field==='goal'&&['link_feasibility','scheme_comparison'].includes(choice.value)){o.disabled=true;o.textContent+='（暂不支持）';}input.append(o);}}
    else{input.type='text';input.maxLength=500;input.placeholder=example(q);}
    const key=state.task_id+':'+state.revision+':'+q.id;
-   input.value=drafts.get(key)||'';if(input.selectedOptions?.[0]?.disabled)input.value='';
-   input.addEventListener('input',()=>{drafts.set(key,input.value);count();});input.addEventListener('change',count);
-   row.append(input);inputs.push({input,id:q.id});
+   // A suggested table value is prefilled until the user types something else (TEACHER_CASES).
+   input.value=drafts.get(key)??q.suggestion?.value??'';if(input.selectedOptions?.[0]?.disabled)input.value='';
+   input.addEventListener('input',()=>{drafts.set(key,input.value);count();});input.addEventListener('change',()=>{drafts.set(key,input.value);count();});
+   row.append(input);inputs.push({input,id:q.id,suggestion:q.suggestion?.value});
+   if(q.suggestion){const note=el('p',undefined,'hint suggestion-note');note.append(el('span',q.suggestion.note,'tag suggested'),el('span',' '+q.suggestion.reason));row.append(note);}
   }
   form.append(row);
+ }
+ const suggested=inputs.filter(x=>x.suggestion);
+ if(suggested.length){
+  // One click adopts every suggestion; the other answers typed so far go with them.
+  const adopt=el('button',`全部采用默认值（${suggested.length} 项）`,'secondary compact');adopt.type='button';adopt.disabled=disabled;
+  adopt.addEventListener('click',()=>{for(const x of suggested)x.input.value=x.suggestion;
+   const answers=Object.fromEntries(inputs.filter(x=>x.input.value.trim()).map(x=>[x.id,x.input.value.trim()]));onSubmit(answers);});
+  form.append(adopt);
  }
  if(inputs.length){form.append(submit);count();}
  form.addEventListener('submit',e=>{e.preventDefault();const answers=Object.fromEntries(inputs.filter(x=>x.input.value.trim()).map(x=>[x.id,x.input.value.trim()]));if(Object.keys(answers).length)onSubmit(answers);});

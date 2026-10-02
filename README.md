@@ -14,6 +14,12 @@
 - **答复**：模型写答复和审查意见，其中的数字必须能在本次输入和结果里找到，否则隐藏。专业数值始终由登记公式计算。
 - **文档库**：ITU-R P.525、P.530、P.453 的原文只放在本机被忽略的目录，仓库只存清单与哈希。审查可以引用检索到的段落。
 - **模型**：默认 Qwen3.5-9B（Q4_K_M，本机 llama.cpp，离线）；向量模型 Qwen3-Embedding-0.6B 可选。模型不可用时，参数写全的请求仍可用确定性规则计算。
+  - 在“模型与检索”里选模型、点“切换”：停掉当前模型、加载所选模型，显示已等待时间（实测 18–33 s）。处理任务时不能切换，切换期间不能提交。一键启动按保存的选择启动模型。
+- **资料**（开发中，第 4 周）：页眉“资料”打开文档库。
+  - 选文档片段，由模型抽取站点、设备或公式草稿；每个字段对照原文核对，审核人通过后入库。未审核的草稿不能参与计算。
+  - 可以添加 PDF、Markdown、文本；Word、Excel、PPT、HTML 需要另装 `requirements-docs.txt`（MarkItDown）。原文只存本机。
+- **追问**（开发中，第 4 周）：“换 XX-200 呢”“B 站换成 C 站呢”生成新版本，确认后重新计算；结果下方对比上一版。说法含糊或没说换哪一端时反问。
+- **界面语言**（开发中，第 4 周）：页眉“EN / 中文”切换。英文界面下，模型写的答复、审查意见与说明也用英文；用户原文和文档摘录不翻译。
 
 设计与验收见 [ACCEPTANCE_M1](docs/design/ACCEPTANCE_M1.md)，进度见 [NEXT_ACTION](docs/codex/NEXT_ACTION.md)。
 
@@ -27,7 +33,13 @@ setup_planning.cmd
 
 脚本创建 `.venv`，安装 `requirements-planning.txt`，执行 `pip check`。若 `py` 或 `python` 未在 PATH，可先将 `COMMPLAN_PYTHON` 设置为 Python 3.12 的 `python.exe` 完整路径再运行。此最小 Planning 环境无需 Torch、模型权重或 llama runtime；正常确定性模式也无需模型服务。
 
-日常双击 `start.cmd`（ASCII 文件名）或 `启动.cmd`。启动器默认尝试项目内 `models/signal-formula-qwen3/` 的本地模型；未找到模型时仍打开确定性工作台。页面默认选“确定性规则”；进入高级设置才可选择本机 Qwen。只启工作台：
+资料页要转换 Word、Excel、PPT、HTML 时，另装文档转换依赖（约 60 MB）：
+
+```bat
+.venv\Scripts\python -m pip install -r requirements-docs.txt
+```
+
+日常双击 `start.cmd`（ASCII 文件名）或 `启动.cmd`。启动器默认尝试项目内 `models/signal-formula-qwen3/` 的本地模型；未找到模型时仍打开确定性工作台。页面默认选“确定性规则”；进入高级设置才可选择本机 Qwen。端口上若是旧版本的工作台，启动器会先停掉它再启动当前版本；已安装 Chrome 时用 Chrome 打开。只启工作台：
 
 ```bat
 start.cmd --without-model
@@ -37,7 +49,7 @@ start.cmd --without-model
 
 **source Demo ZIP 不含模型、llama 二进制、Python、虚拟环境或用户任务数据。** 若自行准备本地模型，保持 `runtime_config.json` 中 `generation.path` 和 `generation.executable` 相对资源根目录有效。项目内资源目录被 `.gitignore` 排除，不应提交或上传。可用 `--without-model` 完全跳过模型启动。
 
-关闭 CMD 窗口不会停止启动器在后台创建的服务。需要停服务时，先查看 `runtime/commplan-web-<port>.pid` 和 `runtime/commplan-model.pid` 对应进程的命令行/可执行路径，确认属于本目录和本次实例后再停止对应 PID；不要按进程名批量结束，也不要停止只是被启动器复用的外部模型服务。前台 `planning/run_planning.cmd` 可在其窗口按 Ctrl+C 结束。任务保存在 `outputs/planning.sqlite`；该目录不进 source ZIP。
+关闭 CMD 窗口不会停止启动器在后台创建的服务。双击 `停止服务.cmd` 关闭工作台与本地模型：它逐个核对端口上的服务身份（模型看登记的别名，工作台看 `/api/session`），只停本项目的服务，其他程序不动。前台 `planning/run_planning.cmd` 可在其窗口按 Ctrl+C 结束。任务保存在 `outputs/planning.sqlite`；该目录不进 source ZIP。
 
 ## 使用
 

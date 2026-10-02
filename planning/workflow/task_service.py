@@ -15,9 +15,12 @@ from planning.workflow.planning_graph import build_planning_graph
 from planning.workflow.task_store import TaskStore
 from planning.workflow.requirements_graph import stamp
 from planning.workflow.activity import ActivityStore, observe
+from planning.workflow.model_log import ModelCallLog
 from planning.services.supplement import merge_supplement, conversation_of, edited_conversation
 from planning.services.clarification import apply_answers, attach_issues
 from planning.services.supplement import LocalSupplementSelector
+from planning.services.entity_followup import replace_entities
+from planning.agents.role_model import LocalRoleSelector, output_language
 from planning.providers.registry import Registry
 from planning.providers.settings import SettingsStore
 from planning.retrieval import DefaultRetrievalService
@@ -50,7 +53,10 @@ def validate_command(command):
         fields+=' review_hash'
     if action=='supplement':
         fields+=' message mode'
+    if 'lang' in command:
+        fields+=' lang'
     obj(command,fields)
+    require(command.get('lang','zh') in ('zh','en'),'INVALID_LANG')
     identifier(command['task_id']); identifier(command['event_id'])
     revision(command['expected_revision']); revision(command['expected_state_version'])
     if action in {'create','edit'}:
@@ -75,6 +81,7 @@ class TaskService:
         self.root=Path(root)
         self.store=TaskStore(db_path)
         self.activity=ActivityStore(db_path)
+        self.model_calls=ModelCallLog(db_path)
         self.registry=Registry(self.root)
         self.settings=SettingsStore(db_path,self.registry)
         self._retrieval={}
@@ -149,11 +156,15 @@ class TaskService:
             self._running.append(running)
         deadline_token=operation_deadline.set(time.monotonic()+90)
         cancel_token=operation_cancel.set(running['cancel'])
+        # Text the models write for the user follows the page language of this command.
+        language_token=output_language.set(c.get('lang','zh'))
         try:
-            return self._apply_observed(c,running)
+            with self.model_calls.recording(c):
+                return self._apply_observed(c,running)
         finally:
             operation_deadline.reset(deadline_token)
             operation_cancel.reset(cancel_token)
+            output_language.reset(language_token)
             with self._running_lock:
                 self._running.remove(running)
 
@@ -215,8 +226,15 @@ class TaskService:
                 next_input,conversation=apply_answers(current,c['answers'],event_id)
             elif action=='supplement':
                 observe(observer,'requirements','started',caller='orchestrator',purpose='supplement')
-                next_input,conversation=merge_supplement(current,c['message'],event_id,mode,observer=observer,
-                    selector=LocalSupplementSelector(bindings['supplement']) if bindings else None)
+                # A swap of the radio or one site ("换 XX-200 呢") is checked against the reviewed library;
+                # any other message is merged as a parameter supplement.
+                followup=replace_entities(current,c['message'],event_id,self.root,observer=observer,
+                    selector=LocalRoleSelector(bindings['supplement']) if bindings else False)
+                if followup is not None:
+                    next_input,conversation=followup
+                else:
+                    next_input,conversation=merge_supplement(current,c['message'],event_id,mode,observer=observer,
+                        selector=LocalSupplementSelector(bindings['supplement']) if bindings else None)
             elif action in {'create','edit'}:
                 next_input=c['input']
                 conversation=edited_conversation(current,next_input,event_id) if current else dict(

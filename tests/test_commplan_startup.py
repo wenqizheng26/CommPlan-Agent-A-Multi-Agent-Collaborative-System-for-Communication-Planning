@@ -70,6 +70,21 @@ class AssetRootTests(unittest.TestCase):
             start_commplan.asset_root(Path(self.temp.name) / "missing")
 
 
+class SavedModelTests(unittest.TestCase):
+    def test_launcher_starts_the_model_the_settings_chose(self):
+        from planning.providers.registry import Registry
+        from planning.providers.settings import SettingsStore
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / 'planning.sqlite'
+            self.assertEqual(start_commplan.saved_model(db)['id'], 'qwen35-9b-q4')  # no database yet
+            self.assertFalse(db.exists())  # reading never creates it
+            store = SettingsStore(db, Registry(start_commplan.ROOT))
+            settings = store.get()['settings']
+            settings['chat']['default'] = 'qwen3-4b-q4'
+            store.put(settings, 0)
+            self.assertEqual(start_commplan.saved_model(db)['id'], 'qwen3-4b-q4')
+
+
 class WithoutModelTests(unittest.TestCase):
     def test_starts_workbench_without_touching_model_assets_or_service(self):
         ready = {"profile": "confirmed-fspl-loop-v1"}
@@ -100,6 +115,55 @@ class WithoutModelTests(unittest.TestCase):
         self.assertEqual(command[-2:], ["--port", "18083"])
         self.assertEqual(name, "commplan-web-18083")
         self.assertEqual(cwd, start_commplan.ROOT)
+
+
+class ReplaceWorkbenchTests(unittest.TestCase):
+    def launch(self, session, stopped):
+        ready = {"profile": "confirmed-fspl-loop-v1"}
+        with (mock.patch.object(start_commplan, "read_json", side_effect=[session, ready]),
+              mock.patch.object(start_commplan, "build_fingerprint", return_value="new"),
+              mock.patch.object(start_commplan, "listening", return_value=True),
+              mock.patch.object(start_commplan, "stop_workbench", return_value=stopped) as stop,
+              mock.patch.object(start_commplan, "spawn", return_value=mock.Mock()) as spawn,
+              mock.patch.object(start_commplan, "wait_ready")):
+            try:
+                return start_commplan.main(["--without-model", "--no-browser"]), stop, spawn
+            except RuntimeError as exc:
+                return exc, stop, spawn
+
+    def test_older_build_is_replaced(self):
+        result, stop, spawn = self.launch({"profile": "confirmed-fspl-loop-v1", "build": "old"}, True)
+        self.assertEqual(result, 0)
+        stop.assert_called_once_with(18082)
+        self.assertEqual(spawn.call_count, 1)
+
+    def test_current_build_is_reused(self):
+        result, stop, spawn = self.launch({"profile": "confirmed-fspl-loop-v1", "build": "new"}, True)
+        self.assertEqual(result, 0)
+        stop.assert_not_called()
+        spawn.assert_not_called()
+
+    def test_other_program_on_the_port_is_left_alone(self):
+        result, stop, spawn = self.launch(None, False)
+        self.assertIsInstance(result, RuntimeError)
+        stop.assert_called_once_with(18082)
+        spawn.assert_not_called()
+
+
+class BrowserTests(unittest.TestCase):
+    def test_chrome_is_preferred_over_the_default_browser(self):
+        with (mock.patch.object(start_commplan, "chrome", return_value=Path("C:/chrome.exe")),
+              mock.patch.object(start_commplan.subprocess, "Popen") as popen,
+              mock.patch.object(start_commplan.webbrowser, "open") as default):
+            self.assertTrue(start_commplan.open_browser("http://127.0.0.1:18082"))
+        self.assertEqual(popen.call_args.args[0], [str(Path("C:/chrome.exe")), "http://127.0.0.1:18082"])
+        default.assert_not_called()
+
+    def test_default_browser_without_chrome(self):
+        with (mock.patch.object(start_commplan, "chrome", return_value=None),
+              mock.patch.object(start_commplan.webbrowser, "open", return_value=True) as default):
+            self.assertTrue(start_commplan.open_browser("http://127.0.0.1:18082"))
+        default.assert_called_once_with("http://127.0.0.1:18082")
 
 
 if __name__ == "__main__":

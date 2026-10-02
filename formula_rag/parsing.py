@@ -5,6 +5,13 @@ import unicodedata
 
 
 FIELDS = {
+    'd1_km': ('起点到障碍物距离', 'km', ['起点到障碍物距离', '发射端到障碍物距离', 'd1']),
+    'd2_km': ('终点到障碍物距离', 'km', ['终点到障碍物距离', '接收端到障碍物距离', 'd2']),
+    'obstacle_height_m': ('障碍物高出连线高度', 'm', ['障碍物高出连线高度', '障碍物相对高度']),
+    'height1_above_sea_m': ('起点天线海面高度', 'm', ['起点天线海面高度', '发射端天线海面高度']),
+    'height2_above_sea_m': ('终点天线海面高度', 'm', ['终点天线海面高度', '接收端天线海面高度']),
+    'knife_edge_nu': ('绕射参数', '1', ['绕射参数', 'knife_edge_nu', 'ν', 'nu']),
+    'k_factor': ('有效地球半径系数', '1', ['有效地球半径系数', 'k_factor', 'k系数']),
     'bit_rate_bps': ('比特速率', 'bit/s', ['比特速率', '数据比特率', '比特率']),
     'ebn0_db': ('解调门限 Eb/N0', 'dB', ['解调门限Eb/N0', '解调门限Eb/N0', 'Eb/N0', 'Eb/No', '解调门限']),
     'engineering_loss_db': ('工程损失', 'dB', ['工程损失', '实现损失']),
@@ -27,10 +34,38 @@ FIELDS = {
     'rx_threshold_dbm': ('接收门限', 'dBm', ['接收灵敏度', '接收门限', '接收阈值']),
     'reserve_db': ('预留余量', 'dB', ['工程储备', '工程预留', '预留余量', '预留损耗', '储备余量']),
 }
+EN_FIELDS = {
+ 'frequency_ghz':['carrier frequency','operating frequency','frequency'],
+ 'distance_km':['path distance','link distance','link length','distance'],
+ 'bandwidth_hz':['noise bandwidth','bandwidth'],
+ 'tx_power_dbm':['transmit power','transmitter power','tx power'],
+ 'tx_gain_dbi':['transmit antenna gain','transmitter antenna gain','tx antenna gain','tx gain'],
+ 'rx_gain_dbi':['receive antenna gain','receiver antenna gain','rx antenna gain','rx gain'],
+ 'tx_loss_db':['transmit feeder loss','tx feeder loss','tx loss'],
+ 'rx_loss_db':['receive feeder loss','rx feeder loss','rx loss'],
+ 'path_loss_db':['path loss','propagation loss'], 'extra_loss_db':['extra loss','additional loss'],
+ 'rx_power_dbm':['received signal level','received power','receive power','rx power'],
+ 'rx_threshold_dbm':['receiver sensitivity','receive threshold','receiver threshold','rx threshold'],
+ 'reserve_db':['reserved margin','reserve margin','engineering reserve'],
+ 'd1_km':['distance from transmitter to obstacle','transmitter-to-obstacle distance'],
+ 'd2_km':['distance from receiver to obstacle','receiver-to-obstacle distance'],
+ 'obstacle_height_m':['obstacle height above the antenna line','obstacle height above the line','relative obstacle height'],
+ 'height1_above_sea_m':['transmitter antenna height above sea','tx height above sea'],
+ 'height2_above_sea_m':['receiver antenna height above sea','rx height above sea'],
+ 'knife_edge_nu':['diffraction parameter'], 'k_factor':['effective Earth-radius factor','effective earth radius factor','k factor'],
+ 'bit_rate_bps':['bit rate'], 'ebn0_db':['Eb/N0'], 'engineering_loss_db':['engineering loss'],
+ 'noise_figure_db':['noise figure'], 'noise_density_dbm_hz':['noise density'],
+ 'drift_loss_db':['platform drift loss'], 'speed_kmh':['relative speed'], 'temperature_k':['noise temperature','temperature']
+}
+for key,aliases in EN_FIELDS.items():
+    FIELDS[key][2].extend(aliases + [key])
 NUMBER = r'[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?'
-UNITS = r'(?:dBm/Hz|Mbit/s|kbit/s|bit/s|Mb/s|kb/s|Mbps|kbps|bps|km/h|m/s|千米每小时|公里每小时|米每秒|GHz|MHz|kHz|Hz|吉赫兹|兆赫兹|千赫兹|赫兹|dBm|dBi|dBd|dB|mW|W|毫瓦|瓦|km|千米|公里|m|米|℃|°C|摄氏度|K|开尔文)'
+# The dimensionless unit "1" (ν, k) must stand apart and end its clause, so a year (2021),
+# a numbered site (11 号) or a count (XX-100 1 台) is never read as a value with unit 1.
+# A bare G after a decimal (5.8G, 2.4G) is GHz; an integer G (4G, 5G) names a network generation.
+UNITS = r'(?:(?<=\s)1(?=\s*(?:$|[，,。；;！!？?、)）\n]))|dBm/Hz|Mbit/s|kbit/s|bit/s|Mb/s|kb/s|Mbps|kbps|bps|km/h|m/s|千米每小时|公里每小时|米每秒|GHz|MHz|kHz|Hz|(?<=\.\d)G|(?<=\.\d\d)G|吉赫兹|兆赫兹|千赫兹|赫兹|dBm|dBi|dBd|dB|mW|W|毫瓦|瓦|km|千米|公里|m|米|℃|°C|摄氏度|K|开尔文)'
 QUANTITY = re.compile(rf'(?<![\w.])(?P<value>{NUMBER})\s*(?P<unit>{UNITS})(?![A-Za-z/\d])', re.I)
-ALIAS_UNIT = {'吉赫兹': 'ghz', '兆赫兹': 'mhz', '千赫兹': 'khz', '赫兹': 'hz',
+ALIAS_UNIT = {'g': 'ghz', '吉赫兹': 'ghz', '兆赫兹': 'mhz', '千赫兹': 'khz', '赫兹': 'hz',
               '公里': 'km', '千米': 'km', '米': 'm', '千米每小时': 'km/h',
               '公里每小时': 'km/h', '米每秒': 'm/s', '毫瓦': 'mw', '瓦': 'w',
               '摄氏度': 'c', '℃': 'c', '°c': 'c', '开尔文': 'k'}
@@ -50,7 +85,11 @@ def convert(field, value, unit):
         return value * frequency[unit] / 1e9
     if field == 'bandwidth_hz' and unit in frequency:
         return value * frequency[unit]
-    if field == 'distance_km' and unit in ('m', 'km'):
+    if field in ('knife_edge_nu', 'k_factor') and unit == '1':
+        return value
+    if field.endswith('_m') and unit in ('m', 'km'):
+        return value * 1000 if unit == 'km' else value
+    if field in ('distance_km', 'd1_km', 'd2_km') and unit in ('m', 'km'):
         return value / 1000 if unit == 'm' else value
     if field == 'speed_kmh' and unit in ('km/h', 'm/s'):
         return value * 3.6 if unit == 'm/s' else value
@@ -98,7 +137,8 @@ def extract_request(text, overrides=None, condition=None, target=None, field_spe
     known_fields = set(FIELDS) | set(field_specs or {})
     blocked = []
     def nearest_field(fragment):
-        positions = [(fragment.rfind(alias), key) for key, (_, _, aliases) in FIELDS.items() for alias in aliases if alias in fragment]
+        fragment = fragment.casefold()
+        positions = [(fragment.rfind(alias.casefold()), key) for key, (_, _, aliases) in FIELDS.items() for alias in aliases if alias.casefold() in fragment]
         return max(positions)[1] if positions else None
     complicated = re.compile(rf'{NUMBER}\s*(?:~|～|至|到|—|–|-|/|±)\s*{NUMBER}\s*{UNITS}|(?:{NUMBER}\s*[×*x]\s*)?10\s*\^\s*{NUMBER}\s*{UNITS}|\d+(?:,\d{{3}})+\s*{UNITS}|(?:>=|<=|>|<|大于|小于|至少|至多|不少于|不超过)\s*{NUMBER}\s*{UNITS}', re.I)
     for match in complicated.finditer(text):
@@ -107,7 +147,7 @@ def extract_request(text, overrides=None, condition=None, target=None, field_spe
         field = nearest_field(prefix)
         issues.append({'field': field, 'message': '范围或复合数字不能自动选值，请输入单个数值与单位；科学计数可写2e2', 'evidence': match.group()})
     for clause in re.finditer(r'[^，,。；;\n？?！!]+', text):
-        if re.search(r'不是|不为|不用|不要用|不能用|未知|不确定|不知道|是否(?!满足|达标|达成|够用|可行|能通)|例如|假如|如果', clause.group()) and re.search(rf'{NUMBER}\s*{UNITS}', clause.group(), re.I):
+        if re.search(r'不是|不为|不用|不要用|不能用|未知|不确定|不知道|是否(?!满足|达标|达成|够用|可行|能通)|例如|假如|如果|\b(?:not|unknown|uncertain|maybe|perhaps|if|example)\b|do(?:es)?n.t|do not', clause.group(), re.I) and re.search(rf'{NUMBER}\s*{UNITS}', clause.group(), re.I):
             blocked.append(clause.span())
             field = next((k for k, (_, _, aliases) in FIELDS.items() if any(a in clause.group() for a in aliases)), None)
             issues.append({'field': field, 'message': '数值处于否定、未知或举例语境，请明确采用值', 'evidence': clause.group()})
@@ -117,7 +157,7 @@ def extract_request(text, overrides=None, condition=None, target=None, field_spe
     # a bandwidth from being interpreted as a carrier, or gain as feed loss.
     for field, (_, _, aliases) in FIELDS.items():
         prefix = '|'.join(re.escape(a) for a in sorted(aliases, key=len, reverse=True))
-        pattern = re.compile(rf'(?:{prefix})\s*(?:为|是|约为|约|等于|[:：=])?\s*(?P<value>{NUMBER})\s*(?P<unit>{UNITS})(?![A-Za-z/\d])', re.I)
+        pattern = re.compile(rf'(?:{prefix})\s*(?:为|是|约为|约|等于|is|of|at|to|changed to|[:：=])?\s*(?P<value>{NUMBER})\s*(?P<unit>{UNITS})(?![A-Za-z/\d])', re.I)
         for match in pattern.finditer(numeric_text):
             consumed.append(match.span())
             try:
@@ -146,7 +186,7 @@ def extract_request(text, overrides=None, condition=None, target=None, field_spe
         labelled = nearest_field(prefix_text)
         if labelled:
             field = labelled
-        elif prefix_text and not re.fullmatch(r'(?:和|与|及|约|大约|为|是|[-:：=\s])*', prefix_text):
+        elif prefix_text and not re.fullmatch(r'(?:和|与|及|约|大约|为|是|想用|打算用|采用|使用|用|[-:：=\s])*', prefix_text):
             field = None
         if field:
             try:
@@ -174,22 +214,28 @@ def extract_request(text, overrides=None, condition=None, target=None, field_spe
         issues = [i for i in issues if i.get('field') != field]
     conditions = set()
     clauses = re.split(r'[，,。；;\n]', text)
-    uncertain = r'不|非|未知|是否|无法|未确认|未验证|尚未|假如|如果|可能'
+    uncertain = r'不|非|未知|是否|无法|未确认|未验证|尚未|假如|如果|可能|\b(?:not|unknown|uncertain|maybe|perhaps|if)\b|do(?:es)?n.t'
     for clause in clauses:
-        if '自由空间' in clause and not re.search(uncertain, clause):
+        if re.search(r'自由空间|\bfree[ -]space\b', clause, re.I) and not re.search(uncertain, clause, re.I):
             conditions.add('free_space')
-            if re.search(r'自由空间(?:基准|参考)', clause):
+            if re.search(r'自由空间(?:基准|参考)|free[ -]space\s+(?:reference|baseline)', clause, re.I):
                 conditions.add('free_space_reference')
         if (re.search(r'计算\s*总传输损耗\s*L\s*=\s*92\.4\s*\+\s*Lf\s*\+\s*Ld', clause, re.I)
                 and not re.search(uncertain, clause)):
             conditions.update(('free_space', 'free_space_reference'))
-    if re.search(r'非视距|有遮挡|有山体|穿墙|山区|散射|绕射|超视距', text):
+    if re.search(r'非视距|有遮挡|有山体|穿墙|山区|散射|绕射|超视距|non[ -]line[ -]of[ -]sight|non[ -]free[ -]space|obstructed|scattering|diffraction|beyond.{0,10}horizon', text, re.I):
         conditions.add('non_free_space')
-    if re.search(r'双程|双向雷达|雷达回波', text):
+    if re.search(r'双程|双向雷达|雷达回波|two[ -]way|round[ -]trip|radar echo', text, re.I):
         conditions.add('two_way')
     for clause in clauses:
         if re.search(r'最大.{0,3}多普勒|多普勒.{0,3}(?:最大|上界)', clause) and not re.search(uncertain, clause):
             conditions.add('maximum_doppler')
+    for clause in clauses:
+        if not re.search(uncertain, clause, re.I):
+            if re.search(r'单刃形|single knife[ -]edge', clause, re.I):
+                conditions.add('single_knife_edge')
+            if re.search(r'光滑海面|smooth sea', clause, re.I) and re.search(r'镜面反射|两径|specular reflection|two[ -]ray', clause, re.I):
+                conditions.add('smooth_sea')
     if condition:
         if condition not in ('free_space', 'free_space_reference', 'non_free_space'):
             raise ValueError('未知传播条件')
@@ -200,8 +246,8 @@ def extract_request(text, overrides=None, condition=None, target=None, field_spe
             conditions.add('free_space')
     intents = []
     for clause in clauses:
-        match = re.search(r'(?:计算|求出|求|想知道|算一下)(.+)', clause)
-        if match and not re.search(r'不|不要|不用|不能', clause[:match.start()]):
+        match = re.search(r'(?:计算|求出|求|想知道|算一下|\bcalculate\b|\bcompute\b|\bfind\b|\bdetermine\b|\bwhat is\b)(.+)', clause, re.I)
+        if match and not re.search(r'不|不要|不用|不能|\bnot\b|do(?:es)?n.t', clause[:match.start()], re.I):
             intents.append(match[1])
     # Blank output rows after a calculation instruction are additional requested
     # quantities, not known inputs with an invented value.
@@ -212,14 +258,23 @@ def extract_request(text, overrides=None, condition=None, target=None, field_spe
     explicit = '；'.join(intents)
     goal_text = explicit or text
     targets = []
-    for identifier, pattern in [('link_margin', r'余量|裕量'), ('received_power', r'接收(?:信号)?电平|接收功率|链路预算'),
-                                ('receiver_threshold', r'接收门限|接收灵敏度'),
-                                ('thermal_noise', r'热噪声|噪声功率'), ('doppler_max', r'多普勒'),
-                                ('fspl_ghz', r'传输损耗|传播损耗|路径损耗|衰减|自由空间|(?:^|；)损耗')]:
-        if re.search(pattern, goal_text):
+    # Supplementary outputs must not be read as generic path loss.
+    for identifier, pattern in [
+        ('fresnel_radius', r'第一菲涅耳区半径|菲涅耳半径|(?:first\s+)?Fresnel(?:\s+zone)?\s+radius'),
+        ('knife_edge_nu', r'绕射参数|knife_edge_nu|ν|diffraction parameter'),
+        ('knife_edge_loss', r'单刃形绕射损耗|刃形绕射损耗|(?:single\s+)?knife[ -]edge(?:\s+diffraction)?\s+loss'),
+        ('sea_reflection_two_ray', r'海面反射附加损耗|海面两径附加损耗|海面反射两径损耗|additional sea[ -]reflection loss|sea[ -]reflection loss relative to free[ -]space|sea two[ -]ray loss')]:
+        if re.search(pattern, goal_text, re.I):
+            targets.append(identifier)
+            goal_text = re.sub(pattern, '', goal_text, flags=re.I)
+    for identifier, pattern in [('link_margin', r'余量|裕量|link margin'), ('received_power', r'接收(?:信号)?电平|接收功率|链路预算|received (?:signal level|power)|link budget'),
+                                ('receiver_threshold', r'接收门限|接收灵敏度|receiver (?:sensitivity|threshold)'),
+                                ('thermal_noise', r'热噪声|噪声功率|thermal noise|noise power'), ('doppler_max', r'多普勒|Doppler'),
+                                ('fspl_ghz', r'传输损耗|传播损耗|路径损耗|衰减|自由空间|(?:^|；)损耗|path loss|propagation loss|free[ -]space loss|attenuation')]:
+        if re.search(pattern, goal_text, re.I):
             targets.append(identifier)
     unsupported = []
-    if re.search(r'多普勒(?:效应)?损耗', goal_text):
+    if re.search(r'多普勒(?:效应)?损耗|Doppler loss', goal_text, re.I):
         targets = [t for t in targets if t != 'doppler_max']
         unsupported.append('doppler_loss')
     if not explicit and len(targets) > 1:

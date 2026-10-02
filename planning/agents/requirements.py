@@ -1,5 +1,6 @@
 """Single requirements/planning agent. All outputs are proposals, never results."""
 import copy
+import re
 from pathlib import Path
 from formula_rag.catalog import load_catalog
 from formula_rag.parsing import extract_request
@@ -16,13 +17,14 @@ from planning.services.requirement_facts import sources_for, band_issues, fact_q
 from planning.services.requirement_quantities import (find_quantities, ground_labels, summary, LABEL_FIELDS,
     SOLVE_UNKNOWNS)
 from planning.services.requirement_evidence import snapshot_for, evidence_for
-from planning.services.requirement_policy import validate_target_semantics, intent_conflict, outside_scope
+from planning.services.requirement_policy import validate_target_semantics, intent_conflict, outside_scope, LINK_REQUEST
 from planning.services.plans import TARGETS, chain, final_target, plan_for, requires_free_space, bound_issues
 from planning.workflow.activity import observe
 
 ALLOWED_MODEL = 'fspl_ghz'
 REQUIRED = ['frequency_ghz', 'distance_km']
-TARGET_LABELS = {'fspl_ghz': '路径损耗', 'received_power': '接收信号电平', 'link_margin': '链路余量'}
+from planning.services.plans import OBJECTIVES
+TARGET_LABELS = OBJECTIVES
 
 
 OPTIONAL = ('quantities', 'solve', 'sites', 'devices')
@@ -129,15 +131,33 @@ class RequirementsAgent:
         observe(observer,'retrieval','started')
         observe(observer,'rag','started',caller='requirements')
         observe(observer,'knowledge','started',caller='rag',operation='search_cards')
-        found = self.retrieval.search(request['raw_text'], **self.retrieval_params)
+        query = request['raw_text']
+        # The catalog is Chinese. Expand explicitly requested English outputs
+        # with their registered Chinese titles, while keeping retrieval and its
+        # positive lexical evidence gate authoritative for admission.
+        if parsed['target_origin'] == 'explicit_text' and not re.search(r'[\u3400-\u9fff]', query):
+            query += '\n' + ' '.join(by_id[i]['title'] for i in parsed['targets'] if i in TARGETS and i in by_id)
+        found = self.retrieval.search(query, **self.retrieval_params)
         self.last_retrieval = found.to_dict()
         observe(observer,'knowledge','completed',caller='rag',operation='search_cards')
         observe(observer,'rag','completed',caller='requirements',mode=found.mode_used,degraded=found.degraded,
                 latency_ms=found.latency_ms.get('total'))
         observe(observer,'retrieval','completed',mode=found.mode_used,hits=len(found.hits),used=len(found.used))
-        # Only the top-n hits reach the model context, and a candidate still needs lexical
-        # evidence from the request text: vector similarity alone never admits a formula.
-        usable = {h['id']: h['rank'] for h in found.hits if h['id'] in found.used and h['scores']['lexical'] > 0}
+        # Limit eligible targets, not the whole catalog: retrievable, unplanned cards
+        # must not consume the model's candidate slots. Stay inside returned top-k
+        # and require lexical evidence even when dense ranking is requested.
+        from planning.services.plans import COASTAL_TARGETS, BUDGET_TARGETS
+        requested = [request['target']] if request['target'] else parsed['targets']
+        admitted = TARGETS if set(requested) & set(COASTAL_TARGETS) else BUDGET_TARGETS
+        eligible = [h for h in found.hits if h['id'] in admitted and h['id'] in by_id
+                    and h['scores']['lexical'] > 0]
+        eligible.sort(key=lambda h: (h['id'] not in requested, h['rank']))
+        eligible = eligible[:found.top_n]
+        self.last_retrieval['candidate_used'] = [h['id'] for h in eligible]
+        usable = {h['id']: h['rank'] for h in eligible}
+        if 'link_margin' in by_id and 'link_margin' not in usable and LINK_REQUEST.search(request['raw_text']):
+            usable['link_margin'] = max(usable.values(), default=0) + 1
+            diagnostics.append(diagnostic('LINK_REQUEST', '原文是建链或能否通信的问题，链路余量列为候选。'))
         # A manual target is a direct lookup, not a semantic retrieval claim.
         if request['target'] in TARGETS and request['target'] in by_id:
             usable[request['target']] = 1
@@ -227,7 +247,7 @@ class RequirementsAgent:
         if self.selector and candidates and not known_unsupported:
             called = mode in {'llm','stub'}
             last = next((d['code'] for d in reversed(diagnostics) if d['code'].startswith('MODEL_')), None)
-            reason = {'MODEL_UNAVAILABLE':'offline','MODEL_TIME_BUDGET':'timeout','MODEL_REQUEST_REJECTED':'rejected',
+            reason = {'MODEL_UNAVAILABLE':'offline','MODEL_NOT_LOADED':'offline','MODEL_TIME_BUDGET':'timeout','MODEL_REQUEST_REJECTED':'rejected',
                       'MODEL_CONTEXT_LIMIT':'rejected'}.get(last,'structure')
             observe(observer,'llm','completed' if called else 'failed',
                     caller='requirements',purpose='intent',mode=mode,health=health,
@@ -273,6 +293,12 @@ class RequirementsAgent:
         observed = {p['canonical_name'] for p in collect_parameters(request, original, [], numeric)[0]}
         facts = sources_for(request, entities, self.cards, final, observed, self.root)
         order, leaves = facts['order'], facts['leaves']
+        if facts['tool']:
+            # The registered link tool computes free space only; the condition is its assumption, not a question.
+            conditions |= set(facts['conditions'])
+            diagnostics.append(diagnostic('LINK_TOOL', '按调制方式计算链路余量：由登记工具 calc_link_margin 依次调用 '
+                                          + '、'.join(order) + '，只算自由空间。', tool=facts['tool'],
+                                          modulations=facts['modulations']))
         required = leaves if final else (REQUIRED if unsupported else [])
         parameters, conflicts, param_diagnostics = collect_parameters(request, original, required, numeric, facts['sources'])
         diagnostics.extend(param_diagnostics + facts['issues'])
@@ -287,8 +313,12 @@ class RequirementsAgent:
             diagnostics.append(diagnostic('SOLVE_REQUESTED', '已识别反求要求：余量不满足要求时，求最小发射功率。' if solve_if_unmet
                                           else '已识别反求要求，但原文没有余量要求，只计算余量。', unknown=solve['unknown']))
         missing = [p['canonical_name'] for p in parameters if p['status'] == 'missing']
+        # A modulation still to choose is asked for as such, not as a sensitivity in dBm.
+        asked = [m for m in missing if not (m == 'rx_threshold_dbm' and any(
+            d['code'] in {'MODULATION_NEEDED', 'MODULATION_UNKNOWN'} for d in facts['issues']))]
+        if asked:
+            questions.append('请补充：' + '、'.join(asked))
         if missing:
-            questions.append('请补充：' + '、'.join(missing))
             diagnostics.append(diagnostic('MISSING_INPUT', '必要参数尚未输入。', fields=missing))
         if conflicts:
             questions.append('请消除同一参数的来源冲突。')
@@ -313,6 +343,10 @@ class RequirementsAgent:
         if final and requires_free_space(order, self.cards) and 'free_space' not in conditions and not unsupported:
             questions.append('请明确采用自由空间模型或自由空间基准。')
             diagnostics.append(diagnostic('MISSING_CONDITION', '不能从视距、岸海或参数齐全推断自由空间条件。'))
+        from planning.services.coastal import missing_conditions
+        for condition in missing_conditions(order, conditions):
+            questions.append('请明确采用模型条件：' + condition + '。')
+            diagnostics.append(diagnostic('MISSING_COASTAL_CONDITION', '补充模型的适用条件尚未声明。', condition=condition))
         fspl_values = {k: values[k] for k in REQUIRED if k in values}
         scope = [issue for case in scenarios(fspl_values) for issue in scope_issues(ALLOWED_MODEL, case, parsed)] if ALLOWED_MODEL in order and not invalid else []
         if scope:
@@ -337,7 +371,8 @@ class RequirementsAgent:
                                           next_action='明确改为自由空间基准，或等待对应模型接入。'))
         elif final and not available:
             diagnostics.append(diagnostic('EVIDENCE_UNAVAILABLE', '没有可用的已登记模型证据。', next_action='检查知识目录与目标。'))
-        plan = (plan_for(request, order, self.cards, parameters, evidence_ids, plan_requirement, solve_if_unmet, facts['notes'])
+        plan = (plan_for(request, order, self.cards, parameters, evidence_ids, plan_requirement, solve_if_unmet, facts['notes'],
+                         facts['tool'], facts['variants'])
                 if available and not unsupported else None)
         status = ('FAILED' if failed else 'NEEDS_MODEL' if unsupported or (final and not available) else
                   'AWAITING_INPUT' if questions or not plan else 'AWAITING_CONFIRMATION')

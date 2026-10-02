@@ -227,7 +227,8 @@ class PromptTests(unittest.TestCase):
                             solve_unknowns=SOLVE_UNKNOWNS)
         payload = seen['payload']
         self.assertLessEqual(estimate_tokens(payload), 4096)
-        self.assertIn('数量表：q1=2 GHz；q2=10 dB', payload['messages'][-1]['content'])
+        quantity_table = payload['messages'][-1]['content'].split('数量表：', 1)[1]
+        self.assertRegex(quantity_table, r'^q1=2 GHz \[原文上下文：[^\]]*2 GHz\]；q2=10 dB \[原文上下文：[^\]]*10 dB[^\]]*\]$')
         schema = payload['response_format']['json_schema']['schema']['properties']
         self.assertEqual(schema['quantities']['items']['properties']['id']['enum'], ['q1', 'q2'])
         self.assertIn('不能的话发射功率至少要多大', schema['solve']['items']['properties']['evidence']['enum'])

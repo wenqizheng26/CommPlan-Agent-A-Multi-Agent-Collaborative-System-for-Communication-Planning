@@ -66,6 +66,17 @@
       "sha256": "d79d0c9e04cfb09dcc2a0900e2432a4ac988373e2c457104e74a58d4e4b05953",
       "redistributable": true,
       "simulated": true
+    },
+    {
+      "doc_id": "sim-xx300",
+      "title": "XX-300 手册",
+      "version": "2026-09-27",
+      "language": "zh",
+      "source": "knowledge/documents/simulated/XX-300 手册.md",
+      "local_path": "knowledge/documents/simulated/XX-300 手册.md",
+      "sha256": "97629e5321637053df24d702a5dc9542c12fd053bc92e52934e1727b7115ad77",
+      "redistributable": true,
+      "simulated": true
     }
   ]
 }

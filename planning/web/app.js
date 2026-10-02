@@ -5,14 +5,23 @@ import {renderRight,nodeCard,el,labels,parameterNames,conditionNames,targetNames
 import {formatDomain} from './values.mjs';
 import {assumptionEdit} from './m1.mjs';
 import {renderConversation} from './conversation.mjs';
+import {renderRecords} from './records.mjs';
 import {renderQuestions,openQuestions} from './questions.mjs';
-import {summary,factorySettings,renderSettingsForm} from './settings.mjs';
+import {renderReport} from './report.mjs';
+import {summary,factorySettings,renderSettingsForm,switchView} from './settings.mjs';
 import {nodeLatency,stepTimes,runSummary,renderWaterfall,miniWaterfall,renderMetrics} from './timing.mjs';
+import {headerText,setMarquee,fitMarquee} from './marquee.mjs';
+import {renderLibrary,draftTitle,MAX_CHUNKS} from './library.mjs';
+import {lastSwap,previousVersion,comparisonLine} from './compare.mjs';
+import {lang,setLang,install,watch} from './i18n.mjs';
+// English swaps rendered text through the dictionary; Chinese needs nothing loaded.
+if(lang()==='en'){install(await import('./i18n-en.mjs'));watch(document.body);}
 const $=id=>document.getElementById(id);
 const narrow=()=>window.matchMedia('(max-width: 899px)').matches;
 let current=null, historical=null, activeContext=null, activity=[], token='', dirty=false, editing=false, busy=false, busyAction=null, pendingCommand=null;
 let modelService=null, checkingModel=false;
-let settings=null, models=null, draft=null, savingSettings=false;
+let settings=null, models=null, draft=null, savingSettings=false, switcher=null, switchTimer=null;
+const switching=()=>switcher?.state==='switching';
 let view='main', focusParameter=null, pollGeneration=0, popover=null, sideChoice=null, sideKey='', foldKey='', originalOpen=false;
 const folds=new Map();
 // Event nodes that are not drawn map onto the architecture node that owns them.
@@ -30,22 +39,25 @@ async function checkModel(){
  }
 }
 function shown(){return historical||activeContext||current;}
-let toastTimer;
+let toastTimer,toastCount=0;
 function notice(text,error=false){
  if(error){$('notice').textContent=text;$('notice').hidden=!text;return;}
- clearTimeout(toastTimer);const toast=$('toast');toast.textContent=text;toast.hidden=!text;
- if(text)toastTimer=setTimeout(()=>{if(toast.textContent===text)toast.hidden=true;},4000);
+ clearTimeout(toastTimer);const toast=$('toast'),shown=++toastCount;toast.textContent=text;toast.hidden=!text;
+ if(text)toastTimer=setTimeout(()=>{if(toastCount===shown)toast.hidden=true;},4000);
 }
 const clearError=()=>notice('',true);
-async function api(path,body){const r=await fetch(path,{signal:AbortSignal.timeout(path==='/api/commands'?125000:10000),method:body?'POST':'GET',headers:body?{'Content-Type':'application/json','X-Planning-Token':token}:{},body:body?JSON.stringify(body):undefined});const data=await r.json();if(!r.ok){const err=new Error(data.error.message+' ['+data.error.code+']');err.status=r.status;throw err;}return data;}
+const TIMEOUTS={'/api/commands':125000,'/api/drafts/extract':200000,'/api/drafts/review':30000,'/api/documents':30000};
+async function api(path,body){const r=await fetch(path,{signal:AbortSignal.timeout(TIMEOUTS[path]||(path.startsWith('/api/documents/')?30000:10000)),method:body?'POST':'GET',headers:body?{'Content-Type':'application/json','X-Planning-Token':token}:{},body:body?JSON.stringify(body):undefined});const data=await r.json();if(!r.ok){const err=new Error(data.error.message+' ['+data.error.code+']');err.status=r.status;throw err;}return data;}
 function syncButtons(){
- document.querySelectorAll('#request-form input,#request-form textarea,#request-form select,#request-form button').forEach(n=>n.disabled=busy||!!historical);
- for(const id of ['supplement-message','supplement-submit'])$(id).disabled=busy||!!historical||!current||dirty||editing;
- document.querySelectorAll('#clarification-panel input,#clarification-panel select,#clarification-panel button').forEach(n=>n.disabled=busy||dirty||editing||!!historical);
+ // A model switch holds every command that may call a model; cancelling a task still works.
+ const hold=busy||switching()||lib.uploading||lib.busy;
+ document.querySelectorAll('#request-form input,#request-form textarea,#request-form select,#request-form button').forEach(n=>n.disabled=hold||!!historical);
+ for(const id of ['supplement-message','supplement-submit'])$(id).disabled=hold||!!historical||!current||dirty||editing;
+ document.querySelectorAll('#clarification-panel input,#clarification-panel select,#clarification-panel button').forEach(n=>n.disabled=hold||dirty||editing||!!historical);
  const can=current?.status==='AWAITING_CONFIRMATION'&&!historical&&!activeContext;
  $('actions').hidden=!can;
- $('confirm').disabled=busy||dirty||editing||!can||!$('accept').checked;
- $('accept').disabled=busy||dirty||editing||!can;
+ $('confirm').disabled=hold||dirty||editing||!can||!$('accept').checked;
+ $('accept').disabled=hold||dirty||editing||!can;
  $('cancel').disabled=busy||!can;
  $('stop-operation').hidden=!busy;$('stop-operation').disabled=!busy;
  $('return-current').hidden=!historical;
@@ -87,7 +99,7 @@ function renderOriginal(s){
  const card=$('original-card'),text=s.request?.raw_text||'',req=s.request||{};card.replaceChildren();
  const head=el('div',undefined,'card-head');head.append(el('span','需求原文','eyebrow'));
  if(current&&!historical&&!activeContext){const b=el('button','编辑原文','text-button');b.type='button';b.disabled=busy;b.addEventListener('click',startEdit);head.append(b);}
- const body=el('p',text,'original-text');card.append(head,body);
+ const body=el('p',text,'original-text');body.translate=false;card.append(head,body);
  if(text.split('\n').length>3||text.length>90){
   if(!originalOpen)body.classList.add('clamp');
   const more=el('button',originalOpen?'收起':'展开','text-button more-toggle');more.type='button';
@@ -109,6 +121,7 @@ function drawLeft(){
  $('supplement-form').hidden=mode!=='task';
  if(mode==='task')renderOriginal(s);
  renderConversation($('conversation-log'),mode==='task'?s:null,{open:folds});
+ renderRecords($('execution-records'),mode==='task'?s:null,historical?[]:activity);
  renderQuestions($('clarification-panel'),mode==='task'?s:null,{disabled:busy||dirty||editing||!!historical,onSubmit:answers=>submit('answer',answers).catch(e=>notice(e.message,true)),onEdit:startEdit});
  $('composer-hint').textContent=historical?'历史版本只读':'';
 }
@@ -124,6 +137,81 @@ function drawFlow(){
   if(['running','waiting'].includes(step.status))row.setAttribute('aria-current','step');return row;}));
  renderNodeCard();
 }
+// The version before the last follow-up swap, for one line under the result.
+const comparisons=new Map();
+async function ensureComparison(){
+ const s=shown();if(!s||s.status!=='COMPLETED'||!lastSwap(s))return;
+ const key=`${s.task_id}:${s.revision}`;if(comparisons.has(key))return;
+ comparisons.set(key,null);
+ try{const data=await api('/api/tasks/'+encodeURIComponent(s.task_id)+'/history');comparisons.set(key,comparisonLine(s,previousVersion(s,data.history)));drawRight();}
+ catch{comparisons.delete(key);}
+}
+// The 资料 page: documents, sections, extraction and review.
+const lib={library:null,selectedDoc:null,sections:null,chosen:new Set(),kind:'device',extracting:null,message:'',drafts:null,reviewer:'',reason:'',rejecting:null,busy:false,uploading:false};
+try{lib.reviewer=localStorage.getItem('planning-reviewer')||'';}catch{}
+function drawLibrary(){
+ renderLibrary($('library-body'),{...lib,onSelectDoc:selectDoc,onToggleChunk:toggleChunk,onKind:k=>{lib.kind=k;drawLibrary();},onExtract:extractDraft,
+  onUpload:uploadDocument,onReview:reviewDraft,onReason:v=>{lib.reason=v;},onRejectToggle:id=>{lib.rejecting=lib.rejecting===id?null:id;lib.reason='';drawLibrary();},
+  onReviewer:v=>{lib.reviewer=v.trim();try{localStorage.setItem('planning-reviewer',lib.reviewer);}catch{}}});
+ syncButtons();
+}
+async function loadLibrary(){
+ const [docs,drafts]=await Promise.allSettled([api('/api/documents'),api('/api/drafts')]);
+ if(docs.status==='fulfilled')lib.library=docs.value;else lib.message='文档读取失败：'+docs.reason.message;
+ if(drafts.status==='fulfilled')lib.drafts=drafts.value.drafts;else lib.message='草稿读取失败：'+drafts.reason.message;
+ drawLibrary();
+}
+function openLibrary(){openSheet('library-sheet');drawLibrary();loadLibrary();}
+async function selectDoc(id){
+ if(lib.selectedDoc===id||lib.busy)return;lib.selectedDoc=id;lib.sections=null;lib.chosen=new Set();lib.message='';drawLibrary();
+ try{const data=await api('/api/documents/'+encodeURIComponent(id));if(lib.selectedDoc===id)lib.sections=data.sections;}catch(e){lib.message=e.message;}
+ drawLibrary();
+}
+function toggleChunk(id){if(lib.chosen.has(id))lib.chosen.delete(id);else if(lib.chosen.size<MAX_CHUNKS)lib.chosen.add(id);drawLibrary();}
+async function extractDraft(){
+ if(lib.busy||!lib.chosen.size)return;
+ if(switching()){lib.message='正在切换模型，完成后再抽取。';drawLibrary();return;}
+ lib.busy=true;lib.message='';lib.extracting=0;drawLibrary();const started=Date.now();
+ // Only the button text changes each second, so a half-typed reason is not redrawn away.
+ const timer=setInterval(()=>{lib.extracting=Math.round((Date.now()-started)/1000);const b=$('extract-draft');if(b)b.textContent=`抽取中 · ${lib.extracting} s`;},1000);
+ try{const data=await api('/api/drafts/extract',{kind:lib.kind,chunk_ids:[...lib.chosen]});
+  lib.message=`${data.message}（${Math.round((Date.now()-started)/1000)} s）`;
+  if(data.draft)lib.drafts=[data.draft,...(lib.drafts||[]).filter(d=>d.id!==data.draft.id)];}
+ catch(e){lib.message='抽取失败：'+e.message;}
+ finally{clearInterval(timer);lib.busy=false;lib.extracting=null;drawLibrary();}
+}
+async function uploadDocument(file){
+ if(lib.uploading||lib.busy||busy||switching())return;
+ if(file.size>(lib.library?.max_bytes||20*1024*1024)){lib.message='文件超过 20 MB。';drawLibrary();return;}
+ lib.uploading=true;lib.message='';drawLibrary();
+ try{
+  const r=await fetch('/api/documents?name='+encodeURIComponent(file.name),{method:'POST',body:file,signal:AbortSignal.timeout(120000),
+   headers:{'Content-Type':'application/octet-stream','X-Planning-Token':token}});
+  const data=await r.json();if(!r.ok)throw new Error(data.error.message);
+  lib.library=data.library;lib.uploading=false;await selectDoc(data.document.doc_id);
+  lib.message=`已添加：${data.document.title}。请选择片段，抽取并核对草稿后填写审核人，通过后才能参与计算。`;
+ }catch(e){lib.message='添加失败：'+e.message;}
+ finally{lib.uploading=false;drawLibrary();}
+}
+async function uploadAttachment(file){
+ if(busy||historical||switching()||lib.busy||lib.uploading)return;
+ openSheet('library-sheet');drawLibrary();
+ await loadLibrary();
+ await uploadDocument(file);
+}
+async function reviewDraft(draft,decision,reason){
+ if(lib.busy)return;
+ if(!lib.reviewer){lib.message='请先填写审核人。';drawLibrary();document.querySelector('#library-body .reviewer')?.focus();return;}
+ if(decision==='reject'&&!(reason||lib.reason).trim()){lib.message='驳回时请写明原因。';drawLibrary();return;}
+ lib.busy=true;lib.message='';drawLibrary();
+ try{
+  const data=await api('/api/drafts/review',{id:draft.id,decision,reviewer:lib.reviewer,reason:decision==='reject'?(reason||lib.reason).trim():'',content_hash:draft.content_hash});
+  lib.rejecting=null;lib.reason='';notice(decision==='approve'?'已入库：'+draftTitle(draft):'已驳回：'+draftTitle(draft));
+  lib.drafts=(await api('/api/drafts')).drafts;  // other drafts may now name a record already in the library
+  if(decision==='approve'){const f=await api('/api/facts');for(const record of f.records)facts[record.id]=record;}
+ }catch(e){lib.message=e.message;}
+ finally{lib.busy=false;drawLibrary();}
+}
 function openNodeCard(id){popover=popover?.id===id?null:{id};drawFlow();}
 function renderNodeCard(){
  const card=$('node-card');
@@ -132,6 +220,7 @@ function renderNodeCard(){
  const head=el('div',undefined,'node-card-head'),close=el('button','✕','icon-button');close.type='button';close.setAttribute('aria-label','关闭');close.addEventListener('click',()=>{popover=null;drawFlow();});
  head.append(el('strong',info.title),close);
  card.replaceChildren(head,el('p',info.status,'node-card-status '+info.tone),...info.lines.map(line=>el('p',line)));
+ if(info.quote){const q=el('p',info.quote);q.translate=false;card.append(q);}
  if(info.link&&s?.report){const b=el('button',info.link.label+' →','text-button');b.type='button';b.addEventListener('click',()=>setView(info.link.view));card.append(b);}
  card.hidden=false;
  const g=$('flow-canvas').querySelector(`[data-node="${popover.id}"]`);if(!g)return;
@@ -145,10 +234,11 @@ function drawRight(){
  const s=shown(),relevant=relevantEvents(s,activity);
  const h=headline(s,{busy,action:busyAction,editing,historical:!!historical,modelLabel:modelLabel(),ran:historical?'':runSummary(relevant)});
  $('headline-text').textContent=h.text;$('headline-sub').textContent=h.sub||'';$('headline').className='headline '+h.tone;
- ensureCards();
- renderRight($('detail-content'),{state:s,view,focusParameter,historical:!!historical,disabled:busy||dirty||editing,activeContext:!!activeContext,modelService,settings:settings?.settings,models,open:folds,cards,facts,
+ ensureCards();ensureComparison();
+ renderRight($('detail-content'),{state:s,view,focusParameter,historical:!!historical,comparison:s?comparisons.get(`${s.task_id}:${s.revision}`):null,disabled:busy||dirty||editing,activeContext:!!activeContext,modelService,settings:settings?.settings,models,open:folds,cards,facts,
   onView:setView,onParameter:chooseParameter,onMissing:focusQuestion,onReparse:()=>submit('edit').catch(e=>notice(e.message,true)),
   onAssumption:(name,value)=>{try{const input=assumptionEdit(current,name,value);submit('edit',null,input).catch(e=>notice(e.message,true));}catch(e){notice(e.message,true);}}});
+ renderReport($('report-panel'),$('open-report'),s,historical?[]:activity,{facts,cards});
  const n=openQuestions(s).length;
  $('pending-bar').hidden=!n||!!historical||busy||editing;$('pending-bar').textContent=`${h.text} · 去处理`;
 }
@@ -176,7 +266,7 @@ function draw(){
  // Each status is a new reading: steps open while checking, closed once computed.
  const s=shown(),key=s?`${s.task_id}:${s.revision}:${s.status}:${historical?'h':''}`:'';
  if(key!==foldKey){foldKey=key;folds.clear();originalOpen=false;}
- const text=activeContext?'正在处理':s?.request?.raw_text?.trim()||'未开始';$('task-meta').textContent=text;$('task-meta').title=text;
+ setMarquee($('task-meta'),headerText(activeContext,historical||current));
  drawSide();drawLeft();drawFlow();drawRight();drawTimeline();syncButtons();
 }
 function acceptState(s){$('history-list').replaceChildren();if(current?.task_id!==s.task_id)activity=[];current=s;historical=null;activeContext=null;dirty=false;editing=false;$('accept').checked=false;fillInput(s);$('task-id').value=s.task_id;localStorage.setItem('planning-task',s.task_id);history.replaceState(null,'','#'+s.task_id);}
@@ -196,7 +286,8 @@ function afterCommand(action){
 }
 async function submit(action,answers=null,inputOverride=null){
  if(busy||historical)return;
- const c={action,task_id:current?.task_id||(pendingCommand?.action==='create'?pendingCommand.task_id:crypto.randomUUID()),event_id:crypto.randomUUID(),expected_revision:current?.revision||0,expected_state_version:current?.state_version||0};
+ if(switching()&&action!=='cancel'){notice('正在切换模型，完成后再提交。',true);return;}
+ const c={action,task_id:current?.task_id||(pendingCommand?.action==='create'?pendingCommand.task_id:crypto.randomUUID()),event_id:crypto.randomUUID(),expected_revision:current?.revision||0,expected_state_version:current?.state_version||0,lang:lang()};
  if(['create','edit'].includes(action)){c.input=inputOverride||readInput();c.mode=$('mode').value;}if(action==='supplement'){c.message=$('supplement-message').value.trim();c.mode=$('mode').value;if(!c.message||dirty||editing)return;}if(action==='confirm')c.review_hash=current.review.review_hash;
  if(action==='answer'){if(dirty||editing||!answers)return;c.answers=answers;c.mode=$('mode').value;}
  if(pendingCommand){const comparable=x=>JSON.stringify({...x,event_id:''});if(comparable(pendingCommand)===comparable(c))c.event_id=pendingCommand.event_id;}
@@ -225,7 +316,7 @@ async function restore(id){
   if(!saved&&!running)throw new Error('未找到已保存任务；该次操作可能未提交。');
   if(running){
    const restoreDeadline=Date.now()+125000;
-   if(!saved||running.revision!==saved.revision)activeContext={task_id:id,revision:running.revision,state_version:0,status:'RUNNING',request:{raw_text:'正在恢复运行观察，原文以提交后的记录为准。',manual_parameters:{}},report:null,trace:[]};
+   if(!saved||running.revision!==saved.revision)activeContext={task_id:id,revision:running.revision,state_version:0,status:'RUNNING',placeholder:true,request:{raw_text:'正在恢复运行观察，原文以提交后的记录为准。',manual_parameters:{}},report:null,trace:[]};
    notice('检测到仍在执行的操作，正在恢复观察');draw();
    while(running&&generation===pollGeneration){
     if(Date.now()>restoreDeadline)throw new Error('运行观察超过两分钟，请刷新保存状态；该提示不表示后端已停止。');
@@ -246,7 +337,7 @@ async function recentTasks(){
   if(!data.tasks.length)list.append(el('p','暂无保存的任务','hint'));
   for(const task of data.tasks){
    const row=el('button',undefined,'recent-row'+(task.task_id===current?.task_id?' current':''));row.type='button';
-   row.append(el('span',labels[task.status]||task.status,'chip '+({COMPLETED:'ok',AWAITING_CONFIRMATION:'run',AWAITING_INPUT:'warn',NEEDS_MODEL:'warn'}[task.status]||'')),el('span',task.description||'未填写描述','recent-text'),el('small',task.task_id.slice(0,8)));
+   row.append(el('span',labels[task.status]||task.status,'chip '+({COMPLETED:'ok',AWAITING_CONFIRMATION:'run',AWAITING_INPUT:'warn',NEEDS_MODEL:'warn'}[task.status]||'')),el('span',task.description||'未填写描述','recent-text'),el('small',task.task_id.slice(0,8)));row.children[1].translate=!task.description;
    row.addEventListener('click',()=>{closeSheets();restore(task.task_id);});list.append(row);
   }
  }catch(e){notice('任务列表加载失败：'+e.message,true);}
@@ -261,21 +352,48 @@ $('stop-operation').addEventListener('click',async()=>{
 $('check-model').addEventListener('click',checkModel);
 
 function showSummary(){
+ if(settings)$('mode').value=settings.settings.mode_default;
+ if(switching()){$('model-badge-text').textContent=`切换模型 · ${Math.round((switcher.elapsed_ms||0)/1000)} s`;$('model-dot').className='dot run';return;}
  const text=summary(settings?.settings,models);$('model-badge-text').textContent=text.badge;
  const st=models?.status?.[settings?.settings?.chat?.default];
  $('model-dot').className='dot '+(settings?.settings?.mode_default!=='llm'?'':st==='ready'?'ok':st==='loading'?'run':'off');
- if(settings)$('mode').value=settings.settings.mode_default;
 }
 async function loadSettings(){
- const results=await Promise.allSettled([api('/api/settings'),api('/api/models')]);
+ const results=await Promise.allSettled([api('/api/settings'),api('/api/models'),api('/api/model-switch')]);
  if(results[0].status==='fulfilled')settings=results[0].value;
  if(results[1].status==='fulfilled')models=results[1].value;
+ if(results[2].status==='fulfilled')switcher=results[2].value;
  const failed=results.find(r=>r.status==='rejected');if(failed)notice('部分模型与检索状态载入失败：'+failed.reason.message,true);
  showSummary();
+ if(switching()&&!switchTimer)tickSwitch();
 }
-function drawSettings(){renderSettingsForm($('settings-form'),{draft,models,status:models?.status,corpus:models?.corpus,el,onChange:next=>{draft=next;drawSettings();}});}
+function switchLock(){return busy?'正在处理任务，完成后才能切换。':lib.busy?'正在抽取资料，完成后才能切换。':'';}
+function drawSettings(){renderSettingsForm($('settings-form'),{draft,models,status:models?.status,corpus:models?.corpus,el,switcher,locked:switchLock(),onSwitch:startSwitch,onChange:next=>{draft=next;drawSettings();}});}
+async function startSwitch(modelId){
+ if(switching()||switchLock())return;
+ try{switcher=await api('/api/model-switch',{model_id:modelId});}
+ catch(e){notice(e.message,true);return;}
+ clearError();showSummary();syncButtons();if(!$('settings-sheet').hidden)drawSettings();tickSwitch();
+}
+// One poll a second while a switch runs: only the waiting time changes until it ends.
+function tickSwitch(){
+ clearTimeout(switchTimer);
+ switchTimer=setTimeout(async()=>{
+  try{switcher=await api('/api/model-switch');}catch{}
+  if(switching()){
+   const line=document.querySelector('#settings-form .switch-status'),view=switchView({draft,models,status:models?.status,switcher});
+   if(line&&view)line.textContent=view.text;
+   showSummary();tickSwitch();return;
+  }
+  switchTimer=null;await loadSettings();
+  if(draft)draft.chat=structuredClone(settings.settings.chat);
+  if(switcher?.message)notice(switcher.message,switcher.state==='failed');
+  if(!$('settings-sheet').hidden)drawSettings();
+  checkModel();draw();
+ },1000);
+}
 let sheetReturn=null;
-const SHEETS=['settings-sheet','metrics-panel','history-sheet'];
+const SHEETS=['settings-sheet','metrics-panel','history-sheet','library-sheet'];
 function openSheet(id){toggleMenu(false);sheetReturn=document.activeElement;$('sheet-scrim').hidden=false;$(id).hidden=false;$(id).querySelector('.icon-button').focus();}
 function closeSheets(){for(const id of SHEETS)$(id).hidden=true;$('sheet-scrim').hidden=true;sheetReturn?.focus?.();}
 async function openSettings(){
@@ -297,7 +415,11 @@ async function openMetrics(){
 function openHistory(focusId=false){openSheet('history-sheet');recentTasks();if(focusId)$('task-id').focus();}
 function toggleMenu(open){const menu=$('more-menu'),show=open??menu.hidden;menu.hidden=!show;$('more').setAttribute('aria-expanded',String(show));if(show)menu.querySelector('button:not([hidden]):not(:disabled)')?.focus();}
 $('model-badge').addEventListener('click',openSettings);
-$('close-settings').addEventListener('click',closeSheets);$('close-metrics').addEventListener('click',closeSheets);$('close-history').addEventListener('click',closeSheets);$('sheet-scrim').addEventListener('click',closeSheets);
+$('lang-toggle').textContent=lang()==='en'?'中文':'EN';
+$('lang-toggle').addEventListener('click',()=>{setLang(lang()==='en'?'zh':'en');location.reload();});
+$('close-settings').addEventListener('click',closeSheets);$('close-library').addEventListener('click',closeSheets);$('open-library').addEventListener('click',openLibrary);$('close-metrics').addEventListener('click',closeSheets);$('close-history').addEventListener('click',closeSheets);$('sheet-scrim').addEventListener('click',closeSheets);
+$('add-attachment').addEventListener('click',()=>$('attachment-file').click());
+$('attachment-file').addEventListener('change',()=>{const file=$('attachment-file').files[0];$('attachment-file').value='';if(file)uploadAttachment(file);});
 $('save-settings').addEventListener('click',saveSettings);
 $('reset-settings').addEventListener('click',()=>{if(!models)return;draft=factorySettings(models);drawSettings();});
 $('open-history').addEventListener('click',()=>openHistory());
@@ -360,5 +482,6 @@ $('history').addEventListener('click',async()=>{
 });
 $('export').addEventListener('click',()=>{toggleMenu(false);const s=shown();if(!s||busy)return;const blob=new Blob([JSON.stringify(s,null,2)],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob);const a=el('a');a.href=url;a.download=`planning-${s.task_id}-r${s.revision}-v${s.state_version}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
 draw();
+new ResizeObserver(()=>fitMarquee($('task-meta'))).observe($('task-meta').parentElement);
 checkModel();
 (async()=>{try{token=(await api('/api/session')).token;const data=await api('/api/facts');for(const record of data.records)facts[record.id]=record;await loadSettings();draw();await recentTasks();const id=location.hash.slice(1)||localStorage.getItem('planning-task');if(id)await restore(id);}catch(e){notice('无法连接本地服务：'+e.message,true);}})();

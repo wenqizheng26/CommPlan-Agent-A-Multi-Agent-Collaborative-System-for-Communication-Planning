@@ -1,0 +1,706 @@
+{
+  "source_commit": "ae69d1d6bb376f9d4c2991bebf432484c0bc18d7",
+  "source_dirty": false,
+  "model": "qwen35-9b-q4",
+  "model_revision": "3885219b6810b007914f3a7950a8d1b469d598a5",
+  "live": {
+    "status": "ready",
+    "model": "commplan-qwen35-9b",
+    "endpoint": "http://127.0.0.1:18081",
+    "checked_at": "2026-09-28T01:41:20.447931+00:00"
+  },
+  "started_at": "2026-09-28T02:41:21+0100",
+  "extraction": [
+    {
+      "case": "xx300_device",
+      "kind": "device",
+      "chunks": [
+        "doc:sim-xx300:s2-1"
+      ],
+      "seconds": 16.11,
+      "mode": "llm",
+      "attempts": 1,
+      "message": "已生成草稿，请逐项核对原文后审核。",
+      "diagnostics": [],
+      "draft_id": "cb6f824fa781406e9343905e29299e58",
+      "record": {
+        "id": "device:xx-300",
+        "type": "device",
+        "names": [
+          "XX-300"
+        ],
+        "model": "XX-300",
+        "tx_power_dbm": 40,
+        "antenna_gain_dbi": 6,
+        "rx_sensitivity_dbm": -97,
+        "band_ghz": [
+          1.0,
+          3.0
+        ],
+        "status": "draft"
+      },
+      "approvable": true,
+      "problems": [],
+      "checks": {
+        "names": "match",
+        "model": "match",
+        "tx_power_dbm": "match",
+        "antenna_gain_dbi": "match",
+        "rx_sensitivity_dbm": "match",
+        "band_ghz.0": "match",
+        "band_ghz.1": "match"
+      },
+      "example": null,
+      "errors": [],
+      "passed": true
+    },
+    {
+      "case": "xx300_eirp_formula",
+      "kind": "formula",
+      "chunks": [
+        "doc:sim-xx300:s3-1"
+      ],
+      "seconds": 25.11,
+      "mode": "llm",
+      "attempts": 1,
+      "message": "已生成草稿，请逐项核对原文后审核。",
+      "diagnostics": [],
+      "draft_id": "67a5299be9c3443893b048dd1ff01958",
+      "record": {
+        "id": "eirp_dbm",
+        "title": "等效全向辐射功率 (EIRP)",
+        "description": "等效全向辐射功率（EIRP）是发射机输出功率加发射天线增益、减去发射馈线损耗，以各向同性天线为参考，单位 dBm",
+        "version": "1.0.0",
+        "status": "draft",
+        "expression": "tx_power_dbm + tx_gain_dbi - tx_loss_db",
+        "output": {
+          "name": "eirp_dbm",
+          "unit": "dBm"
+        },
+        "parameters": {
+          "tx_power_dbm": {
+            "unit": "dBm",
+            "description": "发射机输出功率（dBm）"
+          },
+          "tx_gain_dbi": {
+            "unit": "dBi",
+            "description": "发射天线沿对端方向的增益（dBi）"
+          },
+          "tx_loss_db": {
+            "unit": "dB",
+            "description": "发射馈线损耗（dB）"
+          }
+        },
+        "applicability": {
+          "requires": [],
+          "notes": [
+            "三项必须属于同一发射端、同一频率",
+            "EIRP 不含路径损耗，不能单独据此判断链路是否可用"
+          ]
+        },
+        "sources": [],
+        "examples": [
+          {
+            "inputs": {
+              "tx_power_dbm": 40,
+              "tx_gain_dbi": 6,
+              "tx_loss_db": 2
+            },
+            "expected": 44,
+            "tolerance": 0.5
+          }
+        ]
+      },
+      "approvable": true,
+      "problems": [],
+      "checks": {
+        "title": "missing",
+        "description": "manual",
+        "expression": "manual",
+        "output.unit": "match",
+        "parameters.tx_power_dbm": "match",
+        "parameters.tx_gain_dbi": "match",
+        "parameters.tx_loss_db": "match",
+        "examples.0.inputs.tx_power_dbm": "match",
+        "examples.0.inputs.tx_gain_dbi": "match",
+        "examples.0.inputs.tx_loss_db": "match",
+        "examples.0.expected": "match",
+        "applicability.notes": "missing"
+      },
+      "example": {
+        "inputs": {
+          "tx_power_dbm": 40,
+          "tx_gain_dbi": 6,
+          "tx_loss_db": 2
+        },
+        "expected": 44,
+        "value": 44.0,
+        "tolerance": 0.5,
+        "unit": "dBm",
+        "passed": true
+      },
+      "errors": [],
+      "passed": true
+    },
+    {
+      "case": "xx300_preamble_no_device",
+      "kind": "device",
+      "chunks": [
+        "doc:sim-xx300:s0-1"
+      ],
+      "seconds": 11.59,
+      "mode": "llm",
+      "attempts": 1,
+      "message": "选中的片段里没有完整的设备资料，没有生成草稿。",
+      "diagnostics": [],
+      "errors": [],
+      "passed": true
+    },
+    {
+      "case": "xx300_table_no_formula",
+      "kind": "formula",
+      "chunks": [
+        "doc:sim-xx300:s2-1"
+      ],
+      "seconds": 14.28,
+      "mode": "llm",
+      "attempts": 1,
+      "message": "选中的片段里没有完整的公式资料，没有生成草稿。",
+      "diagnostics": [],
+      "errors": [],
+      "passed": true
+    },
+    {
+      "case": "xx100_device_already_in_library",
+      "kind": "device",
+      "chunks": [
+        "doc:sim-xx100:s2-1"
+      ],
+      "seconds": 14.28,
+      "mode": "llm",
+      "attempts": 1,
+      "message": "已生成草稿，请逐项核对原文后审核。",
+      "diagnostics": [],
+      "draft_id": "5a7662ba09a24cba9ac8692019cdcb26",
+      "record": {
+        "id": "device:xx-100",
+        "type": "device",
+        "names": [
+          "XX-100"
+        ],
+        "model": "XX-100",
+        "tx_power_dbm": 37,
+        "antenna_gain_dbi": 5,
+        "rx_sensitivity_dbm": -92,
+        "band_ghz": [
+          1.4,
+          2.7
+        ],
+        "status": "draft"
+      },
+      "approvable": false,
+      "problems": [
+        "库里已有同名记录：XX-100"
+      ],
+      "checks": {
+        "names": "match",
+        "model": "match",
+        "tx_power_dbm": "match",
+        "antenna_gain_dbi": "match",
+        "rx_sensitivity_dbm": "match",
+        "band_ghz.0": "match",
+        "band_ghz.1": "match"
+      },
+      "example": null,
+      "errors": [],
+      "passed": true
+    }
+  ],
+  "followups": [
+    {
+      "message": "换 XX-200 呢",
+      "expected": [
+        "apply",
+        [
+          [
+            "device",
+            "XX-100",
+            "XX-200"
+          ]
+        ]
+      ],
+      "got": [
+        "apply",
+        [
+          [
+            "device",
+            "XX-100",
+            "XX-200"
+          ]
+        ]
+      ],
+      "passed": true,
+      "seconds": 4.72,
+      "mode": "llm",
+      "reading": {
+        "action": "apply",
+        "new_device": "device:sim-xx200",
+        "replaced_site": "",
+        "new_site": ""
+      },
+      "diagnostics": [],
+      "stage": "before_review"
+    },
+    {
+      "message": "改用 XX-200 吧",
+      "expected": [
+        "apply",
+        [
+          [
+            "device",
+            "XX-100",
+            "XX-200"
+          ]
+        ]
+      ],
+      "got": [
+        "apply",
+        [
+          [
+            "device",
+            "XX-100",
+            "XX-200"
+          ]
+        ]
+      ],
+      "passed": true,
+      "seconds": 3.09,
+      "mode": "llm",
+      "reading": {
+        "action": "apply",
+        "new_device": "device:sim-xx200",
+        "replaced_site": "",
+        "new_site": ""
+      },
+      "diagnostics": [],
+      "stage": "before_review"
+    },
+    {
+      "message": "换成 XX-200 试试",
+      "expected": [
+        "apply",
+        [
+          [
+            "device",
+            "XX-100",
+            "XX-200"
+          ]
+        ]
+      ],
+      "got": [
+        "apply",
+        [
+          [
+            "device",
+            "XX-100",
+            "XX-200"
+          ]
+        ]
+      ],
+      "passed": true,
+      "seconds": 2.78,
+      "mode": "llm",
+      "reading": {
+        "action": "apply",
+        "new_device": "device:sim-xx200",
+        "replaced_site": "",
+        "new_site": ""
+      },
+      "diagnostics": [],
+      "stage": "before_review"
+    },
+    {
+      "message": "B 站换成 C 站呢",
+      "expected": [
+        "apply",
+        [
+          [
+            "site",
+            "B站",
+            "C站"
+          ]
+        ]
+      ],
+      "got": [
+        "apply",
+        [
+          [
+            "site",
+            "B站",
+            "C站"
+          ]
+        ]
+      ],
+      "passed": true,
+      "seconds": 4.31,
+      "mode": "llm",
+      "reading": {
+        "action": "apply",
+        "new_device": "",
+        "replaced_site": "site:sim-b",
+        "new_site": "site:sim-c"
+      },
+      "diagnostics": [],
+      "stage": "before_review"
+    },
+    {
+      "message": "A 站换成 C 站呢",
+      "expected": [
+        "apply",
+        [
+          [
+            "site",
+            "A站",
+            "C站"
+          ]
+        ]
+      ],
+      "got": [
+        "apply",
+        [
+          [
+            "site",
+            "A站",
+            "C站"
+          ]
+        ]
+      ],
+      "passed": true,
+      "seconds": 2.91,
+      "mode": "llm",
+      "reading": {
+        "action": "apply",
+        "new_device": "",
+        "replaced_site": "site:sim-a",
+        "new_site": "site:sim-c"
+      },
+      "diagnostics": [],
+      "stage": "before_review"
+    },
+    {
+      "message": "把 B 站改成 F 站",
+      "expected": [
+        "apply",
+        [
+          [
+            "site",
+            "B站",
+            "F站"
+          ]
+        ]
+      ],
+      "got": [
+        "apply",
+        [
+          [
+            "site",
+            "B站",
+            "F站"
+          ]
+        ]
+      ],
+      "passed": true,
+      "seconds": 2.75,
+      "mode": "llm",
+      "reading": {
+        "action": "apply",
+        "new_device": "",
+        "replaced_site": "site:sim-b",
+        "new_site": "site:sim-f"
+      },
+      "diagnostics": [],
+      "stage": "before_review"
+    },
+    {
+      "message": "换 XX-200 电台，B 站换成 C 站",
+      "expected": [
+        "apply",
+        [
+          [
+            "device",
+            "XX-100",
+            "XX-200"
+          ],
+          [
+            "site",
+            "B站",
+            "C站"
+          ]
+        ]
+      ],
+      "got": [
+        "apply",
+        [
+          [
+            "device",
+            "XX-100",
+            "XX-200"
+          ],
+          [
+            "site",
+            "B站",
+            "C站"
+          ]
+        ]
+      ],
+      "passed": true,
+      "seconds": 2.95,
+      "mode": "llm",
+      "reading": {
+        "action": "apply",
+        "new_device": "device:sim-xx200",
+        "replaced_site": "site:sim-b",
+        "new_site": "site:sim-c"
+      },
+      "diagnostics": [],
+      "stage": "before_review"
+    },
+    {
+      "message": "换成 C 站呢",
+      "expected": [
+        "ask",
+        "要把哪一端换成 C站"
+      ],
+      "got": [
+        "ask",
+        "第1条补充尚未合并：要把哪一端换成 C站？当前两端是 A站、B站。请写成“B 站换成 C站”。或输入“撤回第1条补充”。"
+      ],
+      "passed": true,
+      "seconds": 0.03,
+      "mode": "deterministic",
+      "reading": null,
+      "diagnostics": [],
+      "stage": "before_review"
+    },
+    {
+      "message": "要不换 XX-200 呢",
+      "expected": [
+        "ask",
+        "说法不确定"
+      ],
+      "got": [
+        "ask",
+        "第1条补充尚未合并：这条追问的说法不确定，没有修改任务。确定要换时，请直接写“换 XX-200 呢”或“B 站换成 C 站呢”。或输入“撤回第1条补充”。"
+      ],
+      "passed": true,
+      "seconds": 0.03,
+      "mode": "deterministic",
+      "reading": null,
+      "diagnostics": [],
+      "stage": "before_review"
+    },
+    {
+      "message": "换 XX-200 还是不换",
+      "expected": [
+        "ask",
+        "说法不确定"
+      ],
+      "got": [
+        "ask",
+        "第1条补充尚未合并：这条追问的说法不确定，没有修改任务。确定要换时，请直接写“换 XX-200 呢”或“B 站换成 C 站呢”。或输入“撤回第1条补充”。"
+      ],
+      "passed": true,
+      "seconds": 0.03,
+      "mode": "deterministic",
+      "reading": null,
+      "diagnostics": [],
+      "stage": "before_review"
+    },
+    {
+      "message": "换 XX-100 呢",
+      "expected": [
+        "ask",
+        "用的已经是 XX-100"
+      ],
+      "got": [
+        "ask",
+        "第1条补充尚未合并：当前任务用的已经是 XX-100。或输入“撤回第1条补充”。"
+      ],
+      "passed": true,
+      "seconds": 0.03,
+      "mode": "deterministic",
+      "reading": null,
+      "diagnostics": [],
+      "stage": "before_review"
+    },
+    {
+      "message": "换 XX-999 呢",
+      "expected": [
+        "ask",
+        "库里没有 XX-999"
+      ],
+      "got": [
+        "ask",
+        "第1条补充尚未合并：库里没有 XX-999 的记录，不能换用。可以在“资料”页从手册抽取并审核入库后再问。或输入“撤回第1条补充”。"
+      ],
+      "passed": true,
+      "seconds": 0.03,
+      "mode": "deterministic",
+      "reading": null,
+      "diagnostics": [],
+      "stage": "before_review"
+    },
+    {
+      "message": "XX-200 的灵敏度是多少？",
+      "expected": [
+        "none",
+        null
+      ],
+      "got": [
+        "none",
+        null
+      ],
+      "passed": true,
+      "seconds": 0.0,
+      "mode": null,
+      "reading": null,
+      "diagnostics": [],
+      "stage": "before_review"
+    },
+    {
+      "message": "频率改为 2.4 GHz",
+      "expected": [
+        "none",
+        null
+      ],
+      "got": [
+        "none",
+        null
+      ],
+      "passed": true,
+      "seconds": 0.0,
+      "mode": null,
+      "reading": null,
+      "diagnostics": [],
+      "stage": "before_review"
+    },
+    {
+      "message": "换 XX-300 呢",
+      "expected": [
+        "ask",
+        "只有未审核的草稿"
+      ],
+      "got": [
+        "ask",
+        "第1条补充尚未合并：库里没有 XX-300 的记录，不能换用。XX-300 只有未审核的草稿，草稿不能参与计算；在“资料”页审核入库后再问。或输入“撤回第1条补充”。"
+      ],
+      "passed": true,
+      "seconds": 0.05,
+      "mode": "deterministic",
+      "reading": null,
+      "diagnostics": [],
+      "stage": "before_review"
+    },
+    {
+      "message": "换 XX-300 呢",
+      "expected": [
+        "apply",
+        [
+          [
+            "device",
+            "XX-100",
+            "XX-300"
+          ]
+        ]
+      ],
+      "got": [
+        "apply",
+        [
+          [
+            "device",
+            "XX-100",
+            "XX-300"
+          ]
+        ]
+      ],
+      "passed": true,
+      "seconds": 2.62,
+      "mode": "llm",
+      "reading": {
+        "action": "apply",
+        "new_device": "device:xx-300",
+        "replaced_site": "",
+        "new_site": ""
+      },
+      "diagnostics": [],
+      "stage": "after_review"
+    }
+  ],
+  "base_task": {
+    "status": "AWAITING_CONFIRMATION",
+    "seconds": 21.88,
+    "entities": [
+      {
+        "kind": "site",
+        "mention": "A 站"
+      },
+      {
+        "kind": "site",
+        "mention": "B 站"
+      },
+      {
+        "kind": "device",
+        "mention": "XX-100"
+      }
+    ]
+  },
+  "chain": {
+    "steps": [
+      {
+        "action": "create",
+        "status": "AWAITING_CONFIRMATION",
+        "revision": 0,
+        "seconds": 17.92,
+        "margin_db": null
+      },
+      {
+        "action": "confirm",
+        "status": "COMPLETED",
+        "revision": 0,
+        "seconds": 16.58,
+        "margin_db": 5.933390585850958
+      },
+      {
+        "action": "supplement",
+        "status": "AWAITING_CONFIRMATION",
+        "revision": 1,
+        "seconds": 28.16,
+        "margin_db": null
+      },
+      {
+        "action": "confirm",
+        "status": "COMPLETED",
+        "revision": 1,
+        "seconds": 14.05,
+        "margin_db": 20.933390585850958
+      }
+    ],
+    "swap": [
+      {
+        "after": "XX-200",
+        "before": "XX-100",
+        "evidence": "换 XX-200 呢",
+        "field": "device"
+      }
+    ],
+    "passed": true
+  },
+  "summary": {
+    "extraction": "5/5",
+    "followups": "16/16",
+    "model_called": 8,
+    "model_agreed": 8,
+    "chain": true
+  },
+  "passed": true
+}

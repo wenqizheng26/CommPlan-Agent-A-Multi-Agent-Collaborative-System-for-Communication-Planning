@@ -1,6 +1,7 @@
 """Structured confirmed inputs enter existing numeric and applicability gates."""
 import copy
 import math
+from pathlib import Path
 from formula_rag import core
 from formula_rag.applicability import scope_issues, result_issues, describe_result, FARFIELD_NOTE, RULE_VERSION
 from planning.requirements_contract import digest, require
@@ -10,6 +11,9 @@ from planning.workflow.requirements_graph import stamp
 from planning.workflow.activity import observe
 from planning.services.domain_calculation import evaluate_domains, validate_domains, conclusion
 from planning.services.reference_models import agrees, REFERENCE
+from planning.services.plans import bound
+
+ROOT = Path(__file__).resolve().parents[2]
 
 MARGIN_NOTE = '余量只表示所填预算条件下与接收门限的关系，不保证现场可靠通信。'
 SOLVE_ERRORS = {'SOLVE_NO_ROOT': '搜索区间内没有满足要求的值', 'SOLVE_NOT_MONOTONIC': '结果随该量不单调，无法唯一反求',
@@ -51,8 +55,9 @@ def run_steps(plan, cards, parameters, parameter_names, conditions):
         inputs = {}
         for name, binding in step['inputs'].items():
             if binding['kind']=='parameter':
-                require(parameter_names.get(binding['ref'])==name and name in parameters, 'PLAN_BINDING')
-                inputs[name] = parameters[name]
+                source = parameter_names.get(binding['ref'])
+                require(source in parameters, 'PLAN_BINDING')
+                inputs[name] = bound(name, source, parameters)
             else:
                 require(binding['ref'] in done and done[binding['ref']]['name']==name, 'PLAN_BINDING')
                 inputs[name] = done[binding['ref']]['value']
@@ -97,7 +102,7 @@ def execute(snapshot, review, cards, proposal, observer=None, attempt=1, root=No
     report = snapshot['review']['report']
     plan = report['calculation_plan_proposal']
     if not single_fspl(plan):
-        return execute_plan(snapshot, cards, observer, attempt)
+        return execute_plan(snapshot, cards, observer, attempt, root)
     card = next(c for c in cards if c['id']=='fspl_ghz')
     require(card['status']=='verified', 'MODEL_NOT_VERIFIED')
     parameters = {p['canonical_name']:p['value'] for p in report['parameters_proposal'] if p['value'] is not None}
@@ -125,6 +130,9 @@ def execute(snapshot, review, cards, proposal, observer=None, attempt=1, root=No
         observe(observer,'model','failed',caller='compute_agent')
         raise
     observe(observer,'model','completed',caller='compute_agent',model_id=card['id'])
+    if not domain_mode:
+        observe(observer,'tool','completed',caller='compute_agent',step_id='fspl-step',tool_id=card['id'],
+                inputs=parameters,output=outputs[0])
     output = dict(result_id=snapshot['snapshot_id']+':result'+('' if attempt==1 else f':attempt-{attempt}'), task_id=snapshot['task_id'],
                   revision=snapshot['revision'], snapshot_id=snapshot['snapshot_id'],
                   snapshot_hash=snapshot['content_hash'], plan_hash=report['calculation_plan_proposal']['plan_hash'],
@@ -136,7 +144,67 @@ def execute(snapshot, review, cards, proposal, observer=None, attempt=1, root=No
     return output
 
 
-def execute_plan(snapshot, cards, observer, attempt):
+def link_label(parameter, store):
+    """What a call is named after: the modulation its sensitivity came from, or the stated sensitivity."""
+    if [o['kind'] for o in parameter['origins']] == ['modulation']:
+        ident = parameter['origins'][0]['source_ref'].split('#')[0]
+        return next(r['names'][0] for r in store.modulation_records() if r['id'] == ident), True
+    return f"接收灵敏度 {parameter['value']:g} dBm", False
+
+
+def link_calls(plan, report, steps, cards, root):
+    """Run the confirmed chain as the registered link tool, once per modulation (TEACHER_CASES).
+
+    The tool calls the same three cards; its first call must give exactly the chain's step values,
+    and every call the sensitivity the user confirmed. Its arguments are the chain's own step inputs,
+    so a distance from site coordinates is passed on as computed.
+    """
+    from formula_rag.registry import call_tool
+    from planning.knowledge.facts import FactService
+    root = root or ROOT
+    store = FactService(root)
+    hashes = {c['id']: digest(c) for c in cards}
+    base = link_arguments(steps)
+    if plan.get('requirement'):
+        base['required_margin_db'] = plan['requirement']['value']
+    threshold = next(p for p in report['parameters_proposal'] if p['canonical_name'] == 'rx_threshold_dbm')
+    label, from_table = link_label(threshold, store)
+    runs = [(label, dict(base, modulation=label) if from_table else dict(base, rx_sensitivity_dbm=threshold['value']),
+             threshold['value'])]
+    runs += [(v['label'], dict(base, modulation=v['label']), v['value']) for v in plan.get('variants', [])]
+    calls = []
+    for label, arguments, sensitivity in runs:
+        response = call_tool(root, plan['tool'], arguments)
+        require(response['status'] == 'ok', 'LINK_TOOL_FAILED: ' + '; '.join(response['errors']))
+        require(all(s['content_hash'] == hashes.get(s['card']) for s in response['steps']), 'LINK_TOOL_CARD_CHANGED')
+        require(response['result']['rx_sensitivity_dbm'] == sensitivity, 'LINK_TOOL_SENSITIVITY_CHANGED')
+        calls.append(dict(tool=plan['tool'], label=label, arguments=response['arguments'], result=response['result'],
+                          status=response['status'],
+                          steps=[{k: s[k] for k in ('card', 'inputs', 'value', 'unit')} for s in response['steps']]))
+    first, chain = calls[0]['steps'], steps[-3:]
+    require([s['card'] for s in first] == [s['tool_id'] for s in chain] and
+            all(a['value'] == b['output']['value'] and a['inputs'] == b['inputs'] for a, b in zip(first, chain)),
+            'LINK_TOOL_MISMATCH')
+    return calls
+
+
+def link_arguments(steps):
+    """The link tool's common arguments, read from the path-loss and received-power steps of the chain."""
+    loss, power = steps[-3]['inputs'], steps[-2]['inputs']
+    return dict(distance_km=loss['distance_km'], frequency_mhz=loss['frequency_mhz'],
+                **{k: power[k] for k in ('tx_power_dbm', 'tx_gain_dbi', 'rx_gain_dbi')})
+
+
+def compare(calls):
+    """The comparison table: one row per modulation, the margin spread, and the one with the largest margin."""
+    rows = [dict(label=c['label'], **{k: c['result'][k] for k in ('rx_sensitivity_dbm', 'path_loss_db', 'rx_power_dbm',
+                                                                     'link_margin_db', 'meets')}) for c in calls]
+    margins = [r['link_margin_db'] for r in rows]
+    best = rows[margins.index(max(margins))]
+    return dict(parameter='rx_threshold_dbm', rows=rows, margin_diff_db=max(margins) - min(margins), recommend=best['label'])
+
+
+def execute_plan(snapshot, cards, observer, attempt, root=None):
     report = snapshot['review']['report']
     plan = report['calculation_plan_proposal']
     by_id = {c['id']: c for c in cards}
@@ -154,7 +222,18 @@ def execute_plan(snapshot, cards, observer, attempt):
         observe(observer,'model','failed',caller='compute_agent')
         raise
     observe(observer,'model','completed',caller='compute_agent',model_id=final['id'],steps=len(steps))
+    for step in steps:  # each tool call, for the page to list as it happens
+        observe(observer,'tool','completed',caller='compute_agent',step_id=step['step_id'],tool_id=step['tool_id'],
+                inputs=step['inputs'],output=step['output'])
     extra = {}
+    if plan.get('tool'):
+        calls = link_calls(plan, report, steps, cards, root)
+        for call in calls:
+            observe(observer,'tool','completed',caller='compute_agent',tool_id=call['tool'],label=call['label'],
+                    arguments=call['arguments'],result=call['result'],steps=call['steps'])
+        extra['tool_calls'] = [{k: call[k] for k in ('tool', 'label', 'arguments', 'result', 'status')} for call in calls]
+        if plan.get('variants'):
+            extra['comparison'] = compare(calls)
     if plan.get('requirement'):
         # A margin requirement is compared, never deducted; only an unmet one is solved for.
         actual = steps[-1]['output']['value']
@@ -164,7 +243,7 @@ def execute_plan(snapshot, cards, observer, attempt):
     output = dict(result_id=snapshot['snapshot_id']+':result'+('' if attempt==1 else f':attempt-{attempt}'), task_id=snapshot['task_id'],
                   revision=snapshot['revision'], snapshot_id=snapshot['snapshot_id'],
                   snapshot_hash=snapshot['content_hash'], plan_hash=plan['plan_hash'],
-                  model_id=final['id'], model_version=final['version'], formula=final['expression'],
+                  model_id=final['id'], model_version=final['version'], formula=final.get('expression', final.get('algorithm')),
                   normalized_inputs={k:parameters[k] for k in plan['required_parameters']},
                   outputs=[copy.deepcopy(steps[-1]['output'])], steps=steps, **extra,
                   evidence_ids=copy.deepcopy(report['evidence_ids']), runtime_mode='deterministic',
@@ -177,6 +256,7 @@ def validate_plan_result(result, snapshot, expected_inputs):
     report = snapshot['review']['report']
     plan, model = report['calculation_plan_proposal'], snapshot['review']['model']
     versions = {e['catalog_id']:e['card_version'] for e in report['evidence_refs']}
+    names = {p['parameter_id']:p['canonical_name'] for p in report['parameters_proposal']}
     steps = result.get('steps')
     chain_ok = type(steps) is list and len(steps)==len(plan['steps'])
     magnitude_ok = chain_ok
@@ -188,11 +268,13 @@ def validate_plan_result(result, snapshot, expected_inputs):
                       and got['tool_id']==step['tool_id'] and got['version']==versions.get(step['tool_id'])
                       and set(got['inputs'])==set(step['inputs']) and got['output']['unit']==step['expected_unit'])
                 for name, binding in step['inputs'].items():
-                    want = expected_inputs.get(name) if binding['kind']=='parameter' else done.get(binding['ref'], {}).get('value')
+                    source = names.get(binding['ref'])
+                    want = ((bound(name, source, expected_inputs) if source in expected_inputs else None)
+                            if binding['kind']=='parameter' else done.get(binding['ref'], {}).get('value'))
                     ok = ok and want is not None and got['inputs'][name]==want
                 value = got['output']['value']
                 ok = ok and type(value) in (int,float) and math.isfinite(value)
-            except (KeyError, TypeError, AttributeError):
+            except (KeyError, TypeError, AttributeError, ValueError):
                 ok = False
             chain_ok = chain_ok and ok
             magnitude_ok = magnitude_ok and ok and agrees(step['tool_id'], got['inputs'], got['output']['value'])
@@ -200,17 +282,49 @@ def validate_plan_result(result, snapshot, expected_inputs):
     numeric_ok = chain_ok and result['outputs']==[steps[-1]['output']] and result['outputs'][0]['name']==model['output']['name']
     return dict(
         model_identity=result['model_id']==model['id']==plan['steps'][-1]['tool_id'] and result['model_version']==model['version']
-            and result['formula']==model['expression'],
+            and result['formula']==model.get('expression', model.get('algorithm')),
         numeric_domain=numeric_ok, step_chain=chain_ok, independent_magnitude=magnitude_ok,
         plan_checks=chain_ok and all(done[c['distance']]['value'] <= done[c['horizon']]['value'] for c in plan.get('checks', [])),
-        requirement_and_solve=numeric_ok and goal_ok(result, snapshot, expected_inputs))
+        requirement_and_solve=numeric_ok and goal_ok(result, snapshot, expected_inputs),
+        link_tool=numeric_ok and tools_ok(result, plan, expected_inputs))
+
+
+def tools_ok(result, plan, inputs):
+    """The link tool's calls and the comparison, checked again from the chain and the confirmed inputs."""
+    if not plan.get('tool'):
+        return 'tool_calls' not in result and 'comparison' not in result
+    try:
+        calls, variants, steps = result['tool_calls'], plan.get('variants', []), result['steps']
+        if type(calls) is not list or len(calls) != 1 + len(variants):
+            return False
+        loss, power, margin = (s['output']['value'] for s in steps[-3:])
+        required = plan['requirement']['value'] if plan.get('requirement') else 0
+        wanted = [inputs['rx_threshold_dbm']] + [v['value'] for v in variants]
+        for call, sensitivity, label in zip(calls, wanted, [None] + [v['label'] for v in variants]):
+            out = call['result']
+            args = {k: call['arguments'][k] for k in ('distance_km', 'frequency_mhz', 'tx_power_dbm', 'tx_gain_dbi', 'rx_gain_dbi')}
+            if (call['tool'] != plan['tool'] or call['status'] != 'ok' or (label and call['label'] != label)
+                    or args != link_arguments(steps)
+                    or out['path_loss_db'] != loss or out['rx_power_dbm'] != power or out['rx_sensitivity_dbm'] != sensitivity
+                    or abs(out['link_margin_db'] - (power - sensitivity)) > 1e-9
+                    or out['required_margin_db'] != required or out['meets'] != (out['link_margin_db'] >= required)):
+                return False
+        if calls[0]['result']['link_margin_db'] != margin:
+            return False
+        if variants:
+            return result.get('comparison') == compare(calls)
+        return 'comparison' not in result
+    except (KeyError, TypeError, ValueError, StopIteration):
+        return False
 
 
 def reference_value(plan, inputs, unknown, x):
     """The plan's final value with the unknown set to x, from the independent reference models only."""
     values, done = dict(inputs, **{unknown: x}), {}
     for step in plan['steps']:
-        args = {name: values[name] if b['kind'] == 'parameter' else done[b['ref']] for name, b in step['inputs'].items()}
+        # A parameter id ends with its canonical name (requirement_parameters.collect_parameters).
+        args = {name: bound(name, b['ref'].rsplit(':', 1)[1], values) if b['kind'] == 'parameter' else done[b['ref']]
+                for name, b in step['inputs'].items()}
         done[step['step_id']] = REFERENCE[step['tool_id']][0](args)
     return done[plan['steps'][-1]['step_id']]
 
@@ -291,7 +405,7 @@ def validate_result(result, snapshot):
         plan_identity=result['plan_hash']==report['calculation_plan_proposal']['plan_hash'],
         evidence_consistency=result['evidence_ids']==report['evidence_ids'],
         model_identity=result['model_id']==model['id']=='fspl_ghz' and result['model_version']==model['version']
-            and result['formula']==model['expression'],
+            and result['formula']==model.get('expression', model.get('algorithm')),
         numeric_domain=numeric_ok, fspl_magnitude=magnitude_ok)
     return [dict(validation_id=result['result_id']+':'+key, validator_id=key, severity='hard',
                  passed=bool(ok), target_hash=result['result_hash']) for key,ok in checks.items()]
@@ -320,11 +434,17 @@ def publish(result, snapshot, validations):
 def plan_conclusion(result):
     tools = [s['tool_id'] for s in result['steps']]
     out = result['outputs'][0]
-    text = '按已确认自由空间条件，' if 'fspl_ghz' in tools else '按已确认输入，'
+    text = '按已确认自由空间条件，' if {'fspl_ghz', 'fspl_mhz'} & set(tools) else '按已确认输入，'
+    if result.get('comparison'):
+        c = result['comparison']
+        rows = '，'.join(f"{r['label']} 链路余量 {r['link_margin_db']:.2f} dB" for r in c['rows'])
+        return text + rows + f"，相差 {c['margin_diff_db']:.2f} dB；{c['recommend']} 余量最大" + goal_text(result) + '。'
     if result['model_id']=='link_margin':
         meaning = describe_result('link_margin', out['value'])['message'].split('，')[0]
         return text + f"链路余量 {out['value']:.2f} dB（{meaning}）" + goal_text(result) + '。'
-    label = {'received_power':'接收信号电平','fspl_ghz':'路径损耗'}.get(result['model_id'], out['name'])
+    label = {'received_power':'接收信号电平','fspl_ghz':'路径损耗','fresnel_radius':'第一菲涅耳区半径',
+             'knife_edge_nu':'绕射参数','knife_edge_loss':'单刃形绕射损耗',
+             'sea_reflection_two_ray':'海面反射附加损耗（相对自由空间）'}.get(result['model_id'], out['name'])
     return text + f"{label} {out['value']:.2f} {out['unit']}。"
 
 
@@ -353,7 +473,7 @@ def publish_plan(result, snapshot, validations):
     report = snapshot['review']['report']
     tools = [s['tool_id'] for s in result['steps']]
     limits = list(report['assumptions'])
-    if 'fspl_ghz' in tools:
+    if {'fspl_ghz', 'fspl_mhz'} & set(tools):
         limits += [FARFIELD_NOTE, '路径损耗按自由空间基准计算，未估计真实海面反射、散射或遮挡。']
     if 'link_margin' in tools:
         limits.append(MARGIN_NOTE)
@@ -369,4 +489,4 @@ def publish_plan(result, snapshot, validations):
                 limitations=list(dict.fromkeys(limits)),
                 evidence_refs=copy.deepcopy(report['evidence_refs']), component_modes=copy.deepcopy(report['component_modes']),
                 runtime_health=report['runtime_health'], generated_at=stamp(),
-                **{k: copy.deepcopy(result[k]) for k in ('requirement', 'solve') if k in result})
+                **{k: copy.deepcopy(result[k]) for k in ('requirement', 'solve', 'tool_calls', 'comparison') if k in result})

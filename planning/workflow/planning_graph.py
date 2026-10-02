@@ -71,6 +71,12 @@ def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(
         if pending_questions and report and status!='FAILED':
             report['questions']=list(dict.fromkeys(report['questions']+list(pending_questions)))
             status=report['execution_status']='AWAITING_INPUT'
+        if status=='AWAITING_INPUT' and report:
+            # Default completion (TEACHER_CASES): the Requirement agent suggests table values for the open inputs.
+            from planning.services.suggestions import suggestions_for
+            found=suggestions_for(state['request'],report,agent.root,role_selector(agent,bindings,'supplement'),observer)
+            if found:
+                report['suggestions']=found
         if status=='AWAITING_CONFIRMATION':
             report['calculation_plan_proposal'],report['planning_role']=planning_agent.run(state['request'],report,cards,observer)
             if report['planning_role']['mode']=='deterministic_fallback':

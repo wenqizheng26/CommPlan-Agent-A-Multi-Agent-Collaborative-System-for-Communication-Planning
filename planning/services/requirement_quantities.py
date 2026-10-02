@@ -13,17 +13,18 @@ OTHER = 'other'
 # Inputs of the plan-capable cards, in link order. Heights and sites come from the site store.
 LABEL_FIELDS = ['frequency_ghz', 'distance_km', 'tx_power_dbm', 'tx_gain_dbi', 'rx_gain_dbi', 'tx_loss_db',
                 'rx_loss_db', 'extra_loss_db', 'path_loss_db', 'rx_power_dbm', 'rx_threshold_dbm', 'reserve_db',
-                REQUIREMENT, OTHER]
+                'd1_km', 'd2_km', 'obstacle_height_m', 'height1_above_sea_m', 'height2_above_sea_m',
+                'knife_edge_nu', 'k_factor', REQUIREMENT, OTHER]
 SOLVE_UNKNOWNS = ['tx_power_dbm']
 
 # "10个dB" is spoken Chinese for 10 dB; the value and unit are still read from the text.
 QUANTITY = re.compile(rf'(?P<value>{NUMBER})\s*(?:个\s*)?(?P<unit>{UNITS})(?![A-Za-z/\d])', re.I)
 # Contexts in which extract_request refuses to read a value; the model gets no say there either.
-UNCERTAIN = re.compile(r'不是|不为|不用|不要用|不能用|未知|不确定|不知道|是否(?!满足|达标|达成|够用|可行|能通)|例如|假如|如果')
+UNCERTAIN = re.compile(r'(?i)\b(?:not|unknown|uncertain|maybe|perhaps|if|example)\b|do(?:es)?n.t|不是|不为|不用|不要用|不能用|未知|不确定|不知道|是否(?!满足|达标|达成|够用|可行|能通)|例如|假如|如果')
 RANGE = re.compile(rf'(?<![A-Za-z0-9_.+-]){NUMBER}\s*(?:{UNITS})?\s*(?:~|～|至|到|—|–|/|±|或者|或|、)\s*{NUMBER}\s*{UNITS}'
                    rf'|(?:{NUMBER}\s*[×*x]\s*)?10\s*\^\s*{NUMBER}\s*{UNITS}|\d+(?:,\d{{3}})+\s*{UNITS}', re.I)
-AT_LEAST = re.compile(r'(?:>=|≥|至少|不少于|不低于|不小于|最少|起码)\s*$')
-AT_MOST = re.compile(r'(?:<=|≤|至多|不超过|不高于|不大于|最多)\s*$')
+AT_LEAST = re.compile(r'(?:>=|≥|至少|不少于|不低于|不小于|最少|起码|at least|no less than)\s*$', re.I)
+AT_MOST = re.compile(r'(?:<=|≤|至多|不超过|不高于|不大于|最多|at most|no more than)\s*$', re.I)
 CLAUSE = re.compile(r'[^，,。；;\n？?！!]+')
 
 
@@ -51,7 +52,7 @@ def find_quantities(text):
         a, b = span(m)
         if any(x < b and a < y for x, y in blocked):
             continue
-        prefix = norm[max(0, m.start() - 4):m.start()]
+        prefix = norm[max(0, m.start() - 20):m.start()]
         clause = next((c.group().strip() for c in clauses if c.start() <= a < c.end()), text[a:b])
         found.append(dict(id=f'q{len(found) + 1}', span=[a, b], text=text[a:b], value=float(m['value']),
                           unit=m['unit'], comparison='>=' if AT_LEAST.search(prefix) else '<=' if AT_MOST.search(prefix) else None,
@@ -123,7 +124,7 @@ def solve_span(text, evidence):
     left = max([0] + [e for e in ends if e <= start])
     right = min([len(text)] + [e for e in ends if e > start])
     for clause in CLAUSE.finditer(text, left, right):
-        if re.search(r'功率|发射电平', clause.group()):
+        if re.search(r'功率|发射电平|transmit power|tx power', clause.group(), re.I):
             a = clause.start() + len(clause.group()) - len(clause.group().lstrip())
             return [a, clause.end()]
     return None

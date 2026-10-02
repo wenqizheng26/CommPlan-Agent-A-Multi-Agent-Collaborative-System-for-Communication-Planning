@@ -1,18 +1,39 @@
 import {formatDomain} from './values.mjs';
 
-export function originLabel(parameter,facts={},cards={}){
+// A value the user adopted from a suggestion is written into the text followed by this mark (TEACHER_CASES).
+export const SUGGESTED='（默认补全）';
+
+// text is the request text, to tell an adopted suggestion from a value the user typed.
+export function originLabel(parameter,facts={},cards={},text=''){
  const origins=parameter?.origins||[];
- const kind=origins.some(o=>o.kind==='manual_form')?'manual_form':origins[0]?.kind;
+ let kind=origins.some(o=>o.kind==='manual_form')?'manual_form':origins[0]?.kind;
  const origin=origins.find(o=>o.kind===kind),record=facts[(origin?.source_ref||'').split('#')[0]];
- const names={user_text:'原文',manual_form:'手填',site:'站点库',device:'设备库',default:'假设'};
+ if(kind==='user_text'&&origin?.span&&text.startsWith(SUGGESTED,origin.span[1]))kind='suggested';
+ const names={user_text:'原文',manual_form:'手填',site:'站点库',device:'设备库',modulation:'调制表 · 模拟参数',default:'假设',suggested:'默认补全'};
  let tag=names[kind]||'原文',original=null;
  if(['site','device'].includes(kind)&&record?.simulated)tag+=' · 模拟';
+ if(kind==='modulation'){
+  const name=(origin.source_ref.split('#')[0].split(':')[1]||'').toUpperCase();
+  tag=`调制表 ${name} · 模拟参数`+(text.includes(name+SUGGESTED)?' · 默认补全':'');
+ }
  if(kind==='manual_form')for(const card of Object.values(cards)){
   const value=card?.parameters?.[parameter.canonical_name]?.default;
   if(value){original=value;tag+=`（原假设 ${formatDomain(value.value)} ${value.unit}）`;break;}
  }
  return {kind:kind==='manual_form'?'manual':kind==='user_text'?'text':kind||'text',tag,original,
-  source:record?.source||null,editable:kind==='default'};
+  source:record?.source||null,editable:kind==='default'&&!origin?.source_ref?.startsWith('tool:')};
+}
+
+// The comparison of modulations (calc_link_margin, one call each): a row each, the spread and the recommendation.
+export function comparisonPresentation(comparison){
+ if(!comparison?.rows?.length)return null;
+ const db=v=>`${formatDomain(v,2)}`;
+ return {title:'调制方式对比',
+  head:['调制','灵敏度 dBm','接收电平 dBm','余量 dB','满足'],
+  rows:comparison.rows.map(r=>({label:r.label,best:r.label===comparison.recommend,
+   cells:[r.label,formatDomain(r.rx_sensitivity_dbm),db(r.rx_power_dbm),db(r.link_margin_db),r.meets?'满足':'不满足']})),
+  summary:`相差 ${db(comparison.margin_diff_db)} dB · 推荐 ${comparison.recommend}（余量最大）`,
+  note:'各调制共用路径损耗与接收电平；灵敏度为模拟参数，可配置。'};
 }
 
 export function assumptionEdit(state,name,value){

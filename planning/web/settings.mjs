@@ -1,7 +1,7 @@
 // Global model/retrieval defaults: sheet, header summary and per-result provenance.
 export const ROLES=[['requirements','需求理解'],['supplement','补问合并'],['compute_agent','计算建议'],['validator_agent','结构化审查']];
 export const RETRIEVAL={lexical:'词项',dense:'向量',hybrid:'混合'};
-const STATUS={ready:'就绪',loading:'加载中',not_ready:'未就绪',unreachable:'未启动',not_installed:'未安装',unexpected:'端口被占用',unknown:'状态未知'};
+const STATUS={ready:'就绪',standby:'未加载',loading:'加载中',not_ready:'未就绪',unreachable:'未启动',not_installed:'未安装',unexpected:'端口被占用',unknown:'状态未知'};
 const EMBED={ready:'就绪',loading:'预热中',cold:'未预热',not_installed:'未安装',failed:'加载失败',disabled:'未启用'};
 
 export function factorySettings(models){
@@ -48,6 +48,21 @@ export function settingsDrift(state,settings){
  return out;
 }
 
+// The line under the model list: switch the loaded model to the selected one, or how the last switch went.
+export function switchView({draft,models,status,switcher,locked}){
+ if(switcher?.state==='switching')return {tone:'run',text:`正在切换到 ${shortName(models,switcher.model_id)} · 已等待 ${Math.round((switcher.elapsed_ms||0)/1000)} s`,
+  hint:'停掉当前模型、加载所选模型；完成前不能提交任务。'};
+ const id=draft?.chat?.default,name=shortName(models,id),st=status?.[id];
+ const last=switcher?.model_id===id&&['done','failed'].includes(switcher?.state)?switcher:null;
+ if(st==='ready')return last?.state==='done'?{tone:'ok',text:last.message}:null;
+ if(st==='not_installed')return {tone:'',text:`${name} 未安装，不能切换。`};
+ if(st==='unexpected'){const port=byId(models,id)?.endpoint?.split(':').pop();return {tone:'err',text:`端口 ${port} 被其他程序占用，不能切换。`};}
+ if(!st)return null;
+ const text=last?.state==='failed'?last.message:{standby:`${name} 未加载。`,unreachable:`${name} 未启动。`}[st]||`${name} ${STATUS[st]||'状态未知'}。`;
+ return {tone:last?.state==='failed'?'err':'',text,action:{label:'切换',disabled:!!locked,title:locked||''},
+  hint:locked||'停掉当前模型、加载所选模型，约需几十秒；完成前不能提交任务。'};
+}
+
 function segmented(el,options,value,onPick,label){
  const group=el('div',undefined,'segmented');group.setAttribute('role','group');group.setAttribute('aria-label',label);
  for(const [id,text] of options){const b=el('button',text,id===value?'selected':'');b.type='button';b.setAttribute('aria-pressed',String(id===value));b.addEventListener('click',()=>onPick(id));group.append(b);}
@@ -55,7 +70,7 @@ function segmented(el,options,value,onPick,label){
 }
 function section(el,title,...children){const s=el('section',undefined,'sheet-section');s.append(el('h3',title),...children);return s;}
 
-export function renderSettingsForm(host,{draft,models,status,corpus,el,onChange}){
+export function renderSettingsForm(host,{draft,models,status,corpus,el,onChange,switcher,locked,onSwitch}){
  host.replaceChildren();
  const set=fn=>{fn(draft);onChange(draft);};
  const llm=draft.mode_default==='llm';
@@ -65,11 +80,18 @@ export function renderSettingsForm(host,{draft,models,status,corpus,el,onChange}
  const chats=models.models.filter(m=>m.kind==='chat'),list=el('div',undefined,'model-list');
  for(const m of chats){
   const row=el('label',undefined,'model-option'),radio=el('input');radio.type='radio';radio.name='chat-default';radio.value=m.id;
-  radio.checked=draft.chat.default===m.id;radio.disabled=!m.strict;radio.addEventListener('change',()=>set(d=>{d.chat.default=m.id;}));
+  radio.checked=draft.chat.default===m.id;radio.disabled=!m.strict||switcher?.state==='switching';radio.addEventListener('change',()=>set(d=>{d.chat.default=m.id;}));
   const text=el('span',undefined,'model-text');text.append(el('strong',m.display_name),
    el('small',`${m.runtime} · 上下文 ${m.context} · 超时 ${m.defaults?.timeout_s??30} s`+(m.strict?'':' · 不支持严格结构化输出')));
   const st=status?.[m.id]||'unknown';
   row.append(radio,text,el('span',STATUS[st]||st,'chip '+(st==='ready'?'ok':st==='loading'?'run':'')));list.append(row);
+ }
+ const view=switchView({draft,models,status,switcher,locked}),line=el('div',undefined,'switch-line');
+ if(view){
+  const text=el('p',undefined,'switch-text '+view.tone);text.append(el('span',view.text,'switch-status'));
+  if(view.action){const b=el('button',view.action.label,'secondary compact');b.type='button';b.id='switch-model';b.disabled=view.action.disabled;
+   if(view.action.title)b.title=view.action.title;b.addEventListener('click',()=>onSwitch?.(draft.chat.default));text.append(b);}
+  line.append(text);if(view.hint)line.append(el('p',view.hint,'hint'));
  }
  const roles=el('details',undefined,'sheet-details');roles.append(el('summary','按角色覆盖（4 个角色）'));
  for(const [role,name] of ROLES){
@@ -79,7 +101,7 @@ export function renderSettingsForm(host,{draft,models,status,corpus,el,onChange}
   select.value=draft.chat.roles[role]||'';select.addEventListener('change',()=>set(d=>{d.chat.roles[role]=select.value||null;}));
   row.append(el('span',name),select);roles.append(row);
  }
- host.append(section(el,'生成模型',list,el('p','在 config/models.json 登记并把权重放入 models/ 后，新模型出现在这里。运行期从不下载。','hint'),roles));
+ host.append(section(el,'生成模型',list,line,el('p','在 config/models.json 登记并把权重放入 models/ 后，新模型出现在这里。运行期从不下载。','hint'),roles));
  if(!llm)host.lastChild.classList.add('dimmed');
 
  const r=draft.retrieval,embed=models.embeddings?.[r.embedding];
