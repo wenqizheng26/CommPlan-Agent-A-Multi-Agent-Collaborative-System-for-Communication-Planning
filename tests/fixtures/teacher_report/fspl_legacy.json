@@ -1,0 +1,2412 @@
+{
+  "provenance": {
+    "kind": "real-deterministic-task-service",
+    "generator": "tests/generate_teacher_report_fixtures.py",
+    "source": "tests/test_calculation_plans.py:test_single_step_fspl_keeps_the_v010_result_shape",
+    "git_commit": "e5b77ca8dd9af64446aae5d5ed79b47256115adf",
+    "captured_at": "2026-10-02T02:42:36.768138+00:00",
+    "mode": "deterministic",
+    "retrieval_mode": "lexical",
+    "storage": "temporary SQLite database, removed after capture",
+    "initial_status": "AWAITING_CONFIRMATION",
+    "model_call_count": 0,
+    "tool_event_count": 1,
+    "notes": "Native single-step FSPL result shape has no result.steps."
+  },
+  "commands": [
+    {
+      "action": "create",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "expected_revision": 0,
+      "expected_state_version": 0,
+      "input": {
+        "raw_text": "按自由空间基准计算，频率2GHz，距离1km，求路径损耗。",
+        "manual_parameters": {},
+        "condition": null,
+        "target": null
+      },
+      "mode": "deterministic"
+    },
+    {
+      "action": "confirm",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "expected_revision": 0,
+      "expected_state_version": 1,
+      "review_hash": "1c4754532efec26ab2f72413e3820713b7ae940b79fa2ad1f9a546a62cc4b291"
+    }
+  ],
+  "state": {
+    "request": {
+      "schema_version": "1.0.0",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "revision": 0,
+      "request_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "raw_text": "按自由空间基准计算，频率2GHz，距离1km，求路径损耗。",
+      "manual_parameters": {},
+      "condition": null,
+      "target": null
+    },
+    "report": {
+      "schema_version": "1.0.0",
+      "profile": "requirements-slice-v1",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "revision": 0,
+      "request_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "parameters_proposal": [
+        {
+          "parameter_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:distance_km",
+          "canonical_name": "distance_km",
+          "value": 1.0,
+          "unit": "km",
+          "original_value": 1.0,
+          "original_unit": "km",
+          "status": "user_provided",
+          "origins": [
+            {
+              "kind": "user_text",
+              "source_ref": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:raw_text",
+              "span": [
+                17,
+                22
+              ],
+              "value": 1.0,
+              "unit": "km",
+              "origin_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:distance_km:origin:0"
+            }
+          ],
+          "evidence_ids": [],
+          "created_revision": 0
+        },
+        {
+          "parameter_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:frequency_ghz",
+          "canonical_name": "frequency_ghz",
+          "value": 2.0,
+          "unit": "GHz",
+          "original_value": 2.0,
+          "original_unit": "GHz",
+          "status": "user_provided",
+          "origins": [
+            {
+              "kind": "user_text",
+              "source_ref": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:raw_text",
+              "span": [
+                10,
+                16
+              ],
+              "value": 2.0,
+              "unit": "GHz",
+              "origin_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:frequency_ghz:origin:0"
+            }
+          ],
+          "evidence_ids": [],
+          "created_revision": 0
+        }
+      ],
+      "conflicts": [],
+      "missing_parameters": [],
+      "candidate_models": [
+        {
+          "model_id": "fspl_ghz",
+          "version": "1.0.0",
+          "status": "verified",
+          "evidence_ids": [
+            "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0"
+          ]
+        }
+      ],
+      "calculation_plan_proposal": {
+        "plan_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:plan",
+        "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+        "revision": 0,
+        "objective": "自由空间单链路损耗基准",
+        "selected_model": [
+          "fspl_ghz"
+        ],
+        "required_parameters": [
+          "frequency_ghz",
+          "distance_km"
+        ],
+        "assumptions": [
+          "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+          "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。"
+        ],
+        "evidence_ids": [
+          "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0"
+        ],
+        "steps": [
+          {
+            "step_id": "fspl-step",
+            "tool_id": "fspl_ghz",
+            "inputs": {
+              "frequency_ghz": {
+                "kind": "parameter",
+                "ref": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:frequency_ghz",
+                "unit": "GHz"
+              },
+              "distance_km": {
+                "kind": "parameter",
+                "ref": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:distance_km",
+                "unit": "km"
+              }
+            },
+            "expected_unit": "dB",
+            "dependencies": [],
+            "required_conditions": [
+              "free_space"
+            ]
+          }
+        ],
+        "plan_hash": "e91febcb2cbbdfd92cafe8e92acfc7f63fdabe0e322a1ef76ce8d652e1f609fb",
+        "origin": "program",
+        "assessment": {
+          "mode": "skipped",
+          "label": "未做模型适用性评估",
+          "notes": []
+        }
+      },
+      "evidence_ids": [
+        "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0"
+      ],
+      "evidence_refs": [
+        {
+          "evidence_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+          "kind": "formula_card",
+          "source_title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+          "source_url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+          "source_id": null,
+          "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+          "excerpt": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。",
+          "content_hash": "2ed0e6930cf489981f389e87e7adcdb1af4b49eed9b495527ed2c5598898ba6d",
+          "catalog_id": "fspl_ghz",
+          "card_version": "1.0.0",
+          "status": "verified",
+          "knowledge_snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+          "parameter_names": [
+            "frequency_ghz",
+            "distance_km"
+          ],
+          "relevance_rank": 1
+        }
+      ],
+      "knowledge_snapshot": {
+        "snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+        "catalog_hash": "51840382feae5e0045dfe1f965619164505360dfcc3961e9e17719c132e95255",
+        "source_manifest_hash": "cc4caaa18b921650cff98ff65ff83c33d9979d0dcc953db217e267e06c8e1c52",
+        "embedding_weights_hash": null,
+        "tokenizer_config_hash": null,
+        "encoder_rule_version": "not-used",
+        "retrieval_rule_version": "requirements-lexical-v1"
+      },
+      "questions": [],
+      "assumptions": [
+        "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+        "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。"
+      ],
+      "conditions": [
+        "free_space",
+        "free_space_reference"
+      ],
+      "targets": [
+        "fspl_ghz"
+      ],
+      "requirement": null,
+      "solve": null,
+      "entities": [],
+      "execution_status": "AWAITING_CONFIRMATION",
+      "component_modes": {
+        "interpretation": "deterministic",
+        "retrieval": "lexical_fallback"
+      },
+      "runtime_health": "ready",
+      "diagnostics": [
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "frequency_ghz",
+            "excerpt": "频率2GHz",
+            "span": [
+              10,
+              16
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_EXCERPT",
+          "message": "用户原文来源",
+          "details": {
+            "field": "distance_km",
+            "excerpt": "距离1km",
+            "span": [
+              17,
+              22
+            ]
+          }
+        },
+        {
+          "code": "SOURCE_REVIEW_LIMITATION",
+          "message": "来源状态来自库内登记，本次没有独立复核原始文献。",
+          "details": {}
+        }
+      ],
+      "planning_role": {
+        "proposal": {
+          "steps": [
+            {
+              "card": "fspl_ghz",
+              "why": "按登记公式连接所需物理量"
+            }
+          ],
+          "assessment": {
+            "verdict": "review",
+            "notes": [
+              {
+                "kind": "goal",
+                "text": "程序按目标连接计算步骤；未做模型适用性评估。",
+                "refs": [
+                  "target"
+                ]
+              }
+            ]
+          }
+        },
+        "mode": "deterministic",
+        "attempts": 0,
+        "diagnostics": [],
+        "origin": "program",
+        "agrees_with_program": true
+      }
+    },
+    "review": {
+      "schema_version": "1.0.0",
+      "profile": "confirmed-fspl-loop-v1",
+      "request": {
+        "schema_version": "1.0.0",
+        "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+        "revision": 0,
+        "request_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+        "raw_text": "按自由空间基准计算，频率2GHz，距离1km，求路径损耗。",
+        "manual_parameters": {},
+        "condition": null,
+        "target": null
+      },
+      "report": {
+        "schema_version": "1.0.0",
+        "profile": "requirements-slice-v1",
+        "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+        "revision": 0,
+        "request_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+        "parameters_proposal": [
+          {
+            "parameter_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:distance_km",
+            "canonical_name": "distance_km",
+            "value": 1.0,
+            "unit": "km",
+            "original_value": 1.0,
+            "original_unit": "km",
+            "status": "user_provided",
+            "origins": [
+              {
+                "kind": "user_text",
+                "source_ref": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:raw_text",
+                "span": [
+                  17,
+                  22
+                ],
+                "value": 1.0,
+                "unit": "km",
+                "origin_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:distance_km:origin:0"
+              }
+            ],
+            "evidence_ids": [],
+            "created_revision": 0
+          },
+          {
+            "parameter_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:frequency_ghz",
+            "canonical_name": "frequency_ghz",
+            "value": 2.0,
+            "unit": "GHz",
+            "original_value": 2.0,
+            "original_unit": "GHz",
+            "status": "user_provided",
+            "origins": [
+              {
+                "kind": "user_text",
+                "source_ref": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:raw_text",
+                "span": [
+                  10,
+                  16
+                ],
+                "value": 2.0,
+                "unit": "GHz",
+                "origin_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:frequency_ghz:origin:0"
+              }
+            ],
+            "evidence_ids": [],
+            "created_revision": 0
+          }
+        ],
+        "conflicts": [],
+        "missing_parameters": [],
+        "candidate_models": [
+          {
+            "model_id": "fspl_ghz",
+            "version": "1.0.0",
+            "status": "verified",
+            "evidence_ids": [
+              "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0"
+            ]
+          }
+        ],
+        "calculation_plan_proposal": {
+          "plan_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:plan",
+          "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+          "revision": 0,
+          "objective": "自由空间单链路损耗基准",
+          "selected_model": [
+            "fspl_ghz"
+          ],
+          "required_parameters": [
+            "frequency_ghz",
+            "distance_km"
+          ],
+          "assumptions": [
+            "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+            "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。"
+          ],
+          "evidence_ids": [
+            "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0"
+          ],
+          "steps": [
+            {
+              "step_id": "fspl-step",
+              "tool_id": "fspl_ghz",
+              "inputs": {
+                "frequency_ghz": {
+                  "kind": "parameter",
+                  "ref": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:frequency_ghz",
+                  "unit": "GHz"
+                },
+                "distance_km": {
+                  "kind": "parameter",
+                  "ref": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:distance_km",
+                  "unit": "km"
+                }
+              },
+              "expected_unit": "dB",
+              "dependencies": [],
+              "required_conditions": [
+                "free_space"
+              ]
+            }
+          ],
+          "plan_hash": "e91febcb2cbbdfd92cafe8e92acfc7f63fdabe0e322a1ef76ce8d652e1f609fb",
+          "origin": "program",
+          "assessment": {
+            "mode": "skipped",
+            "label": "未做模型适用性评估",
+            "notes": []
+          }
+        },
+        "evidence_ids": [
+          "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0"
+        ],
+        "evidence_refs": [
+          {
+            "evidence_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+            "kind": "formula_card",
+            "source_title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+            "source_url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+            "source_id": null,
+            "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+            "excerpt": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。",
+            "content_hash": "2ed0e6930cf489981f389e87e7adcdb1af4b49eed9b495527ed2c5598898ba6d",
+            "catalog_id": "fspl_ghz",
+            "card_version": "1.0.0",
+            "status": "verified",
+            "knowledge_snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+            "parameter_names": [
+              "frequency_ghz",
+              "distance_km"
+            ],
+            "relevance_rank": 1
+          }
+        ],
+        "knowledge_snapshot": {
+          "snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+          "catalog_hash": "51840382feae5e0045dfe1f965619164505360dfcc3961e9e17719c132e95255",
+          "source_manifest_hash": "cc4caaa18b921650cff98ff65ff83c33d9979d0dcc953db217e267e06c8e1c52",
+          "embedding_weights_hash": null,
+          "tokenizer_config_hash": null,
+          "encoder_rule_version": "not-used",
+          "retrieval_rule_version": "requirements-lexical-v1"
+        },
+        "questions": [],
+        "assumptions": [
+          "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+          "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。"
+        ],
+        "conditions": [
+          "free_space",
+          "free_space_reference"
+        ],
+        "targets": [
+          "fspl_ghz"
+        ],
+        "requirement": null,
+        "solve": null,
+        "entities": [],
+        "execution_status": "AWAITING_CONFIRMATION",
+        "component_modes": {
+          "interpretation": "deterministic",
+          "retrieval": "lexical_fallback"
+        },
+        "runtime_health": "ready",
+        "diagnostics": [
+          {
+            "code": "SOURCE_EXCERPT",
+            "message": "用户原文来源",
+            "details": {
+              "field": "frequency_ghz",
+              "excerpt": "频率2GHz",
+              "span": [
+                10,
+                16
+              ]
+            }
+          },
+          {
+            "code": "SOURCE_EXCERPT",
+            "message": "用户原文来源",
+            "details": {
+              "field": "distance_km",
+              "excerpt": "距离1km",
+              "span": [
+                17,
+                22
+              ]
+            }
+          },
+          {
+            "code": "SOURCE_REVIEW_LIMITATION",
+            "message": "来源状态来自库内登记，本次没有独立复核原始文献。",
+            "details": {}
+          }
+        ],
+        "planning_role": {
+          "proposal": {
+            "steps": [
+              {
+                "card": "fspl_ghz",
+                "why": "按登记公式连接所需物理量"
+              }
+            ],
+            "assessment": {
+              "verdict": "review",
+              "notes": [
+                {
+                  "kind": "goal",
+                  "text": "程序按目标连接计算步骤；未做模型适用性评估。",
+                  "refs": [
+                    "target"
+                  ]
+                }
+              ]
+            }
+          },
+          "mode": "deterministic",
+          "attempts": 0,
+          "diagnostics": [],
+          "origin": "program",
+          "agrees_with_program": true
+        }
+      },
+      "model": {
+        "id": "fspl_ghz",
+        "title": "自由空间基本传输损耗",
+        "description": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。",
+        "version": "1.0.0",
+        "status": "verified",
+        "expression": "92.4 + 20*log10(frequency_ghz) + 20*log10(distance_km)",
+        "output": {
+          "name": "path_loss_db",
+          "unit": "dB"
+        },
+        "parameters": {
+          "frequency_ghz": {
+            "unit": "GHz",
+            "description": "载波频率",
+            "exclusive_min": 0
+          },
+          "distance_km": {
+            "unit": "km",
+            "description": "发射端到接收端的路径距离",
+            "exclusive_min": 0,
+            "search_range": [
+              0.001,
+              1000
+            ]
+          }
+        },
+        "applicability": {
+          "requires": [
+            "free_space"
+          ],
+          "notes": [
+            "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+            "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。"
+          ]
+        },
+        "sources": [
+          {
+            "title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+            "url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+            "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+            "checked_date": "2026-09-14",
+            "derivation": "原式 f 为 MHz、d 为 km；此卡将 f 换为 GHz，保持原标准舍入常数。"
+          }
+        ],
+        "examples": [
+          {
+            "inputs": {
+              "frequency_ghz": 4.5,
+              "distance_km": 0.2
+            },
+            "expected": 91.48485018878651,
+            "tolerance": 1e-10
+          },
+          {
+            "inputs": {
+              "frequency_ghz": 4.5,
+              "distance_km": 0.4
+            },
+            "expected": 97.50545010206613,
+            "tolerance": 1e-10
+          }
+        ]
+      },
+      "review_hash": "1c4754532efec26ab2f72413e3820713b7ae940b79fa2ad1f9a546a62cc4b291"
+    },
+    "confirmed_snapshot": {
+      "schema_version": "1.0.0",
+      "profile": "confirmed-fspl-loop-v1",
+      "snapshot_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "revision": 0,
+      "review": {
+        "model": {
+          "applicability": {
+            "notes": [
+              "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+              "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。"
+            ],
+            "requires": [
+              "free_space"
+            ]
+          },
+          "description": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。",
+          "examples": [
+            {
+              "expected": 91.48485018878651,
+              "inputs": {
+                "distance_km": 0.2,
+                "frequency_ghz": 4.5
+              },
+              "tolerance": 1e-10
+            },
+            {
+              "expected": 97.50545010206613,
+              "inputs": {
+                "distance_km": 0.4,
+                "frequency_ghz": 4.5
+              },
+              "tolerance": 1e-10
+            }
+          ],
+          "expression": "92.4 + 20*log10(frequency_ghz) + 20*log10(distance_km)",
+          "id": "fspl_ghz",
+          "output": {
+            "name": "path_loss_db",
+            "unit": "dB"
+          },
+          "parameters": {
+            "distance_km": {
+              "description": "发射端到接收端的路径距离",
+              "exclusive_min": 0,
+              "search_range": [
+                0.001,
+                1000
+              ],
+              "unit": "km"
+            },
+            "frequency_ghz": {
+              "description": "载波频率",
+              "exclusive_min": 0,
+              "unit": "GHz"
+            }
+          },
+          "sources": [
+            {
+              "checked_date": "2026-09-14",
+              "derivation": "原式 f 为 MHz、d 为 km；此卡将 f 换为 GHz，保持原标准舍入常数。",
+              "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+              "title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+              "url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf"
+            }
+          ],
+          "status": "verified",
+          "title": "自由空间基本传输损耗",
+          "version": "1.0.0"
+        },
+        "profile": "confirmed-fspl-loop-v1",
+        "report": {
+          "assumptions": [
+            "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+            "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。"
+          ],
+          "calculation_plan_proposal": {
+            "assessment": {
+              "label": "未做模型适用性评估",
+              "mode": "skipped",
+              "notes": []
+            },
+            "assumptions": [
+              "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+              "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。"
+            ],
+            "evidence_ids": [
+              "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0"
+            ],
+            "objective": "自由空间单链路损耗基准",
+            "origin": "program",
+            "plan_hash": "e91febcb2cbbdfd92cafe8e92acfc7f63fdabe0e322a1ef76ce8d652e1f609fb",
+            "plan_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:plan",
+            "required_parameters": [
+              "frequency_ghz",
+              "distance_km"
+            ],
+            "revision": 0,
+            "selected_model": [
+              "fspl_ghz"
+            ],
+            "steps": [
+              {
+                "dependencies": [],
+                "expected_unit": "dB",
+                "inputs": {
+                  "distance_km": {
+                    "kind": "parameter",
+                    "ref": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:distance_km",
+                    "unit": "km"
+                  },
+                  "frequency_ghz": {
+                    "kind": "parameter",
+                    "ref": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:frequency_ghz",
+                    "unit": "GHz"
+                  }
+                },
+                "required_conditions": [
+                  "free_space"
+                ],
+                "step_id": "fspl-step",
+                "tool_id": "fspl_ghz"
+              }
+            ],
+            "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8"
+          },
+          "candidate_models": [
+            {
+              "evidence_ids": [
+                "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0"
+              ],
+              "model_id": "fspl_ghz",
+              "status": "verified",
+              "version": "1.0.0"
+            }
+          ],
+          "component_modes": {
+            "interpretation": "deterministic",
+            "retrieval": "lexical_fallback"
+          },
+          "conditions": [
+            "free_space",
+            "free_space_reference"
+          ],
+          "conflicts": [],
+          "diagnostics": [
+            {
+              "code": "SOURCE_EXCERPT",
+              "details": {
+                "excerpt": "频率2GHz",
+                "field": "frequency_ghz",
+                "span": [
+                  10,
+                  16
+                ]
+              },
+              "message": "用户原文来源"
+            },
+            {
+              "code": "SOURCE_EXCERPT",
+              "details": {
+                "excerpt": "距离1km",
+                "field": "distance_km",
+                "span": [
+                  17,
+                  22
+                ]
+              },
+              "message": "用户原文来源"
+            },
+            {
+              "code": "SOURCE_REVIEW_LIMITATION",
+              "details": {},
+              "message": "来源状态来自库内登记，本次没有独立复核原始文献。"
+            }
+          ],
+          "entities": [],
+          "evidence_ids": [
+            "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0"
+          ],
+          "evidence_refs": [
+            {
+              "card_version": "1.0.0",
+              "catalog_id": "fspl_ghz",
+              "content_hash": "2ed0e6930cf489981f389e87e7adcdb1af4b49eed9b495527ed2c5598898ba6d",
+              "evidence_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+              "excerpt": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。",
+              "kind": "formula_card",
+              "knowledge_snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+              "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+              "parameter_names": [
+                "frequency_ghz",
+                "distance_km"
+              ],
+              "relevance_rank": 1,
+              "source_id": null,
+              "source_title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+              "source_url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+              "status": "verified"
+            }
+          ],
+          "execution_status": "AWAITING_CONFIRMATION",
+          "knowledge_snapshot": {
+            "catalog_hash": "51840382feae5e0045dfe1f965619164505360dfcc3961e9e17719c132e95255",
+            "embedding_weights_hash": null,
+            "encoder_rule_version": "not-used",
+            "retrieval_rule_version": "requirements-lexical-v1",
+            "snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+            "source_manifest_hash": "cc4caaa18b921650cff98ff65ff83c33d9979d0dcc953db217e267e06c8e1c52",
+            "tokenizer_config_hash": null
+          },
+          "missing_parameters": [],
+          "parameters_proposal": [
+            {
+              "canonical_name": "distance_km",
+              "created_revision": 0,
+              "evidence_ids": [],
+              "original_unit": "km",
+              "original_value": 1.0,
+              "origins": [
+                {
+                  "kind": "user_text",
+                  "origin_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:distance_km:origin:0",
+                  "source_ref": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:raw_text",
+                  "span": [
+                    17,
+                    22
+                  ],
+                  "unit": "km",
+                  "value": 1.0
+                }
+              ],
+              "parameter_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:distance_km",
+              "status": "user_provided",
+              "unit": "km",
+              "value": 1.0
+            },
+            {
+              "canonical_name": "frequency_ghz",
+              "created_revision": 0,
+              "evidence_ids": [],
+              "original_unit": "GHz",
+              "original_value": 2.0,
+              "origins": [
+                {
+                  "kind": "user_text",
+                  "origin_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:frequency_ghz:origin:0",
+                  "source_ref": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:raw_text",
+                  "span": [
+                    10,
+                    16
+                  ],
+                  "unit": "GHz",
+                  "value": 2.0
+                }
+              ],
+              "parameter_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:frequency_ghz",
+              "status": "user_provided",
+              "unit": "GHz",
+              "value": 2.0
+            }
+          ],
+          "planning_role": {
+            "agrees_with_program": true,
+            "attempts": 0,
+            "diagnostics": [],
+            "mode": "deterministic",
+            "origin": "program",
+            "proposal": {
+              "assessment": {
+                "notes": [
+                  {
+                    "kind": "goal",
+                    "refs": [
+                      "target"
+                    ],
+                    "text": "程序按目标连接计算步骤；未做模型适用性评估。"
+                  }
+                ],
+                "verdict": "review"
+              },
+              "steps": [
+                {
+                  "card": "fspl_ghz",
+                  "why": "按登记公式连接所需物理量"
+                }
+              ]
+            }
+          },
+          "profile": "requirements-slice-v1",
+          "questions": [],
+          "request_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+          "requirement": null,
+          "revision": 0,
+          "runtime_health": "ready",
+          "schema_version": "1.0.0",
+          "solve": null,
+          "targets": [
+            "fspl_ghz"
+          ],
+          "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8"
+        },
+        "request": {
+          "condition": null,
+          "manual_parameters": {},
+          "raw_text": "按自由空间基准计算，频率2GHz，距离1km，求路径损耗。",
+          "request_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+          "revision": 0,
+          "schema_version": "1.0.0",
+          "target": null,
+          "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8"
+        },
+        "review_hash": "1c4754532efec26ab2f72413e3820713b7ae940b79fa2ad1f9a546a62cc4b291",
+        "schema_version": "1.0.0"
+      },
+      "confirmed_by": "local_user",
+      "confirmed_at": "2026-10-02T02:42:35.679927+00:00",
+      "content_hash": "320a80ddc3f488ea164fc153b158d6df4babd3fbfdd6e9fd64989a65e4065c1b"
+    },
+    "result": {
+      "result_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "revision": 0,
+      "snapshot_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed",
+      "snapshot_hash": "320a80ddc3f488ea164fc153b158d6df4babd3fbfdd6e9fd64989a65e4065c1b",
+      "plan_hash": "e91febcb2cbbdfd92cafe8e92acfc7f63fdabe0e322a1ef76ce8d652e1f609fb",
+      "model_id": "fspl_ghz",
+      "model_version": "1.0.0",
+      "formula": "92.4 + 20*log10(frequency_ghz) + 20*log10(distance_km)",
+      "normalized_inputs": {
+        "frequency_ghz": 2.0,
+        "distance_km": 1.0
+      },
+      "outputs": [
+        {
+          "name": "path_loss_db",
+          "value": 98.42059991327963,
+          "unit": "dB"
+        }
+      ],
+      "evidence_ids": [
+        "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0"
+      ],
+      "runtime_mode": "deterministic",
+      "tool_version": "confirmed-fspl-v1/p1-1.0.0",
+      "started_at": "2026-10-02T02:42:36.351580+00:00",
+      "finished_at": "2026-10-02T02:42:36.433190+00:00",
+      "result_hash": "d0e0b85933aa3c8832c0d0957427d14912d73135b55d21a69e6595c4b84d4578"
+    },
+    "validations": [
+      {
+        "validation_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result:result_integrity",
+        "validator_id": "result_integrity",
+        "severity": "hard",
+        "passed": true,
+        "target_hash": "d0e0b85933aa3c8832c0d0957427d14912d73135b55d21a69e6595c4b84d4578"
+      },
+      {
+        "validation_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result:snapshot_identity",
+        "validator_id": "snapshot_identity",
+        "severity": "hard",
+        "passed": true,
+        "target_hash": "d0e0b85933aa3c8832c0d0957427d14912d73135b55d21a69e6595c4b84d4578"
+      },
+      {
+        "validation_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result:input_consistency",
+        "validator_id": "input_consistency",
+        "severity": "hard",
+        "passed": true,
+        "target_hash": "d0e0b85933aa3c8832c0d0957427d14912d73135b55d21a69e6595c4b84d4578"
+      },
+      {
+        "validation_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result:plan_identity",
+        "validator_id": "plan_identity",
+        "severity": "hard",
+        "passed": true,
+        "target_hash": "d0e0b85933aa3c8832c0d0957427d14912d73135b55d21a69e6595c4b84d4578"
+      },
+      {
+        "validation_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result:evidence_consistency",
+        "validator_id": "evidence_consistency",
+        "severity": "hard",
+        "passed": true,
+        "target_hash": "d0e0b85933aa3c8832c0d0957427d14912d73135b55d21a69e6595c4b84d4578"
+      },
+      {
+        "validation_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result:model_identity",
+        "validator_id": "model_identity",
+        "severity": "hard",
+        "passed": true,
+        "target_hash": "d0e0b85933aa3c8832c0d0957427d14912d73135b55d21a69e6595c4b84d4578"
+      },
+      {
+        "validation_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result:numeric_domain",
+        "validator_id": "numeric_domain",
+        "severity": "hard",
+        "passed": true,
+        "target_hash": "d0e0b85933aa3c8832c0d0957427d14912d73135b55d21a69e6595c4b84d4578"
+      },
+      {
+        "validation_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result:fspl_magnitude",
+        "validator_id": "fspl_magnitude",
+        "severity": "hard",
+        "passed": true,
+        "target_hash": "d0e0b85933aa3c8832c0d0957427d14912d73135b55d21a69e6595c4b84d4578"
+      }
+    ],
+    "final_report": {
+      "report_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result:report",
+      "result_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result",
+      "result_hash": "d0e0b85933aa3c8832c0d0957427d14912d73135b55d21a69e6595c4b84d4578",
+      "snapshot_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed",
+      "snapshot_hash": "320a80ddc3f488ea164fc153b158d6df4babd3fbfdd6e9fd64989a65e4065c1b",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "revision": 0,
+      "normalized_inputs": {
+        "frequency_ghz": 2.0,
+        "distance_km": 1.0
+      },
+      "outputs": [
+        {
+          "name": "path_loss_db",
+          "value": 98.42059991327963,
+          "unit": "dB"
+        }
+      ],
+      "model_id": "fspl_ghz",
+      "model_version": "1.0.0",
+      "formula": "92.4 + 20*log10(frequency_ghz) + 20*log10(distance_km)",
+      "parameters": [
+        {
+          "canonical_name": "distance_km",
+          "created_revision": 0,
+          "evidence_ids": [],
+          "original_unit": "km",
+          "original_value": 1.0,
+          "origins": [
+            {
+              "kind": "user_text",
+              "origin_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:distance_km:origin:0",
+              "source_ref": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:raw_text",
+              "span": [
+                17,
+                22
+              ],
+              "unit": "km",
+              "value": 1.0
+            }
+          ],
+          "parameter_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:distance_km",
+          "status": "user_provided",
+          "unit": "km",
+          "value": 1.0
+        },
+        {
+          "canonical_name": "frequency_ghz",
+          "created_revision": 0,
+          "evidence_ids": [],
+          "original_unit": "GHz",
+          "original_value": 2.0,
+          "origins": [
+            {
+              "kind": "user_text",
+              "origin_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:frequency_ghz:origin:0",
+              "source_ref": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:raw_text",
+              "span": [
+                10,
+                16
+              ],
+              "unit": "GHz",
+              "value": 2.0
+            }
+          ],
+          "parameter_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:frequency_ghz",
+          "status": "user_provided",
+          "unit": "GHz",
+          "value": 2.0
+        }
+      ],
+      "conditions": [
+        "free_space",
+        "free_space_reference"
+      ],
+      "validation_ids": [
+        "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result:result_integrity",
+        "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result:snapshot_identity",
+        "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result:input_consistency",
+        "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result:plan_identity",
+        "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result:evidence_consistency",
+        "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result:model_identity",
+        "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result:numeric_domain",
+        "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result:fspl_magnitude"
+      ],
+      "conclusion": "按已确认自由空间条件，98.42 dB。",
+      "limitations": [
+        "适用于源尺寸和波长允许的远场自由空间传播。用户确认的是模型假设，程序不据此声称实际场地满足假设。",
+        "使用 ITU-R 式(6)的舍入常数：32.4 + 20log10(1000) = 92.4。与用精确光速和 4π 计算的常数有约 0.048 dB 差异。",
+        "当前只检查了明显异常的距离/波长组合，未完整验证天线远场条件；结果仅用于所声明的自由空间基准。",
+        "结果仅为自由空间基准，未估计真实海面反射、散射或遮挡，也不代表链路通信可行。",
+        "区间按输入上下界的组合计算，不包含概率或置信度；离散候选分别报告。"
+      ],
+      "evidence_refs": [
+        {
+          "card_version": "1.0.0",
+          "catalog_id": "fspl_ghz",
+          "content_hash": "2ed0e6930cf489981f389e87e7adcdb1af4b49eed9b495527ed2c5598898ba6d",
+          "evidence_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0",
+          "excerpt": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。",
+          "kind": "formula_card",
+          "knowledge_snapshot_id": "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210",
+          "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+          "parameter_names": [
+            "frequency_ghz",
+            "distance_km"
+          ],
+          "relevance_rank": 1,
+          "source_id": null,
+          "source_title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+          "source_url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+          "status": "verified"
+        }
+      ],
+      "component_modes": {
+        "interpretation": "deterministic",
+        "retrieval": "lexical_fallback",
+        "calculation": "deterministic",
+        "review": "deterministic",
+        "orchestrator": "bounded_policy"
+      },
+      "runtime_health": "ready",
+      "generated_at": "2026-10-02T02:42:36.738572+00:00",
+      "review": {
+        "assessment_hash": "0fabd108be98c3b511ec3b3de82e6759894ab919e1084f2c270b1c5868120f3e",
+        "decision": "pass",
+        "label": "通过",
+        "mode": "deterministic",
+        "summary": "声明的自由空间基准结果通过校验；不据此推断真实链路可用。",
+        "opinions": [],
+        "withheld": []
+      },
+      "answer": {
+        "text": null,
+        "mode": "deterministic",
+        "withheld": false
+      },
+      "explanation": []
+    },
+    "status": "COMPLETED",
+    "trace": [
+      {
+        "node": "receive_request",
+        "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+        "revision": 0,
+        "started_at": "2026-10-02T02:42:33.733398+00:00",
+        "finished_at": "2026-10-02T02:42:33.734401+00:00",
+        "status": "RECEIVED",
+        "reason_code": "",
+        "message": "",
+        "attempt": 1,
+        "component_modes": {}
+      },
+      {
+        "node": "propose_requirements",
+        "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+        "revision": 0,
+        "started_at": "2026-10-02T02:42:33.739973+00:00",
+        "finished_at": "2026-10-02T02:42:34.136276+00:00",
+        "status": "PROPOSED",
+        "reason_code": "",
+        "message": "",
+        "attempt": 1,
+        "component_modes": {}
+      },
+      {
+        "node": "check_requirements",
+        "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+        "revision": 0,
+        "started_at": "2026-10-02T02:42:34.143274+00:00",
+        "finished_at": "2026-10-02T02:42:34.271288+00:00",
+        "status": "AWAITING_CONFIRMATION",
+        "reason_code": "",
+        "message": "",
+        "attempt": 1,
+        "component_modes": {
+          "interpretation": "deterministic",
+          "retrieval": "lexical_fallback"
+        }
+      },
+      {
+        "node": "finish",
+        "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+        "revision": 0,
+        "started_at": "2026-10-02T02:42:34.276347+00:00",
+        "finished_at": "2026-10-02T02:42:34.276347+00:00",
+        "status": "AWAITING_CONFIRMATION",
+        "reason_code": "",
+        "message": "",
+        "attempt": 1,
+        "component_modes": {
+          "interpretation": "deterministic",
+          "retrieval": "lexical_fallback"
+        }
+      },
+      {
+        "node": "human_confirmation",
+        "status": "CONFIRMED",
+        "at": "2026-10-02T02:42:35.994421+00:00"
+      },
+      {
+        "node": "calculation",
+        "status": "CALCULATED",
+        "at": "2026-10-02T02:42:36.459789+00:00"
+      },
+      {
+        "node": "orchestrator",
+        "status": "tool_result_available",
+        "at": "2026-10-02T02:42:36.494344+00:00"
+      },
+      {
+        "node": "validate_result",
+        "status": "PASSED",
+        "at": "2026-10-02T02:42:36.580176+00:00"
+      },
+      {
+        "node": "review_result",
+        "status": "PASS",
+        "at": "2026-10-02T02:42:36.643881+00:00"
+      },
+      {
+        "node": "orchestrator",
+        "status": "review_passed",
+        "at": "2026-10-02T02:42:36.676711+00:00"
+      },
+      {
+        "node": "publish",
+        "status": "COMPLETED",
+        "at": "2026-10-02T02:42:36.762124+00:00"
+      }
+    ],
+    "failure": null,
+    "calculation_role": {
+      "proposal": {
+        "tool_id": "fspl_ghz",
+        "plan_step_id": "fspl-step",
+        "expected_revision": 0,
+        "snapshot_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed"
+      },
+      "mode": "deterministic",
+      "attempts": 0,
+      "diagnostics": []
+    },
+    "review_assessment": {
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "revision": 0,
+      "snapshot_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed",
+      "result_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result",
+      "result_hash": "d0e0b85933aa3c8832c0d0957427d14912d73135b55d21a69e6595c4b84d4578",
+      "facts": {
+        "question": {
+          "id": "question",
+          "text": "按自由空间基准计算，频率2GHz，距离1km，求路径损耗。"
+        },
+        "inputs": [
+          {
+            "id": "in:frequency_ghz",
+            "name": "工作频率",
+            "value": 2.0,
+            "unit": "GHz",
+            "source": "原文“频率2GHz”"
+          },
+          {
+            "id": "in:distance_km",
+            "name": "通信距离",
+            "value": 1.0,
+            "unit": "km",
+            "source": "原文“距离1km”"
+          }
+        ],
+        "steps": [
+          {
+            "id": "step:fspl-step",
+            "name": "路径损耗",
+            "basis": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation，Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+            "uses": [
+              "in:distance_km",
+              "in:frequency_ghz"
+            ],
+            "outputs": [
+              {
+                "value": 98.4206,
+                "unit": "dB"
+              }
+            ]
+          }
+        ],
+        "result": {
+          "id": "result",
+          "outputs": [
+            {
+              "name": "路径损耗",
+              "value": 98.4206,
+              "unit": "dB"
+            }
+          ]
+        },
+        "checks": {
+          "id": "checks",
+          "passed": 8,
+          "total": 8
+        },
+        "assumptions": [],
+        "scope": {
+          "id": "scope",
+          "conditions": [
+            "free_space",
+            "free_space_reference"
+          ]
+        }
+      },
+      "role": {
+        "proposal": {
+          "decision": "pass",
+          "answer": null,
+          "opinions": [],
+          "steps": [],
+          "hidden": []
+        },
+        "mode": "deterministic",
+        "attempts": 0,
+        "diagnostics": []
+      },
+      "assessment_hash": "0fabd108be98c3b511ec3b3de82e6759894ab919e1084f2c270b1c5868120f3e"
+    },
+    "calculation_attempts": 1,
+    "execution_results": [
+      {
+        "result_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result",
+        "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+        "revision": 0,
+        "snapshot_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed",
+        "snapshot_hash": "320a80ddc3f488ea164fc153b158d6df4babd3fbfdd6e9fd64989a65e4065c1b",
+        "plan_hash": "e91febcb2cbbdfd92cafe8e92acfc7f63fdabe0e322a1ef76ce8d652e1f609fb",
+        "model_id": "fspl_ghz",
+        "model_version": "1.0.0",
+        "formula": "92.4 + 20*log10(frequency_ghz) + 20*log10(distance_km)",
+        "normalized_inputs": {
+          "frequency_ghz": 2.0,
+          "distance_km": 1.0
+        },
+        "outputs": [
+          {
+            "name": "path_loss_db",
+            "value": 98.42059991327963,
+            "unit": "dB"
+          }
+        ],
+        "evidence_ids": [
+          "knowledge:a39ee1d72d95575a770f0989c9567a1ab503b3437e1b4f2b0386867e872bd210:fspl_ghz:0"
+        ],
+        "runtime_mode": "deterministic",
+        "tool_version": "confirmed-fspl-v1/p1-1.0.0",
+        "started_at": "2026-10-02T02:42:36.351580+00:00",
+        "finished_at": "2026-10-02T02:42:36.433190+00:00",
+        "result_hash": "d0e0b85933aa3c8832c0d0957427d14912d73135b55d21a69e6595c4b84d4578"
+      }
+    ],
+    "review_history": [
+      {
+        "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+        "revision": 0,
+        "snapshot_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed",
+        "result_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed:result",
+        "result_hash": "d0e0b85933aa3c8832c0d0957427d14912d73135b55d21a69e6595c4b84d4578",
+        "facts": {
+          "question": {
+            "id": "question",
+            "text": "按自由空间基准计算，频率2GHz，距离1km，求路径损耗。"
+          },
+          "inputs": [
+            {
+              "id": "in:frequency_ghz",
+              "name": "工作频率",
+              "value": 2.0,
+              "unit": "GHz",
+              "source": "原文“频率2GHz”"
+            },
+            {
+              "id": "in:distance_km",
+              "name": "通信距离",
+              "value": 1.0,
+              "unit": "km",
+              "source": "原文“距离1km”"
+            }
+          ],
+          "steps": [
+            {
+              "id": "step:fspl-step",
+              "name": "路径损耗",
+              "basis": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation，Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
+              "uses": [
+                "in:distance_km",
+                "in:frequency_ghz"
+              ],
+              "outputs": [
+                {
+                  "value": 98.4206,
+                  "unit": "dB"
+                }
+              ]
+            }
+          ],
+          "result": {
+            "id": "result",
+            "outputs": [
+              {
+                "name": "路径损耗",
+                "value": 98.4206,
+                "unit": "dB"
+              }
+            ]
+          },
+          "checks": {
+            "id": "checks",
+            "passed": 8,
+            "total": 8
+          },
+          "assumptions": [],
+          "scope": {
+            "id": "scope",
+            "conditions": [
+              "free_space",
+              "free_space_reference"
+            ]
+          }
+        },
+        "role": {
+          "proposal": {
+            "decision": "pass",
+            "answer": null,
+            "opinions": [],
+            "steps": [],
+            "hidden": []
+          },
+          "mode": "deterministic",
+          "attempts": 0,
+          "diagnostics": []
+        },
+        "assessment_hash": "0fabd108be98c3b511ec3b3de82e6759894ab919e1084f2c270b1c5868120f3e"
+      }
+    ],
+    "calculation_roles": [
+      {
+        "attempt": 1,
+        "role": {
+          "proposal": {
+            "tool_id": "fspl_ghz",
+            "plan_step_id": "fspl-step",
+            "expected_revision": 0,
+            "snapshot_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196:confirmed"
+          },
+          "mode": "deterministic",
+          "attempts": 0,
+          "diagnostics": []
+        }
+      }
+    ],
+    "routing_decisions": [
+      {
+        "action": "validate_result",
+        "reason_code": "tool_result_available",
+        "input_status": "VALIDATING_RESULT",
+        "calculation_attempts": 1,
+        "max_calculations": 2,
+        "mode": "bounded_policy"
+      },
+      {
+        "action": "publish",
+        "reason_code": "review_passed",
+        "input_status": "VALIDATING_REPORT",
+        "calculation_attempts": 1,
+        "max_calculations": 2,
+        "mode": "bounded_policy"
+      }
+    ],
+    "routed_action": "publish",
+    "schema_version": "1.0.0",
+    "profile": "confirmed-fspl-loop-v1",
+    "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+    "revision": 0,
+    "state_version": 2,
+    "mode": "deterministic",
+    "pending_interrupt": [],
+    "updated_at": "2026-10-02T02:42:36.768138+00:00",
+    "conversation": {
+      "field_sources": {},
+      "original_input": {
+        "condition": null,
+        "manual_parameters": {},
+        "raw_text": "按自由空间基准计算，频率2GHz，距离1km，求路径损耗。",
+        "target": null
+      },
+      "pending": [],
+      "turns": []
+    },
+    "run_settings": {
+      "requirements": {
+        "chat": null,
+        "mode": "deterministic",
+        "recorded_at": "2026-10-02T02:42:32.740012+00:00",
+        "retrieval": {
+          "embedding": null,
+          "mode": "lexical",
+          "top_k": 8,
+          "top_n": 3
+        },
+        "settings_version": 0
+      },
+      "calculation": {
+        "settings_version": 0,
+        "mode": "deterministic",
+        "recorded_at": "2026-10-02T02:42:35.083575+00:00",
+        "chat": null,
+        "retrieval": {
+          "mode": "lexical",
+          "embedding": null,
+          "top_k": 8,
+          "top_n": 3
+        }
+      }
+    },
+    "retrieval": {
+      "candidate_used": [
+        "fspl_ghz",
+        "received_power"
+      ],
+      "corpus": {
+        "size": 14,
+        "version": "92187cb6bd0d"
+      },
+      "degraded": false,
+      "diagnostics": [],
+      "embedding_model_id": null,
+      "hits": [
+        {
+          "excerpt": "自由空间点对点通信的路径损耗基准。频率用 GHz、距离用 km；不包含遮挡、海面反射、多径、雨衰、气体吸收或天线馈线损耗。只有明确采用自由空间模型或明确请求自由空间基准时适用，视距本身不等同于自由空间。",
+          "id": "fspl_ghz",
+          "rank": 1,
+          "scores": {
+            "dense": null,
+            "fused": null,
+            "lexical": 0.447419,
+            "rerank": null
+          },
+          "source": {
+            "title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+            "uri": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+            "version": "1.0.0"
+          },
+          "source_type": "formula_card",
+          "title": "自由空间基本传输损耗"
+        },
+        {
+          "excerpt": "老师链路余量验收工具使用的自由空间路径损耗。频率用 MHz、距离用 km，使用 32.44 常数；单独计算自由空间路径损耗仍用 fspl_ghz，以保持 v0.1.0 的结果。",
+          "id": "fspl_mhz",
+          "rank": 2,
+          "scores": {
+            "dense": null,
+            "fused": null,
+            "lexical": 0.310019,
+            "rerank": null
+          },
+          "source": {
+            "title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+            "uri": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
+            "version": "1.0.0"
+          },
+          "source_type": "formula_card",
+          "title": "老师验收口径的自由空间基本传输损耗"
+        },
+        {
+          "excerpt": "按发射功率加收发天线增益、减去馈线、路径及额外损耗计算接收功率。路径损耗必须来自适用模型、测量或用户明确提供；此式不会根据环境自动估出路径损耗。",
+          "id": "received_power",
+          "rank": 3,
+          "scores": {
+            "dense": null,
+            "fused": null,
+            "lexical": 0.193248,
+            "rerank": null
+          },
+          "source": {
+            "title": "NASA, State-of-the-Art of Small Spacecraft Technology, Ground Data Systems and Mission Operations",
+            "uri": "https://www.nasa.gov/smallsat-institute/sst-soa/ground-data-systems-and-mission-operations/",
+            "version": "1.0.0"
+          },
+          "source_type": "formula_card",
+          "title": "链路预算接收电平"
+        },
+        {
+          "excerpt": "按频率与障碍物到两端天线的距离计算第一菲涅耳区半径；不包含障碍物高度或地球曲率。",
+          "id": "fresnel_radius",
+          "rank": 4,
+          "scores": {
+            "dense": null,
+            "fused": null,
+            "lexical": 0.141456,
+            "rerank": null
+          },
+          "source": {
+            "title": "ITU-R P.530-19",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19/en",
+            "version": "1.0.0"
+          },
+          "source_type": "formula_card",
+          "title": "第一菲涅耳区半径"
+        },
+        {
+          "excerpt": "计算海面镜面反射相对自由空间的附加损耗，负值为增强，最小约 −6.02 dB；计入等效地球曲率。",
+          "id": "sea_reflection_two_ray",
+          "rank": 5,
+          "scores": {
+            "dense": null,
+            "fused": null,
+            "lexical": 0.110443,
+            "rerank": null
+          },
+          "source": {
+            "title": "ITU-R P.530-19",
+            "uri": "https://www.itu.int/rec/R-REC-P.530-19/en",
+            "version": "1.0.0"
+          },
+          "source_type": "formula_card",
+          "title": "光滑海面球面地球两径附加损耗"
+        },
+        {
+          "excerpt": "按 ν 估算单刃形绕射损耗；本近似式仅用于 ν > −0.78。",
+          "id": "knife_edge_loss",
+          "rank": 6,
+          "scores": {
+            "dense": null,
+            "fused": null,
+            "lexical": 0.068182,
+            "rerank": null
+          },
+          "source": {
+            "title": "ITU-R P.526-16",
+            "uri": "https://www.itu.int/rec/R-REC-P.526-16/en",
+            "version": "1.0.0"
+          },
+          "source_type": "formula_card",
+          "title": "单刃形绕射附加损耗"
+        },
+        {
+          "excerpt": "计算障碍物相对两端天线连线高度对应的无量纲绕射参数。",
+          "id": "knife_edge_nu",
+          "rank": 7,
+          "scores": {
+            "dense": null,
+            "fused": null,
+            "lexical": 0.0625,
+            "rerank": null
+          },
+          "source": {
+            "title": "ITU-R P.526-16",
+            "uri": "https://www.itu.int/rec/R-REC-P.526-16/en",
+            "version": "1.0.0"
+          },
+          "source_type": "formula_card",
+          "title": "单刃形绕射参数 ν"
+        },
+        {
+          "excerpt": "用相对速率估计单程无线电链路的一阶多普勒频移幅度上界。上界取全部速度为径向分量；实际有符号频移还需要运动方向，不是任意方向的实际频移，也不适用于双程雷达。",
+          "id": "doppler_max",
+          "rank": 8,
+          "scores": {
+            "dense": null,
+            "fused": null,
+            "lexical": 0.031068,
+            "rerank": null
+          },
+          "source": {
+            "title": "NASA/JPL IPN Progress Report 42-154, Biswas and Piazzolla (2003)",
+            "uri": "https://ipnpr.jpl.nasa.gov/progress_report/42-154/154L.pdf",
+            "version": "1.0.0"
+          },
+          "source_type": "formula_card",
+          "title": "单程最大多普勒频移上界"
+        }
+      ],
+      "latency_ms": {
+        "fusion": 0.06,
+        "lexical": 4.35,
+        "total": 4.75
+      },
+      "mode_requested": "lexical",
+      "mode_used": "lexical",
+      "reranker_id": null,
+      "top_k": 8,
+      "top_n": 3,
+      "used": [
+        "fspl_ghz",
+        "fspl_mhz",
+        "received_power"
+      ]
+    },
+    "input_issues": [],
+    "resolved_input_issues": [],
+    "waiting_reason": null
+  },
+  "events": [
+    {
+      "seq": 1,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "command",
+      "phase": "started",
+      "at": "2026-10-02T02:42:32.617722+00:00",
+      "details": {
+        "action": "create"
+      }
+    },
+    {
+      "seq": 2,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "orchestrator",
+      "phase": "started",
+      "at": "2026-10-02T02:42:32.639656+00:00",
+      "details": {
+        "caller": "input",
+        "mode": "bounded_policy"
+      }
+    },
+    {
+      "seq": 3,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "state",
+      "phase": "started",
+      "at": "2026-10-02T02:42:32.660812+00:00",
+      "details": {
+        "caller": "orchestrator",
+        "operation": "read"
+      }
+    },
+    {
+      "seq": 4,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "state",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:32.718230+00:00",
+      "details": {
+        "caller": "orchestrator",
+        "operation": "read"
+      }
+    },
+    {
+      "seq": 5,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "knowledge",
+      "phase": "started",
+      "at": "2026-10-02T02:42:32.743157+00:00",
+      "details": {
+        "caller": "rag",
+        "operation": "load_catalog"
+      }
+    },
+    {
+      "seq": 6,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "knowledge",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:33.514113+00:00",
+      "details": {
+        "caller": "rag",
+        "operation": "load_catalog"
+      }
+    },
+    {
+      "seq": 7,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "requirements",
+      "phase": "started",
+      "at": "2026-10-02T02:42:33.666900+00:00",
+      "details": {
+        "caller": "orchestrator"
+      }
+    },
+    {
+      "seq": 8,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "parse",
+      "phase": "started",
+      "at": "2026-10-02T02:42:33.743185+00:00",
+      "details": {}
+    },
+    {
+      "seq": 9,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "parse",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:33.773311+00:00",
+      "details": {
+        "mode": "deterministic"
+      }
+    },
+    {
+      "seq": 10,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "retrieval",
+      "phase": "started",
+      "at": "2026-10-02T02:42:33.796201+00:00",
+      "details": {}
+    },
+    {
+      "seq": 11,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "rag",
+      "phase": "started",
+      "at": "2026-10-02T02:42:33.820036+00:00",
+      "details": {
+        "caller": "requirements"
+      }
+    },
+    {
+      "seq": 12,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "knowledge",
+      "phase": "started",
+      "at": "2026-10-02T02:42:33.844068+00:00",
+      "details": {
+        "caller": "rag",
+        "operation": "search_cards"
+      }
+    },
+    {
+      "seq": 13,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "knowledge",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:33.877442+00:00",
+      "details": {
+        "caller": "rag",
+        "operation": "search_cards"
+      }
+    },
+    {
+      "seq": 14,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "rag",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:33.900260+00:00",
+      "details": {
+        "caller": "requirements",
+        "mode": "lexical",
+        "degraded": false,
+        "latency_ms": 4.75
+      }
+    },
+    {
+      "seq": 15,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "retrieval",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:33.925969+00:00",
+      "details": {
+        "mode": "lexical",
+        "hits": 8,
+        "used": 3
+      }
+    },
+    {
+      "seq": 16,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "interpretation",
+      "phase": "skipped",
+      "at": "2026-10-02T02:42:33.949520+00:00",
+      "details": {
+        "mode": "deterministic",
+        "health": "ready"
+      }
+    },
+    {
+      "seq": 17,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "planning",
+      "phase": "started",
+      "at": "2026-10-02T02:42:33.973377+00:00",
+      "details": {}
+    },
+    {
+      "seq": 18,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "planning",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:34.115308+00:00",
+      "details": {
+        "status": "AWAITING_CONFIRMATION"
+      }
+    },
+    {
+      "seq": 19,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "requirements",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:34.699032+00:00",
+      "details": {
+        "status": "AWAITING_CONFIRMATION",
+        "caller": "orchestrator"
+      }
+    },
+    {
+      "seq": 20,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "confirmation",
+      "phase": "waiting",
+      "at": "2026-10-02T02:42:34.734119+00:00",
+      "details": {
+        "caller": "requirements"
+      }
+    },
+    {
+      "seq": 21,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "state",
+      "phase": "started",
+      "at": "2026-10-02T02:42:34.765728+00:00",
+      "details": {
+        "caller": "orchestrator",
+        "operation": "save"
+      }
+    },
+    {
+      "seq": 22,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "state",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:34.827907+00:00",
+      "details": {
+        "caller": "orchestrator",
+        "operation": "commit"
+      }
+    },
+    {
+      "seq": 23,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "orchestrator",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:34.852971+00:00",
+      "details": {
+        "caller": "input",
+        "mode": "bounded_policy"
+      }
+    },
+    {
+      "seq": 24,
+      "run_id": "c8724ea7-dc47-4068-88df-97087245ce26",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "8bc36a18-71ec-47ac-bf80-ad7fbb319196",
+      "revision": 0,
+      "node": "command",
+      "phase": "committed",
+      "at": "2026-10-02T02:42:34.879330+00:00",
+      "details": {
+        "status": "AWAITING_CONFIRMATION",
+        "state_version": 1
+      }
+    },
+    {
+      "seq": 25,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "command",
+      "phase": "started",
+      "at": "2026-10-02T02:42:34.951426+00:00",
+      "details": {
+        "action": "confirm"
+      }
+    },
+    {
+      "seq": 26,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "orchestrator",
+      "phase": "started",
+      "at": "2026-10-02T02:42:34.974848+00:00",
+      "details": {
+        "caller": "input",
+        "mode": "bounded_policy"
+      }
+    },
+    {
+      "seq": 27,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "state",
+      "phase": "started",
+      "at": "2026-10-02T02:42:35.000176+00:00",
+      "details": {
+        "caller": "orchestrator",
+        "operation": "read"
+      }
+    },
+    {
+      "seq": 28,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "state",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:35.062529+00:00",
+      "details": {
+        "caller": "orchestrator",
+        "operation": "read"
+      }
+    },
+    {
+      "seq": 29,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "knowledge",
+      "phase": "started",
+      "at": "2026-10-02T02:42:35.087031+00:00",
+      "details": {
+        "caller": "rag",
+        "operation": "load_catalog"
+      }
+    },
+    {
+      "seq": 30,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "knowledge",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:35.280568+00:00",
+      "details": {
+        "caller": "rag",
+        "operation": "load_catalog"
+      }
+    },
+    {
+      "seq": 31,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "confirmation",
+      "phase": "waiting",
+      "at": "2026-10-02T02:42:35.697490+00:00",
+      "details": {
+        "caller": "requirements"
+      }
+    },
+    {
+      "seq": 32,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "confirmation",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:35.972373+00:00",
+      "details": {
+        "caller": "requirements"
+      }
+    },
+    {
+      "seq": 33,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "calculation",
+      "phase": "started",
+      "at": "2026-10-02T02:42:36.005991+00:00",
+      "details": {
+        "caller": "orchestrator"
+      }
+    },
+    {
+      "seq": 34,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "model",
+      "phase": "started",
+      "at": "2026-10-02T02:42:36.354592+00:00",
+      "details": {
+        "caller": "compute_agent",
+        "model_id": "fspl_ghz"
+      }
+    },
+    {
+      "seq": 35,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "model",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:36.384622+00:00",
+      "details": {
+        "caller": "compute_agent",
+        "model_id": "fspl_ghz"
+      }
+    },
+    {
+      "seq": 36,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "tool",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:36.411070+00:00",
+      "details": {
+        "caller": "compute_agent",
+        "step_id": "fspl-step",
+        "tool_id": "fspl_ghz",
+        "inputs": {
+          "frequency_ghz": 2.0,
+          "distance_km": 1.0
+        },
+        "output": {
+          "name": "path_loss_db",
+          "value": 98.42059991327963,
+          "unit": "dB"
+        }
+      }
+    },
+    {
+      "seq": 37,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "calculation",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:36.437523+00:00",
+      "details": {
+        "caller": "orchestrator"
+      }
+    },
+    {
+      "seq": 38,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "orchestrator",
+      "phase": "started",
+      "at": "2026-10-02T02:42:36.470514+00:00",
+      "details": {
+        "mode": "bounded_policy"
+      }
+    },
+    {
+      "seq": 39,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "orchestrator",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:36.497153+00:00",
+      "details": {
+        "mode": "bounded_policy",
+        "action": "validate_result",
+        "reason_code": "tool_result_available",
+        "input_status": "VALIDATING_RESULT",
+        "calculation_attempts": 1,
+        "max_calculations": 2
+      }
+    },
+    {
+      "seq": 40,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "validation",
+      "phase": "started",
+      "at": "2026-10-02T02:42:36.531091+00:00",
+      "details": {
+        "caller": "orchestrator"
+      }
+    },
+    {
+      "seq": 41,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "validation",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:36.557998+00:00",
+      "details": {
+        "checks": 8,
+        "caller": "orchestrator"
+      }
+    },
+    {
+      "seq": 42,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "review",
+      "phase": "started",
+      "at": "2026-10-02T02:42:36.591734+00:00",
+      "details": {
+        "caller": "orchestrator"
+      }
+    },
+    {
+      "seq": 43,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "review",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:36.622771+00:00",
+      "details": {
+        "caller": "orchestrator",
+        "decision": "pass"
+      }
+    },
+    {
+      "seq": 44,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "orchestrator",
+      "phase": "started",
+      "at": "2026-10-02T02:42:36.652903+00:00",
+      "details": {
+        "mode": "bounded_policy"
+      }
+    },
+    {
+      "seq": 45,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "orchestrator",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:36.679708+00:00",
+      "details": {
+        "mode": "bounded_policy",
+        "action": "publish",
+        "reason_code": "review_passed",
+        "input_status": "VALIDATING_REPORT",
+        "calculation_attempts": 1,
+        "max_calculations": 2
+      }
+    },
+    {
+      "seq": 46,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "publish",
+      "phase": "started",
+      "at": "2026-10-02T02:42:36.711307+00:00",
+      "details": {
+        "caller": "validator_agent"
+      }
+    },
+    {
+      "seq": 47,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "publish",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:36.741099+00:00",
+      "details": {
+        "caller": "validator_agent"
+      }
+    },
+    {
+      "seq": 48,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "state",
+      "phase": "started",
+      "at": "2026-10-02T02:42:36.771121+00:00",
+      "details": {
+        "caller": "orchestrator",
+        "operation": "save"
+      }
+    },
+    {
+      "seq": 49,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "state",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:36.850454+00:00",
+      "details": {
+        "caller": "orchestrator",
+        "operation": "commit"
+      }
+    },
+    {
+      "seq": 50,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "orchestrator",
+      "phase": "completed",
+      "at": "2026-10-02T02:42:36.876572+00:00",
+      "details": {
+        "caller": "input",
+        "mode": "bounded_policy"
+      }
+    },
+    {
+      "seq": 51,
+      "run_id": "b59fb998-ee0a-4c01-aabb-b315b1f56dc9",
+      "task_id": "d72417bc-e761-42c3-bacb-0f89ee59b7f8",
+      "event_id": "27763926-63cd-41d1-9e87-e298ca50d2a3",
+      "revision": 0,
+      "node": "command",
+      "phase": "committed",
+      "at": "2026-10-02T02:42:36.900109+00:00",
+      "details": {
+        "status": "COMPLETED",
+        "state_version": 2
+      }
+    }
+  ]
+}

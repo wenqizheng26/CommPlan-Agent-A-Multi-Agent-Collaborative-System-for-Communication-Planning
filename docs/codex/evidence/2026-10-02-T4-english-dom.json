@@ -1,0 +1,15 @@
+{
+  "completion": "Missing fields and completionMissing fieldMissing fieldAdd Path distanceAdd Transmit power (dBm)Add Tx antenna gain (dBi)Add Rx antenna gain (dBi)Adopted default valuesMissing fieldCompletion answerAdd Path distance10km（默认补全）Choose the modulationQPSK（默认补全）Add Transmit power (dBm)20dBm（默认补全）Add Tx antenna gain (dBi)18dBi（默认补全）Add Rx antenna gain (dBi)18dBi（默认补全）",
+  "rawOriginal": "从石家庄山顶基站连到乡镇，想用 5.8G，传视频，要稳定，功率和天线还没定。",
+  "sections": [
+    "Original input",
+    "Parsed fields",
+    "Missing fields and completion",
+    "Tool call arguments",
+    "Calculation results",
+    "Comparison table",
+    "Model explanation",
+    "Notes"
+  ],
+  "untranslated": []
+}
