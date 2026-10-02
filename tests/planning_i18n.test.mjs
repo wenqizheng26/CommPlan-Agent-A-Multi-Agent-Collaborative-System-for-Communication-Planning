@@ -19,11 +19,11 @@ test('confirmed supplementary results translate their registered labels',()=>{
  }
 });
 
-test('all four W4 cards translate each displayed Chinese sentence in full',()=>{
+test('supplementary and MHz loss cards translate each displayed Chinese sentence in full',()=>{
  install(en);
- const ids=['fresnel_radius','knife_edge_nu','knife_edge_loss','sea_reflection_two_ray'];
+ const ids=['fresnel_radius','knife_edge_nu','knife_edge_loss','sea_reflection_two_ray','fspl_mhz'];
  const cards=JSON.parse(readFileSync(new URL('../knowledge/formulas.json',import.meta.url),'utf8')).filter(c=>ids.includes(c.id));
- assert.equal(cards.length,4);
+ assert.equal(cards.length,5);
  for(const c of cards){
   const texts=[c.title,c.description,...Object.values(c.parameters).flatMap(p=>[p.description,p.default?.note]),
    ...c.applicability.notes,c.algorithm,...c.sources.map(s=>s.derivation)].filter(Boolean);

@@ -25,7 +25,7 @@ def import_card(root, card):
     card.pop('review', None)
     errors = validate_card(card)
     if any(c not in ('free_space', 'maximum_doppler') for c in card.get('applicability', {}).get('requires', [])):
-        errors.append('公式包含程序尚未支持的条件规则，请先实现并测试对应条件入口')
+        errors.append('公式包含尚未支持的适用条件，当前无法导入')
     if errors:
         raise ValueError('; '.join(errors))
     cards = load_catalog(root)

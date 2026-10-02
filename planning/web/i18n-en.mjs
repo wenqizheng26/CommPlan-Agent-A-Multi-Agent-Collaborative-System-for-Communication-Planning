@@ -534,12 +534,12 @@ const KNOWLEDGE={
  "计算障碍物相对两端天线连线高度对应的无量纲绕射参数。":"Calculate the dimensionless diffraction parameter for obstacle height relative to the antenna-to-antenna line.",
  "障碍物顶端高出两端天线连线为正，低于为负":"Obstacle top above the antenna-to-antenna line is positive; below is negative",
  "此处 h 为障碍物高出连线的高度，与 P.530 式 (2) 中表示余隙的 h 符号相反。":"Here h is obstacle height above the line; its sign is opposite to clearance h in P.530 equation (2).",
- "本机无原文，按 2026-09-28 调研时在 ITU 官网核对的内容；ν=h*sqrt((2/λ)*(1/d1+1/d2))，λ=0.299792458/f m，距离从 km 换成 m。":"No original is available locally; based on the content checked on the ITU website during research on 2026-09-28. ν=h*sqrt((2/λ)*(1/d1+1/d2)), λ=0.299792458/f m, distances converted from km to m.",
+ "按 ITU 官网核对的公式换算：ν=h*sqrt((2/λ)*(1/d1+1/d2))，λ=0.299792458/f m，距离从 km 换成 m。":"Converted from the formula checked on the ITU website: ν=h*sqrt((2/λ)*(1/d1+1/d2)), λ=0.299792458/f m, distances converted from km to m.",
  "单刃形绕射附加损耗":"Single knife-edge additional diffraction loss",
  "按 ν 估算单刃形绕射损耗；本近似式仅用于 ν > −0.78。":"Estimate single knife-edge diffraction loss from ν; this approximation applies only for ν > −0.78.",
  "无量纲单刃形绕射参数 ν":"Dimensionless single knife-edge diffraction parameter ν",
  "只描述单个理想刃形障碍物，不代表多障碍物或圆滑障碍物的损耗。":"Describes a single ideal knife edge; it does not represent multiple or rounded obstacles.",
- "本机无原文，按 2026-09-28 调研时在 ITU 官网核对的内容；直接使用 J(ν) 的 dB 近似式，输入无量纲。":"No original is available locally; based on the content checked on the ITU website during research on 2026-09-28. Uses the dB approximation for J(ν) directly, with dimensionless input.",
+ "按 ITU 官网核对的公式，直接使用 J(ν) 的 dB 近似式，输入无量纲。":"Uses the dB approximation for J(ν) checked on the ITU website directly, with dimensionless input.",
  "光滑海面球面地球两径附加损耗":"Smooth-sea spherical-Earth two-ray additional loss",
  "计算海面镜面反射相对自由空间的附加损耗，负值为增强，最小约 −6.02 dB；计入等效地球曲率。":"Calculate additional loss relative to free space from specular sea reflection, including effective Earth curvature; negative values mean enhancement, with a minimum of about −6.02 dB.",
  "两端路径距离":"Path distance between the two antennas",
@@ -550,7 +550,7 @@ const KNOWLEDGE={
  "反射系数 −1 是水平极化、小掠射角下的近似，实际随海况与极化变化；P.530 §6.1.2.4 指出掠射角大于约 0.7° 时，垂直极化的反射比水平极化弱 2–17 dB。":"A reflection coefficient of −1 approximates horizontal polarization at small grazing angles; the actual value depends on sea state and polarization. P.530 section 6.1.2.4 reports vertical reflection 2–17 dB weaker than horizontal above about 0.7° grazing angle.",
  "P.530 建议在 k 从 ke(99.9%) 到无穷大的范围内检查；此卡一次计算一个 k。":"P.530 recommends checking k from ke(99.9%) to infinity; this card evaluates one k at a time.",
  "合成场比小于 0.1 时拒绝计算，避免反射系数 −1 时接近干涉零点的无界深衰落。":"Reject a combined-field ratio below 0.1 to avoid unbounded deep fades near interference nulls with reflection coefficient −1.",
- "采用球面地球反射点与曲率修正高度，f 为 GHz、d 为 km、h 为 m；式 (126) 使用 0.3 而非精确光速。k 趋向无穷大时回到平地面两径；30 km 演示路径不可忽略曲率。":"Uses the spherical-Earth reflection point and curvature-corrected heights, with f in GHz, d in km and h in m. Equation (126) uses 0.3 rather than exact light speed. Infinite k approaches flat-Earth two-ray geometry; curvature cannot be ignored for the 30 km demonstration path.",
+ "采用球面地球反射点与曲率修正高度，f 为 GHz、d 为 km、h 为 m；式 (126) 使用 0.3 而非精确光速。k 趋向无穷大时回到平地面两径；30 km 路径不可忽略曲率。":"Uses the spherical-Earth reflection point and curvature-corrected heights, with f in GHz, d in km and h in m. Equation (126) uses 0.3 rather than exact light speed. Infinite k approaches flat-Earth two-ray geometry; curvature cannot be ignored for the 30 km path.",
  "a_e=k*6375 km；m=d²*10³/(4*a_e*(h1+h2))，c=(h1−h2)/(h1+h2)，b=2*sqrt((m+1)/(3*m))*cos(π/3+acos((3*c/2)*sqrt(3*m/(m+1)³))/3)；d1=d*(1+b)/2，d2=d*(1−b)/2；h1′=h1−d1²/(12.74*k)，h2′=h2−d2²/(12.74*k)，任一 ≤0 时拒绝；τ=(2*f/0.3)*h1′*h2′*10⁻³/d；场比 A=2*abs(sin(π*τ))，A<0.1 时拒绝；L=−20*log10(A) dB。":"a_e=k*6375 km; m=d²*10³/(4*a_e*(h1+h2)), c=(h1−h2)/(h1+h2), b=2*sqrt((m+1)/(3*m))*cos(π/3+acos((3*c/2)*sqrt(3*m/(m+1)³))/3); d1=d*(1+b)/2, d2=d*(1−b)/2; h1′=h1−d1²/(12.74*k), h2′=h2−d2²/(12.74*k), reject either ≤0; τ=(2*f/0.3)*h1′*h2′*10⁻³/d; field ratio A=2*abs(sin(π*τ)), reject A<0.1; L=−20*log10(A) dB.",
  "标准大气典型值；须显式输入或确认，不自动应用。":"Typical standard-atmosphere value; must be explicitly supplied or confirmed, never applied automatically.",
 
@@ -613,6 +613,12 @@ const COASTAL={
 };
 // Teacher cases: modulation table, default completion, comparison (TEACHER_CASES).
 const TEACHER={
+ '发射端到接收端的路径距离':'Path distance from the transmitter to the receiver',
+ '按自由空间假设计算路径损耗，频率用 MHz、距离用 km，常数取 32.44；用于链路余量计算。':'Calculate path loss under the free-space assumption, with frequency in MHz, distance in km and a constant of 32.44; used in link-margin calculations.',
+ '32.44 是 20·log10(4π·10⁹/c) 在 c≈3×10⁸ m/s 时取两位小数，未舍入值约为 32.4418；采用精确光速 299792458 m/s 时为 32.4478。本公式采用 32.44。':'32.44 is 20·log10(4π·10⁹/c) rounded to two decimal places for c≈3×10⁸ m/s; the unrounded value is about 32.4418. Exact light speed, 299792458 m/s, gives 32.4478. This formula uses 32.44.',
+ '与 GHz 形式采用的 92.4 常数相比，统一频率单位后结果约高 0.04 dB。':'After converting frequency units, the result is about 0.04 dB higher than the GHz form using a constant of 92.4.',
+ '物理关系来自 ITU-R P.525-5，f 为 MHz、d 为 km；常数 32.44 为链路余量计算约定（docs/design/TEACHER_CASES.md · 决定 · 公式），不同于标准式(6)的 32.4 舍入常数。':'The physical relationship comes from ITU-R P.525-5, with f in MHz and d in km. The 32.44 constant is a link-margin calculation convention (docs/design/TEACHER_CASES.md, formula decision), distinct from the rounded constant of 32.4 in the standard’s equation (6).',
+ '调制灵敏度表（模拟）':'Modulation sensitivity table (simulated)','决定 · 调制灵敏度':'Receiver sensitivity convention',
  '选择调制方式':'Choose the modulation','默认补全，需确认':'Default value, please confirm','典型值表的默认值':'Default from the typical-value table',
  '默认补全':'Default value','采用默认补全':'Adopted default values','调制方式对比':'Modulation comparison','调制':'Modulation','灵敏度 dBm':'Sensitivity dBm',
  '接收电平 dBm':'Rx level dBm','余量 dB':'Margin dB',

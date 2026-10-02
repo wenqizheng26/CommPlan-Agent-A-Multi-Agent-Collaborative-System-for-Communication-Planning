@@ -1,5 +1,5 @@
 [
-  {"id":"modulation:qpsk","type":"modulation","names":["QPSK"],"rx_sensitivity_dbm":-100,"simulated":true,"status":"verified","note":"模拟参数，可配置","source":{"title":"老师的三条验收案例","path":"docs/design/TEACHER_CASES.md","version":"M1-2026-10-01","locator":"决定 · 调制灵敏度"}},
-  {"id":"modulation:16qam","type":"modulation","names":["16QAM","16-QAM"],"rx_sensitivity_dbm":-95,"simulated":true,"status":"verified","note":"模拟参数，可配置","source":{"title":"老师的三条验收案例","path":"docs/design/TEACHER_CASES.md","version":"M1-2026-10-01","locator":"决定 · 调制灵敏度"}},
-  {"id":"modulation:64qam","type":"modulation","names":["64QAM","64-QAM"],"rx_sensitivity_dbm":-90,"simulated":true,"status":"verified","note":"模拟参数，可配置","source":{"title":"老师的三条验收案例","path":"docs/design/TEACHER_CASES.md","version":"M1-2026-10-01","locator":"决定 · 调制灵敏度"}}
+  {"id":"modulation:qpsk","type":"modulation","names":["QPSK"],"rx_sensitivity_dbm":-100,"simulated":true,"status":"verified","note":"模拟参数，可配置","source":{"title":"调制灵敏度表（模拟）","path":"docs/design/TEACHER_CASES.md","version":"M1-2026-10-01","locator":"决定 · 调制灵敏度"}},
+  {"id":"modulation:16qam","type":"modulation","names":["16QAM","16-QAM"],"rx_sensitivity_dbm":-95,"simulated":true,"status":"verified","note":"模拟参数，可配置","source":{"title":"调制灵敏度表（模拟）","path":"docs/design/TEACHER_CASES.md","version":"M1-2026-10-01","locator":"决定 · 调制灵敏度"}},
+  {"id":"modulation:64qam","type":"modulation","names":["64QAM","64-QAM"],"rx_sensitivity_dbm":-90,"simulated":true,"status":"verified","note":"模拟参数，可配置","source":{"title":"调制灵敏度表（模拟）","path":"docs/design/TEACHER_CASES.md","version":"M1-2026-10-01","locator":"决定 · 调制灵敏度"}}
 ]
