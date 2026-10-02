@@ -1,3 +1,4 @@
+- 2026-10-01 T3 已完成：`984afc8`；Python 495 项（1 skip）、Node 87 项通过；执行记录、模型日志与浏览器验收见 [T3 证据](evidence/2026-10-01-T3-records.md)。接着执行 T4；不推送、不合并、不开 PR。
 - 2026-10-01 T2 已完成：`7fcaf82`；Python 487 项（1 skip）、Node 70 项通过；已由 Claude 在 `d722076` 合入 `claude/calc-plans`，UI 分支基于 `0fe5742`。
 # CommPlan-Agent 当前交接（2026-10-01）
 
