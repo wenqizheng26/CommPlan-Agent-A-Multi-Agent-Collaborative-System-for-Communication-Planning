@@ -21,6 +21,11 @@ def overlaps(text, excerpt, span):
     return False
 
 
+BOTH_GAINS = re.compile(rf'(?:收发两端|两端|两边|收发|发射(?:和|与|及|、)接收|transmit and receive|both)\s*(?:的)?\s*(?:天线|antennas?)?\s*(?:增益|gains?)?'
+                        rf'\s*(?:都是|都为|均为|各为|各是|各|均|都|为|是|are|of|each|[:：=])?\s*(?:each\s*)?'
+                        rf'(?P<value>{NUMBER})\s*(?P<unit>dBi)(?![A-Za-z/\d])', re.I)
+
+
 def collect_parameters(request, parsed, required, labeled=(), sources=None):
     """Rule observations plus model labels. A label only names a quantity the text already contains;
     where the rules bound the same quantity to another field, the label is left out and a question is raised.
@@ -95,6 +100,17 @@ def collect_parameters(request, parsed, required, labeled=(), sources=None):
             observations.setdefault(field, []).append(dict(kind='user_text', source_ref=request['request_id'] + ':raw_text',
                 span=span, value=original, unit=unit))
             diagnostics.append(diagnostic('SOURCE_EXCERPT', '用户原文来源', field=field, excerpt=excerpt, span=span))
+    # One gain written for both ends ("两端天线都是18dBi", "发射和接收天线增益各12dBi") is each end's gain;
+    # a model label names one field per number, so the rule supplies both (TEACHER_CASES).
+    for match in BOTH_GAINS.finditer(request['raw_text']):
+        span = [match.start('value'), match.end('unit')]
+        for field in ('tx_gain_dbi', 'rx_gain_dbi'):
+            if any(o['span'] and o['span'][0] < span[1] and span[0] < o['span'][1] for o in observations.get(field, [])):
+                continue
+            observations.setdefault(field, []).append(dict(kind='user_text', source_ref=request['request_id'] + ':raw_text',
+                span=span, value=float(match['value']), unit=match['unit']))
+            diagnostics.append(diagnostic('SOURCE_EXCERPT', '用户原文来源（两端同值）', field=field,
+                                          excerpt=match.group(), span=span))
     for item in labeled:
         field, (a, b) = item['field'], item['span']
         bound = {f for f, origins in observations.items() for o in origins

@@ -118,7 +118,8 @@ def sources_for(request, entities, cards, final, observed, root=None):
     A link margin by modulation, or one with no stated receiver sensitivity, runs as the registered
     calc_link_margin tool (TEACHER_CASES): free space, path loss with the frequency in MHz, losses zero,
     and the sensitivity of each named modulation from the modulation table. Site names the library
-    does not know are then only labels too.
+    does not know are then only labels too, and so is a placeholder such as a bare "A" that only
+    resembles the library's "A站": coordinates are read only for names written as in the library.
     """
     store = FactService(root or ROOT)
     labels = [e['mention'] for e in entities if e['kind'] == 'site'] if 'distance_km' in observed else []
@@ -132,10 +133,15 @@ def sources_for(request, entities, cards, final, observed, root=None):
     teacher = (final == 'link_margin' and not set(ZERO) & set(observed)
                and bool(found or unknown or ('rx_threshold_dbm' not in supplied and not radio)))
     named = []
-    if teacher and len(sites) < 2:
+    written = {n for r in store.records() if r['type'] == 'site' for n in r['names']}
+    loose = [e for e in entities if e['kind'] == 'site' and e['mention'] not in labels
+             and ''.join(e['mention'].split()) not in written]
+    if teacher and (len(sites) < 2 or loose):
         named = [e['mention'] for e in entities if e['kind'] == 'site' and e['mention'] not in labels]
-        issues = [d for d in issues if not (d['code'] == 'ENTITY_UNKNOWN' and d['details']['kind'] == 'site')]
+        issues = [d for d in issues if not (d['code'] in {'ENTITY_UNKNOWN', 'ENTITY_AMBIGUOUS'} and d['details']['kind'] == 'site')]
         sites = []
+        facts = fact_observations(request, sites, devices)
+        supplied = set(observed) | set(facts)
     order, leaves = [], []
     if final:
         exclude = (() if len(sites) == 2 else GEOMETRY) + (('fspl_ghz',) if teacher else TEACHER)

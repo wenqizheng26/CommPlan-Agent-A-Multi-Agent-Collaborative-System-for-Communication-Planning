@@ -143,6 +143,51 @@ class TeacherPathTests(unittest.TestCase):
         self.assertNotIn('（默认补全）', state['request']['raw_text'])
         self.assertEqual(state['conversation']['turns'][-1]['mode'], 'user_answer')
 
+    def test_one_gain_written_for_both_ends_is_each_ends_gain(self):
+        # Without the model the rules read a distance only after a label such as "距离".
+        for case_id, gain in (('variant_04', 18), ('variant_06', 12)):
+            draft, done = self.run_case(case_id, **manual(CASES[case_id]['text'].replace('：10公里', '：距离10公里')))
+            params = {p['canonical_name']: p for p in draft['report']['parameters_proposal']}
+            tx, rx = params['tx_gain_dbi'], params['rx_gain_dbi']
+            self.assertEqual((tx['value'], rx['value']), (gain, gain))
+            self.assertEqual(tx['origins'][0]['span'], rx['origins'][0]['span'])
+            self.assertEqual(done['status'], 'COMPLETED', done.get('failure'))
+            self.assert_rows([dict(c['result'], label=c['label']) for c in done['final_report']['tool_calls']],
+                             CASES[case_id]['expected']['results'])
+        from planning.services.requirement_parameters import BOTH_GAINS
+        self.assertFalse(BOTH_GAINS.search('发射天线增益18dBi，接收天线增益12dBi'))
+        self.assertFalse(BOTH_GAINS.search('距离和两端天线增益都还不确定'))
+
+    def test_a_bare_letter_is_a_label_and_leaves_the_distance_open(self):
+        from formula_rag.catalog import load_catalog
+        from planning.services.requirement_facts import sources_for
+        text = CASES['missing_05']['text']
+        request = dict(raw_text=text, manual_parameters={}, request_id='r')
+        entities = [dict(kind='site', mention=m, span=[text.index(m), text.index(m) + 1]) for m in ('A', 'B')]
+        facts = sources_for(request, entities, load_catalog(ROOT), 'link_margin', {'frequency_ghz', 'tx_power_dbm'}, ROOT)
+        self.assertEqual((facts['tool'], facts['sites'], facts['labels']), ('calc_link_margin', [], ['A', 'B']))
+        self.assertNotIn('slant_range_wgs84', facts['order'])
+        self.assertIn('distance_km', facts['leaves'])
+        self.assertFalse(any(o['kind'] == 'site' for origins in facts['sources'].values() for o in origins))
+        named = [dict(e, mention=m) for e, m in zip(entities, ('A站', 'B岛站'))]
+        written = sources_for(dict(request, raw_text='A站到B岛站，' + text), named, load_catalog(ROOT), 'link_margin',
+                              {'frequency_ghz', 'tx_power_dbm'}, ROOT)
+        self.assertEqual([s['id'] for s in written['sites']], ['site:sim-a', 'site:sim-b'])
+        self.assertIn('slant_range_wgs84', written['order'])
+
+    def test_stability_and_video_wording_is_evidence_for_the_link_margin(self):
+        from formula_rag.interpretation import merge_interpretation
+        text = CASES['teacher_02']['text']
+        for evidence in ('要稳定', '传视频'):
+            request = dict(text=text, conditions=[], targets=[])
+            info = merge_interpretation(request, dict(targets=[dict(id='link_margin', evidence=evidence)]), {'link_margin'})
+            self.assertEqual((request['targets'], info['target_origin']), (['link_margin'], 'model'))
+
+    def test_the_suggestion_prompt_keeps_numeric_defaults_unless_the_text_asks_for_that_input(self):
+        from planning.services.suggestions import PROMPT
+        self.assertIn('距离、功率和天线增益取 default', PROMPT)
+        self.assertIn('只用来选调制方式', PROMPT)
+
     def test_the_model_picks_a_candidate_with_a_reason_and_a_bad_pick_falls_back_to_the_table(self):
         from planning.agents.requirements import RequirementsAgent
         from planning.services.suggestions import suggestions_for
