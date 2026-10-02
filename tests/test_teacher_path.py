@@ -229,6 +229,45 @@ class TeacherPathTests(unittest.TestCase):
         assessment = ReviewAgent(selector).run(done['result'], done['confirmed_snapshot'])
         self.assertEqual((assessment['role']['mode'], assessment['role']['proposal']['answer']), ('stub', answer))
 
+    def test_the_review_prompt_speaks_of_a_higher_threshold_not_a_higher_sensitivity(self):
+        from planning.agents.review import PROMPT
+        self.assertIn('所需的接收门限越高', PROMPT)
+        self.assertNotIn('接收灵敏度越高', PROMPT)
+
+
+class ServiceLabelTests(unittest.TestCase):
+    """Case two names a service ("传视频"): the report keeps it as a label from the text, never as an input."""
+
+    def test_the_named_service_is_read_from_the_text_and_negations_are_not(self):
+        from planning.services.requirement_policy import service_label
+        text = CASES['teacher_02']['text']
+        start = text.index('传视频')
+        self.assertEqual(service_label(text), dict(kind='video', label='视频', mention='传视频', span=[start, start + 3]))
+        for text, label in [('用于视频监控', '视频'), ('语音通话要稳定', '语音'), ('数据传输要稳定', '数据'),
+                            ('transmit data over 10 km', '数据'), ('a 5.8 GHz video link', '视频'),
+                            ('不需要传视频，只算余量', None), ('without HD video, compute the margin', None),
+                            ('看下数据手册', None), ('The data shows 3 dB', None), ('now stream video over 8 km', '视频'), (CASES['teacher_01']['text'], None)]:
+            self.assertEqual((service_label(text) or {}).get('label'), label, text)
+
+    def test_case_two_report_carries_the_label_and_the_check_replays_it(self):
+        from formula_rag.catalog import load_catalog
+        from planning.services.requirement_validation import check_report
+        with tempfile.TemporaryDirectory() as tmp:
+            draft = TaskService(ROOT, Path(tmp) / 'tasks.sqlite').apply(command(text=CASES['teacher_02']['text']))['state']
+        report, request, cards = draft['report'], draft['request'], load_catalog(ROOT)
+        self.assertEqual((report['service']['kind'], report['service']['mention']), ('video', '传视频'))
+        self.assertNotIn('service', {p['canonical_name'] for p in report['parameters_proposal']})
+        check_report(report, request, cards, ROOT)
+        # A report saved before the label existed still checks; a changed label does not.
+        check_report({k: v for k, v in report.items() if k != 'service'}, request, cards, ROOT)
+        changed = copy.deepcopy(report)
+        changed['service'].update(kind='voice', label='语音')
+        with self.assertRaisesRegex(ValueError, 'SERVICE_LABEL_MISMATCH'):
+            check_report(changed, request, cards, ROOT)
+        changed['service'].update(kind='video', label='语音')
+        with self.assertRaisesRegex(ValueError, 'SERVICE_LABEL'):
+            check_report(changed, request, cards, ROOT)
+
 
 if __name__ == '__main__':
     unittest.main()

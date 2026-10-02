@@ -296,3 +296,31 @@ test('every report UI sentence translates fully into English while protected ori
  const empty=new Element('article');renderReportDocument(empty,reportModel({}));
  for(const node of walk(empty))if(node.attributes.translate!=='no')assert.doesNotMatch(t(node.textContent),/[\u3400-\u9fff]/u,node.textContent);
 }));
+
+test('parsed fields show the site names and the named service as labels from the text, not inputs',()=>withDOM(()=>{
+ const f=fixture('defaults'),state=structuredClone(f.state),text=state.request.raw_text;
+ const span=word=>[text.indexOf(word),text.indexOf(word)+word.length];
+ state.report.entities=[{kind:'site',mention:'石家庄山顶基站',span:span('石家庄山顶基站')},{kind:'site',mention:'乡镇',span:span('乡镇')}];
+ state.report.service={kind:'video',label:'视频',mention:'传视频',span:span('传视频')};
+ const model=reportModel(state,f.events,context);
+ assert.deepEqual(model.labels,{sites:['石家庄山顶基站','乡镇'],service:{kind:'video',label:'视频',mention:'传视频'}});
+ assert.ok(!model.parameters.some(row=>['sites','service'].includes(row.id)),'labels stay out of the parameters');
+ const host=new Element('article');renderReportDocument(host,model);
+ const rows=walk(host).filter(node=>node.tag==='tr').map(row=>row.children.map(cell=>cell.textContent));
+ assert.deepEqual(rows.find(row=>row[0]==='站点'),['站点','石家庄山顶基站、乡镇','无','原文 · 只作标签，不参与计算']);
+ assert.deepEqual(rows.find(row=>row[0]==='业务'),['业务','视频','无','原文 · 只作标签，不参与计算']);
+ assert.equal(named(host,'石家庄山顶基站、乡镇').attributes.translate,'no');
+ assert.notEqual(named(host,'视频').attributes.translate,'no');
+ install(en);
+ for(const text of ['站点','业务','视频','原文 · 只作标签，不参与计算'])assert.doesNotMatch(t(text),/[\u3400-\u9fff]/u,text);
+ const older=reportModel(f.state,f.events,context);
+ assert.deepEqual(older.labels,{sites:[],service:null},'states saved before the labels show none');
+}));
+
+test('the MHz path-loss constant is noted only when the chain used it',()=>withDOM(()=>{
+ const note='路径损耗按 MHz 形式计算，常数取 32.44；与 GHz 形式（常数 92.4）相比，同一条链路的结果约高 0.04 dB。';
+ for(const [name,shown] of [['comparison',true],['defaults',true],['margin',false],['fspl_legacy',false]]){
+  const host=new Element('article');renderReportDocument(host,modelFor(name));
+  assert.equal(leafText(host).includes(note),shown,name);
+ }
+}));

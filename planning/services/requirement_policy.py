@@ -1,7 +1,7 @@
 """Shared scope policy for single-link, one-way plans over the supported cards."""
 import re
 from formula_rag.parsing import extract_request
-from planning.requirements_contract import require
+from planning.requirements_contract import require, SERVICE_LABELS
 from planning.services.plans import TARGETS
 
 
@@ -10,6 +10,29 @@ FEASIBILITY = r'can.{0,15}(?:link|communicat)|is.{0,15}(?:feasible|sufficient)|�
 # A link request that names no quantity ("连到乡镇，传视频，要稳定") or names a modulation asks whether
 # the link holds: link margin is offered to the model even when its card shares no word with the text.
 LINK_REQUEST = re.compile(FEASIBILITY + r'|(?<![A-Za-z0-9])(?:[BQ]PSK|\d+\s*-?\s*(?:QAM|PSK)|QAM\s*-?\s*\d+)', re.I)
+
+
+# The service a request names ("传视频", "video link"): a report label only, never a calculation input,
+# and no promise about throughput. Bare "数据"/"data" is too common to count without a transfer word.
+SERVICE = re.compile('|'.join(f'(?P<{kind}>{pattern})' for kind, pattern in (
+    ('video', r'(?:传输|回传|传送|发送|传)?(?:实时|高清)?视频(?:传输|回传|业务|监控|通话|会议)?'
+              r'|\b(?:(?:stream|transmit|send|carry|deliver|transfer)(?:s|ing)?\s+(?:hd\s+|live\s+)?)?video'
+              r'(?:\s+(?:link|stream|feed|traffic|transmission|surveillance))?\b'),
+    ('voice', r'(?:传输|发送|传)?语音(?:通信|通话|业务|传输)?|\bvoice(?:\s+(?:link|traffic|calls?|service))?\b'),
+    ('data', r'(?:传输|回传|发送|传)数据(?:业务)?|数据(?:传输|业务|回传|通信|链路)'
+             r'|\b(?:transmit|send|carry|transfer)(?:s|ing)?\s+data\b|\bdata\s+(?:link|traffic|transmission|service|transfer)\b'))),
+    re.I)
+NEGATED = re.compile(r"(?:不|无需|不用|不需要|不必|没有|\b(?:no|not|without|don't|doesn't)\b)\s*(?:\w+\s+){0,2}$", re.I)
+
+
+def service_label(text):
+    for found in SERVICE.finditer(text):
+        clause = re.split(r'[，,。；;！!？?\n]', text[:found.start()])[-1]
+        if NEGATED.search(clause):
+            continue
+        return dict(kind=found.lastgroup, label=SERVICE_LABELS[found.lastgroup], mention=found.group(),
+                    span=[found.start(), found.end()])
+    return None
 
 
 def validate_target_semantics(model):

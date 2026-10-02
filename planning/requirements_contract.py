@@ -15,6 +15,8 @@ CONDITIONS = {'free_space', 'free_space_reference', 'non_free_space', 'maximum_d
 REQUEST_FIELDS = 'schema_version task_id revision request_id raw_text manual_parameters condition target'
 REPORT_FIELDS = 'schema_version profile task_id revision request_id parameters_proposal conflicts missing_parameters candidate_models calculation_plan_proposal evidence_ids evidence_refs knowledge_snapshot questions assumptions conditions targets requirement solve entities execution_status component_modes runtime_health diagnostics'
 SOLVE_UNKNOWNS = {'tx_power_dbm'}
+# The service a request names, kept as a report label (requirement_policy.service_label).
+SERVICE_LABELS = {'video': '视频', 'voice': '语音', 'data': '数据'}
 # Where a parameter value came from: the text, the form, a site or device record, the modulation table,
 # or an assumption (a card's, or the registered link tool's).
 ORIGIN_KINDS = {'user_text', 'manual_form', 'site', 'device', 'modulation', 'default'}
@@ -116,7 +118,7 @@ def validate_request(value, *, expected_revision=None):
 
 def validate_report(value, request):
     request = validate_request(request)
-    require(type(value) is dict and set(REPORT_FIELDS.split())<=set(value)<=set(REPORT_FIELDS.split())|{'planning_role','document_retrieval','suggestions'},'SCHEMA_FIELDS: report')
+    require(type(value) is dict and set(REPORT_FIELDS.split())<=set(value)<=set(REPORT_FIELDS.split())|{'planning_role','document_retrieval','suggestions','service'},'SCHEMA_FIELDS: report')
     json_value(value); identity(value)
     require(value['profile'] == PROFILE, 'PROFILE')
     for key in ('task_id', 'revision', 'request_id'):
@@ -151,6 +153,10 @@ def validate_report(value, request):
     for e in value['entities']:
         obj(e, 'kind mention span'); string(e['mention']); text_span(e['span'])
         require(e['kind'] in {'site', 'device'} and text[e['span'][0]:e['span'][1]] == e['mention'], 'ENTITY_SPAN')
+    if 'service' in value:
+        s = value['service']
+        obj(s, 'kind label mention span'); string(s['mention']); text_span(s['span'])
+        require(SERVICE_LABELS.get(s['kind']) == s['label'] and text[s['span'][0]:s['span'][1]] == s['mention'], 'SERVICE_LABEL')
     require(type(value['diagnostics']) is list, 'DIAGNOSTICS_LIST')
     for item in value['diagnostics']:
         obj(item, 'code message details'); string(item['code']); string(item['message'])

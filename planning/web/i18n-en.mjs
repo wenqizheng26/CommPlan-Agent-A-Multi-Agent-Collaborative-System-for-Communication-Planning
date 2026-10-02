@@ -654,7 +654,10 @@ const REPORT={
  '模型调用按当前版本的活动事件统计；工具次数按保存的调用记录统计。':'Model calls use the activity events for this revision; tool counts use the saved call records.',
  '确定性模式（无模型调用）':'Deterministic mode (no model calls)','路径损耗 dB':'Path loss dB',
  '灵敏度来源':'Sensitivity source','调制表':'Modulation table','是':'Yes','否':'No','数值不变':'values unchanged',
- '需确认':'Please confirm','模拟参数':'Simulated values','可配置':'Configurable'
+ '需确认':'Please confirm','模拟参数':'Simulated values','可配置':'Configurable',
+ '业务':'Service','视频':'Video','语音':'Voice','数据':'Data','原文 · 只作标签，不参与计算':'Text · label only, not used in calculation',
+ '路径损耗按 MHz 形式计算，常数取 32.44；与 GHz 形式（常数 92.4）相比，同一条链路的结果约高 0.04 dB。':
+  'Path loss uses the MHz form with the constant 32.44; for the same link it is about 0.04 dB higher than the GHz form (constant 92.4).'
 };
 // '参数', '值', '来源', '审查意见', '任务编号', '默认补全' keep their earlier entries; REPORT spreads last and would override them.
 const REPORT_PATTERNS=[
