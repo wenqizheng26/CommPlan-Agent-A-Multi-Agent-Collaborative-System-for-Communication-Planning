@@ -1,5 +1,11 @@
 # 计算计划：多公式串联、链路预算与反求（设计规格）
 
+> 文档身份（2026-10-02）：本文保留计算计划的原设计规格；下文“未实施”和问题现状是设计时点记录。后续职责调整见 [AGENT_LED](AGENT_LED.md)，当前 M1 验收以[老师三条案例](TEACHER_CASES.md)为准。
+>
+> 当前实现定位（源码基线 54a7b4a）：登记公式拼链、确认后逐步执行与最小发射功率反求已分别接入 [plans.py](../../planning/services/plans.py)、[calculation.py](../../planning/services/calculation.py)、[solve.py](../../planning/services/solve.py)。其他反求目标及通用候选比较仍属后续范围，不能由本规格推定已实现。
+>
+> 验证边界：已接入范围与实际验证分别记录；下文历史算例和阶段结果不代替当前提交验收，最新批次与证据入口见 [NEXT_ACTION](../codex/NEXT_ACTION.md)。
+
 状态：构思定稿，未实施。v0.1.0-demo 发布之后的下一阶段主线；[KNOWLEDGE_FACTS](KNOWLEDGE_FACTS.md) 作为它的参数来源接入。
 2026-09-25：M1 按 [AGENT_LED](AGENT_LED.md)（在原框架上改）实施，本文继续有效；计划新增的 `requirement`、`solve_if_unmet` 与站点、设备来源见 AGENT_LED §4。
 2026-09-26：模型只写公式卡、顺序与每步理由，§3 的输入绑定改由程序按参数来源完成；写计划与适用性评估由专业计算 Agent 一次调用完成，见 AGENT_LED §2a。

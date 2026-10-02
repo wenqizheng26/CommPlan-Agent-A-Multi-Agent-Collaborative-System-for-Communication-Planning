@@ -1,5 +1,11 @@
 # 模型主导：在原框架上改造（M1 第 2–4 周）
 
+> 文档身份（2026-10-02）：本文保留 2026-09-25 起的模型职责、硬规则与分工决定；下文“现状”、排期和验收描述对应各自记录时点。后来确认的[老师三条案例](TEACHER_CASES.md)优先用于当前 M1 验收，本文仍是相关技术约束的设计依据。
+>
+> 当前实现定位（源码基线 54a7b4a）：需求、计划与审查分别见 [requirements.py](../../planning/agents/requirements.py)、[planner.py](../../planning/agents/planner.py)、[review.py](../../planning/agents/review.py)；专业数值由确定性工具执行与校验。当前批次、授权和剩余工作以[交接入口](../codex/NEXT_ACTION.md)为准。
+>
+> 验证边界：模型职责已接入源码不等于每次调用成功；原始验证记录保留各自提交、模型模式与回退，当前版及最终冻结版仍须分别复验。
+
 状态：用户 2026-09-25 确认（第二版：在原框架上改，降低开发难度）。只作用于分支 `claude/calc-plans`，v0.1.0 候选不受影响。
 取代：[KNOWLEDGE_FACTS](KNOWLEDGE_FACTS.md) §6 第 1 步（规则识别地点）；[MODEL_RETRIEVAL](MODEL_RETRIEVAL.md) §10、§13 中“RAG 由其他人实现”；[ACCEPTANCE_M1](ACCEPTANCE_M1.md) 中与本文冲突的目标档、加分档条目和第 2–4 周排期。[CALCULATION_PLANS](CALCULATION_PLANS.md) 继续有效：模型写计划、程序校验、不合格时用程序拼链，都按原设计。
 
