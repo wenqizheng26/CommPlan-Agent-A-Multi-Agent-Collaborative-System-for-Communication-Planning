@@ -1,0 +1,83 @@
+{
+  "excluded": [
+    "HEADER",
+    "MAIN",
+    "toast",
+    "sheet-scrim",
+    "settings-sheet",
+    "metrics-panel",
+    "library-sheet",
+    "history-sheet"
+  ],
+  "page": [
+    "@page commplan-report { size: a4; margin: 14mm; }"
+  ],
+  "print": [
+    {
+      "selector": "html:has(body.report-print-ready)",
+      "style": "height: auto; overflow: visible; background: rgb(255, 255, 255);"
+    },
+    {
+      "selector": "body.report-print-ready",
+      "style": "height: auto; overflow: visible; background: rgb(255, 255, 255); color: rgb(0, 0, 0);"
+    },
+    {
+      "selector": "body.report-print-ready > :not(#report-panel)",
+      "style": "display: none !important;"
+    },
+    {
+      "selector": "body.report-print-ready #report-panel",
+      "style": "page: commplan-report; position: static; inset: auto; width: auto; height: auto; max-height: none; overflow: visible; background: rgb(255, 255, 255); color: rgb(0, 0, 0); display: block !important;"
+    },
+    {
+      "selector": "body.report-print-ready .report-toolbar",
+      "style": "display: none !important;"
+    },
+    {
+      "selector": "body.report-print-ready .report-document",
+      "style": "max-width: none; width: auto; margin: 0px; padding: 0px; border-radius: 0px; box-shadow: none; font-size: 10pt; line-height: 1.6;"
+    },
+    {
+      "selector": "body.report-print-ready .report-section",
+      "style": "margin-top: 18pt; break-inside: auto;"
+    },
+    {
+      "selector": "body.report-print-ready .report-section h2",
+      "style": "font-size: 13pt; break-after: avoid;"
+    },
+    {
+      "selector": "body.report-print-ready .report-section h3",
+      "style": "break-after: avoid;"
+    },
+    {
+      "selector": "body.report-print-ready .report-table-wrap",
+      "style": "overflow: visible; max-height: none; width: auto;"
+    },
+    {
+      "selector": "body.report-print-ready .report-table",
+      "style": "width: 100%; min-width: 0px; table-layout: fixed; font-size: 9pt;"
+    },
+    {
+      "selector": "body.report-print-ready .report-table th, body.report-print-ready .report-table td",
+      "style": "padding: 5pt; white-space: normal; overflow-wrap: anywhere;"
+    },
+    {
+      "selector": "body.report-print-ready .report-table thead",
+      "style": "display: table-header-group;"
+    },
+    {
+      "selector": "body.report-print-ready .report-table tr",
+      "style": "break-inside: avoid;"
+    },
+    {
+      "selector": "body.report-print-ready .report-raw, body.report-print-ready .report-call pre",
+      "style": "max-height: none; overflow: visible; white-space: pre-wrap; overflow-wrap: anywhere;"
+    },
+    {
+      "selector": "body.report-print-ready .report-call",
+      "style": "break-inside: auto;"
+    }
+  ],
+  "printReady": true,
+  "reportOpen": true
+}

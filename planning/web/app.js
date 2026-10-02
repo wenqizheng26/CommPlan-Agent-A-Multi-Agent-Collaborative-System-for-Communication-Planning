@@ -7,6 +7,7 @@ import {assumptionEdit} from './m1.mjs';
 import {renderConversation} from './conversation.mjs';
 import {renderRecords} from './records.mjs';
 import {renderQuestions,openQuestions} from './questions.mjs';
+import {renderReport} from './report.mjs';
 import {summary,factorySettings,renderSettingsForm,switchView} from './settings.mjs';
 import {nodeLatency,stepTimes,runSummary,renderWaterfall,miniWaterfall,renderMetrics} from './timing.mjs';
 import {headerText,setMarquee,fitMarquee} from './marquee.mjs';
@@ -237,6 +238,7 @@ function drawRight(){
  renderRight($('detail-content'),{state:s,view,focusParameter,historical:!!historical,comparison:s?comparisons.get(`${s.task_id}:${s.revision}`):null,disabled:busy||dirty||editing,activeContext:!!activeContext,modelService,settings:settings?.settings,models,open:folds,cards,facts,
   onView:setView,onParameter:chooseParameter,onMissing:focusQuestion,onReparse:()=>submit('edit').catch(e=>notice(e.message,true)),
   onAssumption:(name,value)=>{try{const input=assumptionEdit(current,name,value);submit('edit',null,input).catch(e=>notice(e.message,true));}catch(e){notice(e.message,true);}}});
+ renderReport($('report-panel'),$('open-report'),s,historical?[]:activity,{facts,cards});
  const n=openQuestions(s).length;
  $('pending-bar').hidden=!n||!!historical||busy||editing;$('pending-bar').textContent=`${h.text} · 去处理`;
 }
