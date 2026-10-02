@@ -15,11 +15,12 @@ CONDITIONS = {'free_space', 'free_space_reference', 'non_free_space', 'maximum_d
 REQUEST_FIELDS = 'schema_version task_id revision request_id raw_text manual_parameters condition target'
 REPORT_FIELDS = 'schema_version profile task_id revision request_id parameters_proposal conflicts missing_parameters candidate_models calculation_plan_proposal evidence_ids evidence_refs knowledge_snapshot questions assumptions conditions targets requirement solve entities execution_status component_modes runtime_health diagnostics'
 SOLVE_UNKNOWNS = {'tx_power_dbm'}
-# Where a parameter value came from: the text, the form, a site or device record, or a card assumption.
-ORIGIN_KINDS = {'user_text', 'manual_form', 'site', 'device', 'default'}
+# Where a parameter value came from: the text, the form, a site or device record, the modulation table,
+# or an assumption (a card's, or the registered link tool's).
+ORIGIN_KINDS = {'user_text', 'manual_form', 'site', 'device', 'modulation', 'default'}
 PLAN_FIELDS = 'plan_id task_id revision objective steps required_parameters selected_model assumptions evidence_ids plan_hash'
 # Only plans that need them carry these.
-PLAN_OPTIONAL = {'checks', 'requirement', 'solve_if_unmet', 'assumed', 'origin', 'origin_note', 'assessment'}
+PLAN_OPTIONAL = {'checks', 'requirement', 'solve_if_unmet', 'assumed', 'origin', 'origin_note', 'assessment', 'tool', 'variants'}
 
 
 def strict_json(text):
@@ -115,12 +116,19 @@ def validate_request(value, *, expected_revision=None):
 
 def validate_report(value, request):
     request = validate_request(request)
-    require(type(value) is dict and set(REPORT_FIELDS.split())<=set(value)<=set(REPORT_FIELDS.split())|{'planning_role','document_retrieval'},'SCHEMA_FIELDS: report')
+    require(type(value) is dict and set(REPORT_FIELDS.split())<=set(value)<=set(REPORT_FIELDS.split())|{'planning_role','document_retrieval','suggestions'},'SCHEMA_FIELDS: report')
     json_value(value); identity(value)
     require(value['profile'] == PROFILE, 'PROFILE')
     for key in ('task_id', 'revision', 'request_id'):
         require(value[key] == request[key], 'REPORT_IDENTITY_MISMATCH')
     require(value['execution_status'] in STATUSES, 'INVALID_STATUS')
+    if 'suggestions' in value:
+        found = value['suggestions']
+        obj(found, 'mode items source')
+        require(value['execution_status'] == 'AWAITING_INPUT' and type(found['items']) is list and bool(found['items']), 'SUGGESTIONS')
+        for item in found['items']:
+            obj(item, 'field value unit reason note'); string(item['reason']); string(item['unit'])
+            require(item['field'] in {'distance_km', 'tx_power_dbm', 'tx_gain_dbi', 'rx_gain_dbi', 'modulation'}, 'SUGGESTIONS')
     require(value['runtime_health'] in {'ready', 'degraded', 'unavailable'}, 'INVALID_HEALTH')
     obj(value['component_modes'], 'interpretation retrieval')
     require(value['component_modes']['interpretation'] in {'llm', 'deterministic', 'stub'}, 'INVALID_MODE')
@@ -170,7 +178,8 @@ def validate_report(value, request):
             string(origin['origin_id']); string(origin['source_ref']); string(origin['unit']); numbers(origin['value'])
             require(origin['kind'] in ORIGIN_KINDS, 'ORIGIN_KIND')
             require(origin['kind'] in {'user_text', 'manual_form'} or (origin['span'] is None and
-                    re.fullmatch(r'(?:site|device):[a-z0-9-]+#[a-z_.]+|card:[a-z0-9_]+#[a-z0-9_]+', origin['source_ref'])),
+                    re.fullmatch(r'(?:site|device|modulation):[a-z0-9-]+#[a-z_.]+|(?:card|tool):[a-z0-9_]+#[a-z0-9_]+',
+                                 origin['source_ref'])),
                     'ORIGIN_SOURCE')
             require(origin['origin_id'] not in origins, 'DUPLICATE_ORIGIN')
             origins[origin['origin_id']] = p['canonical_name']
@@ -251,6 +260,15 @@ def validate_report(value, request):
                     and plan['requirement']['unit'] == 'dB', 'PLAN_REQUIREMENT')
         if 'assumed' in plan:
             strings(plan['assumed']); require(plan['assumed'] == plan['assumptions'][:len(plan['assumed'])], 'PLAN_ASSUMED')
+        if 'tool' in plan:
+            require(plan['tool'] == 'calc_link_margin' and plan['selected_model'][-1] == 'link_margin', 'PLAN_TOOL')
+        if 'variants' in plan:
+            require('tool' in plan and type(plan['variants']) is list and bool(plan['variants']), 'PLAN_VARIANTS')
+            for variant in plan['variants']:
+                obj(variant, 'label parameter value unit source_ref'); string(variant['label']); number(variant['value'])
+                require(variant['parameter'] == 'rx_threshold_dbm' and variant['unit'] == 'dBm' and
+                        re.fullmatch(r'modulation:[a-z0-9-]+#rx_sensitivity_dbm', variant['source_ref']), 'PLAN_VARIANTS')
+            require(len({v['label'] for v in plan['variants']}) == len(plan['variants']), 'PLAN_VARIANTS')
         if 'solve_if_unmet' in plan:
             require('requirement' in plan and plan['solve_if_unmet'] in SOLVE_UNKNOWNS
                     and plan['solve_if_unmet'] in plan['required_parameters'], 'PLAN_SOLVE')

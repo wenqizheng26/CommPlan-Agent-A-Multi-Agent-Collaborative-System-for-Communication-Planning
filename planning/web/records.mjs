@@ -2,11 +2,11 @@ import {relevantEvents} from './flow.mjs';
 import {parameterNames, toolNames} from './details.mjs';
 import {REASONS} from './timing.mjs';
 
-export const purposeNames = {intent:'需求解析', supplement:'合并补充', followup:'换用追问',
+export const purposeNames = {intent:'需求解析', supplement:'合并补充', followup:'换用追问', suggest:'默认补全建议',
  compute_agent:'写计划与适用性评估', validator_agent:'解释与审查', extraction:'资料抽取'};
-const AGENTS = {intent:'Requirement', supplement:'Requirement', followup:'Requirement',
+const AGENTS = {intent:'Requirement', supplement:'Requirement', followup:'Requirement', suggest:'Requirement',
  compute_agent:'LinkBudget', validator_agent:'Report', extraction:'资料抽取'};
-const CALLERS = {requirements:'Requirement', supplement:'Requirement', compute_agent:'LinkBudget',
+const CALLERS = {requirements:'Requirement', supplement:'Requirement', suggest:'Requirement', compute_agent:'LinkBudget',
  validator_agent:'Report', extraction:'资料抽取'};
 const PARAMETERS = {...parameterNames, frequency_mhz:'载波频率', modulation:'调制方式',
  rx_sensitivity_dbm:'接收灵敏度', required_margin_db:'要求余量'};

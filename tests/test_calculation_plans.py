@@ -1,4 +1,5 @@
 import copy
+import math
 from pathlib import Path
 import tempfile
 import unittest
@@ -108,7 +109,8 @@ class PlanLoopTests(unittest.TestCase):
         self.assertTrue(done['result']['tool_version'].startswith('confirmed-fspl-v1/'))
 
     def test_missing_budget_inputs_are_asked_not_guessed(self):
-        state = self.service.apply(command(text='按自由空间基准计算链路余量，频率2GHz，距离1km。'))['state']
+        # A stated feeder loss keeps the general link budget, where the sensitivity is asked in dBm.
+        state = self.service.apply(command(text='按自由空间基准计算链路余量，频率2GHz，距离1km，发射馈线损耗2dB。'))['state']
         self.assertEqual(state['status'], 'AWAITING_INPUT')
         self.assertIn('tx_power_dbm', state['report']['missing_parameters'])
         # The plan is shown with its open inputs, but it cannot be confirmed.
@@ -125,26 +127,34 @@ class PlanLoopTests(unittest.TestCase):
 
     def test_budget_questions_are_answered_one_field_at_a_time(self):
         state = self.service.apply(command(text='按自由空间基准计算链路余量，频率2GHz，距离10km，发射功率30dBm。'))['state']
-        # Feeder and extra losses and the reserve take their card assumptions; the rest is asked.
-        self.assertEqual({i['field'] for i in state['input_issues']}, {'tx_gain_dbi', 'rx_gain_dbi', 'rx_threshold_dbm'})
+        # No sensitivity and no radio: the link tool's path. Losses and the reserve are zero, the modulation is chosen.
+        self.assertEqual({i['field'] for i in state['input_issues']}, {'tx_gain_dbi', 'rx_gain_dbi', 'modulation'})
+        modulation = next(i for i in state['input_issues'] if i['field'] == 'modulation')
+        self.assertEqual((modulation['kind'], [c['value'] for c in modulation['choices']]),
+                         ('choice', ['QPSK', '16QAM', '64QAM']))
         # Labelled and bare answers are both accepted; the question already names the field.
         state = self.answer(state, dict(tx_gain_dbi='发射天线增益10dBi', rx_gain_dbi='10dBi'))
         self.assertEqual(state['status'], 'AWAITING_INPUT')
-        self.assertEqual({i['field'] for i in state['input_issues']}, {'rx_threshold_dbm'})
-        state = self.answer(state, dict(rx_threshold_dbm='-100dBm'))
+        self.assertEqual({i['field'] for i in state['input_issues']}, {'modulation'})
+        state = self.answer(state, dict(modulation='QPSK'))
         self.assertEqual(state['status'], 'AWAITING_CONFIRMATION', state['report']['questions'])
         report = state['report']
-        assumed = {p['canonical_name'] for p in report['parameters_proposal'] if p['origins'][0]['kind'] == 'default'}
-        self.assertEqual(assumed, {'tx_loss_db', 'rx_loss_db', 'extra_loss_db', 'reserve_db'})
-        self.assertIn('发馈线损耗按假设取 2 dB：工程假设，典型取值，非标准值；请按实际馈线修改。', report['assumptions'])
+        assumed = {p['canonical_name']: p['origins'][0]['source_ref'] for p in report['parameters_proposal']
+                   if p['origins'][0]['kind'] == 'default'}
+        self.assertEqual(assumed, {n: 'tool:calc_link_margin#' + n for n in ('tx_loss_db', 'rx_loss_db', 'extra_loss_db', 'reserve_db')})
+        self.assertIn('发射馈线损耗、接收馈线损耗、额外损耗和预留量都按 0 计。', report['assumptions'])
+        threshold = next(p for p in report['parameters_proposal'] if p['canonical_name'] == 'rx_threshold_dbm')
+        self.assertEqual((threshold['value'], threshold['origins'][0]['source_ref']), (-100, 'modulation:qpsk#rx_sensitivity_dbm'))
         # Each answer becomes one readable "label value" line, whether or not it was labelled.
         text = state['request']['raw_text']
         self.assertEqual(text.count('发射天线增益'), 1)
         self.assertEqual(text.count('接收天线增益'), 1)
-        self.assertIn('接收门限-100dBm', text)
+        self.assertIn('调制方式 QPSK', text)
         done = self.service.apply(command('confirm', state))['state']
-        # No reserve is assumed: a margin requirement is compared separately, never deducted.
-        self.assertAlmostEqual(done['result']['outputs'][0]['value'], MARGIN_DB + 10, places=9)
+        loss = 32.44 + 20 * math.log10(2000) + 20 * math.log10(10)
+        self.assertAlmostEqual(done['result']['outputs'][0]['value'], 30 + 10 + 10 - loss + 100, places=9)
+        [call] = done['result']['tool_calls']
+        self.assertEqual((call['tool'], call['label'], call['arguments']['modulation']), ('calc_link_margin', 'QPSK', 'QPSK'))
 
     def test_budget_values_can_be_supplied_in_one_supplement(self):
         state = self.service.apply(command(text='按自由空间基准计算链路余量，频率2GHz，距离10km。'))['state']

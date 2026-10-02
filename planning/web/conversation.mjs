@@ -1,6 +1,6 @@
 import {formatDomain} from './values.mjs';
 import {el,raw,parameterNames} from './details.mjs';
-const modeNames={user_answer:'逐项回答',deterministic:'规则合并',llm_grounded:'大模型理解 · 原话核验',llm:'大模型理解 · 规则核对',deterministic_fallback:'规则接管',manual_edit:'直接编辑'};
+const modeNames={user_answer:'逐项回答',suggestion:'采用默认补全',deterministic:'规则合并',llm_grounded:'大模型理解 · 原话核验',llm:'大模型理解 · 规则核对',deterministic_fallback:'规则接管',manual_edit:'直接编辑'};
 function value(v){if(Array.isArray(v))return v.length?v.map(value).join(' / '):'未填写';if(v&&typeof v==='object')return v.kind?formatDomain(v):`${formatDomain(v.value)} ${v.unit}`;return String(v??'未填写');}
 // Each supplement is kept as said; only the newest turn starts open.
 export function renderConversation(host,state,{open}={}){

@@ -9,6 +9,7 @@ from planning.services.supplement import input_of, conversation_of
 from planning.services.fact_fields import FACT_FIELDS
 
 NAMES={'frequency_ghz':'载波频率','distance_km':'路径距离'}
+SUGGESTED='（默认补全）'
 APPROX_BEFORE=re.compile(r'(?:大约|大概|差不多|近似|约)\s*$')
 APPROX_AFTER=re.compile(r'\s*(?:左右|上下)')
 # Link-budget inputs: one confirmed scalar each, any sign; card bounds are checked by planning.
@@ -42,12 +43,18 @@ def issues_for(state):
     if state['status'] not in {'AWAITING_INPUT','NEEDS_MODEL'}:
         return []
     issues=[]
+    # Default completion: a suggested table value prefills its question (TEACHER_CASES).
+    suggested={x['field']:x for x in (report.get('suggestions') or {}).get('items',[])}
     def add(kind,field,title,detail,excerpt='',choices=()):
         key='issue-'+digest([kind,field,excerpt])[:20]
         if any(i['id']==key for i in issues):
             return
         issues.append(dict(id=key,kind=kind,field=field,title=title,detail=detail,excerpt=excerpt,
                            choices=list(choices),status='open',blocking=True,source='requirements'))
+        if field in suggested:
+            x=suggested[field]
+            issues[-1]['suggestion']=dict(value=suggestion_answer(x),display=suggestion_display(x),reason=x['reason'],
+                                          note='默认补全，需确认')
     if state['status']=='NEEDS_MODEL':
         add('capability','task','需求明确，但当前模型不支持','当前支持自由空间条件下的路径损耗、接收信号电平与链路余量。可编辑任务重新定义目标；系统不会擅自替换你的需求。')
         return issues
@@ -86,11 +93,17 @@ def issues_for(state):
                 add('missing',field,'请补充'+NAMES[field],'可输入单值、区间或离散候选，必须包含单位。')
         elif min(numbers(p['value']))<=0:
             add('invalid',field,NAMES[field]+'必须大于零','区间的所有端点与候选都必须大于零。')
+    # The link tool takes the sensitivity from the modulation table: the modulation is chosen, not typed in dBm.
+    modulation=next((d for d in diagnostics if d['code'] in {'MODULATION_NEEDED','MODULATION_UNKNOWN'}),None)
+    if modulation:
+        det=modulation['details']
+        add('choice','modulation','选择调制方式',d_text(modulation),excerpt=det.get('mention',''),
+            choices=[dict(value=name,label=name) for name in det['choices']])
     # Link-budget inputs are answered one field at a time, like frequency and distance.
     unit=lambda f: FIELDS[f][1]
     for field in BUDGET:  # link order, transmitter first
         p=params.get(field)
-        if not p:
+        if not p or (modulation and field=='rx_threshold_dbm' and p['status']=='missing'):
             continue
         if p['status']=='conflicting':
             add('conflict',field,BUDGET[field]+'有多个冲突来源',f'输入最终采用的单个数值（含单位，例如 {example(field)}）。',
@@ -140,6 +153,19 @@ def issues_for(state):
         for question in report.get('questions',[]):
             add('clarification','task','请澄清当前描述',question,excerpt=question)
     return issues
+
+
+def suggestion_answer(item):
+    """The answer that adopts a suggestion, in the form the question accepts."""
+    return str(item['value']) if item['field']=='modulation' else f"{item['value']:g}{item['unit']}"
+
+
+def suggestion_display(item):
+    return str(item['value']) if item['field']=='modulation' else f"{item['value']:g} {item['unit']}"
+
+
+def d_text(diagnostic):
+    return diagnostic['message']+'接收灵敏度按调制表取值（模拟参数，可配置）。'
 
 
 def attach_issues(state,previous=None):
@@ -194,7 +220,7 @@ def with_approximation(text, start, end):
     return (before.start() if before else start), (after.end() if after else end)
 
 
-def replace_parameter(request, report, field, answer):
+def replace_parameter(request, report, field, answer, mark=''):
     probe=dict(schema_version='1.0.0',task_id='answer',revision=0,request_id='answer',raw_text=answer,
                manual_parameters={},condition=None,target=None)
     require(field in LABELS,'ANSWER_REQUIRES_EDIT')
@@ -248,7 +274,7 @@ def replace_parameter(request, report, field, answer):
         numeric=re.search(rf'{NUMBER}\s*(?:{UNITS})(?![A-Za-z/\d])',numeric,re.I).group()
     from formula_rag.parsing import EN_FIELDS
     label=EN_FIELDS.get(field,[LABELS[field]])[0]+' ' if not re.search(r'[\u3400-\u9fff]',request['raw_text']) else LABELS[field]
-    replacement=label+numeric
+    replacement=label+numeric+mark
     if merged:
         for i,(start,end) in reversed(list(enumerate(merged))):
             text=text[:start]+(replacement if i==0 else '')+text[end:]
@@ -295,6 +321,9 @@ def apply_answers(current,answers,event_id):
     for key,value in answers.items():
         require(type(value) is str and 0<len(value.strip())<=500,'INVALID_ANSWER')
         issue=issues[key];field=issue['field'];value=value.strip()
+        # Adopting the prefilled suggestion: the value is marked in the text as a default completion.
+        adopted=bool(issue.get('suggestion')) and value==issue['suggestion']['value']
+        mark=SUGGESTED if adopted else ''
         if issue['kind']=='pending' and value=='withdraw':
             conversation['pending']=[p for p in conversation['pending'] if p['turn_id']!=issue['excerpt']]
         elif field=='goal':
@@ -304,13 +333,22 @@ def apply_answers(current,answers,event_id):
             require(value in {c['value'] for c in issue['choices']},'INVALID_ANSWER_CHOICE')
             request['condition']=value
         elif field in LABELS:
-            accepted=replace_parameter(request,current['report'],field,value)
+            accepted=replace_parameter(request,current['report'],field,value,mark)
             if field in record_fields(current['report']):
                 # The user settled a text-versus-record conflict; the chosen value now overrides the record.
                 request['manual_parameters'][field]={'value':accepted['value'],'unit':accepted['unit']}
             conversation['pending']=[p for p in conversation['pending'] if p.get('field')!=field]
         elif field in FACT_FIELDS:
             request['manual_parameters'][field]=fact_value(field,value)
+        elif field=='modulation':
+            require(value in {c['value'] for c in issue['choices']},'INVALID_ANSWER_CHOICE')
+            spans=[d['details']['span'] for d in current['report']['diagnostics']
+                   if d['code']=='MODULATION_UNKNOWN' and d['details']['mention']==issue['excerpt']]
+            if spans:  # the name the table lacks is replaced in place
+                start,end=spans[0]
+                request['raw_text']=request['raw_text'][:start]+value+request['raw_text'][end:]
+            else:
+                request['raw_text']=request['raw_text'].rstrip()+'\n调制方式 '+value+mark+'。'
         elif field=='entity':
             require(value in {c['value'] for c in issue['choices']},'INVALID_ANSWER_CHOICE')
             [span]=[d['details']['span'] for d in current['report']['diagnostics']
@@ -319,11 +357,13 @@ def apply_answers(current,answers,event_id):
         else:
             raise ValueError('ANSWER_REQUIRES_EDIT')
         display=next((c['label'] for c in issue['choices'] if c['value']==value),value)
-        answered.append(dict(issue_id=key,title=issue['title'],answer=value,display=display))
+        answered.append(dict(issue_id=key,title=issue['title'],answer=value,display=display+mark,
+                             **({'suggested':True,'reason':issue['suggestion']['reason']} if adopted else {})))
     request['raw_text']=re.sub(r'(?:载波频率|频率|路径距离|距离)\s*(?=[，,。；;\n]|$)', '',request['raw_text'])
     require(len(request['raw_text'])<=12000,'MERGED_TEXT_TOO_LONG')
     conversation['turns'].append(dict(turn_id=event_id,number=len(conversation['turns'])+1,kind='answer',
         message='；'.join(x['title']+'：'+x['display'] for x in answered),before=before,after=copy.deepcopy(request),
-        changes=[dict(field='task',before=before['raw_text'],after=request['raw_text'])],questions=[],mode='user_answer',
+        changes=[dict(field='task',before=before['raw_text'],after=request['raw_text'])],questions=[],
+        mode='suggestion' if all(x.get('suggested') for x in answered) else 'user_answer',
         applied=True,answers=answered))
     return request,conversation

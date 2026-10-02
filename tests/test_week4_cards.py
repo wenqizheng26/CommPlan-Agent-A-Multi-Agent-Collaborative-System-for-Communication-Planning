@@ -164,8 +164,9 @@ class Week4CardTests(unittest.TestCase):
         agent=RequirementsAgent(ROOT,selector=False)
         report=agent.run(req)
         self.assertEqual(report['execution_status'],'AWAITING_INPUT')
+        # No sensitivity and no radio: the teacher's link tool, with the 32.44 path loss (TEACHER_CASES).
         self.assertEqual(report['calculation_plan_proposal']['selected_model'],
-                         ['fspl_ghz','received_power','link_margin'])
+                         ['fspl_mhz','received_power','link_margin'])
         self.assertNotIn('EVIDENCE_UNAVAILABLE',[d['code'] for d in report['diagnostics']])
         self.assertTrue(set(agent.last_retrieval['candidate_used']).isdisjoint(IDS))
 

@@ -129,6 +129,15 @@ class ParsingTests(unittest.TestCase):
         self.assertEqual(result['parameters']['bandwidth_hz'], 1000000)
         self.assertNotIn('frequency_ghz', result['parameters'])
 
+    def test_a_bare_g_after_a_decimal_is_gigahertz(self):
+        from planning.services.requirement_quantities import find_quantities
+        read = lambda text: [(q['value'], q['unit']) for q in find_quantities(text)]
+        self.assertEqual(read('想用 5.8G，传视频'), [(5.8, 'G')])
+        self.assertEqual(extract_request('从山顶基站连到乡镇，想用 5.8G，传视频')['parameters'], {'frequency_ghz': 5.8})
+        self.assertEqual(extract_request('频率2.4G')['parameters'], {'frequency_ghz': 2.4})
+        # 4G and 5G name network generations; 2.5Gbps is a rate.
+        self.assertEqual(read('5G 网络和 4G 基站，速率 2.5Gbps'), [])
+
     def test_unit_one_only_stands_apart_at_a_clause_end(self):
         from planning.services.requirement_quantities import find_quantities
         read = lambda text: [(q['value'], q['unit']) for q in find_quantities(text)]
