@@ -156,7 +156,8 @@ def validate_report(value, request):
     if 'service' in value:
         s = value['service']
         obj(s, 'kind label mention span'); string(s['mention']); text_span(s['span'])
-        require(SERVICE_LABELS.get(s['kind']) == s['label'] and text[s['span'][0]:s['span'][1]] == s['mention'], 'SERVICE_LABEL')
+        require(type(s['kind']) is str and s['kind'] in SERVICE_LABELS and s['label'] == SERVICE_LABELS[s['kind']]
+                and text[s['span'][0]:s['span'][1]] == s['mention'], 'SERVICE_LABEL')
     require(type(value['diagnostics']) is list, 'DIAGNOSTICS_LIST')
     for item in value['diagnostics']:
         obj(item, 'code message details'); string(item['code']); string(item['message'])

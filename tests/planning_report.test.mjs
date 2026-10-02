@@ -307,12 +307,12 @@ test('parsed fields show the site names and the named service as labels from the
  assert.ok(!model.parameters.some(row=>['sites','service'].includes(row.id)),'labels stay out of the parameters');
  const host=new Element('article');renderReportDocument(host,model);
  const rows=walk(host).filter(node=>node.tag==='tr').map(row=>row.children.map(cell=>cell.textContent));
- assert.deepEqual(rows.find(row=>row[0]==='站点'),['站点','石家庄山顶基站、乡镇','无','原文 · 只作标签，不参与计算']);
+ assert.deepEqual(rows.find(row=>row[0]==='站点'),['站点','石家庄山顶基站、乡镇','无','名称来自原文']);
  assert.deepEqual(rows.find(row=>row[0]==='业务'),['业务','视频','无','原文 · 只作标签，不参与计算']);
  assert.equal(named(host,'石家庄山顶基站、乡镇').attributes.translate,'no');
  assert.notEqual(named(host,'视频').attributes.translate,'no');
  install(en);
- for(const text of ['站点','业务','视频','原文 · 只作标签，不参与计算'])assert.doesNotMatch(t(text),/[\u3400-\u9fff]/u,text);
+ for(const text of ['站点','业务','视频','原文 · 只作标签，不参与计算','名称来自原文'])assert.doesNotMatch(t(text),/[\u3400-\u9fff]/u,text);
  const older=reportModel(f.state,f.events,context);
  assert.deepEqual(older.labels,{sites:[],service:null},'states saved before the labels show none');
 }));

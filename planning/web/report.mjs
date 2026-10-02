@@ -10,6 +10,7 @@ const names={...parameterNames,modulation:'调制方式',rx_sensitivity_dbm:'接
 const units={path_loss_db:'dB',rx_power_dbm:'dBm',rx_sensitivity_dbm:'dBm',link_margin_db:'dB'};
 const number=value=>typeof value==='number'&&Number.isFinite(value);
 const LABEL_SOURCE='原文 · 只作标签，不参与计算';
+const SITE_SOURCE='名称来自原文';
 const FSPL_MHZ_NOTE='路径损耗按 MHz 形式计算，常数取 32.44；与 GHz 形式（常数 92.4）相比，同一条链路的结果约高 0.04 dB。';
 const display=(value,id='meets')=>value==null?NONE:number(value)?value.toFixed(2):typeof value==='boolean'?
  (id==='meets'?(value?'满足':'不满足'):(value?'是':'否')):String(value);
@@ -104,13 +105,14 @@ export function reportModel(state,events=[],{facts={},cards={}}={}){
 
 function usesMhzLoss(state){
  return (state.final_report?.tool_calls||[]).some(call=>(call.steps||[]).some(step=>step.card==='fspl_mhz'))||
-  (state.result?.steps||[]).some(step=>step.tool_id==='fspl_mhz');
+  [...(state.final_report?.steps||[]),...(state.result?.steps||[])].some(step=>step.tool_id==='fspl_mhz');
 }
 
-// Site names and the service are labels from the text (report.entities, report.service); they are not inputs.
+// Site names come from the text (report.entities); a name the site library knows may supply coordinates.
+// The service (report.service) is only a label and never a calculation input.
 function labelRows(labels){
  const rows=[];
- if(labels?.sites?.length)rows.push({id:'sites',name:'站点',value:labels.sites.join('、'),unit:'',source:LABEL_SOURCE});
+ if(labels?.sites?.length)rows.push({id:'sites',name:'站点',value:labels.sites.join('、'),unit:'',source:SITE_SOURCE});
  if(labels?.service)rows.push({id:'service',name:'业务',value:labels.service.label,raw_value:false,unit:'',source:LABEL_SOURCE});
  return rows;
 }

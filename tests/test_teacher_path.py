@@ -249,6 +249,27 @@ class ServiceLabelTests(unittest.TestCase):
                             ('看下数据手册', None), ('The data shows 3 dB', None), ('now stream video over 8 km', '视频'), (CASES['teacher_01']['text'], None)]:
             self.assertEqual((service_label(text) or {}).get('label'), label, text)
 
+    def test_negation_and_contrast_name_the_service_asked_for_and_mixed_requests_get_no_label(self):
+        from planning.services.requirement_policy import service_label
+        for text, label in [('不是视频业务，是语音通话', '语音'), ('不需要任何视频业务，只传数据', '数据'),
+                            ('视频不用传，语音就行', '语音'), ('not video but voice traffic', '语音'),
+                            ('视频就不用了，传数据', '数据'), ('video is not needed, voice only', '语音'),
+                            ('不考虑视频', None), ('视频暂不需要', None), ('不卡顿地传视频', '视频'),
+                            # Several services asked for at once: no single label is reliable.
+                            ('传视频和语音', None), ('语音通话，也要传数据', None)]:
+            self.assertEqual((service_label(text) or {}).get('label'), label, text)
+
+    def test_the_contract_rejects_a_service_label_outside_the_list(self):
+        from planning.requirements_contract import validate_report
+        with tempfile.TemporaryDirectory() as tmp:
+            draft = TaskService(ROOT, Path(tmp) / 'tasks.sqlite').apply(command(text=CASES['teacher_02']['text']))['state']
+        validate_report(draft['report'], draft['request'])
+        for kind, label in [('radar', '雷达'), (None, None), ([], '视频'), ('video', None)]:
+            bad = copy.deepcopy(draft['report'])
+            bad['service'].update(kind=kind, label=label)
+            with self.assertRaisesRegex(ValueError, 'SERVICE_LABEL', msg=repr(kind)):
+                validate_report(bad, draft['request'])
+
     def test_case_two_report_carries_the_label_and_the_check_replays_it(self):
         from formula_rag.catalog import load_catalog
         from planning.services.requirement_validation import check_report

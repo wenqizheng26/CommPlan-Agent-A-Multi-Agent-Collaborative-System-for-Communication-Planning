@@ -22,17 +22,26 @@ SERVICE = re.compile('|'.join(f'(?P<{kind}>{pattern})' for kind, pattern in (
     ('data', r'(?:传输|回传|发送|传)数据(?:业务)?|数据(?:传输|业务|回传|通信|链路)'
              r'|\b(?:transmit|send|carry|transfer)(?:s|ing)?\s+data\b|\bdata\s+(?:link|traffic|transmission|service|transfer)\b'))),
     re.I)
-NEGATED = re.compile(r"(?:不|无需|不用|不需要|不必|没有|\b(?:no|not|without|don't|doesn't)\b)\s*(?:\w+\s+){0,2}$", re.I)
+# A clause ends at punctuation or a contrast ("但是", "而是", "but"): "not video but voice" names voice.
+CLAUSE = re.compile(r'[，,。；;！!？?\n]|而是|但是|不过|\bbut\b|\binstead\b|\brather\b', re.I)
+# Negation before the service ("不是视频", "不需要任何视频", "不传视频", "not video") or after it ("视频不用传").
+# A bare "不" counts only right before the match, so "不卡顿地传视频" still names video.
+NEGATED_BEFORE = re.compile(r"(?:(?:不是|并非|而非|不需要|不用|无需|不必|没有|不要|不考虑|不含|不包括|别)[^\s，,。；;]{0,4}|不|非)$"
+                            r"|\b(?:no|not|without|don't|doesn't|never)\b(?:\s+[\w-]+){0,2}\s*$", re.I)
+NEGATED_AFTER = re.compile(r'^\s*(?:就|也|都|暂|暂时|先|并)?(?:不用|不需要|不需|无需|不必|没必要|不要|不传|不考虑|不做)'
+                           r"|^\s*(?:is|are)?\s*(?:not|isn't|aren't)\s+(?:needed|required)\b", re.I)
 
 
 def service_label(text):
-    for found in SERVICE.finditer(text):
-        clause = re.split(r'[，,。；;！!？?\n]', text[:found.start()])[-1]
-        if NEGATED.search(clause):
-            continue
-        return dict(kind=found.lastgroup, label=SERVICE_LABELS[found.lastgroup], mention=found.group(),
-                    span=[found.start(), found.end()])
-    return None
+    """The one service the text asks for, or None when it names none or several (no guessing)."""
+    named = [found for found in SERVICE.finditer(text)
+             if not NEGATED_BEFORE.search(CLAUSE.split(text[:found.start()])[-1])
+             and not NEGATED_AFTER.search(CLAUSE.split(text[found.end():])[0])]
+    if len({found.lastgroup for found in named}) != 1:
+        return None
+    found = named[0]
+    return dict(kind=found.lastgroup, label=SERVICE_LABELS[found.lastgroup], mention=found.group(),
+                span=[found.start(), found.end()])
 
 
 def validate_target_semantics(model):
