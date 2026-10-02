@@ -1,3 +1,5 @@
+import {metadataText} from './text.mjs';
+
 export function serviceText(service){
  const labels={ready:'本机 Qwen 服务已就绪（后台运行）',unreachable:'无法连接本机 Qwen 服务',loading:'本机 Qwen 正在加载',not_ready:'本机 Qwen 服务暂未就绪',unexpected:'端口可访问，但未找到目标 Qwen',unknown:'无法确认本机 Qwen 服务状态'};
  return service?labels[service.status]||labels.unknown:'正在检查本机 Qwen 服务…';
@@ -25,7 +27,7 @@ export function diagnosticMessages(diagnostics=[]){
  for(const d of diagnostics){
   if(['SOURCE_EXCERPT','MODEL_CALL','EXPLICIT_CARD_LOOKUP'].includes(d.code))continue;
   const key=d.code+'\0'+d.message;
-  const item=groups.get(key)||{message:d.message,count:0};item.count++;groups.set(key,item);
+  const item=groups.get(key)||{message:metadataText(d.message),count:0};item.count++;groups.set(key,item);
  }
  return [...groups.values()].map(d=>d.message+(d.count>1?`（共 ${d.count} 次，逐次记录见下方详情）`:''));
 }
