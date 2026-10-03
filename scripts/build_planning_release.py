@@ -5,32 +5,60 @@ from datetime import datetime, timezone
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path, PurePosixPath
+import re
 import stat
 import subprocess
 import sys
+import tempfile
 import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.1.0-demo"
-VALIDATION_RECORD = "docs/demo/VALIDATION.md"
+VERSION = "0.2.0-dev"
+PACKAGE_TYPE = "source-workbench-without-model-assets"
+VALIDATION_RECORD = "docs/codex/M1_ACCEPTANCE_STATUS.md"
 ROOT_FILES = {
     "LICENSE", "README.md", "THIRD_PARTY.md", "requirements-planning.txt", "requirements-docs.txt",
     "runtime_config.json", "setup_planning.cmd", "启动.cmd", "start.cmd",
     "start_commplan.py", "stop_commplan.py", "停止服务.cmd", "launch.py",
     "knowledge/formulas.json", "config/models.json", "planning/README.md", VALIDATION_RECORD,
-    "docs/demo/RECORDING.md", "scripts/planning_smoke.py",
+    "scripts/planning_smoke.py", "scripts/build_planning_release.py",
+    "scripts/validate_planning_release.py", "scripts/eval_teacher.py",
     "planning/run_planning.cmd",
-    "knowledge/facts/sites.json", "knowledge/facts/devices.json",
+    "knowledge/tools.json", "knowledge/facts/sites.json", "knowledge/facts/devices.json",
+    "knowledge/facts/modulations.json", "knowledge/facts/typical_values.json",
     "knowledge/documents/manifest.json", "knowledge/documents/glossary.json",
     "knowledge/documents/simulated/站址表.md", "knowledge/documents/simulated/XX-100 手册.md",
     "knowledge/documents/simulated/XX-200 手册.md", "knowledge/documents/simulated/XX-300 手册.md",
 }
+DOCUMENT_FILES = set("""
+docs/README.md docs/delivery/SOURCE_PACKAGE.md
+docs/codex/NEXT_ACTION.md docs/codex/NEXT_ACTION.history-2026-10-02.md
+docs/codex/M1_ACCEPTANCE_STATUS.md docs/codex/M1_COMPLETION.md
+docs/codex/TEACHER_TASKS.md docs/codex/DEMO_HANDOFF_V4.md docs/design/WORKBENCH_UI.md
+docs/demo/VALIDATION.md docs/demo/RECORDING.md docs/requirements.md
+docs/design/TEACHER_CASES.md docs/design/ACCEPTANCE_M1.md docs/design/AGENT_LED.md
+docs/design/CALCULATION_PLANS.md docs/design/KNOWLEDGE_FACTS.md
+docs/design/MODEL_RETRIEVAL.md docs/design/M1_WEEK4.md
+docs/design/FORMULA_SURVEY.md docs/design/ORCHESTRATOR_LLM.md
+""".split())
+# A reproducible deterministic precheck subset, not the final M1 acceptance matrix.
+VALIDATION_FILES = set("""
+scripts/inspect_workbook.py
+tests/test_planning_release.py tests/test_core.py tests/test_teacher_tools.py
+tests/test_teacher_cases_format.py tests/test_teacher_path.py tests/test_calculation_plans.py
+tests/eval/m1_cases.jsonl tests/eval/teacher_cases.jsonl
+tests/planning_m1.test.mjs tests/planning_report.test.mjs
+tests/fixtures/teacher_report/margin.json tests/fixtures/teacher_report/comparison.json
+tests/fixtures/teacher_report/defaults.json tests/fixtures/teacher_report/fspl_legacy.json
+""".split())
 SOURCE_FILES = set("""
 formula_rag/__init__.py formula_rag/applicability.py formula_rag/catalog.py
 formula_rag/core.py formula_rag/importing.py formula_rag/interpretation.py
 formula_rag/tools.py
+formula_rag/registry.py formula_rag/schema.py
 formula_rag/model_transport.py formula_rag/model.py formula_rag/parsing.py
 formula_rag/pipeline.py formula_rag/presentation.py formula_rag/retrieval.py
 planning/__init__.py planning/agents/__init__.py planning/agents/calculation.py
@@ -60,6 +88,9 @@ planning/web/roles.mjs planning/web/text.mjs planning/web/values.mjs planning/we
 planning/web/library.mjs planning/web/compare.mjs
 planning/agents/extraction.py planning/knowledge/drafts.py planning/knowledge/sources.py
 planning/services/entity_followup.py
+planning/services/coastal.py planning/services/model_switch.py planning/services/suggestions.py
+planning/web/i18n-en.mjs planning/web/i18n.mjs planning/web/lang.js
+planning/web/records.mjs planning/web/report.mjs planning/workflow/model_log.py
 planning/workflow/__init__.py planning/workflow/activity.py
 planning/workflow/planning_graph.py planning/workflow/requirements_graph.py
 planning/workflow/task_service.py planning/workflow/task_store.py
@@ -67,24 +98,22 @@ planning/workflow/task_service.py planning/workflow/task_store.py
 SOURCE_SUFFIXES = {".py", ".js", ".mjs", ".html", ".css", ".json"}
 GENERATED = {"VERSION", "BUILD_INFO.json", "MANIFEST.json"}
 REPARSE_POINT = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
-REQUIRED_FILES = {
-    "LICENSE", "README.md", "THIRD_PARTY.md", "requirements-planning.txt",
-    "runtime_config.json", "setup_planning.cmd", "启动.cmd", "start.cmd",
-    "start_commplan.py", "launch.py", "knowledge/formulas.json",
-    "planning/README.md", "planning/run_planning.cmd", "docs/demo/RECORDING.md",
-    VALIDATION_RECORD, "scripts/planning_smoke.py",
-} | SOURCE_FILES
+REQUIRED_FILES = ROOT_FILES | SOURCE_FILES | DOCUMENT_FILES | VALIDATION_FILES
+VERSION_PATTERN = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?\Z")
 
 
 def permitted(name):
     """An explicit source allowlist; no broad worktree traversal or runtime assets."""
-    path = PurePosixPath(name)
-    if not name or "\\" in name or path.is_absolute() or ".." in path.parts:
+    if not isinstance(name, str):
         return False
-    if any(part.startswith(".") or part in {"__pycache__", "models", "runtime", "outputs", "tests"}
+    path = PurePosixPath(name)
+    if (not name or "\\" in name or path.is_absolute() or ".." in path.parts
+            or path.as_posix() != name):
+        return False
+    if any(part.startswith(".") or part in {"__pycache__", "models", "runtime", "outputs"}
            for part in path.parts):
         return False
-    return name in ROOT_FILES or name in SOURCE_FILES or name in GENERATED
+    return name in REQUIRED_FILES or name in GENERATED
 
 
 def regular_file(path):
@@ -109,19 +138,30 @@ def checked_file(root, name):
 
 
 def source_files(root):
-    names = {name for name in ROOT_FILES if (root / name).is_file()} | SOURCE_FILES
-    unlisted = {
-        path.relative_to(root).as_posix()
-        for folder in ("planning", "formula_rag")
-        for path in (root / folder).rglob("*")
-        if path.is_file() and path.suffix in SOURCE_SUFFIXES
-        and path.relative_to(root).as_posix() not in names
-    }
+    names = REQUIRED_FILES
+    unlisted = set()
+    for folder in ("planning", "formula_rag"):
+        base = root / folder
+        if base.is_symlink() or (base.exists() and bool(
+                getattr(base.lstat(), "st_file_attributes", 0) & REPARSE_POINT)):
+            raise ValueError(f"symlink or reparse point refused: {folder}")
+        for directory, folders, files in os.walk(base, followlinks=False):
+            for part in folders + files:
+                path = Path(directory) / part
+                if path.is_symlink() or bool(getattr(path.lstat(), "st_file_attributes", 0) & REPARSE_POINT):
+                    raise ValueError(f"symlink or reparse point refused: {path.relative_to(root)}")
+            for part in files:
+                path = Path(directory) / part
+                if path.suffix in SOURCE_SUFFIXES and path.relative_to(root).as_posix() not in names:
+                    unlisted.add(path.relative_to(root).as_posix())
     if unlisted:
         raise ValueError("new source needs explicit release review: " + ", ".join(sorted(unlisted)))
-    missing = REQUIRED_FILES - names
-    if missing:
-        raise ValueError("missing release inputs: " + ", ".join(sorted(missing)))
+    # These are all additional immutable inputs used by the existing fingerprint ABI.
+    immutable = {p.relative_to(root).as_posix()
+                 for pattern in ("knowledge/facts/*.json", "knowledge/documents/*.json",
+                                 "knowledge/documents/simulated/*.md") for p in root.glob(pattern)}
+    if immutable - names:
+        raise ValueError("new data needs explicit release review: " + ", ".join(sorted(immutable - names)))
     missing_on_disk = {name for name in names if not (root / name).is_file()}
     if missing_on_disk:
         raise ValueError("missing release inputs: " + ", ".join(sorted(missing_on_disk)))
@@ -130,37 +170,117 @@ def source_files(root):
     return sorted(names)
 
 
-def git_value(root, *args):
-    result = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, check=False)
+def git_value(root, *args, input_text=None):
+    result = subprocess.run(["git", "--no-optional-locks", *args], cwd=root,
+                            input=input_text, capture_output=True, text=True, encoding="utf-8", check=False)
     if result.returncode:
         raise RuntimeError("Git metadata unavailable: " + result.stderr.strip())
     return result.stdout.strip()
 
 
-def build(root=ROOT, output=None, version=VERSION, require_clean=False):
-    root = Path(root).resolve()
-    names = source_files(root)
+def source_identity(root):
+    if Path(git_value(root, "rev-parse", "--show-toplevel")).resolve() != root.resolve():
+        raise ValueError("release root must be its Git worktree top-level")
+    commit = git_value(root, "rev-parse", "HEAD")
+    if not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise ValueError("invalid source commit")
+    committed = {}
+    for entry in git_value(root, "ls-tree", "-r", "-z", "HEAD").split("\0"):
+        if entry:
+            metadata, name = entry.split("\t", 1)
+            mode, kind, blob = metadata.split()
+            if kind == "blob" and mode in {"100644", "100755"}:
+                committed[name] = blob
+    names = sorted(REQUIRED_FILES)
+    # Read paths directly through Git's clean filters. Index flags such as
+    # assume-unchanged cannot conceal changed source, while CRLF conversion stays valid.
+    blobs = git_value(root, "hash-object", "--stdin-paths",
+                      input_text="\n".join(names) + "\n").splitlines()
+    if len(blobs) != len(names):
+        raise ValueError("Git source blob identity incomplete")
+    modified = [name for name, blob in zip(names, blobs)
+                if name in committed and committed[name] != blob]
+    return (commit, git_value(root, "symbolic-ref", "--quiet", "--short", "HEAD")
+            if git_value(root, "rev-parse", "--abbrev-ref", "HEAD") != "HEAD" else "HEAD",
+            git_value(root, "status", "--porcelain", "--untracked-files=all"),
+            sorted(REQUIRED_FILES - committed.keys()), modified)
+
+
+def inputs_digest(payloads):
+    """Identity of exactly the packaged source bytes; independent of Git newline conversion."""
+    digests = {name: hashlib.sha256(data).hexdigest() for name, data in sorted(payloads.items())}
+    return hashlib.sha256(json.dumps(digests, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def source_payloads(root, names):
+    payloads = {name: checked_file(root, name).read_bytes() for name in names}
+    for name, data in payloads.items():
+        if not data.strip() and not name.endswith("/__init__.py"):
+            raise ValueError(f"empty release input: {name}")
+    return payloads
+
+
+def fingerprint_function(root):
     spec = importlib.util.spec_from_file_location("commplan_release_build_info", root / "planning/build_info.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    return module.build_fingerprint
+
+
+def check_output(root, output):
+    """Keep generated output out of source identity and refuse linked destinations/overwrites."""
+    if output.exists() or output.is_symlink():
+        raise ValueError("release output already exists: " + str(output))
+    current = output.parent
+    while current != current.parent:
+        if current.is_symlink() or (current.exists() and bool(
+                getattr(current.lstat(), "st_file_attributes", 0) & REPARSE_POINT)):
+            raise ValueError("symlink or reparse output directory refused")
+        current = current.parent
+    if output.is_relative_to(root):
+        check = subprocess.run(["git", "--no-optional-locks", "check-ignore", "--quiet", "--",
+                                output.relative_to(root).as_posix()], cwd=root, check=False)
+        if check.returncode != 0:
+            raise ValueError("release output must be Git-ignored or outside source tree")
+
+
+def build(root=ROOT, output=None, version=VERSION, require_clean=False):
+    if not isinstance(version, str) or not VERSION_PATTERN.fullmatch(version):
+        raise ValueError("invalid release version")
+    source_root = Path(root).absolute()
+    for current in (source_root, *source_root.parents):
+        if current.is_symlink() or bool(getattr(current.lstat(), "st_file_attributes", 0) & REPARSE_POINT):
+            raise ValueError("symlink or reparse source root refused")
+    root = Path(root).resolve()
+    output = (Path(output).absolute() if output else
+              root / "outputs" / "releases" / f"commplan-agent-v{version}-source.zip")
+    check_output(root, output)
+    names = source_files(root)
+    identity = source_identity(root)
+    payloads = source_payloads(root, names)
+    fingerprint = fingerprint_function(root)(root)
 
     # build_fingerprint reads this source tree; the archive carries the same immutable inputs.
-    fingerprint = module.build_fingerprint(root)
-    commit = git_value(root, "rev-parse", "HEAD")
-    dirty = bool(git_value(root, "status", "--porcelain", "--untracked-files=all"))
+    commit, _, status, uncommitted_inputs, modified_inputs = identity
+    dirty = bool(status or uncommitted_inputs or modified_inputs)
     if require_clean and dirty:
         raise ValueError("formal release requires a clean source commit")
     info = {
         "version": version,
         "source_commit": commit,
         "source_dirty": dirty,
+        "source_inputs_sha256": inputs_digest(payloads),
+        "source_status_sha256": hashlib.sha256(status.encode()).hexdigest(),
+        "source_uncommitted_inputs": uncommitted_inputs,
+        "source_modified_inputs": modified_inputs,
         "built_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "intended_platform": "Windows, Python 3.12",
         "build_fingerprint": fingerprint,
         "validation_record": VALIDATION_RECORD,
-        "package_type": "source-demo-without-model-assets",
+        "package_type": PACKAGE_TYPE,
+        "acceptance_status": "NOT_EVALUATED",
     }
-    payloads = {name: checked_file(root, name).read_bytes() for name in names}
+    original_payloads = dict(payloads)
     payloads["VERSION"] = (version + "\n").encode("utf-8")
     payloads["BUILD_INFO.json"] = (json.dumps(info, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
     manifest = {
@@ -168,11 +288,24 @@ def build(root=ROOT, output=None, version=VERSION, require_clean=False):
         "files": {name: hashlib.sha256(data).hexdigest() for name, data in sorted(payloads.items())},
     }
     payloads["MANIFEST.json"] = (json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
-    output = Path(output) if output else root / "outputs" / "releases" / f"commplan-agent-v{version}-source.zip"
     output.parent.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-        for name, data in sorted(payloads.items()):
-            archive.writestr(name, data)
+    handle, temporary = tempfile.mkstemp(prefix=".commplan-building-", suffix=".zip", dir=output.parent)
+    os.close(handle)
+    temporary = Path(temporary)
+    try:
+        with zipfile.ZipFile(temporary, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+            for name, data in sorted(payloads.items()):
+                archive.writestr(name, data)
+        if (source_identity(root) != identity or source_files(root) != names
+                or source_payloads(root, names) != original_payloads
+                or fingerprint_function(root)(root) != fingerprint):
+            raise ValueError("source changed during release build; no archive published")
+        check_output(root, output)
+        # Same-directory hard links publish atomically on the supported NTFS destination.
+        # An unsupported filesystem fails without overwriting or leaving a partial archive.
+        os.link(temporary, output)
+    finally:
+        temporary.unlink(missing_ok=True)
     return output.resolve()
 
 
