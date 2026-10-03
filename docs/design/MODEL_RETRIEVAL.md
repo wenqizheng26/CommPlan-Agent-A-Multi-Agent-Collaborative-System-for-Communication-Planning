@@ -1,5 +1,11 @@
 # 模型与检索：设计规格
 
+> 文档身份（2026-10-02）：本文保留模型注册、设置、检索与计时的设计和历史实施记录。下文模型示例、待评测状态及分工对应当时版本；当前 M1 验收以[老师三条案例](TEACHER_CASES.md)为准。
+>
+> 当前实现定位（源码基线 54a7b4a）：模型注册、设置与检索已接入 [providers](../../planning/providers/registry.py) 和[检索服务](../../planning/retrieval/service.py)；当前模型标识、默认值与资源路径见 [config/models.json](../../config/models.json)，运行入口见[产品说明](../../README.md)。
+>
+> 验证边界：配置存在不等于资源已安装或真实模型可用，检索命中不等于最终引用正确；历史评测仅证明各自版本与固定集，当前剩余验证见 [NEXT_ACTION](../codex/NEXT_ACTION.md)。
+
 状态：后端与页面已实施于分支 `claude/model-retrieval`（见第 12 节），待 Codex 完成评测集、真实模型联调与全量复验（见 `docs/codex/NEXT_ACTION.md`）。纳入 v0.1.0-demo，按 V4 重跑 Stage 2–4 门禁。
 决策来源：用户 2026-09-23 确认——纳入本次发布；仅本机模型；全局默认 + 逐次记录；RAG 实现由其他人按本文接口完成。
 本文取代 V4 §1.2 与 §32 中“不做新 RAG 栈”的限制，仅限本文范围；runtime Skills、LoRA、远程模型仍不在范围内。

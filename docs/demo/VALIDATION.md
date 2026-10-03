@@ -1,5 +1,7 @@
 # CommPlan-Agent Demo validation record
 
+> 历史发布验证：下表对应各自列明的提交与 v0.1.0 发布，保留原结果、失败、回退与限制。当前源码的验收请查 [状态矩阵](../codex/M1_ACCEPTANCE_STATUS.md)，不能将旧包或旧浏览器结果视为当前完整通过。
+
 Target: FSPL-stage Planning Workbench, Windows / Python 3.12. v0.1.0 was released on 2026-09-26; M1 work that later landed on `main` is validated separately in [ACCEPTANCE_M1](../design/ACCEPTANCE_M1.md) and [M1_COMPLETION](../codex/M1_COMPLETION.md). This is a living release gate record. A prior stage PASS does not prove a later source ZIP or accepted `main` build.
 
 | Gate | Current evidence | Status |
