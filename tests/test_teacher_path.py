@@ -279,6 +279,33 @@ class ServiceLabelTests(unittest.TestCase):
         self.assertNotIn('service', draft['report'])
         check_report(draft['report'], draft['request'], load_catalog(ROOT), ROOT)
 
+    def test_one_negation_covers_every_service_joined_by_a_connector(self):
+        from planning.services.requirement_policy import service_label
+        for text, label in [('视频业务和语音业务都不需要，只算链路余量', None), ('视频监控与语音通话都不用传', None),
+                            ('高清视频和实时语音都不需要', None), ('video traffic and voice calls are not required', None),
+                            ('视频与视频业务都不用传，只算余量', None), ('语音和语音业务都不需要', None),
+                            # The same service named twice is still one; a declined group leaves the rest.
+                            ('视频与视频业务都要传', '视频'), ('视频业务和语音业务都不需要，只传数据', '数据'),
+                            ('传视频和不传语音', '视频')]:
+            self.assertEqual((service_label(text) or {}).get('label'), label, text)
+
+    def test_a_completed_task_declining_joined_services_saves_no_label_and_the_same_numbers(self):
+        from formula_rag.catalog import load_catalog
+        from planning.services.requirement_validation import check_report
+        done = {}
+        for text in (CASES['teacher_01']['text'], CASES['teacher_01']['text'] + '视频业务和语音业务都不需要。'):
+            with tempfile.TemporaryDirectory() as tmp:
+                service = TaskService(ROOT, Path(tmp) / 'tasks.sqlite')
+                draft = service.apply(command(text=text))['state']
+                done[text] = state = service.apply(command('confirm', draft))['state']
+            self.assertEqual(state['status'], 'COMPLETED', state.get('failure'))
+            for report in (state['report'], state['review']['report'], state['confirmed_snapshot']['review']['report']):
+                self.assertNotIn('service', report)
+            check_report(state['report'], state['request'], load_catalog(ROOT), ROOT)
+        plain, declined = done.values()
+        self.assertEqual(declined['result']['outputs'], plain['result']['outputs'])
+        self.assertEqual(declined['final_report']['tool_calls'][0]['result'], plain['final_report']['tool_calls'][0]['result'])
+
     def test_the_contract_rejects_a_service_label_outside_the_list(self):
         from planning.requirements_contract import validate_report
         with tempfile.TemporaryDirectory() as tmp:

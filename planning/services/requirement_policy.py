@@ -25,10 +25,9 @@ SERVICE = re.compile('|'.join(f'(?P<{kind}>{pattern})' for kind, pattern in (
 # A bare "数据"/"data" still counts as a second service ("传视频，数据也要"), so a single label is not given;
 # reference material ("数据手册", "the data shows") does not.
 BARE_DATA = re.compile(r'数据(?!手册|表|库|集|源|格式|速率|率|量)|\bdata\b(?!\s*(?:sheets?|base|set|rate|shows?|showed|indicates?))', re.I)
-# Two services joined ("视频和数据都要传", "video and voice are not required") share one predicate: no label.
-WORD = {'视频': 'video', 'video': 'video', '语音': 'voice', 'voice': 'voice', '数据': 'data', 'data': 'data'}
-JOINED = re.compile(r'(视频|语音|数据|video|voice|data)\s*(?:和|与|及|以及|跟|或|还有|、|/|&|\band\b|\bor\b)\s*'
-                    r'(?:传输?|发送)?\s*(视频|语音|数据|video|voice|data)', re.I)
+# Services joined by a connector ("视频业务和语音业务", "高清视频和实时语音", "video traffic and voice calls")
+# share one predicate, so one negation covers them all ("……都不需要"); the gap may carry a modifier.
+JOIN = re.compile(r'\s*(?:和|与|及|以及|跟|或|还有|、|/|&|\band\b|\bor\b)\s*(?:传输?|发送)?\s*(?:实时|高清|\bhd\b|\blive\b)?\s*', re.I)
 # A clause ends at punctuation or a contrast ("但是", "而是", "but"): "not video but voice" names voice.
 CLAUSE = re.compile(r'[，,。；;！!？?\n]|而是|但是|不过|\bbut\b|\binstead\b|\brather\b', re.I)
 # Negation before the service ("不是视频", "不需要任何视频", "不传视频", "not video") or after it ("视频不用传").
@@ -39,18 +38,30 @@ NEGATED_AFTER = re.compile(r'^\s*(?:就|也|都|暂|暂时|先|并)?(?:不用|�
                            r"|^\s*(?:is|are)?\s*(?:not|isn't|aren't)\s+(?:needed|required)\b", re.I)
 
 
-def negated(text, found):
-    return bool(NEGATED_BEFORE.search(CLAUSE.split(text[:found.start()])[-1])
-                or NEGATED_AFTER.search(CLAUSE.split(text[found.end():])[0]))
+def service_groups(text):
+    """Service mentions in order, joined ones grouped: the named phrases plus a bare "数据"/"data" outside them."""
+    named = list(SERVICE.finditer(text))
+    mentions = sorted(named + [m for m in BARE_DATA.finditer(text) if not any(n.start() <= m.start() < n.end() for n in named)],
+                      key=lambda m: m.start())
+    groups = []
+    for found in mentions:
+        if groups and JOIN.fullmatch(text[groups[-1][-1].end():found.start()]):
+            groups[-1].append(found)
+        else:
+            groups.append([found])
+    return groups
+
+
+def negated(text, group):
+    return bool(NEGATED_BEFORE.search(CLAUSE.split(text[:group[0].start()])[-1])
+                or NEGATED_AFTER.search(CLAUSE.split(text[group[-1].end():])[0]))
 
 
 def service_label(text):
     """The one service the text asks for, or None when it names none or several (no guessing)."""
-    if any(WORD[m.group(1).lower()] != WORD[m.group(2).lower()] for m in JOINED.finditer(text)):
-        return None
-    named = [found for found in SERVICE.finditer(text) if not negated(text, found)]
-    kinds = {found.lastgroup for found in named} | {'data' for found in BARE_DATA.finditer(text) if not negated(text, found)}
-    if not named or len(kinds) != 1:
+    kept = [found for group in service_groups(text) if not negated(text, group) for found in group]
+    named = [found for found in kept if found.re is SERVICE]
+    if not named or len({found.lastgroup or 'data' for found in kept}) != 1:
         return None
     found = named[0]
     return dict(kind=found.lastgroup, label=SERVICE_LABELS[found.lastgroup], mention=found.group(),
