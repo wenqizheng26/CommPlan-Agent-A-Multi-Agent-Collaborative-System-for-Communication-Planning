@@ -1,7 +1,7 @@
 """Shared scope policy for single-link, one-way plans over the supported cards."""
 import re
 from formula_rag.parsing import extract_request
-from planning.requirements_contract import require
+from planning.requirements_contract import require, SERVICE_LABELS
 from planning.services.plans import TARGETS
 
 
@@ -10,6 +10,43 @@ FEASIBILITY = r'can.{0,15}(?:link|communicat)|is.{0,15}(?:feasible|sufficient)|�
 # A link request that names no quantity ("连到乡镇，传视频，要稳定") or names a modulation asks whether
 # the link holds: link margin is offered to the model even when its card shares no word with the text.
 LINK_REQUEST = re.compile(FEASIBILITY + r'|(?<![A-Za-z0-9])(?:[BQ]PSK|\d+\s*-?\s*(?:QAM|PSK)|QAM\s*-?\s*\d+)', re.I)
+
+
+# The service a request names ("传视频", "video link"): a report label only, never a calculation input,
+# and no promise about throughput. Bare "数据"/"data" is too common to name the service on its own.
+SERVICE = re.compile('|'.join(f'(?P<{kind}>{pattern})' for kind, pattern in (
+    ('video', r'(?:传输|回传|传送|发送|传)?(?:实时|高清)?视频(?:传输|回传|业务|监控|通话|会议)?'
+              r'|\b(?:(?:stream|transmit|send|carry|deliver|transfer)(?:s|ing)?\s+(?:hd\s+|live\s+)?)?video'
+              r'(?:\s+(?:link|stream|feed|traffic|transmission|surveillance))?\b'),
+    ('voice', r'(?:传输|发送|传)?语音(?:通信|通话|业务|传输)?|\bvoice(?:\s+(?:link|traffic|calls?|service))?\b'),
+    ('data', r'(?:传输|回传|发送|传)数据(?:业务)?|数据(?:传输|业务|回传|通信|链路)'
+             r'|\b(?:transmit|send|carry|transfer)(?:s|ing)?\s+data\b|\bdata\s+(?:link|traffic|transmission|service|transfer)\b'))),
+    re.I)
+# A bare "数据"/"data" still counts as a second service ("传视频，数据也要"), so a single label is not given;
+# reference material ("数据手册", "the data shows") does not.
+BARE_DATA = re.compile(r'数据(?!手册|表|库|集|源|格式|速率|率|量)|\bdata\b(?!\s*(?:sheets?|base|set|rate|shows?|showed|indicates?))', re.I)
+# A clause ends at punctuation or a contrast ("但是", "而是", "but"): "not video but voice" names voice.
+CLAUSE = re.compile(r'[，,。；;！!？?\n]|而是|但是|不过|\bbut\b|\binstead\b|\brather\b', re.I)
+# The label is for display only, so any negation in a clause leaves every service in it unlabelled
+# ("视频和语音都不需要", "stream video and transmit voice are not required") rather than guessing which
+# one it declines. Phrases that only describe the link ("不卡顿", "不低于", "分别", "非常") are not negations.
+NEGATION = re.compile(r"(?!不卡|不断|不间断|不中断|不低于|不少于|不超过|不高于|不大于|不小于)不|没|无需"
+                      r"|(?<![分区特级类个识告])别|非(?!常)|\b(?:no|not|none|without|never|neither|nor)\b|n['’]t\b", re.I)
+
+
+def service_label(text):
+    """The one service the text asks for, or None when it names none or several, or a clause may decline it."""
+    named = list(SERVICE.finditer(text))
+    mentions = named + [m for m in BARE_DATA.finditer(text) if not any(n.start() <= m.start() < n.end() for n in named)]
+    cuts = list(CLAUSE.finditer(text))
+    kept = [found for start, end in zip([0] + [c.end() for c in cuts], [c.start() for c in cuts] + [len(text)])
+            if not NEGATION.search(text[start:end]) for found in mentions if start <= found.start() < end]
+    named = sorted((found for found in kept if found.re is SERVICE), key=lambda found: found.start())
+    if not named or len({found.lastgroup or 'data' for found in kept}) != 1:
+        return None
+    found = named[0]
+    return dict(kind=found.lastgroup, label=SERVICE_LABELS[found.lastgroup], mention=found.group(),
+                span=[found.start(), found.end()])
 
 
 def validate_target_semantics(model):

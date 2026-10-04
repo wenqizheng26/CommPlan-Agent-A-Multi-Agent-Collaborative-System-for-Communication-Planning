@@ -17,7 +17,8 @@ from planning.services.requirement_facts import sources_for, band_issues, fact_q
 from planning.services.requirement_quantities import (find_quantities, ground_labels, summary, LABEL_FIELDS,
     SOLVE_UNKNOWNS)
 from planning.services.requirement_evidence import snapshot_for, evidence_for
-from planning.services.requirement_policy import validate_target_semantics, intent_conflict, outside_scope, LINK_REQUEST
+from planning.services.requirement_policy import (validate_target_semantics, intent_conflict, outside_scope, LINK_REQUEST,
+    service_label)
 from planning.services.plans import TARGETS, chain, final_target, plan_for, requires_free_space, bound_issues
 from planning.workflow.activity import observe
 
@@ -385,6 +386,9 @@ class RequirementsAgent:
             conditions=sorted(conditions), targets=targets, requirement=requirement, solve=solve, entities=entities,
             execution_status=status,
             component_modes=dict(interpretation=mode, retrieval='lexical_fallback'), runtime_health=health, diagnostics=diagnostics)
+        service = service_label(request['raw_text'])
+        if service:
+            report['service'] = service
         checked=validate_report(report, request)
         observe(observer,'planning','completed',status=status)
         return checked

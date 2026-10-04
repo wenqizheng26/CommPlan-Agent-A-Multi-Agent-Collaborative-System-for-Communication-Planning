@@ -9,6 +9,9 @@ const names={...parameterNames,modulation:'调制方式',rx_sensitivity_dbm:'接
  sensitivity_source:'灵敏度来源',simulated:'模拟参数',meets:'是否满足'};
 const units={path_loss_db:'dB',rx_power_dbm:'dBm',rx_sensitivity_dbm:'dBm',link_margin_db:'dB'};
 const number=value=>typeof value==='number'&&Number.isFinite(value);
+const LABEL_SOURCE='原文 · 只作标签，不参与计算';
+const SITE_SOURCE='名称来自原文';
+const FSPL_MHZ_NOTE='路径损耗按 MHz 形式计算，常数取 32.44；与 GHz 形式（常数 92.4）相比，同一条链路的结果约高 0.04 dB。';
 const display=(value,id='meets')=>value==null?NONE:number(value)?value.toFixed(2):typeof value==='boolean'?
  (id==='meets'?(value?'满足':'不满足'):(value?'是':'否')):String(value);
 const unitFor=name=>name.endsWith('_dbm')?'dBm':name.endsWith('_dbi')?'dBi':name.endsWith('_db')?'dB':name.endsWith('_mhz')?'MHz':name.endsWith('_ghz')?'GHz':name.endsWith('_km')?'km':name.endsWith('_m')?'m':name.endsWith('_deg')?'°':'';
@@ -89,13 +92,29 @@ export function reportModel(state,events=[],{facts={},cards={}}={}){
  const answers=(s.conversation?.turns||[]).filter(turn=>turn.kind==='answer'&&turn.mode==='suggestion')
   .flatMap(turn=>(turn.answers||[]).map(answer=>({id:answer.issue_id,title:answer.title||NONE,
    answer:answer.display??answer.answer??null})));
- const tools=toolsFor(s);
+ const tools=toolsFor(s),service=s.report?.service;
+ const labels={sites:(s.report?.entities||[]).filter(e=>e.kind==='site').map(e=>e.mention),
+  service:service?{kind:service.kind,label:service.label,mention:service.mention}:null};
  return {original_input:textOrNull(s.conversation?.original_input?.raw_text)||textOrNull(s.request?.raw_text),
-  parameters:parsed,completion:{missing,answers},tool_calls:tools,results:resultsFor(s),
+  parameters:parsed,labels,completion:{missing,answers},tool_calls:tools,results:resultsFor(s),
   comparison:comparisonFor(final.comparison),explanation:{answer:textOrNull(final.answer?.text),
    steps:(final.explanation||[]).map(step=>({id:step.id,text:textOrNull(step.note??step.text)})),
    opinions:(final.review?.opinions||[]).map(opinion=>({kind:opinion.kind,text:textOrNull(opinion.text)}))},
-  metadata:metadataFor(s,events,tools)};
+  metadata:{...metadataFor(s,events,tools),fspl_mhz:usesMhzLoss(s)}};
+}
+
+function usesMhzLoss(state){
+ return (state.final_report?.tool_calls||[]).some(call=>(call.steps||[]).some(step=>step.card==='fspl_mhz'))||
+  [...(state.final_report?.steps||[]),...(state.result?.steps||[])].some(step=>step.tool_id==='fspl_mhz');
+}
+
+// Site names come from the text (report.entities); a name the site library knows may supply coordinates.
+// The service (report.service) is only a label and never a calculation input.
+function labelRows(labels){
+ const rows=[];
+ if(labels?.sites?.length)rows.push({id:'sites',name:'站点',value:labels.sites.join('、'),unit:'',source:SITE_SOURCE});
+ if(labels?.service)rows.push({id:'service',name:'业务',value:labels.service.label,raw_value:false,unit:'',source:LABEL_SOURCE});
+ return rows;
 }
 
 function el(tag,text,className){
@@ -130,7 +149,7 @@ function paramTable(host,rows,source=false){
 export function renderReportDocument(host,model){
  host.replaceChildren();host.append(el('h1','通信筹划报告'));
  const original=section(host,'原始输入');original.append(rawNode('p',model.original_input,'report-raw'));
- paramTable(section(host,'解析字段'),model.parameters,true);
+ paramTable(section(host,'解析字段'),[...model.parameters,...labelRows(model.labels)],true);
  const completion=section(host,'缺失项与补全');
  if(!model.completion.missing.length&&!model.completion.answers.length)empty(completion);
  if(model.completion.missing.length){completion.append(el('h3','缺失项'));completion.append(table(['缺失项'],model.completion.missing.map(issue=>[issue.title])));}
@@ -158,6 +177,7 @@ export function renderReportDocument(host,model){
   list.append(el('dt',name),raw?rawNode('dd',value):el('dd',value??NONE));
  }
  meta.append(list,el('p',data.count_note,'hint'));
+ if(data.fspl_mhz)meta.append(el('p',FSPL_MHZ_NOTE,'hint'));
 }
 
 const panels=new WeakMap();

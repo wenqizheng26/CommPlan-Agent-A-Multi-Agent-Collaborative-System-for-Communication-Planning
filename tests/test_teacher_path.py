@@ -229,6 +229,119 @@ class TeacherPathTests(unittest.TestCase):
         assessment = ReviewAgent(selector).run(done['result'], done['confirmed_snapshot'])
         self.assertEqual((assessment['role']['mode'], assessment['role']['proposal']['answer']), ('stub', answer))
 
+    def test_the_review_prompt_speaks_of_a_higher_threshold_not_a_higher_sensitivity(self):
+        from planning.agents.review import PROMPT
+        self.assertIn('所需的接收门限越高', PROMPT)
+        self.assertNotIn('接收灵敏度越高', PROMPT)
+
+
+class ServiceLabelTests(unittest.TestCase):
+    """Case two names a service ("传视频"): the report keeps it as a label from the text, never as an input."""
+
+    def test_the_named_service_is_read_from_the_text_and_negations_are_not(self):
+        from planning.services.requirement_policy import service_label
+        text = CASES['teacher_02']['text']
+        start = text.index('传视频')
+        self.assertEqual(service_label(text), dict(kind='video', label='视频', mention='传视频', span=[start, start + 3]))
+        for text, label in [('用于视频监控', '视频'), ('语音通话要稳定', '语音'), ('数据传输要稳定', '数据'),
+                            ('transmit data over 10 km', '数据'), ('a 5.8 GHz video link', '视频'),
+                            ('不需要传视频，只算余量', None), ('without HD video, compute the margin', None),
+                            ('看下数据手册', None), ('The data shows 3 dB', None), ('now stream video over 8 km', '视频'), (CASES['teacher_01']['text'], None)]:
+            self.assertEqual((service_label(text) or {}).get('label'), label, text)
+
+    def test_negation_and_contrast_name_the_service_asked_for_and_mixed_requests_get_no_label(self):
+        from planning.services.requirement_policy import service_label
+        for text, label in [('不是视频业务，是语音通话', '语音'), ('不需要任何视频业务，只传数据', '数据'),
+                            ('视频不用传，语音就行', '语音'), ('not video but voice traffic', '语音'),
+                            ('视频就不用了，传数据', '数据'), ('video is not needed, voice only', '语音'),
+                            ('不考虑视频', None), ('视频暂不需要', None), ('不卡顿地传视频', '视频'),
+                            # Several services asked for at once: no single label is reliable.
+                            ('传视频和语音', None), ('语音通话，也要传数据', None)]:
+            self.assertEqual((service_label(text) or {}).get('label'), label, text)
+
+    def test_services_sharing_one_predicate_get_no_label_and_reference_data_is_not_a_service(self):
+        from planning.services.requirement_policy import service_label
+        for text, label in [('视频和数据都要传', None), ('传视频和数据', None), ('video and data both need transmission', None),
+                            ('视频和语音都不需要', None), ('视频和语音都不用传，只算余量', None),
+                            ('video and voice are not required', None), ('视频、语音、数据都要', None),
+                            # A bare "数据" in another clause is still a second service.
+                            ('传视频，数据也要', None), ('传视频，不传数据', '视频'),
+                            # Reference material and rates are not a service.
+                            ('传视频，参考数据手册', '视频'), ('传视频，数据速率 4 Mbps', '视频'), ('看下数据手册', None)]:
+            self.assertEqual((service_label(text) or {}).get('label'), label, text)
+
+    def test_a_request_naming_two_services_saves_no_service_label(self):
+        from planning.services.requirement_validation import check_report
+        from formula_rag.catalog import load_catalog
+        text = CASES['teacher_02']['text'].replace('传视频', '视频和数据都要传')
+        with tempfile.TemporaryDirectory() as tmp:
+            draft = TaskService(ROOT, Path(tmp) / 'tasks.sqlite').apply(command(text=text))['state']
+        self.assertNotIn('service', draft['report'])
+        check_report(draft['report'], draft['request'], load_catalog(ROOT), ROOT)
+
+    def test_any_negation_in_a_clause_leaves_its_services_unlabelled(self):
+        from planning.services.requirement_policy import service_label
+        for text, label in [('视频业务和语音业务都不需要，只算链路余量', None), ('视频监控与语音通话都不用传', None),
+                            ('高清视频和实时语音都不需要', None), ('video traffic and voice calls are not required', None),
+                            ('视频与视频业务都不用传，只算余量', None), ('语音和语音业务都不需要', None),
+                            ('stream video and transmit voice are not required', None),
+                            ('video traffic and video traffic are both not required', None),
+                            ('video is also not needed', None), ('视频先不管', None), ('传视频和不传语音', None),
+                            ('非视频业务', None),
+                            # The same service named twice is still one; a declined clause leaves the others.
+                            ('视频与视频业务都要传', '视频'), ('视频业务和语音业务都不需要，只传数据', '数据'),
+                            ('分别用 QPSK 和 16QAM 传视频', '视频'), ('传视频，误码率不低于要求', '视频')]:
+            self.assertEqual((service_label(text) or {}).get('label'), label, text)
+
+    def test_a_completed_task_declining_joined_services_saves_no_label_and_the_same_numbers(self):
+        from formula_rag.catalog import load_catalog
+        from planning.services.requirement_validation import check_report
+        done = {}
+        for text in (CASES['teacher_01']['text'], CASES['teacher_01']['text'] + '视频业务和语音业务都不需要。',
+                     CASES['teacher_01']['text'] + ' Stream video and transmit voice are not required.'):
+            with tempfile.TemporaryDirectory() as tmp:
+                service = TaskService(ROOT, Path(tmp) / 'tasks.sqlite')
+                draft = service.apply(command(text=text))['state']
+                done[text] = state = service.apply(command('confirm', draft))['state']
+            self.assertEqual(state['status'], 'COMPLETED', state.get('failure'))
+            for report in (state['report'], state['review']['report'], state['confirmed_snapshot']['review']['report']):
+                self.assertNotIn('service', report)
+            check_report(state['report'], state['request'], load_catalog(ROOT), ROOT)
+        plain, *declined = done.values()
+        for state in declined:
+            self.assertEqual(state['result']['outputs'], plain['result']['outputs'])
+            self.assertEqual(state['final_report']['tool_calls'][0]['result'], plain['final_report']['tool_calls'][0]['result'])
+
+    def test_the_contract_rejects_a_service_label_outside_the_list(self):
+        from planning.requirements_contract import validate_report
+        with tempfile.TemporaryDirectory() as tmp:
+            draft = TaskService(ROOT, Path(tmp) / 'tasks.sqlite').apply(command(text=CASES['teacher_02']['text']))['state']
+        validate_report(draft['report'], draft['request'])
+        for kind, label in [('radar', '雷达'), (None, None), ([], '视频'), ('video', None)]:
+            bad = copy.deepcopy(draft['report'])
+            bad['service'].update(kind=kind, label=label)
+            with self.assertRaisesRegex(ValueError, 'SERVICE_LABEL', msg=repr(kind)):
+                validate_report(bad, draft['request'])
+
+    def test_case_two_report_carries_the_label_and_the_check_replays_it(self):
+        from formula_rag.catalog import load_catalog
+        from planning.services.requirement_validation import check_report
+        with tempfile.TemporaryDirectory() as tmp:
+            draft = TaskService(ROOT, Path(tmp) / 'tasks.sqlite').apply(command(text=CASES['teacher_02']['text']))['state']
+        report, request, cards = draft['report'], draft['request'], load_catalog(ROOT)
+        self.assertEqual((report['service']['kind'], report['service']['mention']), ('video', '传视频'))
+        self.assertNotIn('service', {p['canonical_name'] for p in report['parameters_proposal']})
+        check_report(report, request, cards, ROOT)
+        # A report saved before the label existed still checks; a changed label does not.
+        check_report({k: v for k, v in report.items() if k != 'service'}, request, cards, ROOT)
+        changed = copy.deepcopy(report)
+        changed['service'].update(kind='voice', label='语音')
+        with self.assertRaisesRegex(ValueError, 'SERVICE_LABEL_MISMATCH'):
+            check_report(changed, request, cards, ROOT)
+        changed['service'].update(kind='video', label='语音')
+        with self.assertRaisesRegex(ValueError, 'SERVICE_LABEL'):
+            check_report(changed, request, cards, ROOT)
+
 
 if __name__ == '__main__':
     unittest.main()

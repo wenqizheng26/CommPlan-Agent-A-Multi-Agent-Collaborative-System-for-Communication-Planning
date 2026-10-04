@@ -37,7 +37,7 @@ def check_labels(text, labels):
             else:
                 require(text[a0:b0] == a['mention'], 'LABEL_NOT_GROUNDED')
 from planning.services.plans import SUPPORTED, TARGETS, chain, final_target, plan_for, requires_free_space, bound_issues
-from planning.services.requirement_policy import validate_target_semantics, intent_conflict, outside_scope
+from planning.services.requirement_policy import validate_target_semantics, intent_conflict, outside_scope, service_label
 
 
 def check_source_labels(parameters, text):
@@ -96,6 +96,8 @@ def check_report(report, request, cards, root=None):
     check_labels(request['raw_text'], labels)
     numeric = [a for a in labels if a['kind'] in {'quantity', 'requirement'}]
     require((r['requirement'], r['solve'], r['entities']) == summary(labels), 'LABEL_SUMMARY_MISMATCH')
+    # Reports saved before the service label existed have no 'service'; a present one must be the program's reading.
+    require('service' not in r or r['service'] == service_label(request['raw_text']), 'SERVICE_LABEL_MISMATCH')
     # A missing entry only claims absence; every observed value is re-collected from source.
     needed = [p['canonical_name'] for p in r['parameters_proposal'] if p['status']=='missing']
     require(all(n in FIELDS or n in FACT_FIELDS for n in needed), 'UNKNOWN_PARAMETER')
