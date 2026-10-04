@@ -259,6 +259,26 @@ class ServiceLabelTests(unittest.TestCase):
                             ('传视频和语音', None), ('语音通话，也要传数据', None)]:
             self.assertEqual((service_label(text) or {}).get('label'), label, text)
 
+    def test_services_sharing_one_predicate_get_no_label_and_reference_data_is_not_a_service(self):
+        from planning.services.requirement_policy import service_label
+        for text, label in [('视频和数据都要传', None), ('传视频和数据', None), ('video and data both need transmission', None),
+                            ('视频和语音都不需要', None), ('视频和语音都不用传，只算余量', None),
+                            ('video and voice are not required', None), ('视频、语音、数据都要', None),
+                            # A bare "数据" in another clause is still a second service.
+                            ('传视频，数据也要', None), ('传视频，不传数据', '视频'),
+                            # Reference material and rates are not a service.
+                            ('传视频，参考数据手册', '视频'), ('传视频，数据速率 4 Mbps', '视频'), ('看下数据手册', None)]:
+            self.assertEqual((service_label(text) or {}).get('label'), label, text)
+
+    def test_a_request_naming_two_services_saves_no_service_label(self):
+        from planning.services.requirement_validation import check_report
+        from formula_rag.catalog import load_catalog
+        text = CASES['teacher_02']['text'].replace('传视频', '视频和数据都要传')
+        with tempfile.TemporaryDirectory() as tmp:
+            draft = TaskService(ROOT, Path(tmp) / 'tasks.sqlite').apply(command(text=text))['state']
+        self.assertNotIn('service', draft['report'])
+        check_report(draft['report'], draft['request'], load_catalog(ROOT), ROOT)
+
     def test_the_contract_rejects_a_service_label_outside_the_list(self):
         from planning.requirements_contract import validate_report
         with tempfile.TemporaryDirectory() as tmp:

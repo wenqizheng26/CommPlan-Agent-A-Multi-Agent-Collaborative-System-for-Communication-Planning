@@ -13,7 +13,7 @@ LINK_REQUEST = re.compile(FEASIBILITY + r'|(?<![A-Za-z0-9])(?:[BQ]PSK|\d+\s*-?\s
 
 
 # The service a request names ("传视频", "video link"): a report label only, never a calculation input,
-# and no promise about throughput. Bare "数据"/"data" is too common to count without a transfer word.
+# and no promise about throughput. Bare "数据"/"data" is too common to name the service on its own.
 SERVICE = re.compile('|'.join(f'(?P<{kind}>{pattern})' for kind, pattern in (
     ('video', r'(?:传输|回传|传送|发送|传)?(?:实时|高清)?视频(?:传输|回传|业务|监控|通话|会议)?'
               r'|\b(?:(?:stream|transmit|send|carry|deliver|transfer)(?:s|ing)?\s+(?:hd\s+|live\s+)?)?video'
@@ -22,22 +22,35 @@ SERVICE = re.compile('|'.join(f'(?P<{kind}>{pattern})' for kind, pattern in (
     ('data', r'(?:传输|回传|发送|传)数据(?:业务)?|数据(?:传输|业务|回传|通信|链路)'
              r'|\b(?:transmit|send|carry|transfer)(?:s|ing)?\s+data\b|\bdata\s+(?:link|traffic|transmission|service|transfer)\b'))),
     re.I)
+# A bare "数据"/"data" still counts as a second service ("传视频，数据也要"), so a single label is not given;
+# reference material ("数据手册", "the data shows") does not.
+BARE_DATA = re.compile(r'数据(?!手册|表|库|集|源|格式|速率|率|量)|\bdata\b(?!\s*(?:sheets?|base|set|rate|shows?|showed|indicates?))', re.I)
+# Two services joined ("视频和数据都要传", "video and voice are not required") share one predicate: no label.
+WORD = {'视频': 'video', 'video': 'video', '语音': 'voice', 'voice': 'voice', '数据': 'data', 'data': 'data'}
+JOINED = re.compile(r'(视频|语音|数据|video|voice|data)\s*(?:和|与|及|以及|跟|或|还有|、|/|&|\band\b|\bor\b)\s*'
+                    r'(?:传输?|发送)?\s*(视频|语音|数据|video|voice|data)', re.I)
 # A clause ends at punctuation or a contrast ("但是", "而是", "but"): "not video but voice" names voice.
 CLAUSE = re.compile(r'[，,。；;！!？?\n]|而是|但是|不过|\bbut\b|\binstead\b|\brather\b', re.I)
 # Negation before the service ("不是视频", "不需要任何视频", "不传视频", "not video") or after it ("视频不用传").
 # A bare "不" counts only right before the match, so "不卡顿地传视频" still names video.
-NEGATED_BEFORE = re.compile(r"(?:(?:不是|并非|而非|不需要|不用|无需|不必|没有|不要|不考虑|不含|不包括|别)[^\s，,。；;]{0,4}|不|非)$"
+NEGATED_BEFORE = re.compile(r"(?:(?:不是|并非|而非|不需要|不用|无需|不必|没有|不要|不考虑|不含|不包括|不传|别)[^\s，,。；;]{0,4}|不|非)$"
                             r"|\b(?:no|not|without|don't|doesn't|never)\b(?:\s+[\w-]+){0,2}\s*$", re.I)
 NEGATED_AFTER = re.compile(r'^\s*(?:就|也|都|暂|暂时|先|并)?(?:不用|不需要|不需|无需|不必|没必要|不要|不传|不考虑|不做)'
                            r"|^\s*(?:is|are)?\s*(?:not|isn't|aren't)\s+(?:needed|required)\b", re.I)
 
 
+def negated(text, found):
+    return bool(NEGATED_BEFORE.search(CLAUSE.split(text[:found.start()])[-1])
+                or NEGATED_AFTER.search(CLAUSE.split(text[found.end():])[0]))
+
+
 def service_label(text):
     """The one service the text asks for, or None when it names none or several (no guessing)."""
-    named = [found for found in SERVICE.finditer(text)
-             if not NEGATED_BEFORE.search(CLAUSE.split(text[:found.start()])[-1])
-             and not NEGATED_AFTER.search(CLAUSE.split(text[found.end():])[0])]
-    if len({found.lastgroup for found in named}) != 1:
+    if any(WORD[m.group(1).lower()] != WORD[m.group(2).lower()] for m in JOINED.finditer(text)):
+        return None
+    named = [found for found in SERVICE.finditer(text) if not negated(text, found)]
+    kinds = {found.lastgroup for found in named} | {'data' for found in BARE_DATA.finditer(text) if not negated(text, found)}
+    if not named or len(kinds) != 1:
         return None
     found = named[0]
     return dict(kind=found.lastgroup, label=SERVICE_LABELS[found.lastgroup], mention=found.group(),
