@@ -25,42 +25,23 @@ SERVICE = re.compile('|'.join(f'(?P<{kind}>{pattern})' for kind, pattern in (
 # A bare "数据"/"data" still counts as a second service ("传视频，数据也要"), so a single label is not given;
 # reference material ("数据手册", "the data shows") does not.
 BARE_DATA = re.compile(r'数据(?!手册|表|库|集|源|格式|速率|率|量)|\bdata\b(?!\s*(?:sheets?|base|set|rate|shows?|showed|indicates?))', re.I)
-# Services joined by a connector ("视频业务和语音业务", "高清视频和实时语音", "video traffic and voice calls")
-# share one predicate, so one negation covers them all ("……都不需要"); the gap may carry a modifier.
-JOIN = re.compile(r'\s*(?:和|与|及|以及|跟|或|还有|、|/|&|\band\b|\bor\b)\s*(?:传输?|发送)?\s*(?:实时|高清|\bhd\b|\blive\b)?\s*', re.I)
 # A clause ends at punctuation or a contrast ("但是", "而是", "but"): "not video but voice" names voice.
 CLAUSE = re.compile(r'[，,。；;！!？?\n]|而是|但是|不过|\bbut\b|\binstead\b|\brather\b', re.I)
-# Negation before the service ("不是视频", "不需要任何视频", "不传视频", "not video") or after it ("视频不用传").
-# A bare "不" counts only right before the match, so "不卡顿地传视频" still names video.
-NEGATED_BEFORE = re.compile(r"(?:(?:不是|并非|而非|不需要|不用|无需|不必|没有|不要|不考虑|不含|不包括|不传|别)[^\s，,。；;]{0,4}|不|非)$"
-                            r"|\b(?:no|not|without|don't|doesn't|never)\b(?:\s+[\w-]+){0,2}\s*$", re.I)
-NEGATED_AFTER = re.compile(r'^\s*(?:就|也|都|暂|暂时|先|并)?(?:不用|不需要|不需|无需|不必|没必要|不要|不传|不考虑|不做)'
-                           r"|^\s*(?:is|are)?\s*(?:not|isn't|aren't)\s+(?:needed|required)\b", re.I)
-
-
-def service_groups(text):
-    """Service mentions in order, joined ones grouped: the named phrases plus a bare "数据"/"data" outside them."""
-    named = list(SERVICE.finditer(text))
-    mentions = sorted(named + [m for m in BARE_DATA.finditer(text) if not any(n.start() <= m.start() < n.end() for n in named)],
-                      key=lambda m: m.start())
-    groups = []
-    for found in mentions:
-        if groups and JOIN.fullmatch(text[groups[-1][-1].end():found.start()]):
-            groups[-1].append(found)
-        else:
-            groups.append([found])
-    return groups
-
-
-def negated(text, group):
-    return bool(NEGATED_BEFORE.search(CLAUSE.split(text[:group[0].start()])[-1])
-                or NEGATED_AFTER.search(CLAUSE.split(text[group[-1].end():])[0]))
+# The label is for display only, so any negation in a clause leaves every service in it unlabelled
+# ("视频和语音都不需要", "stream video and transmit voice are not required") rather than guessing which
+# one it declines. Phrases that only describe the link ("不卡顿", "不低于", "分别", "非常") are not negations.
+NEGATION = re.compile(r"(?!不卡|不断|不间断|不中断|不低于|不少于|不超过|不高于|不大于|不小于)不|没|无需"
+                      r"|(?<![分区特级类个识告])别|非(?!常)|\b(?:no|not|none|without|never|neither|nor)\b|n['’]t\b", re.I)
 
 
 def service_label(text):
-    """The one service the text asks for, or None when it names none or several (no guessing)."""
-    kept = [found for group in service_groups(text) if not negated(text, group) for found in group]
-    named = [found for found in kept if found.re is SERVICE]
+    """The one service the text asks for, or None when it names none or several, or a clause may decline it."""
+    named = list(SERVICE.finditer(text))
+    mentions = named + [m for m in BARE_DATA.finditer(text) if not any(n.start() <= m.start() < n.end() for n in named)]
+    cuts = list(CLAUSE.finditer(text))
+    kept = [found for start, end in zip([0] + [c.end() for c in cuts], [c.start() for c in cuts] + [len(text)])
+            if not NEGATION.search(text[start:end]) for found in mentions if start <= found.start() < end]
+    named = sorted((found for found in kept if found.re is SERVICE), key=lambda found: found.start())
     if not named or len({found.lastgroup or 'data' for found in kept}) != 1:
         return None
     found = named[0]
