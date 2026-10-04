@@ -65,3 +65,7 @@ start.cmd --without-model
 已有版本的验证证据保存在 [VALIDATION.md](docs/demo/VALIDATION.md)，其中注明对应代码与实际执行的检查；历史记录不代表当前源码已通过全部检查。演示视频尚未发布，录制说明见 [RECORDING.md](docs/demo/RECORDING.md)。
 
 项目代码采用 [MIT 许可证](LICENSE)。现有公式资料只按链接和简短说明引用；模型和本地运行库各遵循其上游许可。安装依赖由 `requirements-planning.txt` 固定，source Demo 不再分发第三方模型或 Python 包。
+
+## 文档与维护说明
+
+[文档导航](docs/README.md) 按使用、设计、维护和历史证据组织材料；各项说明与验证应核对对应源码版本。当前源码说明与正式发布版本说明分开阅读。
