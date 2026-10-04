@@ -220,11 +220,78 @@ def source_payloads(root, names):
     return payloads
 
 
+def git_blob_payloads(root, names, commit):
+    """Read exact reviewed HEAD bytes, without checkout or text-mode decoding."""
+    entries = {}
+    for entry in git_value(root, "ls-tree", "-r", "-z", commit).split("\0"):
+        if entry:
+            metadata, name = entry.split("\t", 1)
+            mode, kind, object_id = metadata.split()
+            entries[name] = (mode, kind, object_id)
+    object_ids = []
+    for name in names:
+        mode, kind, object_id = entries.get(name, (None, None, None))
+        if (mode not in {"100644", "100755"} or kind != "blob"
+                or not re.fullmatch(r"[0-9a-f]{40}", object_id or "")):
+            raise ValueError(f"reviewed Git blob unavailable: {name}")
+        object_ids.append(object_id)
+    run = subprocess.run(["git", "--no-optional-locks", "cat-file", "--batch"], cwd=root,
+                         input=("\n".join(object_ids) + "\n").encode("ascii"),
+                         capture_output=True, timeout=60, check=False)
+    if run.returncode:
+        raise RuntimeError("Git blob read failed: " + run.stderr.decode("utf-8", errors="replace").strip())
+    payloads, offset = {}, 0
+    for name, expected in zip(names, object_ids):
+        end = run.stdout.find(b"\n", offset)
+        if end < 0:
+            raise ValueError("incomplete Git batch header")
+        header = run.stdout[offset:end].split(b" ")
+        if (len(header) != 3 or header[0] != expected.encode("ascii") or header[1] != b"blob"
+                or not re.fullmatch(rb"(?:0|[1-9][0-9]*)", header[2])):
+            raise ValueError("Git batch object identity/type/length mismatch")
+        size = int(header[2])
+        if size > 20 * 1024 * 1024:
+            raise ValueError("Git blob exceeds source-package member limit")
+        start, stop = end + 1, end + 1 + size
+        if stop >= len(run.stdout) or run.stdout[stop:stop + 1] != b"\n":
+            raise ValueError("incomplete Git batch payload")
+        data = run.stdout[start:stop]
+        actual = hashlib.sha1(b"blob " + str(size).encode("ascii") + b"\0" + data).hexdigest()
+        if actual != expected:
+            raise ValueError("Git batch blob content hash mismatch")
+        if not data.strip() and not name.endswith("/__init__.py"):
+            raise ValueError(f"empty release input: {name}")
+        payloads[name], offset = data, stop + 1
+    if offset != len(run.stdout):
+        raise ValueError("unexpected trailing Git batch data")
+    return payloads
+
+
+def core_autocrlf(root):
+    run = subprocess.run(["git", "--no-optional-locks", "config", "--get", "core.autocrlf"],
+                         cwd=root, capture_output=True, text=True, encoding="utf-8", check=False)
+    if run.returncode not in {0, 1}:
+        raise RuntimeError("Git core.autocrlf query failed: " + run.stderr.strip())
+    return run.stdout.strip() if run.returncode == 0 else None
+
+
 def fingerprint_function(root):
     spec = importlib.util.spec_from_file_location("commplan_release_build_info", root / "planning/build_info.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module.build_fingerprint
+
+
+def payload_fingerprint(root, payloads):
+    """Run the reviewed fingerprint function over the actual member bytes."""
+    fingerprint = fingerprint_function(root)
+    with tempfile.TemporaryDirectory(prefix="commplan-source-bytes-") as temporary:
+        tree = Path(temporary)
+        for name, data in payloads.items():
+            path = tree.joinpath(*PurePosixPath(name).parts)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data)
+        return fingerprint(tree)
 
 
 def check_output(root, output):
@@ -257,14 +324,16 @@ def build(root=ROOT, output=None, version=VERSION, require_clean=False):
     check_output(root, output)
     names = source_files(root)
     identity = source_identity(root)
-    payloads = source_payloads(root, names)
-    fingerprint = fingerprint_function(root)(root)
+    workspace_payloads = source_payloads(root, names)
+    workspace_fingerprint = fingerprint_function(root)(root)
+    autocrlf = core_autocrlf(root)
 
-    # build_fingerprint reads this source tree; the archive carries the same immutable inputs.
     commit, _, status, uncommitted_inputs, modified_inputs = identity
     dirty = bool(status or uncommitted_inputs or modified_inputs)
     if require_clean and dirty:
         raise ValueError("formal release requires a clean source commit")
+    payloads = git_blob_payloads(root, names, commit) if require_clean else dict(workspace_payloads)
+    fingerprint = payload_fingerprint(root, payloads)
     info = {
         "version": version,
         "source_commit": commit,
@@ -273,6 +342,9 @@ def build(root=ROOT, output=None, version=VERSION, require_clean=False):
         "source_status_sha256": hashlib.sha256(status.encode()).hexdigest(),
         "source_uncommitted_inputs": uncommitted_inputs,
         "source_modified_inputs": modified_inputs,
+        "source_content_mode": "git-blobs" if require_clean else "worktree-bytes",
+        "workspace_build_fingerprint": workspace_fingerprint,
+        "source_core_autocrlf": autocrlf,
         "built_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "intended_platform": "Windows, Python 3.12",
         "build_fingerprint": fingerprint,
@@ -280,7 +352,6 @@ def build(root=ROOT, output=None, version=VERSION, require_clean=False):
         "package_type": PACKAGE_TYPE,
         "acceptance_status": "NOT_EVALUATED",
     }
-    original_payloads = dict(payloads)
     payloads["VERSION"] = (version + "\n").encode("utf-8")
     payloads["BUILD_INFO.json"] = (json.dumps(info, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
     manifest = {
@@ -297,8 +368,9 @@ def build(root=ROOT, output=None, version=VERSION, require_clean=False):
             for name, data in sorted(payloads.items()):
                 archive.writestr(name, data)
         if (source_identity(root) != identity or source_files(root) != names
-                or source_payloads(root, names) != original_payloads
-                or fingerprint_function(root)(root) != fingerprint):
+                or source_payloads(root, names) != workspace_payloads
+                or fingerprint_function(root)(root) != workspace_fingerprint
+                or core_autocrlf(root) != autocrlf):
             raise ValueError("source changed during release build; no archive published")
         check_output(root, output)
         # Same-directory hard links publish atomically on the supported NTFS destination.

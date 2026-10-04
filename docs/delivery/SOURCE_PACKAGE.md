@@ -12,7 +12,13 @@
 python -B -X utf8 scripts/build_planning_release.py --version 0.2.0-dev --output outputs/releases/source-precheck.zip
 ```
 
-需要仅从已提交源码构建时，增加 `--require-clean`。构建器拒绝覆盖已有输出，并在发布 ZIP 前复查源码身份与成员内容。当前 E 盘 NTFS 上通过同目录硬链接发布完成文件；其他文件系统尚未验证。构建失败时保留实际错误，修正后使用新路径。源码中的未提交内容必须如实记录，不能将包写成正式验收版。
+需要仅从已提交源码构建时，增加 `--require-clean`：构建器先检查工作区身份与实际修改，再从该 HEAD 的原始 Git blob 读取受审成员。缺失、未提交、未跟踪或被忽略的成员以及被索引标志隐藏的修改仍会拒绝构建。默认开发预检使用工作区实际字节，保留检出换行和未提交内容，并如实记录 dirty 状态。
+
+通过严格工作区 clean 检查后，同一 HEAD 的正式包源码成员、`source_inputs_sha256` 与包内 `build_fingerprint` 可重现，不受工作区 LF、CRLF 或混合换行影响。构建时间、工作区配置和 ZIP 时间属于当次审计资料，因此不同构建的整个 ZIP SHA256 不保证相同；这项约定也不替代历史归档对原实际文件字节的保存。
+
+当前 Git 对象中的 `.cmd` 成员为 LF，正式包保留这些原始字节。完整安装与启动步骤仍须按最终独立环境验收验证；源码预检中的 Python HTTP smoke 不代表批处理入口已经完整通过。
+
+构建器拒绝覆盖已有输出，并在发布 ZIP 前复查工作区源码身份、成员内容、fingerprint 和 `core.autocrlf`。本机 NTFS 卷上通过同目录硬链接发布完成文件；其他文件系统尚未验证。构建失败时保留实际错误，修正后使用新路径。存在未提交内容的源码包不能写成正式验收版。
 
 构建器按明确的成员清单收集文件。新增源码需要审核并登记；模型、运行时、缓存、数据库、环境、仓库元数据和未登记成员不能借此进入交付包。历史归档另用完整快照流程，不能使用这个源码成员清单删减历史内容。
 
@@ -35,7 +41,9 @@ Python 子集为 `test_core`、`test_teacher_tools`、`test_teacher_cases_format
 
 包内保留 `scripts/eval_teacher.py` 及对应的原始老师用例，便于核对源码；本批不运行真实模型。该评测脚本的断言与证据门禁仍在 B2b 改进范围内，当前通过结果不能据此作为最终验收结论。
 
-包内 `BUILD_INFO.json` 记录源码提交、是否存在未提交内容、实际源码成员摘要、版本、构建时间与验证记录入口。`MANIFEST.json` 记录实际成员的校验值。接手时将它们与原始构建日志一并保存；包外 SHA256 用于核对取得的 ZIP，包内成员校验用于核对内容，两者都不能自行证明发布者身份。
+包内 `BUILD_INFO.json` 记录源码提交、是否存在未提交内容、实际源码成员摘要、版本、构建时间与验证记录入口。`source_content_mode` 区分 `git-blobs` 和 `worktree-bytes`；`build_fingerprint` 对应实际包内字节，`workspace_build_fingerprint` 与 `source_core_autocrlf` 单列本次工作区观察值。旧包若完全缺少这三个字段，校验结果标为 `legacy-worktree-bytes`，仅验证原契约，不追认 Git blob 来源；部分缺字段会拒绝。
+
+`MANIFEST.json` 记录实际成员的校验值。接手时将它们与原始构建日志一并保存；包外 SHA256 用于核对取得的 ZIP，包内成员校验用于核对内容，两者都不能自行证明发布者身份或元数据声称的 Git 来源。
 
 ## 文档与材料范围
 

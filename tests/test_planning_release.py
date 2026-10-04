@@ -20,11 +20,13 @@ import validate_planning_release as validator
 
 
 def archive_bytes(*, extra=None, tamper=None, missing=None, change=None, empty=False,
-                  duplicate=None, attribute=None):
+                  duplicate=None, attribute=None, remove_info=()):
     # Static consistency fixture; ActualSourcePackageTests uses real source bytes.
     files = {name: b'' if empty else b'reviewed source input\n' for name in builder.REQUIRED_FILES}
     info = dict(version=builder.VERSION, source_commit='a'*40, source_dirty=False,
                 source_uncommitted_inputs=[], source_modified_inputs=[], build_fingerprint='b'*20,
+                source_content_mode='worktree-bytes', workspace_build_fingerprint='b'*20,
+                source_core_autocrlf=None,
                 source_inputs_sha256=builder.inputs_digest(files),
                 source_status_sha256=hashlib.sha256(b'').hexdigest(),
                 built_at_utc='2026-10-03T00:00:00+00:00',
@@ -32,6 +34,8 @@ def archive_bytes(*, extra=None, tamper=None, missing=None, change=None, empty=F
                 validation_record=builder.VALIDATION_RECORD,
                 package_type=builder.PACKAGE_TYPE, acceptance_status='NOT_EVALUATED')
     info.update(change or {})
+    for field in remove_info:
+        info.pop(field)
     files.update({'VERSION': (builder.VERSION+'\n').encode(), 'BUILD_INFO.json': json.dumps(info).encode()})
     if missing:
         files.pop(missing)
@@ -129,6 +133,43 @@ class PlanningReleaseTests(unittest.TestCase):
         with zipfile.ZipFile(archive_bytes(extra={'MANIFEST.json':b'{"format":true,"files":{}}'})) as archive:
             with self.assertRaisesRegex(ValueError,'invalid manifest'):
                 validator.inspect_archive(archive)
+
+    def test_new_content_contract_and_legacy_packages_are_distinguished(self):
+        fields=('source_content_mode','workspace_build_fingerprint','source_core_autocrlf')
+        self.assertNotIn('source_content_mode',self.inspect(remove_info=fields))
+        with self.assertRaisesRegex(ValueError,'partial source content metadata'):
+            self.inspect(remove_info=('source_core_autocrlf',))
+        for change in ({'source_content_mode':None},{'source_content_mode':[]},
+                       {'source_content_mode':'canonical'}, {'workspace_build_fingerprint':'bad'},
+                       {'source_core_autocrlf':'true\n'}, {'source_core_autocrlf':False}):
+            with self.subTest(change=change), self.assertRaisesRegex(ValueError,'source content metadata contract'):
+                self.inspect(change=change)
+        with self.assertRaisesRegex(ValueError,'Git blob mode requires clean'):
+            self.inspect(change={'source_content_mode':'git-blobs','source_dirty':True})
+        with self.assertRaisesRegex(ValueError,'worktree fingerprint metadata mismatch'):
+            self.inspect(change={'workspace_build_fingerprint':'c'*20})
+        self.assertEqual(self.inspect(change={'source_content_mode':'git-blobs',
+                          'workspace_build_fingerprint':'c'*20})['source_content_mode'],'git-blobs')
+
+    def test_git_batch_rejects_wrong_type_order_size_truncation_and_hash(self):
+        data=b'byte\x00payload\r\n'
+        object_id=hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
+        entries='100644 blob '+object_id+'\t中文.md\0'
+        valid=object_id.encode()+b' blob '+str(len(data)).encode()+b'\n'+data+b'\n'
+        replies=(valid.replace(b' blob ',b' tree '),
+                 valid.replace(object_id.encode(),b'0'*40,1),
+                 valid.replace(str(len(data)).encode()+b'\n',b'-1\n',1),
+                 valid[:-1], valid.replace(data,b'wrong payload!'),valid+b'extra',
+                 object_id.encode()+b' missing\n',
+                 object_id.encode()+b' blob 20971521\n')
+        for reply in replies:
+            with self.subTest(reply=reply), patch.object(builder,'git_value',return_value=entries), \
+                    patch.object(builder.subprocess,'run',return_value=subprocess.CompletedProcess([],0,reply,b'')):
+                with self.assertRaisesRegex(ValueError,'Git batch|Git blob'):
+                    builder.git_blob_payloads(ROOT,['中文.md'],'a'*40)
+        with patch.object(builder,'git_value',return_value=entries.replace('100644','120000')):
+            with self.assertRaisesRegex(ValueError,'reviewed Git blob unavailable'):
+                builder.git_blob_payloads(ROOT,['中文.md'],'a'*40)
 
     def test_unlisted_source_and_empty_builder_inputs_are_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -268,6 +309,8 @@ class ActualSourcePackageTests(unittest.TestCase):
             path=root/'planning/web/app.js'
             original=path.read_bytes().replace(b'\r\n',b'\n').replace(b'\n',b'\r\n')
             path.write_bytes(original)
+            git('add','--','planning/web/app.js')
+            self.assertEqual(git('diff','--cached','--raw'),'')
             self.assertEqual(builder.source_identity(root)[2:5],('',[],[]))
             builder.build(root,Path(temporary)/'clean-crlf.zip',require_clean=True)
             for flag in ('assume-unchanged','skip-worktree'):
@@ -308,6 +351,138 @@ class ActualSourcePackageTests(unittest.TestCase):
         with patch.object(validator,'fingerprint_function',return_value=lambda root:'0'*20):
             with self.assertRaisesRegex(ValueError,'unpacked build fingerprint mismatch'):
                 validator.validate(output,smoke=False)
+
+
+class GitSourceBytesTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary=tempfile.TemporaryDirectory(prefix='commplan-git-bytes-test-')
+        self.addCleanup(self.temporary.cleanup)
+        self.container=Path(self.temporary.name)
+        self.source=self.container/'source'
+        self.source.mkdir()
+        for name in builder.REQUIRED_FILES:
+            destination=self.source/name
+            destination.parent.mkdir(parents=True,exist_ok=True)
+            data=builder.checked_file(ROOT,name).read_bytes()
+            if name.endswith('.cmd'):
+                # Prepare a known CRLF blob even when the tested formal package carries LF.
+                data=data.replace(b'\r\n',b'\n').replace(b'\n',b'\r\n')
+            destination.write_bytes(data)
+        self.git('init','--quiet')
+        self.git('config','core.autocrlf','false')
+        # This is fixture-local policy only; production blobs remain byte-exact.
+        (self.source/'.gitattributes').write_text('* text=auto\nplanning/web/app.js text\n*.cmd -text\n')
+        self.git('add','--all')
+        self.git('-c','user.name=Test','-c','user.email=test@example.invalid','commit','--quiet','-m','Byte source fixture')
+
+    def git(self,*args):
+        return subprocess.run(['git',*args],cwd=self.source,check=True,capture_output=True).stdout
+
+    def package(self,name,require_clean):
+        output=self.container/(name+'.zip')
+        builder.build(self.source,output,require_clean=require_clean)
+        with zipfile.ZipFile(output) as archive:
+            info=validator.inspect_archive(archive)
+            payloads={name:archive.read(name) for name in builder.REQUIRED_FILES}
+        result=validator.validate(output,smoke=False)
+        self.assertEqual(result['checks']['extracted_fingerprint'],'PASS')
+        return info,payloads
+
+    def test_formal_same_head_bytes_digest_and_fingerprint_ignore_checkout_newlines(self):
+        name='planning/web/app.js'
+        path=self.source/name
+        original=path.read_bytes().replace(b'\r\n',b'\n')
+        lines=original.splitlines(keepends=True)
+        mixed=b''.join(line.replace(b'\n',b'\r\n') if index%2 else line for index,line in enumerate(lines))
+        previous=None
+        workspace=[]
+        commit=self.git('rev-parse','HEAD')
+        for label,content,autocrlf in (('lf',original,'false'),
+                                        ('crlf',original.replace(b'\n',b'\r\n'),'true'),
+                                        ('mixed',mixed,'input')):
+            self.git('config','core.autocrlf',autocrlf)
+            path.write_bytes(content)
+            identity=builder.source_identity(self.source)
+            self.assertEqual(identity[3:5],([],[]))
+            if identity[2]:
+                # Matching clean-filter content never exempts a Git-dirty worktree.
+                with self.assertRaisesRegex(ValueError,'clean source commit'):
+                    builder.build(self.source,self.container/('dirty-'+label+'.zip'),require_clean=True)
+            # Fixture-only index stat refresh; the source blob and HEAD remain identical.
+            self.git('add','--',name)
+            self.assertEqual(self.git('rev-parse','HEAD'),commit)
+            self.assertEqual(self.git('diff','--cached','--raw'),b'')
+            self.assertEqual(builder.source_identity(self.source)[2:5],('',[],[]))
+            info,payloads=self.package('formal-'+label,True)
+            self.assertEqual(info['source_content_mode'],'git-blobs')
+            self.assertFalse(info['source_dirty'])
+            self.assertEqual(info['source_core_autocrlf'],autocrlf)
+            self.assertEqual(payloads[name],self.git('cat-file','blob','HEAD:'+name))
+            comparable=(payloads,info['source_inputs_sha256'],info['build_fingerprint'])
+            if previous is not None:
+                self.assertEqual(previous,comparable)
+            previous=comparable
+            workspace.append(info['workspace_build_fingerprint'])
+            dev,actual=self.package('development-'+label,False)
+            self.assertEqual(dev['source_content_mode'],'worktree-bytes')
+            self.assertEqual(actual[name],content)
+            self.assertEqual(dev['workspace_build_fingerprint'],dev['build_fingerprint'])
+        self.assertEqual(len(set(workspace)),3)
+
+    def test_binary_chinese_paths_repeated_objects_and_crlf_blobs_are_preserved(self):
+        names=['knowledge/documents/simulated/站址表.md','README.md']
+        binary=b'\x00\xff\x80\r\n'+ '中文文件'.encode('utf-8')+b'\nend\x00'
+        for name in names:
+            (self.source/name).write_bytes(binary)
+        self.git('add','--all')
+        self.git('-c','user.name=Test','-c','user.email=test@example.invalid','commit','--quiet','-m','Binary source fixture')
+        commit=self.git('rev-parse','HEAD').decode().strip()
+        self.assertEqual(builder.git_blob_payloads(self.source,names,commit),{name:binary for name in names})
+        info,payloads=self.package('binary-and-cmd',True)
+        self.assertEqual(payloads[names[0]],binary)
+        for name in ('start.cmd','setup_planning.cmd','planning/run_planning.cmd'):
+            # CRLF fixture blobs must not be text-decoded or normalized by cat-file.
+            self.assertEqual(payloads[name],self.git('cat-file','blob','HEAD:'+name))
+            self.assertIn(b'\r\n',payloads[name])
+            self.assertNotIn(b'\n',payloads[name].replace(b'\r\n',b''))
+
+    def test_formal_missing_or_modified_workspace_still_fails_before_blob_collection(self):
+        path=self.source/'README.md'
+        original=path.read_bytes()
+        path.write_bytes(original+b'actual change\n')
+        with self.assertRaisesRegex(ValueError,'clean source commit'):
+            builder.build(self.source,self.container/'modified.zip',require_clean=True)
+        path.unlink()
+        with self.assertRaisesRegex(ValueError,'missing release inputs'):
+            builder.build(self.source,self.container/'missing.zip',require_clean=True)
+        self.assertFalse((self.container/'modified.zip').exists())
+        self.assertFalse((self.container/'missing.zip').exists())
+
+    def test_formal_publish_rechecks_workspace_even_when_canonical_bytes_are_unchanged(self):
+        original=builder.git_blob_payloads
+        path=self.source/'README.md'
+        def changing(root,names,commit):
+            payloads=original(root,names,commit)
+            path.write_bytes(path.read_bytes()+b'changed during build\n')
+            return payloads
+        output=self.container/'formal-changed.zip'
+        with patch.object(builder,'git_blob_payloads',side_effect=changing):
+            with self.assertRaisesRegex(ValueError,'source changed during release build'):
+                builder.build(self.source,output,require_clean=True)
+        self.assertFalse(output.exists())
+        self.assertFalse(list(self.container.glob('.commplan-building-*')))
+
+    def test_formal_publish_rechecks_git_autocrlf_observation(self):
+        original=builder.git_blob_payloads
+        def changing(root,names,commit):
+            payloads=original(root,names,commit)
+            self.git('config','core.autocrlf','true')
+            return payloads
+        output=self.container/'config-changed.zip'
+        with patch.object(builder,'git_blob_payloads',side_effect=changing):
+            with self.assertRaisesRegex(ValueError,'source changed during release build'):
+                builder.build(self.source,output,require_clean=True)
+        self.assertFalse(output.exists())
 
 
 if __name__ == '__main__':

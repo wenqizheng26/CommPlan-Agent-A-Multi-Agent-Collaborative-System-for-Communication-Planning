@@ -116,6 +116,25 @@ def inspect_archive(archive):
     packaged = {name: archive.read(name) for name in names if name in REQUIRED_FILES}
     if info["source_inputs_sha256"] != inputs_digest(packaged):
         raise ValueError("source input identity mismatch")
+    content_fields = {"source_content_mode", "workspace_build_fingerprint", "source_core_autocrlf"}
+    present = content_fields.intersection(info)
+    if present and present != content_fields:
+        raise ValueError("partial source content metadata")
+    if present:
+        if (not isinstance(info["source_content_mode"], str)
+                or info["source_content_mode"] not in {"git-blobs", "worktree-bytes"}
+                or not isinstance(info["workspace_build_fingerprint"], str)
+                or not re.fullmatch(r"[0-9a-f]{20}", info["workspace_build_fingerprint"])
+                or (info["source_core_autocrlf"] is not None and (
+                    not isinstance(info["source_core_autocrlf"], str)
+                    or not re.fullmatch(r"[A-Za-z0-9]{1,32}", info["source_core_autocrlf"])))):
+            raise ValueError("source content metadata contract mismatch")
+        if info["source_content_mode"] == "git-blobs" and (
+                info["source_dirty"] or info["source_uncommitted_inputs"] or info["source_modified_inputs"]):
+            raise ValueError("Git blob mode requires clean source metadata")
+        if info["source_content_mode"] == "worktree-bytes" and (
+                info["workspace_build_fingerprint"] != info["build_fingerprint"]):
+            raise ValueError("worktree fingerprint metadata mismatch")
     return info
 
 
@@ -192,6 +211,9 @@ def validate(path, smoke=True, offline_tests=False, node="node"):
                       "source_commit": info["source_commit"], "source_dirty": info["source_dirty"],
                       "source_uncommitted_inputs": info["source_uncommitted_inputs"],
                       "source_modified_inputs": info["source_modified_inputs"],
+                      "source_content_mode": info.get("source_content_mode", "legacy-worktree-bytes"),
+                      "workspace_build_fingerprint": info.get("workspace_build_fingerprint"),
+                      "source_core_autocrlf": info.get("source_core_autocrlf"),
                       "source_inputs_sha256": info["source_inputs_sha256"],
                       "files": len(archive.namelist()), "build_fingerprint": actual,
                       "checks": {"member_integrity": "PASS", "extracted_fingerprint": "PASS",
