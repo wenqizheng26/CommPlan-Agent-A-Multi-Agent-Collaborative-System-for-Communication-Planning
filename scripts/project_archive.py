@@ -1,4 +1,4 @@
-"""Plan/capture/verify a Windows FILE_PAYLOAD; restore and Git recovery are later batches."""
+"""Capture/verify FILE_PAYLOAD and restore original bytes with explicitly mapped relations."""
 from __future__ import annotations
 
 import argparse
@@ -17,8 +17,10 @@ import uuid
 import zipfile
 
 from archive_common import (ALGORITHMS, ArchiveError, CHUNK_SIZE, HEX64, SCHEMA, compression,
+                            BASIC_ATTRIBUTE_MASK, apply_basic_metadata, create_mapped_link,
+                            enumerate_streams, file_identity, is_reparse, locked_parent, open_destination,
                             json_bytes, member_table, observe, open_source, plain_absolute, plain_resolved,
-                            publish, read_json, safe_member, sha256_file, within, write_exclusive)
+                            publish, read_json, safe_member, sha256_file, stream_path, within, write_exclusive)
 
 ROOT_ID = re.compile(r"[a-z][a-z0-9_-]{0,63}\Z")
 FIXED_FILES = {"PLAN.json", "WINDOW.json", "ARCHIVE_INFO.json", "files.jsonl", "links.jsonl",
@@ -26,6 +28,9 @@ FIXED_FILES = {"PLAN.json", "WINDOW.json", "ARCHIVE_INFO.json", "files.jsonl", "
 LATER = {"original_restore_integrity": "NOT_RUN", "hardlink_topology_recovery": "NOT_RUN",
          "acl_restoration": "RECORD_ONLY", "git_history_recovery": "NOT_RUN",
          "dependency_recovery": "NOT_RUN", "retained_version_independence": "NOT_RUN"}
+RESTORE_SCHEMA = "commplan-history-original-restore-v1"
+RESTORE_SCOPE = "CAPTURED_FILE_PAYLOAD_AND_MAPPED_RELATIONS"
+RESTORE_FILES = {"RESTORE_MAPPING.json", "RESTORE_INFO.json", "ORIGINAL_RESTORE_COMPLETE.json"}
 
 
 def utc():
@@ -528,6 +533,316 @@ def verify(output, expected_hash):
     return _verify(output, expected_hash)
 
 
+def _restore_contract(value):
+    """Validate ordinary/link topology from saved records, never opening old roots."""
+    planned = _logical_plan(value)
+    rows = planned["entries"]
+    by_id = {row["entry_id"]: row for row in rows}
+    roots = {root["root_id"]: root for root in value["roots"]}
+    mapping = {row["entry_id"]: _member(roots[row["root_id"]], row["relative_path"], row["kind"]).rstrip("/")
+               for row in rows}
+    member_table((mapping[row["entry_id"]] + ("/" if row["kind"] == "directory" else ""),
+                  row["kind"] == "directory") for row in rows)
+    directories = {mapping[row["entry_id"]] for row in rows if row["kind"] == "directory"}
+    for relative in mapping.values():
+        directories.update(str(parent).replace("\\", "/") for parent in Path(relative).parents if str(parent) != ".")
+    for root_id, root in roots.items():
+        root_row = by_id.get(_entry_id(root_id, ""))
+        if root_row is None or root_row["kind"] != root["kind"]:
+            raise ArchiveError("missing/mismatched captured root entry")
+        identity = root_row["observation"].get("file_identity", {})
+        if (identity.get("status") != "READ" or any(type(identity.get(key)) is not int or identity[key] < 0
+                                                    for key in ("volume_serial", "file_id", "link_count"))):
+            raise ArchiveError("GAP: captured root identity is unavailable")
+    links = planned.get("links")
+    if not isinstance(links, list) or len({link["entry_id"] for link in links}) != len(links):
+        raise ArchiveError("invalid restored link records")
+    if {link["entry_id"] for link in links} != {row["entry_id"] for row in rows if row["kind"] == "link_record"}:
+        raise ArchiveError("link record set differs from saved entries")
+    for link in links:
+        row, target = by_id[link["entry_id"]], by_id.get(link.get("target_entry_id"))
+        if (target is None or target["kind"] == "link_record" or link.get("target_captured") is not True
+                or link.get("root_id") != row["root_id"] or link.get("relative_path") != row["relative_path"]
+                or link.get("target_resource_id") != target["root_id"]
+                or link.get("reparse_type") != row["observation"].get("reparse_type")
+                or link.get("reparse_tag") != row["observation"].get("reparse_tag")
+                or link.get("target_text") != row["observation"].get("target_text")
+                or link.get("relation") != ("internal" if row["root_id"] == target["root_id"] else "registered_external")
+                or link.get("reparse_type") not in {"junction", "symlink"}
+                or (link["reparse_type"] == "junction" and target["kind"] != "directory")):
+            raise ArchiveError("invalid restored link target/type contract")
+    # Recompute the groups using recorded identities, not the source filesystem.
+    grouped = {}
+    for row in rows:
+        if row["kind"] == "regular_file":
+            identity = row["observation"]["file_identity"]
+            grouped.setdefault((identity["volume_serial"], identity["file_id"]), []).append(row)
+    expected_groups = []
+    for key, members in sorted(grouped.items()):
+        counts = {row["observation"]["file_identity"]["link_count"] for row in members}
+        if len(counts) != 1 or next(iter(counts)) < len(members):
+            raise ArchiveError("invalid captured hardlink count")
+        count = next(iter(counts))
+        if count <= 1:
+            continue
+        identifier = f"v{key[0]:x}-f{key[1]:x}"
+        expected_groups.append({"hardlink_group_id": identifier, "volume_serial": key[0], "file_id": key[1],
+                                "link_count": count, "captured_entry_ids": [r["entry_id"] for r in members],
+                                "in_scope_alias_count": len(members), "outside_scope_aliases": count - len(members),
+                                "outside_scope_resolution": "NOT_RUN", "recovery": "NOT_RUN"})
+        signature = lambda row: ([(s["name"], s["size"], s["sha256"]) for s in row["streams"]],
+                                 row["observation"]["mtime_ns"], row["observation"]["file_attributes"])
+        if any(row.get("hardlink_group_id") != identifier or signature(row) != signature(members[0]) for row in members):
+            raise ArchiveError("hardlink aliases disagree about captured content/metadata")
+    if planned.get("hardlinks") != expected_groups:
+        raise ArchiveError("hardlink topology differs from captured file identities")
+    return {"rows": rows, "by_id": by_id, "mapping": mapping, "directories": directories,
+            "links": links, "hardlinks": expected_groups}
+
+
+def _restore_location(destination, output, value, contract, *, must_exist):
+    """Reject overlap/8.3 aliases via destination ancestors and saved root identities only."""
+    destination = plain_resolved(destination, must_exist=must_exist)
+    if destination.exists() and not must_exist:
+        raise ArchiveError("restore destination already exists")
+    output = plain_resolved(output)
+    if within(destination, output) or within(output, destination):
+        raise ArchiveError("restore destination overlaps its archive")
+    saved_ids = set()
+    for root in value["roots"]:
+        old = Path(os.path.abspath(root["path"]))  # Text comparison; do not resolve/query the old path.
+        if within(destination, old) or within(old, destination):
+            raise ArchiveError("restore destination overlaps a captured root path")
+        identity = contract["by_id"][_entry_id(root["root_id"], "")]["observation"]["file_identity"]
+        saved_ids.add((identity["volume_serial"], identity["file_id"]))
+    for ancestor in (destination, *destination.parents) if must_exist else destination.parents:
+        identity = file_identity(plain_absolute(ancestor))
+        if (identity["volume_serial"], identity["file_id"]) in saved_ids:
+            raise ArchiveError("restore destination overlaps a captured root identity/alias")
+    return destination
+
+
+def _mkdir_restored(path, destination):
+    with locked_parent(path, destination):
+        path.mkdir()
+
+
+def _copy_restored_stream(package, stream, host, destination, *, hook, row):
+    digest, count = hashlib.sha256(), 0
+    with locked_parent(host, destination):
+        with package.open(stream["archive_member"]) as reader, open_destination(host, stream["name"]) as writer:
+            while block := reader.read(CHUNK_SIZE):
+                count += len(block)
+                if count > stream["size"]:
+                    raise ArchiveError("restore stream exceeds captured bytes")
+                digest.update(block)
+                writer.write(block)
+                if hook:
+                    hook("restore_stream_block", row)
+            writer.flush()
+            os.fsync(writer.fileno())
+    if count != stream["size"] or digest.hexdigest() != stream["sha256"]:
+        raise ArchiveError("restored stream differs from captured size/SHA256")
+
+
+def _mapped_records(contract, destination):
+    original = destination / "original"
+    return {"schema": RESTORE_SCHEMA, "archive_paths_preserved": True,
+            "entries": [{"entry_id": row["entry_id"], "root_id": row["root_id"],
+                         "original_relative_path": row["relative_path"],
+                         "restored_relative_path": "original/" + contract["mapping"][row["entry_id"]]}
+                        for row in contract["rows"]],
+            "links": [{"entry_id": link["entry_id"], "target_entry_id": link["target_entry_id"],
+                       "original_target_text": link["target_text"], "reparse_type": link["reparse_type"],
+                       "mapped_target": str(original / contract["mapping"][link["target_entry_id"]]),
+                       "target_text_changed_for_relocation": True,
+                       "link_body_streams_security": "NOT_RUN_NOFOLLOW"} for link in contract["links"]],
+            "hardlinks": [{"hardlink_group_id": group["hardlink_group_id"],
+                           "captured_entry_ids": group["captured_entry_ids"],
+                           "restored_in_scope_alias_count": group["in_scope_alias_count"],
+                           "original_outside_scope_aliases": group["outside_scope_aliases"],
+                           "outside_scope_recovery": "NOT_RUN"} for group in contract["hardlinks"]]}
+
+
+def _verify_original_contents(destination, contract):
+    original = plain_absolute(destination / "original")
+    expected = {relative: "directory" for relative in contract["directories"]}
+    expected.update({contract["mapping"][row["entry_id"]]: row["kind"] for row in contract["rows"]})
+    actual, pending = {}, [(original, "")]
+    while pending:
+        path, relative = pending.pop()
+        plain_absolute(path.parent)
+        value = path.lstat()
+        kind = "link_record" if is_reparse(path) else "directory" if stat.S_ISDIR(value.st_mode) else "regular_file" if stat.S_ISREG(value.st_mode) else "unsupported"
+        if relative:
+            actual[relative] = kind
+        if kind == "directory":
+            with os.scandir(path) as children:
+                pending.extend((path / name, relative + "/" + name if relative else name) for name in sorted(c.name for c in children))
+    if actual != expected:
+        raise ArchiveError("restored complete path/type set differs from captured mapping")
+    by_path = {contract["mapping"][row["entry_id"]]: row for row in contract["rows"]}
+    # Synthetic containers are new, but they must not hide additional data streams.
+    for relative in ("", *sorted(contract["directories"])):
+        if relative not in by_path:
+            _, streams = enumerate_streams(original / relative)
+            if streams:
+                raise ArchiveError("extra stream on a synthetic restore directory")
+    for row in contract["rows"]:
+        host = original / contract["mapping"][row["entry_id"]]
+        if row["kind"] == "link_record":
+            continue
+        plain_absolute(host)
+        _, streams = enumerate_streams(host)
+        if [s["name"] for s in streams] != [s["name"] for s in row["streams"]]:
+            raise ArchiveError("restored stream set differs from captured streams")
+        for expected_stream in row["streams"]:
+            digest, count = hashlib.sha256(), 0
+            with open_source(host, expected_stream["name"]) as reader:
+                while block := reader.read(CHUNK_SIZE):
+                    count += len(block)
+                    if count > expected_stream["size"]:
+                        raise ArchiveError("restored stream exceeds captured bytes")
+                    digest.update(block)
+            if count != expected_stream["size"] or digest.hexdigest() != expected_stream["sha256"]:
+                raise ArchiveError("restored stream SHA256/size mismatch")
+        actual_stat = host.lstat()
+        if (actual_stat.st_mtime_ns != row["observation"]["mtime_ns"]
+                or actual_stat.st_file_attributes & BASIC_ATTRIBUTE_MASK != row["observation"]["file_attributes"] & BASIC_ATTRIBUTE_MASK):
+            raise ArchiveError("promised restored modification time/basic attributes mismatch")
+    for group in contract["hardlinks"]:
+        identities = [file_identity(original / contract["mapping"][identifier]) for identifier in group["captured_entry_ids"]]
+        if (len({(i["volume_serial"], i["file_id"]) for i in identities}) != 1
+                or any(i["link_count"] != group["in_scope_alias_count"] for i in identities)):
+            raise ArchiveError("restored in-scope hardlink topology differs from captured group")
+    for link in contract["links"]:
+        path = original / contract["mapping"][link["entry_id"]]
+        target = plain_absolute(original / contract["mapping"][link["target_entry_id"]])
+        observed = observe(path, hashes=False)
+        if observed["kind"] != "link_record" or observed["reparse_type"] != link["reparse_type"]:
+            raise ArchiveError("restored reparse type differs from saved link record")
+        text = os.readlink(path)
+        actual_target = Path(text) if Path(text).is_absolute() else path.parent / text
+        if plain_resolved(actual_target) != plain_resolved(target):
+            raise ArchiveError("restored link escapes or differs from its mapped target")
+    return {"original_restore_integrity": "PASS", "streams_integrity": "PASS",
+            "mapped_link_topology_recovery": "PASS" if contract["links"] else "NOT_APPLICABLE",
+            "hardlink_topology_recovery": "PASS_IN_SCOPE" if contract["hardlinks"] else "NOT_APPLICABLE",
+            "entries": len(contract["rows"]), "stream_bytes": sum(s["size"] for r in contract["rows"] for s in r["streams"])}
+
+
+def restore(output, destination, expected_hash, *, hook=None):
+    verify(output, expected_hash)
+    value = read_json(Path(output) / "PLAN.json")
+    contract = _restore_contract(value)
+    destination = _restore_location(destination, output, value, contract, must_exist=False)
+    needed = value["snapshot"]["total_stream_bytes"] + 16 * 1024 * 1024
+    if shutil.disk_usage(destination.parent).free < needed:
+        raise ArchiveError("insufficient free capacity for captured restore streams")
+    destination.mkdir()  # Do not reuse, merge, overwrite or remove an existing recovery root.
+    stage, started = "begin", utc()
+    initial = {"schema": RESTORE_SCHEMA, "scope": RESTORE_SCOPE, "status": "INCOMPLETE",
+               "checksums_sha256": expected_hash, "started_utc": started}
+    write_exclusive(destination / "RESTORE_INFO.json.part", json_bytes(initial))
+    try:
+        original = destination / "original"
+        _mkdir_restored(original, destination)
+        stage = "directories"
+        for relative in sorted(contract["directories"], key=lambda name: (len(Path(name).parts), name)):
+            _mkdir_restored(original / relative, destination)
+        aliases = {identifier for group in contract["hardlinks"] for identifier in group["captured_entry_ids"][1:]}
+        stage = "streams"
+        with zipfile.ZipFile(Path(output) / "payload.zip") as package:
+            for row in contract["rows"]:
+                if row["kind"] == "link_record" or row["entry_id"] in aliases:
+                    continue
+                if hook:
+                    hook("restore_before_entry", row)
+                host = original / contract["mapping"][row["entry_id"]]
+                for stream in row["streams"]:
+                    _copy_restored_stream(package, stream, host, destination, hook=hook, row=row)
+        stage = "hardlinks"
+        for group in contract["hardlinks"]:
+            host = plain_absolute(original / contract["mapping"][group["captured_entry_ids"][0]])
+            for identifier in group["captured_entry_ids"][1:]:
+                alias = original / contract["mapping"][identifier]
+                with locked_parent(alias, destination):
+                    os.link(host, alias, follow_symlinks=False)
+        stage = "links"
+        for link in contract["links"]:
+            if hook:
+                hook("restore_before_link", link)
+            path = original / contract["mapping"][link["entry_id"]]
+            target_row = contract["by_id"][link["target_entry_id"]]
+            target = plain_absolute(original / contract["mapping"][target_row["entry_id"]])
+            with locked_parent(path, destination):
+                create_mapped_link(path, target, link["reparse_type"], target_is_directory=target_row["kind"] == "directory")
+        stage = "basic_metadata"
+        for row in sorted(contract["rows"], key=lambda item: len(Path(contract["mapping"][item["entry_id"]]).parts), reverse=True):
+            if row["kind"] != "link_record":
+                path = original / contract["mapping"][row["entry_id"]]
+                with locked_parent(path, destination):
+                    apply_basic_metadata(path, row["observation"])
+        stage = "verify_original"
+        if hook:
+            hook("restore_before_seal", None)
+        result = _verify_original_contents(destination, contract)
+        verify(output, expected_hash)  # Captured evidence must still match its external checksum anchor.
+        mapping = _mapped_records(contract, destination)
+        write_exclusive(destination / "RESTORE_MAPPING.json", json_bytes(mapping))
+        final = dict(initial, status="ORIGINAL_FILE_PAYLOAD_COMPLETE", ended_utc=utc(), **result,
+                     acl_restoration="RECORD_ONLY", link_body_streams_security="NOT_RUN_NOFOLLOW" if contract["links"] else "NOT_APPLICABLE",
+                     full_ntfs_restore="NOT_RUN", git_history_recovery="NOT_RUN", dependency_recovery="NOT_RUN",
+                     captured_dependency_payload="PASS", retained_version_independence="NOT_RUN",
+                     basic_metadata={"modification_time": "PASS", "readonly_hidden_system_archive": "PASS",
+                                     "creation_time_other_attributes": "RECORD_ONLY", "owner_group_dacl": "RECORD_ONLY", "sacl": "NOT_READ"},
+                     python=platform.python_version(), os=platform.platform(),
+                     tool_files={p.name: sha256_file(p)[1] for p in [Path(__file__), Path(__file__).with_name("archive_common.py")]})
+        write_exclusive(destination / "RESTORE_INFO.json", json_bytes(final))
+        (destination / "RESTORE_INFO.json.part").unlink()
+        marker = {"schema": RESTORE_SCHEMA, "scope": RESTORE_SCOPE, "status": final["status"],
+                  "checksums_sha256": expected_hash, "files": {name: sha256_file(destination / name)[1]
+                                                               for name in ("RESTORE_MAPPING.json", "RESTORE_INFO.json")}}
+        write_exclusive(destination / "ORIGINAL_RESTORE_COMPLETE.json", json_bytes(marker))
+        return final
+    except BaseException as error:
+        failure = dict(initial, stage=stage, error_type=type(error).__name__, error=str(error), time=utc())
+        try:
+            write_exclusive(destination / "RESTORE_FAILURE.json", json_bytes(failure))
+        except OSError:
+            pass
+        raise
+
+
+def verify_restored(output, destination, expected_hash):
+    verify(output, expected_hash)
+    value = read_json(Path(output) / "PLAN.json")
+    contract = _restore_contract(value)
+    destination = _restore_location(destination, output, value, contract, must_exist=True)
+    if {p.name for p in destination.iterdir()} != RESTORE_FILES | {"original"}:
+        raise ArchiveError("unsealed/incomplete or extra files in restore report directory")
+    marker = read_json(plain_absolute(destination / "ORIGINAL_RESTORE_COMPLETE.json"))
+    if (marker.get("schema") != RESTORE_SCHEMA or marker.get("scope") != RESTORE_SCOPE
+            or marker.get("status") != "ORIGINAL_FILE_PAYLOAD_COMPLETE" or marker.get("checksums_sha256") != expected_hash
+            or set(marker.get("files", {})) != {"RESTORE_MAPPING.json", "RESTORE_INFO.json"}):
+        raise ArchiveError("invalid restored completion marker/checksum anchor")
+    for name, digest in marker["files"].items():
+        if sha256_file(plain_absolute(destination / name))[1] != digest:
+            raise ArchiveError("restored report checksum mismatch")
+    if read_json(destination / "RESTORE_MAPPING.json") != _mapped_records(contract, destination):
+        raise ArchiveError("restored mapping differs from captured logical topology")
+    info = read_json(destination / "RESTORE_INFO.json")
+    result = _verify_original_contents(destination, contract)
+    if (info.get("schema") != RESTORE_SCHEMA or info.get("scope") != RESTORE_SCOPE
+            or info.get("status") != "ORIGINAL_FILE_PAYLOAD_COMPLETE" or info.get("checksums_sha256") != expected_hash
+            or any(info.get(key) != item for key, item in result.items())
+            or any(info.get(key) != state for key, state in {"acl_restoration": "RECORD_ONLY", "full_ntfs_restore": "NOT_RUN",
+                                                          "git_history_recovery": "NOT_RUN", "dependency_recovery": "NOT_RUN",
+                                                          "retained_version_independence": "NOT_RUN"}.items())):
+        raise ArchiveError("restored report overclaims or disagrees with current verification")
+    return dict(info, verification="CURRENT_FILES_RESCANNED")
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -543,7 +858,10 @@ def main(argv=None):
     checking.add_argument("--archive-dir", type=Path, required=True)
     checking.add_argument("--expected-checksums-sha256", required=True)
     for name in ("restore", "verify-restored"):
-        commands.add_parser(name)
+        recovering = commands.add_parser(name)
+        recovering.add_argument("--archive-dir", type=Path, required=True)
+        recovering.add_argument("--destination", type=Path, required=True)
+        recovering.add_argument("--expected-checksums-sha256", required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == "plan":
@@ -552,8 +870,10 @@ def main(argv=None):
             result = capture(args.plan, args.window_record, args.output)
         elif args.command == "verify":
             result = verify(args.archive_dir, args.expected_checksums_sha256)
+        elif args.command == "restore":
+            result = restore(args.archive_dir, args.destination, args.expected_checksums_sha256)
         else:
-            raise ArchiveError("NOT_IMPLEMENTED: original/Git recovery belongs to later micro-batches")
+            result = verify_restored(args.archive_dir, args.destination, args.expected_checksums_sha256)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0
     except (ArchiveError, OSError, KeyError, TypeError, json.JSONDecodeError, zipfile.BadZipFile) as error:

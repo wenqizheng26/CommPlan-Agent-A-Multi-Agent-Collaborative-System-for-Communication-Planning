@@ -1,14 +1,16 @@
-"""Windows file-payload observations and archive safety primitives (no restore)."""
+"""Windows file-payload observations and controlled archive/restore primitives."""
 from __future__ import annotations
 
 import ctypes
 from ctypes import wintypes
+from contextlib import contextmanager, ExitStack
 import hashlib
 import json
 import os
 from pathlib import Path
 import re
 import stat
+import struct
 import unicodedata
 import zipfile
 
@@ -192,9 +194,9 @@ def _extended(path):
     return "\\\\?\\UNC\\" + text[2:] if text.startswith("\\\\") else "\\\\?\\" + text
 
 
-def _handle(path, access=0):
+def _handle(path, access=0, *, share=7, creation=3):
     _windows()
-    value = kernel.CreateFileW(_extended(path), access, 7, None, 3, 0x02200000, None)
+    value = kernel.CreateFileW(_extended(path), access, share, None, creation, 0x02200000, None)
     if value == INVALID_HANDLE:
         raise ctypes.WinError(ctypes.get_last_error())
     return value
@@ -312,6 +314,96 @@ def open_source(host, name="::$DATA"):
         kernel.CloseHandle(handle)
         raise
     return os.fdopen(descriptor, "rb")
+
+
+@contextmanager
+def locked_parent(path, root):
+    """Keep the new root/parent chain ordinary and deny directory replacement while writing."""
+    _windows()
+    path, root = Path(path), plain_absolute(root)
+    if not within(path, root) or path == root:
+        raise ArchiveError("restore path is outside its new root")
+    components = [root]
+    for part in path.parent.relative_to(root).parts:
+        components.append(components[-1] / part)
+    with ExitStack() as stack:
+        for directory in components:
+            plain_absolute(directory)
+            handle = _handle(directory, share=3)  # Do not share DELETE: no rename/reparse swap.
+            stack.callback(kernel.CloseHandle, handle)
+            attributes = _handle_info(handle).attributes
+            if attributes & REPARSE_ATTRIBUTE or not attributes & 0x10:
+                raise ArchiveError("restore parent is not an ordinary directory")
+        yield
+
+
+def open_destination(host, name="::$DATA"):
+    """CREATE_NEW, no-follow stream write; caller holds locked_parent through close."""
+    import msvcrt
+    host = Path(host)
+    if name != "::$DATA":
+        plain_absolute(host)
+    else:
+        try:
+            host.lstat()
+        except FileNotFoundError:
+            pass
+        else:
+            raise ArchiveError("restore file already exists: " + str(host))
+    handle = _handle(stream_path(host, name), 0x40000000, share=0, creation=1)
+    try:
+        if _handle_info(handle).attributes & REPARSE_ATTRIBUTE:
+            raise ArchiveError("opened restore stream is a reparse object")
+        descriptor = msvcrt.open_osfhandle(handle, os.O_WRONLY | os.O_BINARY)
+    except BaseException:
+        kernel.CloseHandle(handle)
+        raise
+    return os.fdopen(descriptor, "wb")
+
+
+def create_mapped_link(path, target, reparse_type, *, target_is_directory):
+    """Create only a new link to an already checked ordinary target in the restore root."""
+    path, target = Path(path), plain_absolute(target)
+    if reparse_type == "symlink":
+        os.symlink(target, path, target_is_directory=target_is_directory)
+        return
+    if reparse_type != "junction" or not target_is_directory:
+        raise ArchiveError("GAP: unsupported restored reparse type/target")
+    path.mkdir()  # Exclusive. A failed reparse write leaves an explicit incomplete directory.
+    printable = str(target)
+    substitute = "\\??\\UNC\\" + printable[2:] if printable.startswith("\\\\") else "\\??\\" + printable
+    substitute_bytes, printable_bytes = substitute.encode("utf-16-le"), printable.encode("utf-16-le")
+    names = substitute_bytes + b"\0\0" + printable_bytes + b"\0\0"
+    data = struct.pack("<IHHHHHH", 0xA0000003, 8 + len(names), 0,
+                       0, len(substitute_bytes), len(substitute_bytes) + 2, len(printable_bytes)) + names
+    function = kernel.DeviceIoControl
+    function.argtypes = [wintypes.HANDLE, wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD,
+                         ctypes.c_void_p, wintypes.DWORD, ctypes.POINTER(wintypes.DWORD), ctypes.c_void_p]
+    function.restype = wintypes.BOOL
+    handle = _handle(path, 0x40000000, share=0)
+    try:
+        if _handle_info(handle).attributes & REPARSE_ATTRIBUTE:
+            raise ArchiveError("new junction directory was replaced before reparse creation")
+        buffer, returned = ctypes.create_string_buffer(data), wintypes.DWORD()
+        if not function(handle, 0x000900A4, buffer, len(data), None, 0, ctypes.byref(returned), None):
+            raise ArchiveError(f"GAP: junction creation Win32 {ctypes.get_last_error()}")
+    finally:
+        kernel.CloseHandle(handle)
+
+
+BASIC_ATTRIBUTE_MASK = 0x27  # READONLY, HIDDEN, SYSTEM, ARCHIVE; structural/other flags are separate.
+
+
+def apply_basic_metadata(path, observation):
+    """Restore only the promised modification time and four writable basic flags."""
+    path = plain_absolute(path)
+    os.utime(path, ns=(observation["mtime_ns"], observation["mtime_ns"]))
+    function = kernel.SetFileAttributesW
+    function.argtypes = [wintypes.LPCWSTR, wintypes.DWORD]
+    function.restype = wintypes.BOOL
+    attributes = observation["file_attributes"] & BASIC_ATTRIBUTE_MASK
+    if not function(_extended(path), attributes or 0x80):
+        raise ArchiveError(f"GAP: basic attributes restore Win32 {ctypes.get_last_error()}")
 
 
 def hash_source(host, name):
