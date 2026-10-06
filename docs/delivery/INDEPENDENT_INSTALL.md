@@ -25,7 +25,7 @@
 
 GGUF 是普通下载文件，由精确 ExpectedSize 控制，不使用解包总量作为下载大小上限。ZIP 中央目录额外上限 16 MiB、TAR 单个路径扩展元数据上限 1 MiB；TAR 解压读取预算还包括有界的 header/padding。提高限额前确认真实成员及理由，不能静默自动抬高。
 
-示例仅在该资源获准实际取得后执行。当前准备批没有取得下面真实包：
+以下示例使用新的独立 run。2026-10-06 已从固定来源取得 Python、Node、MinGit、llama 四个包，大小/SHA、解包及版本加载均通过；原始记录见项目总账 R49。模型权重及最终冻结包安装验收按后续批次执行：
 
 ```powershell
 $run = 'E:\cleanroom\commplan-B3b-<UTC>-<ID>'
@@ -51,7 +51,7 @@ JSON 记录来源、预期/实际输入大小与 SHA、限额、成员类型/大
 
 ## 固定资源
 
-以下版本与来源在方案审核中已固定。**Node 22.23.3、普通 MinGit 2.56.0 已双方选定**，实际取得/解包/加载仍在后批。Python 是 Astral 二进制，不是 PSF Windows installer。官方来源、固定版本、大小与 SHA 是资源取得标准；许可原文及组件通知保留，签名来源记录可补充，不新增 GPG 工具门禁。
+以下版本与来源在方案审核中已固定。**Node 22.23.3、普通 MinGit 2.56.0 已双方选定**，四个 runtime 已完成 10-06 独立预检的取得/解包/加载，模型取得和最终验收仍按后续批次执行。Python 是 Astral 二进制，不是 PSF Windows installer。官方来源、固定版本、大小与 SHA 是资源取得标准；许可原文及组件通知保留，签名来源记录可补充，不新增 GPG 工具门禁。
 
 | 资源 | 字节数 | SHA256 / 来源 |
 | --- | --- | --- |
@@ -62,7 +62,7 @@ JSON 记录来源、预期/实际输入大小与 SHA、限额、成员类型/大
 | Qwen3.5-9B-Q4_K_M.gguf，revision 3885219b6810b007914f3a7950a8d1b469d598a5 | 5680522464 | `03b74727a860a56338e042c4420bb3f04b2fec5734175f4cb9fa853daf52b7e8`；[固定 GGUF](https://huggingface.co/unsloth/Qwen3.5-9B-GGUF/resolve/3885219b6810b007914f3a7950a8d1b469d598a5/Qwen3.5-9B-Q4_K_M.gguf) |
 | Qwen3-Embedding-0.6B-Q8_0.gguf，revision 370f27d7550e0def9b39c1f16d3fbaa13aa67728 | 639150592 | `06507c7b42688469c4e7298b0a1e16deff06caf291cf0a5b278c308249c3e439`；[固定 GGUF](https://huggingface.co/Qwen/Qwen3-Embedding-0.6B-GGUF/resolve/370f27d7550e0def9b39c1f16d3fbaa13aa67728/Qwen3-Embedding-0.6B-Q8_0.gguf) |
 
-权重不入交付包，必须真正从固定来源取得。本地已校验副本和 HEAD 成功都不能写成实际下载成功。真实包的成员与许可证仍须核对；Python/Node 顶层候选分别为 `python`、`node-v22.23.3-win-x64`，MinGit/runtime 第一层名单待实际成员确认，不能用 `*` 放行。
+权重不入交付包，必须真正从固定来源取得。本地已校验副本和 HEAD 成功都不能写成实际下载成功。真实包的成员与许可证仍须核对；Python/Node 顶层候选分别为 `python`、`node-v22.23.3-win-x64`，MinGit 第一层按上文五个字面名称；llama 本次包为 52 个根文件，其精确名单与逐成员 SHA 留在预检清单，不能用 `*` 放行。
 
 模型放置按 [config/models.json](../../config/models.json) 当前 registry 的路径，9B 生成与 embedding CPU 服务的 alias/参数在实例批固定。旧 `runtime/runtime_config.json` 是历史 4B/BGE 配置，不作为当前 registry 的替代；未纳入源码包的 setup_runtime/runtime 也不能当现有交付入口。
 
@@ -107,6 +107,6 @@ Git 子进程先清继承的 GIT_*，再设 `GIT_CONFIG_NOSYSTEM=1`、`GIT_CONFI
 
 [test_planning_delivery_assets.py](../../tests/test_planning_delivery_assets.py) 在现 Windows CI planning-minimal 的 `test_planning_*.py` 和 full job 中自动发现。测试实际调用 `pwsh -NoProfile -NonInteractive`，缺工具或前提不符就失败，不能 skip。小 fixture 覆盖正常 ZIP/TAR/GZIP/PAX、输入大小/SHA、损坏/CRC、路径/重名/冲突/软硬链接/特殊项/已有 junction、输入输出重叠、覆盖与计数/字节/元数据限制；假下载 stream 只验证同一校验/发布管道，记录 TRANSPORT_FIXTURE。
 
-下一批再取得真实资源、准备完整源码验证层、独立安装，验证真实 GPU/模型、服务实例及关闭释放。最终执行完整自动矩阵、三条案例和 teacher20、适用/拒绝/变更确认、保存恢复、报告导出、目标浏览器和准确提交 CI。源码/环境/步骤/预期/实测/限制分别记录。离线采用已确认的关 Wi-Fi 方法：所有下载/安装先完成，核网卡/隧道/直接 IP 与域名失败及回环；离线脚本自行落盘或用户执行浏览器清单，联网后双方读证据。当前首微批不切网络。
+10-06 预检已取得四个 runtime、独立源码验证层及固定依赖 wheel；新 app-venv 从本批 wheelhouse 安装，源码预检包 Python 93 项、Node 33 项与 HTTP 创建/确认/恢复通过，整套 Node 113 项通过。最小环境首轮 126 项出现两处空 Git 模板 fixture 错误和一次 Windows 请求连接中止；fixture 已补建自有 info 目录，边界复测 24 项（1 权限 skip）通过，网页 11 项复测通过，连接中止原因仍待核实。完整矩阵预检、真实 GPU/模型、服务实例及关闭释放继续按批次验证。最终执行完整自动矩阵、三条案例和 teacher20、适用/拒绝/变更确认、保存恢复、报告导出、目标浏览器和准确提交 CI。源码/环境/步骤/预期/实测/限制分别记录。离线采用已确认的关 Wi-Fi 方法：所有下载/安装先完成，核网卡/隧道/直接 IP 与域名失败及回环；离线脚本自行落盘或用户执行浏览器清单，联网后双方读证据。当前首微批不切网络。
 
 10-20 冻结、10-21～23 验包、10-24 前交付；不提前冻结。资源取得、归档恢复、自动测试、真实模型、浏览器、CI 和 M1 验收是各自的验证记录。
