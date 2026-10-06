@@ -194,6 +194,13 @@ def _extended(path):
     return "\\\\?\\UNC\\" + text[2:] if text.startswith("\\\\") else "\\\\?\\" + text
 
 
+def plain_text(text):
+    """Drop the extended-length prefix os.readlink reports for junctions, for comparison."""
+    if text.startswith("\\\\?\\UNC\\"):
+        return "\\\\" + text[8:]
+    return text[4:] if text.startswith("\\\\?\\") else text
+
+
 def _handle(path, access=0, *, share=7, creation=3):
     _windows()
     value = kernel.CreateFileW(_extended(path), access, share, None, creation, 0x02200000, None)

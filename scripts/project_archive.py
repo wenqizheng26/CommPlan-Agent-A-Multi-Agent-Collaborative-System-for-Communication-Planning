@@ -20,7 +20,8 @@ from archive_common import (ALGORITHMS, ArchiveError, CHUNK_SIZE, HEX64, SCHEMA,
                             BASIC_ATTRIBUTE_MASK, apply_basic_metadata, create_mapped_link,
                             enumerate_streams, file_identity, is_reparse, locked_parent, open_destination,
                             json_bytes, member_table, observe, open_source, plain_absolute, plain_resolved,
-                            publish, read_json, safe_member, sha256_file, stream_path, within, write_exclusive)
+                            plain_text, publish, read_json, safe_member, sha256_file, stream_path, within,
+                            write_exclusive)
 
 ROOT_ID = re.compile(r"[a-z][a-z0-9_-]{0,63}\Z")
 FIXED_FILES = {"PLAN.json", "WINDOW.json", "ARCHIVE_INFO.json", "files.jsonl", "links.jsonl",
@@ -721,7 +722,7 @@ def _verify_original_contents(destination, contract):
         observed = observe(path, hashes=False)
         if observed["kind"] != "link_record" or observed["reparse_type"] != link["reparse_type"]:
             raise ArchiveError("restored reparse type differs from saved link record")
-        text = os.readlink(path)
+        text = plain_text(os.readlink(path))
         actual_target = Path(text) if Path(text).is_absolute() else path.parent / text
         if plain_resolved(actual_target) != plain_resolved(target):
             raise ArchiveError("restored link escapes or differs from its mapped target")
@@ -759,7 +760,9 @@ def restore(output, destination, expected_hash, *, hook=None):
                 if hook:
                     hook("restore_before_entry", row)
                 host = original / contract["mapping"][row["entry_id"]]
-                for stream in row["streams"]:
+                # The default stream creates the host; a named stream such as ":1:$DATA"
+                # sorts before "::$DATA" by name but can only be added to an existing host.
+                for stream in sorted(row["streams"], key=lambda item: not item["is_default"]):
                     _copy_restored_stream(package, stream, host, destination, hook=hook, row=row)
         stage = "hardlinks"
         for group in contract["hardlinks"]:

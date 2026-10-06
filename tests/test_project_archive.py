@@ -306,10 +306,184 @@ class FilePayloadTests(unittest.TestCase):
                 raise OSError('fixture interrupted I/O')
         self.failed_capture(interrupt)
         self.assertTrue((self.destination / 'payload.zip.part').exists())
-        for command in ('restore', 'verify-restored'):
-            run = subprocess.run([sys.executable, '-B', '-X', 'utf8', str(Path(archive.__file__)), command], capture_output=True, encoding='utf-8')
-            self.assertEqual(run.returncode, 1)
-            self.assertIn('NOT_IMPLEMENTED', run.stderr)
+        # An unsealed batch cannot be restored: verification fails before any target is created.
+        target = self.area / 'from-unsealed'
+        run = self.cli('restore', '--archive-dir', self.destination, '--destination', target,
+                       '--expected-checksums-sha256', '0' * 64)
+        self.assertEqual(run.returncode, 1)
+        self.assertIn('"status": "FAIL"', run.stderr)
+        self.assertFalse(target.exists())
+
+    def cli(self, *args):
+        return subprocess.run([sys.executable, '-B', '-X', 'utf8', str(Path(archive.__file__)), *map(str, args)],
+                              capture_output=True, encoding='utf-8')
+
+    def restore_to(self, name, result, **options):
+        target = self.area / name
+        return target, archive.restore(self.destination, target, result['checksums_sha256'], **options)
+
+    def restored(self, target, relative):
+        return target / 'original' / 'project' / relative
+
+    def same_streams(self, source, restored):
+        _, wanted = common.enumerate_streams(source)
+        _, actual = common.enumerate_streams(restored)
+        self.assertEqual([s['name'] for s in actual], [s['name'] for s in wanted])
+        for stream in wanted:
+            self.assertEqual(Path(common.stream_path(restored, stream['name'])).read_bytes(),
+                             Path(common.stream_path(source, stream['name'])).read_bytes())
+
+    def test_original_restore_round_trip_bytes_streams_basic_metadata_and_rescan(self):
+        Path(str(self.source / '中文.txt') + ':证据:$DATA').write_bytes(b'file-ads\x00\xff')
+        Path(str(self.source / '中文 空目录') + ':目录流:$DATA').write_bytes(b'directory-ads')
+        # Named streams that sort before "::$DATA" must still be written after their host.
+        Path(str(self.source / 'small.gguf') + ':1:$DATA').write_bytes(b'digit-first stream')
+        Path(str(self.source / 'small.gguf') + ':!:$DATA').write_bytes(b'mark-first stream')
+        readonly = self.source / 'readonly.txt'
+        readonly.write_bytes(b'locked bytes')
+        os.utime(readonly, ns=(1_600_000_000_123_456_700, 1_600_000_000_123_456_700))
+        os.chmod(readonly, stat.S_IREAD)
+        roots = archive.roots_for(self.source, [])
+        result = self.complete()
+        source_before = archive.snapshot(roots)
+        target, info = self.restore_to('restored', result)
+        self.assertEqual(info['status'], 'ORIGINAL_FILE_PAYLOAD_COMPLETE')
+        self.assertEqual((info['original_restore_integrity'], info['streams_integrity']), ('PASS', 'PASS'))
+        self.assertEqual((info['acl_restoration'], info['git_history_recovery'], info['dependency_recovery']),
+                         ('RECORD_ONLY', 'NOT_RUN', 'NOT_RUN'))
+        for path in sorted(self.source.rglob('*')):
+            relative = path.relative_to(self.source)
+            copy = self.restored(target, relative.as_posix())
+            with self.subTest(path=str(relative)):
+                original, actual = path.lstat(), copy.lstat()
+                self.assertEqual(stat.S_IFMT(actual.st_mode), stat.S_IFMT(original.st_mode))
+                if path.is_file():
+                    self.assertEqual(copy.read_bytes(), path.read_bytes())
+                self.same_streams(path, copy)
+                self.assertEqual(actual.st_mtime_ns, original.st_mtime_ns)
+                self.assertEqual(actual.st_file_attributes & 0x27, original.st_file_attributes & 0x27)
+        self.assertTrue(self.restored(target, 'readonly.txt').lstat().st_file_attributes & stat.FILE_ATTRIBUTE_READONLY)
+        self.assertTrue(self.restored(target, '.hidden-empty').lstat().st_file_attributes & stat.FILE_ATTRIBUTE_HIDDEN)
+        self.assertEqual(archive.snapshot(roots), source_before)  # Restore never writes to the source.
+        self.assertEqual(archive.verify_restored(self.destination, target, result['checksums_sha256'])['verification'],
+                         'CURRENT_FILES_RESCANNED')
+        mapping = common.read_json(target / 'RESTORE_MAPPING.json')
+        self.assertIn({'entry_id': archive._entry_id('project', '中文.txt'), 'root_id': 'project',
+                       'original_relative_path': '中文.txt', 'restored_relative_path': 'original/project/中文.txt'},
+                      mapping['entries'])
+
+    def test_original_restore_maps_internal_junction_and_registered_external_dependency(self):
+        self.junction(self.source / 'linked-dir', self.source / '中文 空目录')
+        external = self.area / 'external'
+        external.mkdir()
+        (external / 'resource.bin').write_bytes(b'precise external target')
+        self.junction(self.source / 'linked-resource', external)
+        self.prepare([{'dependency_id': 'runtime', 'path': str(external)}])
+        result = archive.capture(self.plan_path, self.window_path, self.destination)
+        target, info = self.restore_to('restored', result)
+        self.assertEqual(info['mapped_link_topology_recovery'], 'PASS')
+        dependency = target / 'original' / 'dependencies' / 'runtime'
+        self.assertEqual((dependency / 'resource.bin').read_bytes(), b'precise external target')
+        for name, mapped in (('linked-dir', self.restored(target, '中文 空目录')), ('linked-resource', dependency)):
+            with self.subTest(link=name):
+                link = self.restored(target, name)
+                self.assertTrue(common.is_reparse(link))
+                # The new link points inside the new root, never back to the captured source.
+                self.assertEqual(Path(os.path.realpath(link)), Path(os.path.realpath(mapped)))
+        self.assertEqual(archive.verify_restored(self.destination, target, result['checksums_sha256'])['status'],
+                         'ORIGINAL_FILE_PAYLOAD_COMPLETE')
+
+    def test_original_restore_rebuilds_in_scope_hardlinks_only(self):
+        os.link(self.source / 'ignored.bin', self.source / 'second.bin')
+        os.link(self.source / 'ignored.bin', self.area / 'outside-alias.bin')
+        result = self.complete()
+        target, info = self.restore_to('restored', result)
+        self.assertEqual(info['hardlink_topology_recovery'], 'PASS_IN_SCOPE')
+        first, second = (common.file_identity(self.restored(target, name)) for name in ('ignored.bin', 'second.bin'))
+        self.assertEqual((first['volume_serial'], first['file_id']), (second['volume_serial'], second['file_id']))
+        self.assertEqual(first['link_count'], 2)
+        group = common.read_json(target / 'RESTORE_MAPPING.json')['hardlinks'][0]
+        self.assertEqual((group['original_outside_scope_aliases'], group['outside_scope_recovery']), (1, 'NOT_RUN'))
+
+    def test_original_restore_symlink_maps_to_restored_target(self):
+        try:
+            os.symlink(self.source / '中文.txt', self.source / 'file-link')
+        except OSError as error:
+            if getattr(error, 'winerror', None) != 1314:
+                raise
+            self.skipTest('symbolic link privilege is unavailable for this account')
+        result = self.complete()
+        target, _ = self.restore_to('restored', result)
+        link = self.restored(target, 'file-link')
+        self.assertTrue(link.is_symlink())
+        self.assertEqual(Path(os.path.realpath(link)), Path(os.path.realpath(self.restored(target, '中文.txt'))))
+
+    def test_restore_refuses_existing_overlapping_aliased_or_unanchored_targets(self):
+        result = self.complete()
+        existing = self.area / 'existing'
+        existing.mkdir()
+        (existing / 'keep').write_bytes(b'old restore')
+        long_source = self.source.resolve(strict=True)
+        for target in (existing, self.source / 'inside', self.short_path(long_source) / 'inside-alias',
+                       self.destination / 'inside-archive'):
+            with self.subTest(target=str(target)), self.assertRaises(common.ArchiveError):
+                archive.restore(self.destination, target, result['checksums_sha256'])
+        self.assertEqual((existing / 'keep').read_bytes(), b'old restore')
+        self.assertEqual(sorted(p.name for p in existing.iterdir()), ['keep'])
+        self.assertFalse((self.source / 'inside').exists())
+        self.assertFalse((self.source / 'inside-alias').exists())
+        unanchored = self.area / 'unanchored'
+        with self.assertRaisesRegex(common.ArchiveError, 'external'):
+            archive.restore(self.destination, unanchored, '0' * 64)
+        self.assertFalse(unanchored.exists())
+
+    def test_interrupted_restore_keeps_failure_and_cannot_be_verified(self):
+        result = self.complete()
+        def interrupt(stage, row):
+            if stage == 'restore_stream_block':
+                raise OSError('fixture interrupted restore')
+        target = self.area / 'interrupted'
+        with self.assertRaises(OSError):
+            archive.restore(self.destination, target, result['checksums_sha256'], hook=interrupt)
+        failure = common.read_json(target / 'RESTORE_FAILURE.json')
+        self.assertEqual((failure['status'], failure['stage']), ('INCOMPLETE', 'streams'))
+        self.assertFalse((target / 'ORIGINAL_RESTORE_COMPLETE.json').exists())
+        with self.assertRaises(common.ArchiveError):
+            archive.verify_restored(self.destination, target, result['checksums_sha256'])
+
+    def test_verify_restored_rescans_bytes_extra_paths_streams_and_times(self):
+        result = self.complete()
+        def tamper_bytes(target):
+            path = self.restored(target, 'ignored.bin')
+            old = path.stat()
+            path.write_bytes(b'Y' * old.st_size)
+            os.utime(path, ns=(old.st_atime_ns, old.st_mtime_ns))
+        tampering = {'same_size_bytes': tamper_bytes,
+                     'extra_file': lambda target: self.restored(target, 'extra.txt').write_bytes(b'extra'),
+                     'extra_stream': lambda target: Path(str(self.restored(target, '中文.txt')) + ':new:$DATA').write_bytes(b'x'),
+                     'modification_time': lambda target: os.utime(self.restored(target, 'small.gguf'), ns=(0, 0)),
+                     'extra_report_file': lambda target: (target / 'notes.txt').write_bytes(b'x')}
+        for name, tamper in tampering.items():
+            with self.subTest(tamper=name):
+                target, _ = self.restore_to('restored-' + name, result)
+                archive.verify_restored(self.destination, target, result['checksums_sha256'])
+                tamper(target)
+                with self.assertRaises(common.ArchiveError):
+                    archive.verify_restored(self.destination, target, result['checksums_sha256'])
+
+    def test_restore_cli_success_and_failure_exit_codes(self):
+        result = self.complete()
+        target = self.area / 'cli-restored'
+        common_args = ('--archive-dir', self.destination, '--destination', target,
+                       '--expected-checksums-sha256', result['checksums_sha256'])
+        run = self.cli('restore', *common_args)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        self.assertEqual(json.loads(run.stdout)['status'], 'ORIGINAL_FILE_PAYLOAD_COMPLETE')
+        run = self.cli('verify-restored', *common_args)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        run = self.cli('verify-restored', '--archive-dir', self.destination, '--destination', target,
+                       '--expected-checksums-sha256', '0' * 64)
+        self.assertEqual(run.returncode, 1)
 
     def test_missing_window_and_changed_plan_source_fail(self):
         self.prepare()
