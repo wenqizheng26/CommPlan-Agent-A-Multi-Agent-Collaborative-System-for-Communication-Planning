@@ -85,6 +85,13 @@ def plain_absolute(path, *, must_exist=True):
     return path
 
 
+def plain_resolved(path, *, must_exist=True):
+    """Expand existing aliases only after refusing reparse ancestors; keep source paths elsewhere."""
+    path = plain_absolute(path, must_exist=must_exist)
+    resolved = path.resolve(strict=must_exist)
+    return plain_absolute(resolved, must_exist=must_exist)
+
+
 def within(path, root):
     try:
         Path(path).relative_to(root)

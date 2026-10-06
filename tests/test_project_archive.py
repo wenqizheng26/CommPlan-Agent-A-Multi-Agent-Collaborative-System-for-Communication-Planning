@@ -155,6 +155,62 @@ class FilePayloadTests(unittest.TestCase):
         run = subprocess.run(['cmd.exe', '/d', '/c', 'mklink', '/J', str(path), str(target)], capture_output=True)
         self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
 
+    def short_path(self, path):
+        function = common.kernel.GetShortPathNameW
+        function.argtypes = [ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_ulong]
+        function.restype = ctypes.c_ulong
+        buffer = ctypes.create_unicode_buffer(32768)
+        size = function(str(path), buffer, len(buffer))
+        self.assertTrue(0 < size < len(buffer), ctypes.get_last_error())
+        result = Path(buffer.value)
+        self.assertTrue(os.path.samefile(result, path))
+        # This fixture requires real short aliases, like RUNNER~1 in Windows CI.
+        self.assertNotEqual(str(result).casefold(), str(path).casefold())
+        return result
+
+    def test_short_root_alias_keeps_original_path_and_resolves_internal_junction(self):
+        long_source = self.source.resolve(strict=True)
+        self.junction(long_source / 'linked-dir', long_source / '中文 空目录')
+        self.source = self.short_path(long_source)
+        result = self.complete()
+        planned = common.read_json(self.plan_path)
+        self.assertEqual(planned['roots'][0]['path'], str(self.source))
+        links = archive._read_jsonl(self.destination / 'links.jsonl')
+        target_id = archive._entry_id('project', '中文 空目录')
+        self.assertEqual(links[0]['target_entry_id'], target_id)
+        self.assertEqual(links[0]['relation'], 'internal')
+        self.assertEqual(archive.verify(self.destination, result['checksums_sha256'])['status'], 'FILE_PAYLOAD_COMPLETE')
+
+    def test_short_alias_does_not_bypass_overlap_output_or_reparse_checks(self):
+        long_source = self.source.resolve(strict=True)
+        short_source = self.short_path(long_source)
+        with self.assertRaisesRegex(common.ArchiveError, 'overlapping capture roots'):
+            archive.roots_for(long_source, [{'dependency_id': 'alias', 'path': str(short_source)}])
+        with self.assertRaisesRegex(common.ArchiveError, 'output overlaps'):
+            archive.plan(short_source, [], long_source / 'self-plan.json')
+        with self.assertRaisesRegex(common.ArchiveError, 'output overlaps'):
+            archive.plan(long_source, [], short_source / 'self-plan.json')
+        link = self.area.resolve(strict=True) / 'linked source ancestor'
+        self.junction(link, long_source)
+        alias = self.short_path(link)
+        with self.assertRaisesRegex(common.ArchiveError, 'reparse path component'):
+            archive.plan(alias / '中文 空目录', [], self.plan_path)
+
+    def test_short_external_root_alias_still_requires_exact_registration(self):
+        external = self.area.resolve(strict=True) / 'external long resource directory'
+        external.mkdir()
+        (external / 'resource.bin').write_bytes(b'outside data')
+        self.junction(self.source / 'linked-resource', external)
+        with self.assertRaisesRegex(common.ArchiveError, 'exact capture root'):
+            archive.plan(self.source, [], self.plan_path)
+        short_external = self.short_path(external)
+        self.prepare([{'dependency_id': 'runtime', 'path': str(short_external)}])
+        result = archive.capture(self.plan_path, self.window_path, self.destination)
+        links = archive._read_jsonl(self.destination / 'links.jsonl')
+        self.assertEqual(links[0]['relation'], 'registered_external')
+        self.assertEqual(links[0]['target_entry_id'], archive._entry_id('runtime', ''))
+        self.assertEqual(archive.verify(self.destination, result['checksums_sha256'])['status'], 'FILE_PAYLOAD_COMPLETE')
+
     def test_real_junction_records_target_without_recursing_or_duplicating_it(self):
         self.junction(self.source / 'linked-dir', self.source / '中文 空目录')
         result = self.complete()

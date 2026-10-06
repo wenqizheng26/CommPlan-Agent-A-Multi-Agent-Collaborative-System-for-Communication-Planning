@@ -17,7 +17,7 @@ import uuid
 import zipfile
 
 from archive_common import (ALGORITHMS, ArchiveError, CHUNK_SIZE, HEX64, SCHEMA, compression,
-                            json_bytes, member_table, observe, open_source, plain_absolute,
+                            json_bytes, member_table, observe, open_source, plain_absolute, plain_resolved,
                             publish, read_json, safe_member, sha256_file, within, write_exclusive)
 
 ROOT_ID = re.compile(r"[a-z][a-z0-9_-]{0,63}\Z")
@@ -51,8 +51,10 @@ def roots_for(project, dependencies):
     for index, row in enumerate(rows):
         root = Path(row["path"])
         row["kind"] = "directory" if root.is_dir() else "regular_file"
+        comparison_root = plain_resolved(root)
         for other in rows[:index]:
-            if within(root, other["path"]) or within(other["path"], root):
+            comparison_other = plain_resolved(other["path"])
+            if within(comparison_root, comparison_other) or within(comparison_other, comparison_root):
                 raise ArchiveError("overlapping capture roots; internal targets are already captured")
     if rows[0]["kind"] != "directory":
         raise ArchiveError("project root must be a directory")
@@ -79,6 +81,7 @@ def _member(root, relative, kind):
 def snapshot(roots):
     """All paths are included; do not run Git or follow reparse directories."""
     entries, links = [], []
+    comparison_roots = {root["root_id"]: plain_resolved(root["path"]) for root in roots}
     for root in roots:
         base = plain_absolute(root["path"])
         pending = [(base, "")]
@@ -111,11 +114,12 @@ def snapshot(roots):
                     target = path.resolve(strict=True)
                 except (OSError, RuntimeError) as error:
                     raise ArchiveError("GAP: unresolved link target: " + str(path)) from error
-                matching = [candidate for candidate in roots if within(target, candidate["path"])]
+                matching = [candidate for candidate in roots
+                            if within(target, comparison_roots[candidate["root_id"]])]
                 if len(matching) != 1:
                     raise ArchiveError("GAP: link target is not in an exact capture root: " + str(path))
                 target_root = matching[0]
-                target_relative = str(target.relative_to(target_root["path"])).replace("\\", "/")
+                target_relative = str(target.relative_to(comparison_roots[target_root["root_id"]])).replace("\\", "/")
                 if target_relative == ".":
                     target_relative = ""
                 links.append({"entry_id": identifier, "root_id": root["root_id"], "relative_path": relative,
@@ -165,8 +169,10 @@ def snapshot(roots):
 
 def _outside(path, roots):
     path = plain_absolute(path, must_exist=False)
+    comparison_path = plain_resolved(path, must_exist=False)
     for root in roots:
-        if within(path, root["path"]) or within(root["path"], path):
+        comparison_root = plain_resolved(root["path"])
+        if within(comparison_path, comparison_root) or within(comparison_root, comparison_path):
             raise ArchiveError("output overlaps a capture root: " + str(path))
     return path
 
