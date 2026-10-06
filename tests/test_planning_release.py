@@ -222,6 +222,7 @@ class ActualSourcePackageTests(unittest.TestCase):
             destination.parent.mkdir(parents=True,exist_ok=True)
             destination.write_bytes(builder.checked_file(ROOT,name).read_bytes())
         cls.git('init','--quiet')
+        (cls.source/'.git/info').mkdir(parents=True,exist_ok=True)
         cls.git('-c','user.name=Release Boundary Test','-c','user.email=release-test@example.invalid',
                 'commit','--quiet','--allow-empty','-m','Disposable test identity')
 
@@ -276,6 +277,7 @@ class ActualSourcePackageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='commplan-ignored-test-') as temporary:
             root = Path(temporary)
             subprocess.run(['git','init','--quiet',str(root)],check=True,capture_output=True)
+            (root/'.git/info').mkdir(parents=True,exist_ok=True)
             subprocess.run(['git','-c','user.name=Test','-c','user.email=test@example.invalid',
                             'commit','--quiet','--allow-empty','-m','Test identity'],cwd=root,check=True,capture_output=True)
             (root/'.git/info/exclude').write_text('*\n')

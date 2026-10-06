@@ -36,6 +36,13 @@ pwsh -NoProfile -NonInteractive -File $tool -Mode Extract -RunRoot $run -Format 
 if ($LASTEXITCODE -ne 0) { throw '解包失败，禁止启用输出' }
 ```
 
+多个顶层名称须在 PowerShell 7.4+ 中以真正的字符串数组调用脚本；原生 `pwsh -File` 不会传递该数组。实际 MinGit 2.56.0 包的顶层是 `cmd`、`etc`、`LICENSE.txt`、`ucrt64`、`usr`，校验已下载文件后这样解包：
+
+```powershell
+$gitTop = @('cmd','etc','LICENSE.txt','ucrt64','usr')
+& $tool -Mode Extract -RunRoot $run -Format Zip -Archive (Join-Path $run 'downloads\mingit.zip') -ExpectedSize 39602073 -ExpectedSha256 '064b440ff870ed5198527e8f3a92cdf5bd2fd0fedf5e718af95e3fdaddeff718' -Destination (Join-Path $run 'tools\git') -AllowedTopLevel $gitTop -ManifestOut (Join-Path $run 'evidence\git-extract.json')
+```
+
 Download 流式读入唯一 partial 文件，严格控制大小、SHA 和 30 分钟操作期限，最多五次 HTTPS 重定向。只有校验通过才发布新文件。Extract 先在不写成员的情况下核对所有路径、类型、数量、字节及内容，再第二遍写新 staging；输入使用禁止共享写入的句柄，前后 SHA 一致才发布。
 
 解包接受普通文件/目录，拒绝软硬链接、reparse 标志、特殊文件、稀疏 TAR、路径穿越、UNC/drive/ADS、设备名、尾点/尾空格、大小写重名、父组件为文件、文件/目录冲突以及已有祖先联接。不恢复 ACL 或 owner。ZIP64、多卷、加密、非 store/deflate ZIP 不支持；TAR 接受普通 POSIX/GNU 长路径和有限 PAX 字段，其他类型/扩展先拒绝并核实，不回退宽松提取器。
