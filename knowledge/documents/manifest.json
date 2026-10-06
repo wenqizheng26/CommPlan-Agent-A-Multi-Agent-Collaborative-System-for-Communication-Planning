@@ -41,7 +41,7 @@
       "language": "zh",
       "source": "knowledge/documents/simulated/站址表.md",
       "local_path": "knowledge/documents/simulated/站址表.md",
-      "sha256": "2b776c0d45d1773baf28c34c2f44ac02d94b799fd56ad2cc5db922b0245cd0e8",
+      "sha256": "a0034462b5a1c2a69fbc40d8b40c9d1f887d01bd6c70fba44d42210b2c775db9",
       "redistributable": true,
       "simulated": true
     },
@@ -52,7 +52,7 @@
       "language": "zh",
       "source": "knowledge/documents/simulated/XX-100 手册.md",
       "local_path": "knowledge/documents/simulated/XX-100 手册.md",
-      "sha256": "74cd56505d040050e59ecaf9da5cdace04514984568780d0f90cdd1cef8c97c5",
+      "sha256": "1cfcaddc991a1fea9975958d0014b36583caf74be0c8e8b940a81d8ecd300e8b",
       "redistributable": true,
       "simulated": true
     },
@@ -63,7 +63,7 @@
       "language": "zh",
       "source": "knowledge/documents/simulated/XX-200 手册.md",
       "local_path": "knowledge/documents/simulated/XX-200 手册.md",
-      "sha256": "d79d0c9e04cfb09dcc2a0900e2432a4ac988373e2c457104e74a58d4e4b05953",
+      "sha256": "0989b8aaa293131a13667ea3dab27ac57d5980a61acaf73ad1ca2d2fb1863310",
       "redistributable": true,
       "simulated": true
     },
@@ -74,7 +74,7 @@
       "language": "zh",
       "source": "knowledge/documents/simulated/XX-300 手册.md",
       "local_path": "knowledge/documents/simulated/XX-300 手册.md",
-      "sha256": "97629e5321637053df24d702a5dc9542c12fd053bc92e52934e1727b7115ad77",
+      "sha256": "48b96a699af60d15cd326dc8341d77734539ea6ff7fe22f07db8b6a3128a38f2",
       "redistributable": true,
       "simulated": true
     }
