@@ -1,6 +1,6 @@
 # 历史文件归档工具
 
-当前实现 `plan`、`capture`、`verify`，输出范围固定为 `FILE_PAYLOAD`。本批只验证独立临时 fixture；真实项目捕获要另开安全窗口。完整历史归档还需要后续的 original 恢复、三套 Git bundle 与历史重建、依赖恢复和保留版本脱离验证。
+当前实现 `plan`、`capture`、`verify`（范围 `FILE_PAYLOAD`）和 `restore`、`verify-restored`（把已封口批次恢复到全新的 `original/` 区）。只验证过独立临时 fixture；真实项目捕获和恢复要另开安全窗口。完整历史归档还需要三套 Git bundle 与历史重建、依赖可用性恢复和保留版本脱离验证。
 
 ## 运行
 
@@ -72,7 +72,27 @@ batch-001/
 
 失败非零退出，保留 `.part`、`ARCHIVE_INFO.json.part`、`FAILURE.json` 和已取得的源差异，不自动重试、删除或改源。修正后用新计划/新批次路径。成功批次不包含语义为完整历史验收的 `COMPLETE.json`。
 
-分项状态包括文件与数据流完整性、关系记录；owner/group/DACL 只记录，SACL `NOT_READ`，ACL 恢复 `RECORD_ONLY`。`restore`、`verify-restored` 返回非零 `NOT_IMPLEMENTED`。Git 分类与历史恢复、original 恢复、硬链接/联接重建、依赖恢复及保留版本脱离均留给后续微批。
+分项状态包括文件与数据流完整性、关系记录；owner/group/DACL 只记录，SACL `NOT_READ`，ACL 恢复 `RECORD_ONLY`。Git 分类与历史恢复、依赖可用性恢复及保留版本脱离留给后续微批。
+
+## 恢复到 original 区
+
+先用独立保存的 `checksums_sha256` 恢复，再单独复核。目标目录必须不存在，且不能落在批次目录、任何原捕获根内，也不能经 8.3 短名或联接别名回到原根：
+
+```powershell
+python -B -X utf8 scripts/project_archive.py restore --archive-dir E:\fixture\batch-001 --destination E:\fixture\restore-001 --expected-checksums-sha256 <独立保存的64位小写SHA256>
+python -B -X utf8 scripts/project_archive.py verify-restored --archive-dir E:\fixture\batch-001 --destination E:\fixture\restore-001 --expected-checksums-sha256 <同一SHA256>
+```
+
+`restore` 先完整执行 `verify`，再在新目标下建立 `original/project/...` 与 `original/dependencies/<依赖ID>/...`。写入时父目录逐级持有不可删除句柄，文件以 CREATE_NEW 方式写，不覆盖、不跟随 reparse。恢复内容如下：
+
+- 每条原路径的默认流和全部命名流，逐流核对大小与 SHA256；
+- 范围内硬链接组在新根重建为同一文件，范围外别名只记录（`outside_scope_recovery=NOT_RUN`）；
+- junction 和符号链接在新根重建，目标改指向新根内对应的已恢复对象，原目标文本保存在 `RESTORE_MAPPING.json`。符号链接需要当前账户有创建权限，没有权限时恢复失败；
+- 修改时间与只读、隐藏、系统、存档四个属性；创建时间及其他属性只记录。
+
+全部写完后重新扫描整个 `original/`，路径与类型集合、流集合、字节、修改时间、四个属性、硬链接与链接目标都必须与清单一致，并再次核对批次外部校验值，然后依次写 `RESTORE_MAPPING.json`、`RESTORE_INFO.json`，最后写 `ORIGINAL_RESTORE_COMPLETE.json`。`verify-restored` 只读，重新执行同样的全量扫描，多出文件、多出数据流、同大小改字节或时间变化都失败。
+
+结果状态为 `ORIGINAL_FILE_PAYLOAD_COMPLETE`，`original_restore_integrity`、`streams_integrity` 为 PASS，链接和硬链接分别给出 PASS / PASS_IN_SCOPE 或 NOT_APPLICABLE；`acl_restoration=RECORD_ONLY`，`full_ntfs_restore`、`git_history_recovery`、`dependency_recovery`、`retained_version_independence` 为 NOT_RUN。原 `.git` 文件只作为原字节恢复，不在 original 区执行 Git。中途失败保留已写内容和 `RESTORE_FAILURE.json`，不自动清理；换新目标重做。
 
 ## 当前验证范围
 
@@ -80,4 +100,4 @@ batch-001/
 python -B -X utf8 -m unittest discover -s tests -p test_project_archive.py -v
 ```
 
-测试只使用自己的小型临时根。真实 Windows fixture 覆盖文件与目录 ADS、硬链接、junction、可读 ACL 记录及 ZIP64 流式分支；ZIP64 阈值替身不等于 5.68 GB 模型实测。实际大树容量、吞吐、长路径、全源权限与后续恢复仍在 B5 前按真实对象执行。本批没有捕获项目、模型、venv、数据库或生产 Git。
+测试只使用自己的小型临时根。真实 Windows fixture 覆盖文件与目录 ADS、硬链接、junction、可读 ACL 记录及 ZIP64 流式分支；ZIP64 阈值替身不等于 5.68 GB 模型实测。恢复 fixture 覆盖文件与目录命名流（含名称排在默认流之前的流）、硬链接、内部与外部 junction、符号链接（无权限时跳过）、只读/隐藏属性和修改时间、已有/重叠/短名别名目标的拒绝、中断留存和复核篡改。实际大树容量、吞吐、长路径和全源权限仍在 B5 前按真实对象执行。本批没有捕获项目、模型、venv、数据库或生产 Git。
