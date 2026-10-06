@@ -25,7 +25,7 @@
 
 GGUF 是普通下载文件，由精确 ExpectedSize 控制，不使用解包总量作为下载大小上限。ZIP 中央目录额外上限 16 MiB、TAR 单个路径扩展元数据上限 1 MiB；TAR 解压读取预算还包括有界的 header/padding。提高限额前确认真实成员及理由，不能静默自动抬高。
 
-示例仅在该资源获准实际取得后执行。当前准备批没有取得下面真实包：
+以下示例使用新的独立 run。2026-10-06 已从固定来源取得 Python、Node、MinGit、llama 四个包，大小/SHA、解包及版本加载均通过；原始记录见项目总账 R49。嵌入权重已实际下载通过，9B 下载进行中；最终冻结包安装验收按后续批次执行：
 
 ```powershell
 $run = 'E:\cleanroom\commplan-B3b-<UTC>-<ID>'
@@ -36,6 +36,13 @@ pwsh -NoProfile -NonInteractive -File $tool -Mode Extract -RunRoot $run -Format 
 if ($LASTEXITCODE -ne 0) { throw '解包失败，禁止启用输出' }
 ```
 
+多个顶层名称须在 PowerShell 7.4+ 中以真正的字符串数组调用脚本；原生 `pwsh -File` 不会传递该数组。实际 MinGit 2.56.0 包的顶层是 `cmd`、`etc`、`LICENSE.txt`、`ucrt64`、`usr`，校验已下载文件后这样解包：
+
+```powershell
+$gitTop = @('cmd','etc','LICENSE.txt','ucrt64','usr')
+& $tool -Mode Extract -RunRoot $run -Format Zip -Archive (Join-Path $run 'downloads\mingit.zip') -ExpectedSize 39602073 -ExpectedSha256 '064b440ff870ed5198527e8f3a92cdf5bd2fd0fedf5e718af95e3fdaddeff718' -Destination (Join-Path $run 'tools\git') -AllowedTopLevel $gitTop -ManifestOut (Join-Path $run 'evidence\git-extract.json')
+```
+
 Download 流式读入唯一 partial 文件，严格控制大小、SHA 和 30 分钟操作期限，最多五次 HTTPS 重定向。只有校验通过才发布新文件。Extract 先在不写成员的情况下核对所有路径、类型、数量、字节及内容，再第二遍写新 staging；输入使用禁止共享写入的句柄，前后 SHA 一致才发布。
 
 解包接受普通文件/目录，拒绝软硬链接、reparse 标志、特殊文件、稀疏 TAR、路径穿越、UNC/drive/ADS、设备名、尾点/尾空格、大小写重名、父组件为文件、文件/目录冲突以及已有祖先联接。不恢复 ACL 或 owner。ZIP64、多卷、加密、非 store/deflate ZIP 不支持；TAR 接受普通 POSIX/GNU 长路径和有限 PAX 字段，其他类型/扩展先拒绝并核实，不回退宽松提取器。
@@ -44,7 +51,7 @@ JSON 记录来源、预期/实际输入大小与 SHA、限额、成员类型/大
 
 ## 固定资源
 
-以下版本与来源在方案审核中已固定。**Node 22.23.3、普通 MinGit 2.56.0 已双方选定**，实际取得/解包/加载仍在后批。Python 是 Astral 二进制，不是 PSF Windows installer。官方来源、固定版本、大小与 SHA 是资源取得标准；许可原文及组件通知保留，签名来源记录可补充，不新增 GPG 工具门禁。
+以下版本与来源在方案审核中已固定。**Node 22.23.3、普通 MinGit 2.56.0 已双方选定**，四个 runtime 已完成 10-06 独立预检的取得/解包/加载；模型取得按上文实际状态记录，启用和最终验收继续按批次执行。Python 是 Astral 二进制，不是 PSF Windows installer。官方来源、固定版本、大小与 SHA 是资源取得标准；许可原文及组件通知保留，签名来源记录可补充，不新增 GPG 工具门禁。
 
 | 资源 | 字节数 | SHA256 / 来源 |
 | --- | --- | --- |
@@ -55,9 +62,25 @@ JSON 记录来源、预期/实际输入大小与 SHA、限额、成员类型/大
 | Qwen3.5-9B-Q4_K_M.gguf，revision 3885219b6810b007914f3a7950a8d1b469d598a5 | 5680522464 | `03b74727a860a56338e042c4420bb3f04b2fec5734175f4cb9fa853daf52b7e8`；[固定 GGUF](https://huggingface.co/unsloth/Qwen3.5-9B-GGUF/resolve/3885219b6810b007914f3a7950a8d1b469d598a5/Qwen3.5-9B-Q4_K_M.gguf) |
 | Qwen3-Embedding-0.6B-Q8_0.gguf，revision 370f27d7550e0def9b39c1f16d3fbaa13aa67728 | 639150592 | `06507c7b42688469c4e7298b0a1e16deff06caf291cf0a5b278c308249c3e439`；[固定 GGUF](https://huggingface.co/Qwen/Qwen3-Embedding-0.6B-GGUF/resolve/370f27d7550e0def9b39c1f16d3fbaa13aa67728/Qwen3-Embedding-0.6B-Q8_0.gguf) |
 
-权重不入交付包，必须真正从固定来源取得。本地已校验副本和 HEAD 成功都不能写成实际下载成功。真实包的成员与许可证仍须核对；Python/Node 顶层候选分别为 `python`、`node-v22.23.3-win-x64`，MinGit/runtime 第一层名单待实际成员确认，不能用 `*` 放行。
+权重不入交付包，必须真正从固定来源取得。本地已校验副本和 HEAD 成功都不能写成实际下载成功。真实包的成员与许可证仍须核对；Python/Node 顶层候选分别为 `python`、`node-v22.23.3-win-x64`，MinGit 第一层按上文五个字面名称；llama 本次包为 52 个根文件，其精确名单与逐成员 SHA 留在预检清单，不能用 `*` 放行。
 
 模型放置按 [config/models.json](../../config/models.json) 当前 registry 的路径，9B 生成与 embedding CPU 服务的 alias/参数在实例批固定。旧 `runtime/runtime_config.json` 是历史 4B/BGE 配置，不作为当前 registry 的替代；未纳入源码包的 setup_runtime/runtime 也不能当现有交付入口。
+
+## ITU 资料取得与放置
+
+资料检索使用 [documents/manifest.json](../../knowledge/documents/manifest.json) 登记的三个固定英文版本。该清单标为 `redistributable=false`，正式交付须纳入取得步骤，原 PDF 不入对外交付包。在线准备时从以下 ITU 官方固定 PDF 链接下载到本次 `downloads/itu/`，用资源工具 `Download` 的精确大小和 SHA 核对；原始下载证据须保留。
+
+| 文件 | 字节数 | SHA256 / 固定来源 |
+| --- | --- | --- |
+| P.525-5.pdf（11/2024） | 246217 | `55ff9bf5bb4534b91863fd84d760fe689e2f969b91db0ea786717fd078df1da5`；[官方 PDF](https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf) |
+| P.530-19.pdf（09/2025） | 2260727 | `07fb5e005b873120569e7d32442bfa867153a179ba75fac4f952017c2f5977f2`；[官方 PDF](https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.530-19-202509-I!!PDF-E.pdf) |
+| P.453-14.pdf（08/2019） | 4730459 | `fd163ef75cb4fd03848d4fe1fc0a043cb78e0edc164ba29a6bb69209204c17a0`；[官方 PDF](https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.453-14-201908-I!!PDF-E.pdf) |
+
+在本次普通源码目录中新建 `knowledge/sources/itu/`，将已校验的三个文件按表中名称复制进去；目标已有文件时先停止核实，不覆盖、不建开发模型或资料目录的联接。再次核对目标文件 SHA 与登记清单一致，再执行完整验证源码中的 `python -B -X utf8 -m unittest discover -s tests -p test_retrieval_bilingual_cases.py`，要求索引核对项实际执行且没有缺源跳过。保留下载、安装路径、逐文件 SHA 和测试结果；不要把检索降级或缺源跳过计作通过。
+
+10-06 本机独立预检已真正下载三个原件并按上述路径安装，8 项测试无跳过通过，冻结的 48 条标签及 314/305 chunk 索引核对通过。这个结果证明固定资料与索引对应；真实 embedding 检索与最终离线验收仍单列记录。
+
+当前 168 成员的源码预检 ZIP 尚未收录本说明、资源工具和完整验证层。正式交付组装须包含这些文件并核对全部包内链接；本预检 ZIP 不能作为完整交付包。
 
 ## 独立 Python 和依赖
 
@@ -100,6 +123,10 @@ Git 子进程先清继承的 GIT_*，再设 `GIT_CONFIG_NOSYSTEM=1`、`GIT_CONFI
 
 [test_planning_delivery_assets.py](../../tests/test_planning_delivery_assets.py) 在现 Windows CI planning-minimal 的 `test_planning_*.py` 和 full job 中自动发现。测试实际调用 `pwsh -NoProfile -NonInteractive`，缺工具或前提不符就失败，不能 skip。小 fixture 覆盖正常 ZIP/TAR/GZIP/PAX、输入大小/SHA、损坏/CRC、路径/重名/冲突/软硬链接/特殊项/已有 junction、输入输出重叠、覆盖与计数/字节/元数据限制；假下载 stream 只验证同一校验/发布管道，记录 TRANSPORT_FIXTURE。
 
-下一批再取得真实资源、准备完整源码验证层、独立安装，验证真实 GPU/模型、服务实例及关闭释放。最终执行完整自动矩阵、三条案例和 teacher20、适用/拒绝/变更确认、保存恢复、报告导出、目标浏览器和准确提交 CI。源码/环境/步骤/预期/实测/限制分别记录。离线采用已确认的关 Wi-Fi 方法：所有下载/安装先完成，核网卡/隧道/直接 IP 与域名失败及回环；离线脚本自行落盘或用户执行浏览器清单，联网后双方读证据。当前首微批不切网络。
+10-06 预检已取得四个 runtime、独立源码验证层及固定依赖 wheel；新 app-venv 从本批 wheelhouse 安装，源码预检包 Python 93 项、Node 33 项与 HTTP 创建/确认/恢复通过，整套 Node 113 项通过。最小环境首轮 126 项出现两处空 Git 模板 fixture 错误和一次 Windows 请求连接中止；fixture 已补建自有 info 目录，边界复测 24 项（1 权限 skip）通过。独立完整环境安装及 pip check 通过，601 项首轮为 1 error、2 skip：跨域拒绝 POST 收到 Win10054，符号链接权限不可用，ITU 尚未安装。ITU 后续实际下载/索引验证见上节；原失败记录保留，完整矩阵仍未通过。
+
+针对拒绝 POST 的最小实验已复现 Windows 连接竞态：原代码普通请求 595/600 返回 403，5 次 Win10053；请求头和正文间隔 5 ms 时 120/120 失败。只在诊断内存中调用既有有界 `drain` 后，对应 600/600 和 120/120 返回 403。生产源码未改，业务修补、当前回归、真实 GPU/模型、服务实例及关闭释放继续按批次验证。诊断不能替代实际修补验证。
+
+最终执行完整自动矩阵、三条案例和 teacher20、适用/拒绝/变更确认、保存恢复、报告导出、目标浏览器和准确提交 CI。源码/环境/步骤/预期/实测/限制分别记录。离线采用已确认的关 Wi-Fi 方法：所有下载/安装先完成，核网卡/隧道/直接 IP 与域名失败及回环；离线脚本自行落盘或用户执行浏览器清单，联网后双方读证据。当前首微批不切网络。
 
 10-20 冻结、10-21～23 验包、10-24 前交付；不提前冻结。资源取得、归档恢复、自动测试、真实模型、浏览器、CI 和 M1 验收是各自的验证记录。
