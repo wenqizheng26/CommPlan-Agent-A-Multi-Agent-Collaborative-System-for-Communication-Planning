@@ -390,6 +390,52 @@ class GitSourceBytesTests(unittest.TestCase):
         self.assertEqual(result['checks']['extracted_fingerprint'],'PASS')
         return info,payloads
 
+    def test_simulated_manifest_matches_lf_worktree_and_git_blobs(self):
+        records=json.loads((self.source/'knowledge/documents/manifest.json').read_bytes())['documents']
+        simulated=[record for record in records if record['simulated']]
+        self.assertEqual({record['doc_id'] for record in simulated},
+                         {'sim-sites','sim-xx100','sim-xx200','sim-xx300'})
+        for record in simulated:
+            name=record['local_path']
+            with self.subTest(document=record['doc_id']):
+                actual=(self.source/name).read_bytes()
+                blob=self.git('cat-file','blob','HEAD:'+name)
+                self.assertNotIn(b'\r',actual)
+                self.assertEqual(actual,blob)
+                self.assertEqual(hashlib.sha256(actual).hexdigest(),record['sha256'])
+
+    def test_formal_package_simulated_documents_ready_and_byte_tampering_changed(self):
+        from planning.retrieval.documents import DocumentStore
+        info,_=self.package('simulated-documents',True)
+        self.assertEqual(info['source_content_mode'],'git-blobs')
+        unpacked=self.container/'unpacked-simulated-documents'
+        with zipfile.ZipFile(self.container/'simulated-documents.zip') as archive:
+            archive.extractall(unpacked)
+        self.assertFalse((unpacked/'.git').exists())
+        records=json.loads((unpacked/'knowledge/documents/manifest.json').read_bytes())['documents']
+        simulated=[record for record in records if record['simulated']]
+        expected={record['doc_id']:'ready' for record in simulated}
+        store=DocumentStore(unpacked)
+        self.assertEqual({item['doc_id']:item['status'] for item in store.status
+                          if item['doc_id'] in expected},expected)
+        self.assertTrue(all(item['chunks']>0 for item in store.status if item['doc_id'] in expected))
+        for record in simulated:
+            with self.subTest(document=record['doc_id']):
+                path=unpacked/record['local_path']
+                original=path.read_bytes()
+                # Same decoded text, different bytes: integrity checking must reject CRLF too.
+                changed=original.replace(b'\n',b'\r\n')
+                self.assertNotEqual(original,changed)
+                path.write_bytes(changed)
+                try:
+                    altered=DocumentStore(unpacked)
+                    self.assertEqual({item['doc_id']:item['status'] for item in altered.status
+                                      if item['doc_id'] in expected},
+                                     expected|{record['doc_id']:'changed'})
+                    self.assertFalse(any(chunk['doc_id']==record['doc_id'] for chunk in altered.chunks))
+                finally:
+                    path.write_bytes(original)
+
     def test_formal_same_head_bytes_digest_and_fingerprint_ignore_checkout_newlines(self):
         name='planning/web/app.js'
         path=self.source/name
