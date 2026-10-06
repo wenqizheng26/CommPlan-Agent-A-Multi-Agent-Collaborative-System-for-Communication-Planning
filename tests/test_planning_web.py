@@ -1,8 +1,10 @@
+import http.client
 import importlib
 import json
 from pathlib import Path
 import tempfile
 import threading
+import time
 import unittest
 from unittest.mock import patch
 from urllib.request import Request, urlopen
@@ -76,6 +78,50 @@ class PlanningWebTests(unittest.TestCase):
             with self.subTest(headers=h):
                 self.assertEqual(self.call('/api/commands',command(),headers=h)[0],403)
         self.assertEqual(self.call('/api/commands',command(),headers={'Origin':self.base})[0],200)
+
+    def split_post(self,path,headers,body,length=None,delay=.02):
+        # Headers first, body a moment later: the order in which Windows aborted early answers.
+        conn=http.client.HTTPConnection('127.0.0.1',self.server.server_port,timeout=15)
+        try:
+            conn.putrequest('POST',path,skip_host=True)
+            h={'Host':f'127.0.0.1:{self.server.server_port}','Content-Type':'application/json',
+               'X-Planning-Token':self.token,'Connection':'close'}
+            h.update(headers)
+            for key,value in h.items():
+                conn.putheader(key,value)
+            conn.putheader('Content-Length',str(len(body)) if length is None else length)
+            conn.endheaders()
+            time.sleep(delay)
+            if body:
+                conn.send(body)
+            response=conn.getresponse()
+            return response.status,json.loads(response.read())['error']['code']
+        finally:
+            conn.close()
+
+    def test_post_rejected_before_its_body_still_receives_the_answer(self):
+        body=json.dumps(command()).encode()
+        cases=[('/api/commands',{'Origin':'https://evil.example'},403,'FORBIDDEN'),
+               ('/api/commands',{'X-Planning-Token':'wrong'},403,'FORBIDDEN'),
+               ('/api/commands',{'Host':'evil.example'},403,'FORBIDDEN'),
+               ('/api/nowhere',{},404,'NOT_FOUND'),
+               ('/api/commands',{'Content-Type':'text/plain'},400,'JSON_REQUIRED')]
+        for path,headers,status,code in cases:
+            with self.subTest(path=path,headers=headers):
+                for _ in range(10):
+                    self.assertEqual(self.split_post(path,headers,body),(status,code))
+        self.assertEqual(self.split_post('/api/commands',{},b'x'*70000),(413,'REQUEST_SIZE'))
+        self.assertEqual(self.call('/api/tasks')[1]['tasks'],[])
+
+    def test_rejected_body_wait_is_bounded(self):
+        evil={'Origin':'https://evil.example'}
+        for length,most in (('1000',6),(str(2*1024*1024),1),('abc',1),('-5',1)):
+            with self.subTest(length=length):
+                # The declared body never arrives: answer after the drain deadline at most.
+                start=time.monotonic()
+                self.assertEqual(self.split_post('/api/commands',evil,b'',length=length,delay=0),(403,'FORBIDDEN'))
+                self.assertLess(time.monotonic()-start,most)
+        self.assertEqual(self.call('/api/tasks')[1]['tasks'],[])
 
     def test_strict_json_size_and_static_allowlist(self):
         for raw in (b'{"action":"create","action":"confirm"}', b'{"value":NaN}', b'\xff', b'x'*70000):
