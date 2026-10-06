@@ -7,6 +7,7 @@ from pathlib import Path
 import secrets
 import sqlite3
 import re
+import time
 from urllib.parse import urlsplit, parse_qs
 from formula_rag.catalog import load_catalog
 from planning.requirements_contract import strict_json, digest
@@ -114,14 +115,25 @@ def create_server(root, db_path=None, port=18082):
                 message+=detail
             self.respond(status,{'error':{'code':code,'message':message}})
 
+        def reject(self,status,code,limit=1024*1024,seconds=2):
+            # A POST answered before its body is read: take a bounded body first, otherwise
+            # Windows may abort the connection before the client reads this answer.
+            if self.command=='POST':
+                try:
+                    size=int(self.headers.get('Content-Length','0'))
+                except ValueError:
+                    size=-1
+                self.drain(size,limit,seconds)
+            self.error(status,code)
+
         def allowed(self,write=False):
             host=self.headers.get('Host','')
             valid={f'127.0.0.1:{self.server.server_port}',f'localhost:{self.server.server_port}'}
             origin=self.headers.get('Origin')
             if host not in valid or (origin is not None and origin!='http://'+host):
-                self.error(403,'FORBIDDEN'); return False
+                self.reject(403,'FORBIDDEN'); return False
             if write and not secrets.compare_digest(self.headers.get('X-Planning-Token',''),token):
-                self.error(403,'FORBIDDEN'); return False
+                self.reject(403,'FORBIDDEN'); return False
             return True
 
         def do_GET(self):
@@ -208,14 +220,27 @@ def create_server(root, db_path=None, port=18082):
                 print('knowledge request failed:',type(exc).__name__,flush=True)
                 self.error(500,'SERVER_ERROR')
 
-        def drain(self,size,limit):
+        def drain(self,size,limit,seconds=5):
             # Read a bounded rejected body so Windows delivers the error instead of a reset.
-            if 0<size<=limit:
-                self.connection.settimeout(5)
-                try:
-                    self.rfile.read(size)
-                except (OSError,TimeoutError):
-                    pass
+            # One deadline covers the whole body, so a slow sender cannot hold the request.
+            if not 0<size<=limit:
+                return
+            previous=self.connection.gettimeout()
+            deadline=time.monotonic()+seconds
+            try:
+                while size>0:
+                    left=deadline-time.monotonic()
+                    if left<=0:
+                        break
+                    self.connection.settimeout(left)
+                    chunk=self.rfile.read1(min(size,65536))
+                    if not chunk:
+                        break
+                    size-=len(chunk)
+            except (OSError,TimeoutError):
+                pass
+            finally:
+                self.connection.settimeout(previous)
 
         def upload(self,query):
             from planning.knowledge.sources import add_document, describe, MAX_BYTES
@@ -259,21 +284,13 @@ def create_server(root, db_path=None, port=18082):
             if urlsplit(self.path).path=='/api/documents':
                 self.upload(parse_qs(urlsplit(self.path).query)); return
             if self.path not in {'/api/commands','/api/cancel-operation','/api/settings','/api/drafts/extract','/api/drafts/review','/api/model-switch'}:
-                self.error(404,'NOT_FOUND'); return
+                self.reject(404,'NOT_FOUND'); return
             if self.headers.get_content_type()!='application/json':
-                self.error(400,'JSON_REQUIRED'); return
+                self.reject(400,'JSON_REQUIRED'); return
             try:
                 size=int(self.headers.get('Content-Length','0'))
                 if not 0<size<=65536:
-                    # Drain a bounded local request body before closing so Windows
-                    # does not reset the socket before the 413 can be delivered.
-                    if 0<size<=1024*1024:
-                        self.connection.settimeout(2)
-                        try:
-                            self.rfile.read(size)
-                        except (OSError,TimeoutError):
-                            pass
-                    self.error(413,'REQUEST_SIZE'); return
+                    self.reject(413,'REQUEST_SIZE'); return
                 payload=strict_json(self.rfile.read(size).decode('utf-8'))
                 if self.path=='/api/settings':
                     if type(payload) is not dict or set(payload)!={'settings','expected_version'}:
