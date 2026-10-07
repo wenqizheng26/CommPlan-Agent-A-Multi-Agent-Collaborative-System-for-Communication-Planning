@@ -81,7 +81,13 @@ class GitReconstructTests(unittest.TestCase):
         return dict(line.split(" ") for line in rows)
 
     def captured(self):
-        value = archive.plan(self.source, [], self.area / "plan.json")
+        # Plan through the 8.3 alias when the volume has one (as on CI runners): git wrote the
+        # long names into the worktree pointers, so they must not be matched by root text.
+        import ctypes
+        buffer = ctypes.create_unicode_buffer(1024)
+        ctypes.windll.kernel32.GetShortPathNameW(str(self.source), buffer, 1024)
+        root = Path(buffer.value) if buffer.value else self.source
+        value = archive.plan(root, [], self.area / "plan.json")
         common.write_exclusive(self.area / "window.json", common.json_bytes({
             "scope": "FILE_PAYLOAD", "window_id": "git-window-1", "source_writers_stopped": True,
             "approved_root_paths": [r["path"] for r in value["roots"]]}))

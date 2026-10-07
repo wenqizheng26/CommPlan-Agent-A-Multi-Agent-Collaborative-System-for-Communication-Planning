@@ -109,7 +109,7 @@ python -B -X utf8 scripts/project_archive.py verify-reconstructed-git --archive-
 - **对象核对**：`fsck --full` 发现缺失或损坏即失败；dangling 只计数。原 HEAD 和每个 linked worktree 的 HEAD 记为本批专用 ref `refs/archive/b3c/HEAD`、`refs/archive/b3c/worktrees/<管理名>`，分离 HEAD 因此进入 bundle。原 refs 已占用该前缀时失败。
 - **bundle**：`bundles/<库ID>.bundle` 含全部 refs，生成后 `bundle verify`。再从 bundle 镜像克隆到 `reconstructed/<库ID>.git`，逐项比较 refs、附注 tag 的 peeled 值与原 ref 文件，并对克隆再做 `fsck` 和全历史遍历。
 - **只有原始对象里才有的部分**：reflog 才能到达的提交等只在原始对象里的对象，数量记为 `raw_only_objects`，保留在 `original/` 和派生裸库中，不在 bundle 里。index、reflog 及 ORIG_HEAD 等伪 ref 只在 `original/`。
-- **工作树**：主工作树和每个 linked worktree 以原管理名重新检出到 `worktrees/<库ID>/<管理名>`（主工作树为 `main-worktree`）。原来在分支上的仍检出该分支，分离的按原对象检出。检出后核对 HEAD 和管理名，工作区必须干净。原工作区里的未提交和未跟踪内容只在 `original/`。
+- **工作树**：linked worktree 的 `.git` 文件与管理目录按各自在捕获根下的相对路径双向配对，不依赖原根写成 8.3 短名还是长名。主工作树和每个 linked worktree 以原管理名重新检出到 `worktrees/<库ID>/<管理名>`（主工作树为 `main-worktree`）。原来在分支上的仍检出该分支，分离的按原对象检出。检出后核对 HEAD 和管理名，工作区必须干净。原工作区里的未提交和未跟踪内容只在 `original/`。
 - **零历史库**（没有任何 ref）标为 `NO_COMMIT_HISTORY`，嵌套 `.git/.git` 等异常项标为 `ORIGINAL_ONLY`，都不建派生库。
 - **不支持的特性**：浅克隆、alternates、partial clone/promisor、reftable、非 SHA-1 对象格式、submodule 的 `modules/`、LFS 目录，以及捕获时残留的 ref `.lock`，都直接失败，不报 PASS。
 

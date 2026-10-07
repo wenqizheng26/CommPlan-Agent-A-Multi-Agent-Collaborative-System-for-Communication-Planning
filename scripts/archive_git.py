@@ -176,18 +176,15 @@ def discover(original):
     return sorted(gitdirs), pointers, anomalies
 
 
-def _mapper(value, destination):
-    """Old absolute path text -> restored path, through the captured root list (text only)."""
-    roots = [(os.path.normcase(os.path.abspath(root["path"])), destination / "original" / root["prefix"])
-             for root in value["roots"] if root["kind"] == "directory"]
+def _within_root(path, original):
+    """A restored path relative to its captured root (drops original/project or original/dependencies/<id>)."""
+    parts = Path(path).relative_to(original).parts
+    return "/".join(parts[2:] if parts[0] == "dependencies" else parts[1:]).lower()
 
-    def mapped(text):
-        old = os.path.normcase(os.path.abspath(text.replace("/", "\\")))
-        for prefix, restored in sorted(roots, key=lambda item: -len(item[0])):
-            if old == prefix or old.startswith(prefix.rstrip("\\") + "\\"):
-                return restored / old[len(prefix):].lstrip("\\") if old != prefix else restored
-        return None
-    return mapped
+
+def _ends_with(text, suffix):
+    text = text.replace("\\", "/").rstrip("/").lower()
+    return bool(suffix) and text.endswith("/" + suffix)
 
 
 # --- one repository ----------------------------------------------------------------------------
@@ -235,8 +232,12 @@ def _peeled(git, repository, refs):
     return found
 
 
-def _worktrees(gitdir, mapped, pointers):
-    """The main worktree and every linked worktree recorded in this repository."""
+def _worktrees(gitdir, original, pointers):
+    """The main worktree and every linked worktree recorded in this repository.
+
+    A linked worktree's `.git` file and its admin directory name each other by old absolute
+    paths. The old root may have been written as an 8.3 alias or a long name, so the pair is
+    matched by the path below the captured root, in both directions, not by the root text."""
     rows = [{"admin_name": None, "head": _head(gitdir / "HEAD"),
              "original_path": gitdir.parent, "captured": True, "main": True}]
     admin = gitdir / "worktrees"
@@ -247,20 +248,18 @@ def _worktrees(gitdir, mapped, pointers):
             if not ADMIN_NAME.match(entry.name):
                 raise ArchiveError(f"unsupported worktree admin name {entry.name!r}")
             pointer_text = _text(entry / "gitdir") if (entry / "gitdir").is_file() else ""
-            restored_pointer = mapped(pointer_text) if pointer_text else None
-            linked = next((p for p in pointers if restored_pointer is not None
-                           and os.path.normcase(str(p["path"])) == os.path.normcase(str(restored_pointer))), None)
-            back = mapped(linked["target_text"]) if linked else None
+            linked = [p for p in pointers if _ends_with(p["target_text"], _within_root(entry, original))
+                      and _ends_with(pointer_text, _within_root(p["path"], original))]
+            if len(linked) > 1:
+                raise ArchiveError(f"several worktree pointers claim {entry.name}")
             rows.append({"admin_name": entry.name, "head": _head(entry / "HEAD"),
                          "original_pointer_text": pointer_text,
-                         "original_path": restored_pointer.parent if restored_pointer else None,
-                         "captured": linked is not None and back is not None
-                         and os.path.normcase(str(back)) == os.path.normcase(str(entry)),
-                         "main": False})
+                         "original_path": linked[0]["path"].parent if linked else None,
+                         "captured": bool(linked), "main": False})
     return rows
 
 
-def rebuild(git, gitdir, original, work, mapped, pointers):
+def rebuild(git, gitdir, original, work, pointers):
     relative = gitdir.relative_to(original.parent).as_posix()
     repo_id = _repo_id(relative)
     refs, peeled, symbolic = raw_refs(gitdir)
@@ -286,7 +285,7 @@ def rebuild(git, gitdir, original, work, mapped, pointers):
     problems = [line for line in lines if line and not line.startswith(("dangling ", "notice:", "Checking"))]
     if fsck.returncode or problems:
         raise ArchiveError(f"{relative}: raw objects incomplete or corrupt: {problems[:5]}")
-    worktrees = _worktrees(gitdir, mapped, pointers)
+    worktrees = _worktrees(gitdir, original, pointers)
     for tree in worktrees:
         target = tree["head"].get("detached") or refs.get(tree["head"].get("symbolic", ""))
         tree["head_object"] = target
@@ -380,8 +379,7 @@ def reconstruct(archive, restore_dir, destination, expected_hash):
     try:
         git = Git(destination)
         gitdirs, pointers, anomalies = discover(original)
-        mapped = _mapper(value, restore_dir)
-        repositories = [rebuild(git, gitdir, original, destination, mapped, pointers) for gitdir in gitdirs]
+        repositories = [rebuild(git, gitdir, original, destination, pointers) for gitdir in gitdirs]
         claimed = {os.path.normcase(str(original.parent / t["original_path"]))
                    for r in repositories for t in r.get("worktrees", []) if t.get("original_path")}
         stray = [p["relative"] for p in pointers if os.path.normcase(str(p["path"].parent)) not in claimed]
