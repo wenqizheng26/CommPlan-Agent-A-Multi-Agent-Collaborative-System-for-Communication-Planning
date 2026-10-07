@@ -158,7 +158,7 @@ def check_report(report, request, cards, root=None):
         accepted = d['details'].get('accepted', [])
         model = {'targets':[{k:a[k] for k in ('id','evidence')} for a in accepted if a.get('kind')=='target'],
                  'conditions':[{k:a[k] for k in ('id','evidence')} for a in accepted if a.get('kind')=='condition']}
-        validate_target_semantics(model)
+        validate_target_semantics(model, request['raw_text'])
         info = merge_interpretation(interpreted, model, list(TARGETS), request['target'], request['condition'])
         require(not info['rejected'], 'MODEL_GROUNDING_MISMATCH')
     if request['target']:

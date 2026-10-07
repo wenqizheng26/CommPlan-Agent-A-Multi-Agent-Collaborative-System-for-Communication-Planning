@@ -6,7 +6,7 @@ from planning.services.plans import TARGETS
 
 
 # A feasibility question is the model's reading of "link margin"; the rules have no keyword for it.
-FEASIBILITY = r'can.{0,15}(?:link|communicat)|is.{0,15}(?:feasible|sufficient)|能(?:不能)?通|能否(?:打)?通|通不通|够不够|够用|行不行|可行吗|能否满足|能不能满足|是否满足|满不满足|能满足吗|稳定|更稳|稳不稳|可靠|能(?:不能|否)?传|传(?:视频|图像|数据|语音)|连到|连通|建链|more (?:stable|reliable)|stabl|reliab'
+FEASIBILITY = r'can.{0,15}(?:link|communicat)|is.{0,15}(?:feasible|sufficient)|达标|能(?:不能)?通|能否(?:打)?通|通不通|够不够|够用|行不行|可行吗|能否满足|能不能满足|是否满足|满不满足|能满足吗|稳定|更稳|稳不稳|可靠|能(?:不能|否)?传|传(?:视频|图像|数据|语音)|连到|连通|建链|more (?:stable|reliable)|stabl|reliab'
 # A link request that names no quantity ("连到乡镇，传视频，要稳定") or names a modulation asks whether
 # the link holds: link margin is offered to the model even when its card shares no word with the text.
 LINK_REQUEST = re.compile(FEASIBILITY + r'|(?<![A-Za-z0-9])(?:[BQ]PSK|\d+\s*-?\s*(?:QAM|PSK)|QAM\s*-?\s*\d+)', re.I)
@@ -49,13 +49,21 @@ def service_label(text):
                 span=[found.start(), found.end()])
 
 
-def validate_target_semantics(model):
+# A stated margin requirement ("余量要求 10 dB", "链路余量标准是 10 dB") makes link margin the goal.
+MARGIN_GOAL = re.compile(r'(?:要求|需要|希望|至少|不低于|要留|留出|得有).{0,18}余量|余量.{0,18}(?:要求|需要|至少|不低于|达到|达标|[0-9]+\s*dB)', re.I)
+
+
+def validate_target_semantics(model, text=''):
+    """Each model target needs evidence that asks for it. A link-margin target is also grounded when the
+    request states a margin requirement and the quoted evidence names no other target: the model may quote
+    another clause of the same request ("评估 A岸站 到 B岛站" beside "余量要求 10 dB")."""
     for target in model.get('targets', []):
         require(not re.fullmatch(r'\s*(?:解释|介绍|什么是|定义|说明什么是|解释什么是).*(?:余量|损耗|功率|电平)[。？?]?\s*',target['evidence']),'MODEL_TARGET_CONCEPT')
         require(not re.search(r'^(?:explain|define|describe|what does).*(?:loss|margin|power|radius)', target['evidence'].strip(), re.I), 'MODEL_TARGET_CONCEPT')
         parsed = extract_request(target['evidence'])
         feasible = target['id'] == 'link_margin' and re.search(FEASIBILITY, target['evidence'], re.I)
-        margin_goal=(target['id']=='link_margin' and bool(re.search(r'(?:要求|需要|希望|至少|不低于|要留|留出|得有).{0,18}余量|余量.{0,18}(?:要求|需要|至少|不低于|达到|达标|[0-9]+\s*dB)',target['evidence'],re.I)))
+        margin_goal = target['id'] == 'link_margin' and bool(
+            MARGIN_GOAL.search(target['evidence']) or (MARGIN_GOAL.search(text) and not parsed['targets']))
         require(target['id'] in TARGETS and (parsed['targets'] == [target['id']] or bool(feasible) or margin_goal)
                 and not parsed['unsupported_targets'], 'MODEL_TARGET_SEMANTICS')
 
