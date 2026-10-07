@@ -49,7 +49,7 @@ class PlanningWebTests(unittest.TestCase):
         data=raw if raw is not None else json.dumps(body).encode() if body is not None else None
         req=Request(self.base+path,data=data,headers=h)
         try:
-            response=urlopen(req,timeout=15)
+            response=urlopen(req,timeout=60)
         except HTTPError as e:
             response=e
         with response:

@@ -119,6 +119,21 @@ Git 子进程先清继承的 GIT_*，再设 `GIT_CONFIG_NOSYSTEM=1`、`GIT_CONFI
 
 模型 **18081/18084** 与开发 B2c 的真实 9B 共用：负责人先在总账公布操作人、批次、实例根、起止 UTC 和端口的独占窗口，避开 B2c。启动/停止须在每次有作用的操作核对实例归属，不能一次检查后调用会停别的实例的全局启动/关闭器。当前资源工具不启动模型/工作台、不占端口、不杀进程。
 
+实例只用 [owned_instance.py](../../scripts/owned_instance.py) 启动和关闭，不调用全局 `start_commplan.py`/`stop_commplan.py`：
+
+```powershell
+& $py scripts\owned_instance.py start --app-root $app --python $py --db $db --record $record --asset-root $assets
+& $py scripts\owned_instance.py status --record $record   # 0 运行，3 已停，4 不一致
+& $py scripts\owned_instance.py stop --record $record     # 0 已停，4 有未停或拒绝
+```
+
+- `start` 先确认 18081、18084 和工作台端口（默认 18098）无人监听，再以独占方式新建 record，然后亲自启动 chat、embedding 和工作台三个进程。端口被占用或 record 已存在时，一个进程都不启动。
+- record 为每个进程记下 PID、创建时间、映像和完整命令行；venv 的 python.exe 会把解释器作为子进程启动，所以监听进程另行记录。
+- 每次 status 和 stop 都通过打开的进程句柄重新核对上述字段，同时核对端口的监听 PID 和工作台返回的实例号。PID 被复用、端口被别的程序占着、旧 record 对不上的，标为 foreign 等状态，不去处理。
+- 实例密钥只通过环境变量传给工作台，不出现在命令行里。工作台的 `/api/instance/shutdown` 要同时校验页面 token 和这个密钥。它先拒绝新的写请求，再等进行中的命令完成；超时返回 INSTANCE_BUSY，不打断提交。
+- 实例模式下页面不能切换模型。关闭顺序是先工作台、后模型；工作台没停下，模型保持运行。
+- 测试 [test_owned_instance.py](../../tests/test_owned_instance.py) 用假模型服务加真实工作台验证以下各项：往返（含另起进程读 record）；忙端口和已有 record 时不启动；PID 复用视为外来且不停止；外来监听拒绝；启动失败只回收自己启动的进程；CLI；关闭接口的鉴权和排空。
+
 ## 验证与后续
 
 [test_planning_delivery_assets.py](../../tests/test_planning_delivery_assets.py) 在现 Windows CI planning-minimal 的 `test_planning_*.py` 和 full job 中自动发现。测试实际调用 `pwsh -NoProfile -NonInteractive`，缺工具或前提不符就失败，不能 skip。小 fixture 覆盖正常 ZIP/TAR/GZIP/PAX、输入大小/SHA、损坏/CRC、路径/重名/冲突/软硬链接/特殊项/已有 junction、输入输出重叠、覆盖与计数/字节/元数据限制；假下载 stream 只验证同一校验/发布管道，记录 TRANSPORT_FIXTURE。
