@@ -65,8 +65,17 @@ def command(action, state=None, **extra):
 def copy_app(target):
     for folder in ('knowledge/documents', 'knowledge/facts', 'config'):
         shutil.copytree(ROOT / folder, target / folder)
-    for name in ('knowledge/formulas.json', 'runtime_config.json'):
+    for name in ('knowledge/formulas.json', 'knowledge/tools.json', 'runtime_config.json'):
         shutil.copy(ROOT / name, target / name)
+    # Fact tables cite their source files (the modulation table cites docs/design/TEACHER_CASES.md),
+    # and the fact service refuses a table whose cited file is missing: copy every cited file too.
+    for table in sorted((ROOT / 'knowledge/facts').glob('*.json')):
+        records = json.loads(table.read_text(encoding='utf-8-sig'))
+        for record in records if isinstance(records, list) else []:
+            cited = (record.get('source') or {}).get('path') if isinstance(record, dict) else None
+            if isinstance(cited, str) and (ROOT / cited).is_file() and not (target / cited).exists():
+                (target / cited).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy(ROOT / cited, target / cited)
 
 
 def margin(state):
