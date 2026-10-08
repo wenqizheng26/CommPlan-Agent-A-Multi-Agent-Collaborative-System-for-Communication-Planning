@@ -46,10 +46,8 @@ def main():
                 model_id=args.model,cases=[])
     with tempfile.TemporaryDirectory() as temp:
         root=Path(temp)/'app'
-        for folder in ('knowledge/documents','knowledge/facts','config'):
-            shutil.copytree(ROOT/folder,root/folder)
-        for name in ('knowledge/formulas.json','runtime_config.json'):
-            shutil.copy(ROOT/name,root/name)
+        from eval_week4 import copy_app  # Same copy, including the files the fact tables cite.
+        copy_app(root)
         service=TaskService(root,Path(temp)/'tasks.sqlite')
         model=service.registry.models[args.model]
         output['model_probe']=probe_model(model['endpoint'],model['alias'])

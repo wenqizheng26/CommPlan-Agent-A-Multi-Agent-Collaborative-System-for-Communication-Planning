@@ -865,6 +865,12 @@ def main(argv=None):
         recovering.add_argument("--archive-dir", type=Path, required=True)
         recovering.add_argument("--destination", type=Path, required=True)
         recovering.add_argument("--expected-checksums-sha256", required=True)
+    for name in ("reconstruct-git", "verify-reconstructed-git"):
+        rebuilding = commands.add_parser(name)
+        rebuilding.add_argument("--archive-dir", type=Path, required=True)
+        rebuilding.add_argument("--restore-dir", type=Path, required=True)
+        rebuilding.add_argument("--destination", type=Path, required=True)
+        rebuilding.add_argument("--expected-checksums-sha256", required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == "plan":
@@ -875,6 +881,10 @@ def main(argv=None):
             result = verify(args.archive_dir, args.expected_checksums_sha256)
         elif args.command == "restore":
             result = restore(args.archive_dir, args.destination, args.expected_checksums_sha256)
+        elif args.command in {"reconstruct-git", "verify-reconstructed-git"}:
+            from archive_git import reconstruct, verify_reconstructed
+            action = reconstruct if args.command == "reconstruct-git" else verify_reconstructed
+            result = action(args.archive_dir, args.restore_dir, args.destination, args.expected_checksums_sha256)
         else:
             result = verify_restored(args.archive_dir, args.destination, args.expected_checksums_sha256)
         print(json.dumps(result, ensure_ascii=False, indent=2))

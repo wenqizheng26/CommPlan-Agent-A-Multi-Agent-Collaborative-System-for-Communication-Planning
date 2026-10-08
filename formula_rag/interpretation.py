@@ -40,7 +40,7 @@ def merge_interpretation(request, model, candidate_ids, manual_target=None, manu
         if request.get('unsupported_targets'):
             info['rejected'].append({'kind': 'target', 'reason': '不能用相似公式替代未支持的待求量'})
             continue
-        if not re.search(r'计算|求|算|多大|多少|多强|够不够|够用|能否|能通|通不通|行不行|可行|满足|还剩|还有|上界|损耗|余量|功率|频移|底噪|稳定|更稳|稳不稳|可靠|连到|连通|建链|传(?:视频|图像|数据|语音)|calculate|compute|find|determine|what is|can.{0,12}link|margin|loss|power|radius|diffraction|stabl|reliab', item['evidence'], re.I):
+        if not re.search(r'计算|求|算|多大|多少|多强|够不够|够用|能否|能通|通不通|行不行|可行|满足|还剩|还有|上界|损耗|余量|功率|频移|底噪|稳定|更稳|稳不稳|可靠|连到|连通|建链|评估|达标|传(?:视频|图像|数据|语音)|calculate|compute|find|determine|evaluat|assess|what is|can.{0,12}link|margin|loss|power|radius|diffraction|stabl|reliab', item['evidence'], re.I):
             info['rejected'].append({'kind': 'target', 'reason': '证据未明确计算意图'})
             continue
         targets.append(item)

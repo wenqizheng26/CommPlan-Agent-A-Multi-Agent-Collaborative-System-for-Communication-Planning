@@ -1,6 +1,6 @@
 # 历史文件归档工具
 
-当前实现 `plan`、`capture`、`verify`（范围 `FILE_PAYLOAD`）和 `restore`、`verify-restored`（把已封口批次恢复到全新的 `original/` 区）。只验证过独立临时 fixture；真实项目捕获和恢复要另开安全窗口。完整历史归档还需要三套 Git bundle 与历史重建、依赖可用性恢复和保留版本脱离验证。
+当前实现 `plan`、`capture`、`verify`（范围 `FILE_PAYLOAD`），`restore`、`verify-restored`（把已封口批次恢复到全新的 `original/` 区），以及 `reconstruct-git`、`verify-reconstructed-git`（从已恢复的原字节另建可用 Git 历史、bundle 和工作树）。只验证过独立临时 fixture；真实项目捕获和恢复要另开安全窗口。依赖可用性恢复和保留版本脱离仍需按真实工程验证。
 
 ## 运行
 
@@ -94,10 +94,32 @@ python -B -X utf8 scripts/project_archive.py verify-restored --archive-dir E:\fi
 
 结果状态为 `ORIGINAL_FILE_PAYLOAD_COMPLETE`，`original_restore_integrity`、`streams_integrity` 为 PASS，链接和硬链接分别给出 PASS / PASS_IN_SCOPE 或 NOT_APPLICABLE；`acl_restoration=RECORD_ONLY`，`full_ntfs_restore`、`git_history_recovery`、`dependency_recovery`、`retained_version_independence` 为 NOT_RUN。原 `.git` 文件只作为原字节恢复，不在 original 区执行 Git。中途失败保留已写内容和 `RESTORE_FAILURE.json`，不自动清理；换新目标重做。
 
+## 从 original 区重建 Git 历史
+
+`original/` 区只保留原字节，Git 不在那里运行。历史另建到一个全新目录，目标不能与批次、恢复目录或原捕获根重叠：
+
+```powershell
+python -B -X utf8 scripts/project_archive.py reconstruct-git --archive-dir E:\fixture\batch-001 --restore-dir E:\fixture\restore-001 --destination E:\fixture\git-001 --expected-checksums-sha256 <同一SHA256>
+python -B -X utf8 scripts/project_archive.py verify-reconstructed-git --archive-dir E:\fixture\batch-001 --restore-dir E:\fixture\restore-001 --destination E:\fixture\git-001 --expected-checksums-sha256 <同一SHA256>
+```
+
+`reconstruct-git` 先完整执行 `verify-restored`，然后在 `original/` 中查找全部 `.git`（不进入联接或符号链接）：
+
+- **有历史的库**：只复制原 `objects/`、`refs/`、`packed-refs` 和 HEAD 到新建的裸库 `derived/<库ID>.git`。原 config、hooks、info、alternates、index 和 reflog 不带入。所有 git 调用不读系统/全局配置、不运行 hooks、不提示输入。
+- **对象核对**：`fsck --full` 发现缺失或损坏即失败；dangling 只计数。原 HEAD 和每个 linked worktree 的 HEAD 记为本批专用 ref `refs/archive/b3c/HEAD`、`refs/archive/b3c/worktrees/<管理名>`，分离 HEAD 因此进入 bundle。原 refs 已占用该前缀时失败。
+- **bundle**：`bundles/<库ID>.bundle` 含全部 refs，生成后 `bundle verify`。再从 bundle 镜像克隆到 `reconstructed/<库ID>.git`，逐项比较 refs、附注 tag 的 peeled 值与原 ref 文件，并对克隆再做 `fsck` 和全历史遍历。
+- **只有原始对象里才有的部分**：reflog 才能到达的提交等只在原始对象里的对象，数量记为 `raw_only_objects`，保留在 `original/` 和派生裸库中，不在 bundle 里。index、reflog 及 ORIG_HEAD 等伪 ref 只在 `original/`。
+- **工作树**：linked worktree 的 `.git` 文件与管理目录按各自在捕获根下的相对路径双向配对，不依赖原根写成 8.3 短名还是长名。主工作树和每个 linked worktree 以原管理名重新检出到 `worktrees/<库ID>/<管理名>`（主工作树为 `main-worktree`）。原来在分支上的仍检出该分支，分离的按原对象检出。检出后核对 HEAD 和管理名，工作区必须干净。原工作区里的未提交和未跟踪内容只在 `original/`。
+- **零历史库**（没有任何 ref）标为 `NO_COMMIT_HISTORY`，嵌套 `.git/.git` 等异常项标为 `ORIGINAL_ONLY`，都不建派生库。
+- **不支持的特性**：浅克隆、alternates、partial clone/promisor、reftable、非 SHA-1 对象格式、submodule 的 `modules/`、LFS 目录，以及捕获时残留的 ref `.lock`，都直接失败，不报 PASS。
+
+完成后再次执行 `verify-restored`，证明 `original/` 未被改动，然后写 `GIT_RECONSTRUCT.json`，最后独占写 `GIT_RECONSTRUCT_COMPLETE.json`（含报告和各 bundle 的 SHA256）。失败时写 `GIT_RECONSTRUCT_FAILURE.json`，不清理，换新目标重做。`verify-reconstructed-git` 只读，在临时目录里重新核对标记与 bundle 摘要、`bundle verify`、refs 和工作树 HEAD。`git_history_recovery` 只由这一步给出；`dependency_recovery`、`retained_version_independence` 仍为 NOT_RUN。
+
 ## 当前验证范围
 
 ```powershell
 python -B -X utf8 -m unittest discover -s tests -p test_project_archive.py -v
+python -B -X utf8 -m unittest discover -s tests -p test_archive_git.py -v
 ```
 
-测试只使用自己的小型临时根。真实 Windows fixture 覆盖文件与目录 ADS、硬链接、junction、可读 ACL 记录及 ZIP64 流式分支；ZIP64 阈值替身不等于 5.68 GB 模型实测。恢复 fixture 覆盖文件与目录命名流（含名称排在默认流之前的流）、硬链接、内部与外部 junction、符号链接（无权限时跳过）、只读/隐藏属性和修改时间、已有/重叠/短名别名目标的拒绝、中断留存和复核篡改。实际大树容量、吞吐、长路径和全源权限仍在 B5 前按真实对象执行。本批没有捕获项目、模型、venv、数据库或生产 Git。
+测试只使用自己的小型临时根。真实 Windows fixture 覆盖文件与目录 ADS、硬链接、junction、可读 ACL 记录及 ZIP64 流式分支；ZIP64 阈值替身不等于 5.68 GB 模型实测。恢复 fixture 覆盖文件与目录命名流（含名称排在默认流之前的流）、硬链接、内部与外部 junction、符号链接（无权限时跳过）、只读/隐藏属性和修改时间、已有/重叠/短名别名目标的拒绝、中断留存和复核篡改。Git 重建 fixture 用三套临时库覆盖：packed 与 loose 附注 tag、轻量 tag、分支上的与分离的 linked worktree、reflog 才能到达的提交、脏文件与未跟踪文件、零历史库、嵌套 `.git`、缺失对象、alternates、目标重叠和 CLI 退出码。实际大树容量、吞吐、长路径和全源权限仍在 B5 前按真实对象执行。本批没有捕获项目、模型、venv、数据库或生产 Git。

@@ -194,7 +194,7 @@ class RequirementsAgent:
                     require(not request['target'] or not model['targets'], 'MODEL_SELECTED_TARGET_REPEATED')
                     require(not request['condition'] or not model['conditions'], 'MODEL_SELECTED_CONDITION_REPEATED')
                     stage = 'target_semantics'
-                    validate_target_semantics(model)
+                    validate_target_semantics(model, request['raw_text'])
                     stage = 'source_grounding'
                     checked = copy.deepcopy(parsed)
                     info = merge_interpretation(checked, model, [c['id'] for c in candidates],

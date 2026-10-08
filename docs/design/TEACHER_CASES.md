@@ -44,7 +44,7 @@
 | 中间结果 | 每算完一步，对话区追加一张“工具计算”卡片，写明工具名、参数和结果。流程图不变，只亮当前节点 |
 | 报告 | 结果页加“报告”视图，按上面的字段排版，可打印或存成 PDF |
 | 日志 | 页面分“模型调用”和“工具计算”两块，只显示概要；完整的 prompt 与 response 存日志文件。一次只加载一个模型，统一记录模型名 |
-| Agent 名称 | 流程图上加英文名：总控 = Coordinator，需求 = Requirement，计划与计算 = LinkBudget，审查与解释 = Report |
+| Agent 名称 | 流程图上加英文名：总控 = Coordinator，需求 = Requirement，计划与计算 = LinkBudget，审查与解释 = Report。10-08 用户决定改回原名，见实施清单第 1 项 |
 | 不改 | 技术栈（LangGraph、自建服务、llama.cpp，本机离线）；状态名（未启用、运行中、成功、失败，与老师的四种一一对应）；页面不展开 prompt 全文 |
 
 ## 阶段
@@ -67,6 +67,7 @@
 依赖 T2 的项标“T2”；T1、T2 已合入（2026-10-01）。完成一项勾一项，并写上提交号。
 
 - [x] 1. 流程图：标题改为 Coordinator / Requirement / LinkBudget / Report Agent，第二行写中文职责。（提交见下一条）
+  - 10-08 用户决定改回原名：总控 / 需求与规划 / 专业计算 / 验证与解释 Agent，英文页为 Orchestrator / Requirements / Calculation / Validation Agent；执行记录和模型调用日志同步。
 - [x] 2. 模型调用日志：每次调用追加一行 JSONL，记录 Agent、模型、prompt、response、时间、耗时、任务与版本；`GET /api/tasks/<id>/model-calls` 读回。（`fa0eae9`）
 - [x] 3. 每步工具计算发出事件（工具名、输入、输出）；按调制计算时记录 `calc_link_margin` 的调用（T2）。（`fa0eae9`、`1880a77`）
 - [x] 4. 对话区“执行记录”：按事件逐条追加“模型调用”和“工具计算”卡片。（Codex T3 `984afc8`，合入 `ed345a1`）

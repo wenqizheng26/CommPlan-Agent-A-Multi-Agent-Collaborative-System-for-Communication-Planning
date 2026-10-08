@@ -41,6 +41,26 @@ class NaturalQuestionRegression(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_target_semantics(dict(targets=[dict(id='link_margin',evidence='解释什么是余量')]))
 
+    def test_link_margin_goal_from_compliance_wording_or_stated_requirement(self):
+        from planning.services.requirement_policy import validate_target_semantics
+        # main_07 / conflict_2 on the live 9B: the model quoted these clauses and was refused.
+        validate_target_semantics(dict(targets=[dict(id='link_margin',evidence='我需要 A站 到 B站这条 2 GHz 链路的达标判断')]))
+        text='电台 XX-100，频率 2 GHz，发射功率按 40 dBm，评估 A岸站 到 B岛站，余量要求 10 dB。'
+        validate_target_semantics(dict(targets=[dict(id='link_margin',evidence='评估 A岸站 到 B岛站')]),text)
+        with self.assertRaises(ValueError):
+            validate_target_semantics(dict(targets=[dict(id='link_margin',evidence='评估 A岸站 到 B岛站')]))
+        with self.assertRaises(ValueError):  # Evidence asking for another quantity is never re-read as margin.
+            validate_target_semantics(dict(targets=[dict(id='link_margin',evidence='求路径损耗')]),'求路径损耗，余量要求 10 dB')
+        with self.assertRaises(ValueError):
+            validate_target_semantics(dict(targets=[dict(id='link_margin',evidence='评估 A岸站 到 B岛站')]),'评估 A岸站 到 B岛站，求路径损耗')
+        # The source-grounding step accepts the same clauses as calculation intent; the semantics check above
+        # still decides which target they ground.
+        from formula_rag.interpretation import merge_interpretation
+        for evidence in ('评估 A岸站 到 B岛站','我需要 A站 到 B站这条 2 GHz 链路的达标判断'):
+            request=dict(text=text+'我需要 A站 到 B站这条 2 GHz 链路的达标判断',conditions=[],targets=[])
+            info=merge_interpretation(request,dict(targets=[dict(id='link_margin',evidence=evidence)]),{'link_margin'})
+            self.assertEqual((request['targets'],info['rejected']),(['link_margin'],[]))
+
     def test_device_model_digits_are_not_frequency_choices(self):
         from planning.services.input_domains import extract_domains
         from planning.services.requirement_quantities import find_quantities
