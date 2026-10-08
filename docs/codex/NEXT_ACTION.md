@@ -1,34 +1,33 @@
 # 当前工程交接
 
-更新：2026-10-06。B1、原 B3a、ROADMAP、B2a 与 F1 已合入 main `bd85d06412c8a52fc8f60b4edbac0d30360a6f8e`，准确提交 [CI run37208706807](https://github.com/wenqizheng26/CommPlan-Agent-A-Multi-Agent-Collaborative-System-for-Communication-Planning/actions/runs/37208706807) 为 SUCCESS。10-02 审计基线 `54a7b4a` 保留为历史；实际工作区、后续提交及验证以查询为准。
+更新：2026-10-08。main 为 `cb6fb63f2f13943d8728064fe1eb031cbdf9d03f`。实际工作区、分支和未提交内容以查询为准。
 
 ## 当前范围与入口
 
 - 产品入口与支持范围：[README](../../README.md)。文档导航：[docs/README](../README.md)。
-- M1 当前验收以 [三条案例](../design/TEACHER_CASES.md) 为先；[原三档](../design/ACCEPTANCE_M1.md) 保留兼容回归和技术约束，不替代最新案例。
-- 自动测试、真实模型、浏览器、离线安装、发布及打包分别记录在 [验收状态矩阵](M1_ACCEPTANCE_STATUS.md)。历史结果不自动代表当前提交通过。
-- 正式稳定标签仍是 `v0.1.0`（FSPL 范围）；开发源码已扩展预算、补充计算、资料与报告。当前没有 M1 冻结标签。
+- M1 当前验收以 [三条案例](../design/TEACHER_CASES.md) 为先；[原三档](../design/ACCEPTANCE_M1.md) 保留兼容回归和技术约束。
+- 各类验收的当前结果见 [验收状态矩阵](M1_ACCEPTANCE_STATUS.md)，本轮完整记录见 [2026-10-08 真实回归与干净环境矩阵](evidence/2026-10-08-final-cleanroom.md)。
+- 正式稳定标签仍是 `v0.1.0`（FSPL 范围），当前没有 M1 冻结标签。
 
-## 当前协作与下一步
+## 已完成
 
-项目级双方独立审查与分批方案 S2-v1 已通过。仓库外的 `协作记录/总账.md` 是本次协调与交接记录，完整方案和原始分歧保留在那里；不能把 Codex 内部代理当作 Claude 审核。
+- **B2c 真实模型回归**：teacher20 多遍 20/20；eval_m1 28/28；hard rules 通过；week4 5/5、16/16；completion 9/9。heldout21 19/21，两条失败是留出参考项。
+- **B3 独立安装**：在干净环境里构建、校验、解包正式包，安装资源，起自有实例；正式包 teacher20 20/20、HTTP、Chrome 打印报告、重启恢复都已通过。
+- **B3c 历史工具**：原件受控恢复（PR17）和 Git 历史重建（PR19）已合入。
+- **回归中修好的问题**：Git 重建的短路径配对、week4 runner 缺文件、目标证据的两层校验、双语金标指纹、GPU 编号漂移（PR19–24）。
+- **Agent 名称**：用户 10-08 决定中英文都改回原名（PR25）。
 
-Codex 隔离目录当前为 `codex/m1-install-precheck（安装预检修补284909a，实际HEAD查询为准）`。[PR14](https://github.com/wenqizheng26/CommPlan-Agent-A-Multi-Agent-Collaborative-System-for-Communication-Planning/pull/14) 包含 B3b 首批 `d359d39`、B3c-1 `5956001`、B2b `0683588` 和归档路径修补 `cc039b3`；Claude 已通过 B3b/B2b，准确 head 的 push37448511208 / PR37448518739 四项 CI 已 SUCCESS，待路径修补的独立审核后集成。此次文档状态修正是独立批次，不并入 PR14。
+## 下一步
 
-| 批次 | 所有权与状态 |
+| 项 | 负责与条件 |
 |---|---|
-| B1 文档入口与状态 | 已经实际双审、PR9 与准确提交 CI 合入 main；`codex/m1-convergence-docs` 为该批历史分支 |
-| ROADMAP 长期路线 | 已经实际双审、PR11 与准确提交 CI 合入 main；设计路线不代表长期能力已实现 |
-| B2a 业务与站点标签、报告 | 已经实际双审、PR13 与准确提交 CI 合入 main；日常开发目录仍为 `CommPlan-Agent-M1`，实际 checkout 另查 |
-| B2b 评测门禁 | 隔离提交 `0683588` 已实现，Claude R45 独立通过；随 PR14 待归档修补的独立审核，尚未合入 main |
-| B2c 当前全量真实回归 | B2a 已合，待 B2b runner 合入后执行；老师20、M1 36、硬规则、第4周；预先锁留出、原题重复，模型与回退分列 |
-| 原 B3a 与 F1 源码包工具 | PR10/PR12 已经实际双审与准确 CI 合入 main；白名单漏项、正式 Git blob 来源及换行可重现已修，验证范围仍为源码预检 |
-| B3b / B3c-1 工具首批 | 安全资源工具已由 Claude R45 独立通过；FILE_PAYLOAD 已补短路径根与输出比较，PR14 完整 CI 已通过，待修补独立审核；实际资源已取得，独立安装预检进行中，历史恢复未完成 |
-| B3 后续、B4–B5 | 按已审依赖推进独立安装、成果材料及完整历史恢复；尚未宣布最终包可运行或旧目录可删 |
+| 交付代码补齐 W1–W3（范围校验、调制检索出处、run_id 日志联查） | Codex 在 `CommPlan-Agent-M1-codex` 的 `codex/delivery-gaps-1008` 实施，开 PR 后由 Claude 审 diff |
+| B5 真实历史捕获、恢复与 Git 重建 | 10-10～19 窗口；先在总账公布窗口、停写，再执行 |
+| B4 交付材料 | 当前结果已放在父目录 `项目材料/M1-当前结果-cb6fb63/`；三类读者说明随冻结版本更新 |
+| 真离线验收 | 用户关闭 Wi-Fi 后，在冻结候选上跑完整矩阵与三条案例 |
+| 冻结与最终包 | 10-20 冻结候选；10-21～23 最终包与完整隔离安装验收 |
 
-B2a 业务仅是原文需求标签，不参与计算，不承诺视频吞吐。B2b 隔离实现已加入失败非零退出、空/未知/重复选择拒绝、已有期望断言及实际角色/计划来源/模型身份/source SHA 记录；在 PR14 合入前不能当作 main 已有门禁。数值计算仍应为 `deterministic`。
-
-真实模型回归显式执行 `python -B -X utf8 scripts/eval_teacher.py --mode llm`；可用 `--cases <题集路径>` 跑留出集。runner 默认 `deterministic`，该模式不调用语言模型。
+真实模型回归显式执行 `python -B -X utf8 scripts/eval_teacher.py --mode llm`；可用 `--cases <题集路径>` 跑留出集。runner 默认 `deterministic`，该模式不调用语言模型。干净环境的自有实例用 `scripts/owned_instance.py`，用法见 [独立安装](../delivery/INDEPENDENT_INSTALL.md)。
 
 ## 日程与安全边界
 
