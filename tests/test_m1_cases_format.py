@@ -53,6 +53,13 @@ class NaturalQuestionRegression(unittest.TestCase):
             validate_target_semantics(dict(targets=[dict(id='link_margin',evidence='求路径损耗')]),'求路径损耗，余量要求 10 dB')
         with self.assertRaises(ValueError):
             validate_target_semantics(dict(targets=[dict(id='link_margin',evidence='评估 A岸站 到 B岛站')]),'评估 A岸站 到 B岛站，求路径损耗')
+        # The source-grounding step accepts the same clauses as calculation intent; the semantics check above
+        # still decides which target they ground.
+        from formula_rag.interpretation import merge_interpretation
+        for evidence in ('评估 A岸站 到 B岛站','我需要 A站 到 B站这条 2 GHz 链路的达标判断'):
+            request=dict(text=text+'我需要 A站 到 B站这条 2 GHz 链路的达标判断',conditions=[],targets=[])
+            info=merge_interpretation(request,dict(targets=[dict(id='link_margin',evidence=evidence)]),{'link_margin'})
+            self.assertEqual((request['targets'],info['rejected']),(['link_margin'],[]))
 
     def test_device_model_digits_are_not_frequency_choices(self):
         from planning.services.input_domains import extract_domains
