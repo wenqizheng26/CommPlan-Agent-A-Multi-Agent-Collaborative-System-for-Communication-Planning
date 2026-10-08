@@ -60,15 +60,47 @@ EN_FIELDS = {
 for key,aliases in EN_FIELDS.items():
     FIELDS[key][2].extend(aliases + [key])
 NUMBER = r'[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?'
+# Only ordinary integers through thousands. Do not interpret digit strings, decimal words,
+# large-number words, or colloquial omitted places ("一百二") as an exact quantity.
+_CN_DIGIT = r'[一二两三四五六七八九]'
+_CN_TENS = rf'(?:{_CN_DIGIT}?十[一二三四五六七八九]?)'
+_CN_HUNDREDS = rf'{_CN_DIGIT}百(?:零[一二三四五六七八九]|[一二三四五六七八九]十[一二三四五六七八九]?)?'
+_CN_THOUSANDS = rf'{_CN_DIGIT}千(?:零(?:{_CN_TENS}|[一二三四五六七八九])|{_CN_HUNDREDS})?'
+CHINESE_INTEGER = rf'[-+负]?(?:{_CN_THOUSANDS}|{_CN_HUNDREDS}|{_CN_TENS}|[零〇一二两三四五六七八九])'
+QUANTITY_NUMBER = rf'(?:{NUMBER}|(?<![A-Za-z0-9_.零〇一二两三四五六七八九十百千万亿点第]){CHINESE_INTEGER})'
 # The dimensionless unit "1" (ν, k) must stand apart and end its clause, so a year (2021),
 # a numbered site (11 号) or a count (XX-100 1 台) is never read as a value with unit 1.
 # A bare G after a decimal (5.8G, 2.4G) is GHz; an integer G (4G, 5G) names a network generation.
-UNITS = r'(?:(?<=\s)1(?=\s*(?:$|[，,。；;！!？?、)）\n]))|dBm/Hz|Mbit/s|kbit/s|bit/s|Mb/s|kb/s|Mbps|kbps|bps|km/h|m/s|千米每小时|公里每小时|米每秒|GHz|MHz|kHz|Hz|(?<=\.\d)G|(?<=\.\d\d)G|吉赫兹|兆赫兹|千赫兹|赫兹|dBm|dBi|dBd|dB|mW|W|毫瓦|瓦|km|千米|公里|m|米|℃|°C|摄氏度|K|开尔文)'
-QUANTITY = re.compile(rf'(?<![\w.])(?P<value>{NUMBER})\s*(?P<unit>{UNITS})(?![A-Za-z/\d])', re.I)
+UNITS = r'(?:(?<=\s)1(?=\s*(?:$|[，,。；;！!？?、)）\n]))|dBm/Hz|Mbit/s|kbit/s|bit/s|Mb/s|kb/s|Mbps|kbps|bps|km/h|m/s|千米每小时|公里每小时|米每秒|GHz|MHz|kHz|Hz|(?<=\.\d)G|(?<=\.\d\d)G|吉赫兹|兆赫兹|千赫兹|赫兹|兆赫|dBm|dBi|dBd|dB|mW|W|毫瓦|瓦|km|千米|公里|m|米|℃|°C|摄氏度|K|开尔文)'
+# Bare G needs a decimal value; quantity_value enforces that after optional spoken "个".
+QUANTITY_UNITS = rf'(?:{UNITS}|G)'
+QUANTITY_PATTERN = rf'(?P<value>{QUANTITY_NUMBER})\s*(?:个\s*)?(?P<unit>{QUANTITY_UNITS})(?![A-Za-z/\d])'
+QUANTITY = re.compile(QUANTITY_PATTERN, re.I)
 ALIAS_UNIT = {'g': 'ghz', '吉赫兹': 'ghz', '兆赫兹': 'mhz', '千赫兹': 'khz', '赫兹': 'hz',
               '公里': 'km', '千米': 'km', '米': 'm', '千米每小时': 'km/h',
               '公里每小时': 'km/h', '米每秒': 'm/s', '毫瓦': 'mw', '瓦': 'w',
-              '摄氏度': 'c', '℃': 'c', '°c': 'c', '开尔文': 'k'}
+              '摄氏度': 'c', '℃': 'c', '°c': 'c', '开尔文': 'k', '兆赫': 'mhz'}
+
+
+def quantity_value(token, unit=None):
+    """A scalar written with a unit, preserving the spelling for its source span."""
+    if unit and unit.lower() == 'g' and '.' not in token:
+        raise ValueError('整数G表示网络代际，请使用明确的GHz单位')
+    if re.fullmatch(NUMBER, token):
+        return float(token)
+    if not re.fullmatch(CHINESE_INTEGER, token):
+        raise ValueError('不支持此中文数字表达')
+    negative = token[0] in '-负'
+    token = token.lstrip('-+负')
+    digits = dict(zip('零〇一二两三四五六七八九', [0, 0, 1, 2, 2, 3, 4, 5, 6, 7, 8, 9]))
+    total, current = 0, 0
+    for character in token:
+        if character in digits:
+            current = digits[character]
+        else:
+            total += (current or 1) * {'十': 10, '百': 100, '千': 1000}[character]
+            current = 0
+    return float((-1 if negative else 1) * (total + current))
 
 
 def convert(field, value, unit):
@@ -140,14 +172,14 @@ def extract_request(text, overrides=None, condition=None, target=None, field_spe
         fragment = fragment.casefold()
         positions = [(fragment.rfind(alias.casefold()), key) for key, (_, _, aliases) in FIELDS.items() for alias in aliases if alias.casefold() in fragment]
         return max(positions)[1] if positions else None
-    complicated = re.compile(rf'{NUMBER}\s*(?:~|～|至|到|—|–|-|/|±)\s*{NUMBER}\s*{UNITS}|(?:{NUMBER}\s*[×*x]\s*)?10\s*\^\s*{NUMBER}\s*{UNITS}|\d+(?:,\d{{3}})+\s*{UNITS}|(?:>=|<=|>|<|大于|小于|至少|至多|不少于|不超过)\s*{NUMBER}\s*{UNITS}', re.I)
+    complicated = re.compile(rf'(?<![A-Za-z0-9_.+-]){QUANTITY_NUMBER}\s*(?:~|～|至|到|—|–|-|/|±|或者|或|、)\s*{QUANTITY_NUMBER}\s*{QUANTITY_UNITS}|(?:{NUMBER}\s*[×*x]\s*)?10\s*\^\s*{NUMBER}\s*{UNITS}|\d+(?:,\d{{3}})+\s*{UNITS}|(?:>=|<=|>|<|大于|小于|至少|至多|不少于|不超过)\s*{QUANTITY_NUMBER}\s*{QUANTITY_UNITS}', re.I)
     for match in complicated.finditer(text):
         blocked.append(match.span())
         prefix = text[max(0, match.start()-12):match.start()]
         field = nearest_field(prefix)
         issues.append({'field': field, 'message': '范围或复合数字不能自动选值，请输入单个数值与单位；科学计数可写2e2', 'evidence': match.group()})
     for clause in re.finditer(r'[^，,。；;\n？?！!]+', text):
-        if re.search(r'不是|不为|不用|不要用|不能用|未知|不确定|不知道|是否(?!满足|达标|达成|够用|可行|能通)|例如|假如|如果|\b(?:not|unknown|uncertain|maybe|perhaps|if|example)\b|do(?:es)?n.t|do not', clause.group(), re.I) and re.search(rf'{NUMBER}\s*{UNITS}', clause.group(), re.I):
+        if re.search(r'不是|不为|不用|不要用|不能用|未知|不确定|不知道|是否(?!满足|达标|达成|够用|可行|能通)|例如|假如|如果|\b(?:not|unknown|uncertain|maybe|perhaps|if|example)\b|do(?:es)?n.t|do not', clause.group(), re.I) and QUANTITY.search(clause.group()):
             blocked.append(clause.span())
             field = next((k for k, (_, _, aliases) in FIELDS.items() if any(a in clause.group() for a in aliases)), None)
             issues.append({'field': field, 'message': '数值处于否定、未知或举例语境，请明确采用值', 'evidence': clause.group()})
@@ -157,11 +189,13 @@ def extract_request(text, overrides=None, condition=None, target=None, field_spe
     # a bandwidth from being interpreted as a carrier, or gain as feed loss.
     for field, (_, _, aliases) in FIELDS.items():
         prefix = '|'.join(re.escape(a) for a in sorted(aliases, key=len, reverse=True))
-        pattern = re.compile(rf'(?:{prefix})\s*(?:为|是|约为|约|等于|is|of|at|to|changed to|[:：=])?\s*(?P<value>{NUMBER})\s*(?P<unit>{UNITS})(?![A-Za-z/\d])', re.I)
+        pattern = re.compile(rf'(?:{prefix})\s*(?:为|是|约为|约|等于|is|of|at|to|changed to|[:：=])?\s*{QUANTITY_PATTERN}', re.I)
         for match in pattern.finditer(numeric_text):
             consumed.append(match.span())
             try:
-                value = convert(field, float(match['value']), match['unit'])
+                if match['unit'].lower() == 'g' and '.' not in match['value']:
+                    continue
+                value = convert(field, quantity_value(match['value'], match['unit']), match['unit'])
                 if not math.isfinite(value):
                     raise ValueError('数值不是有限数')
                 values.setdefault(field, []).append((value, source_span(match)))
@@ -169,7 +203,7 @@ def extract_request(text, overrides=None, condition=None, target=None, field_spe
                 issues.append({'field': field, 'message': str(exc), 'evidence': match.group()})
     # Unlabelled frequency/distance/speed/temperature can be bound by unique units.
     # Do not guess which dB loss/gain a standalone number belongs to.
-    loose = re.compile(rf'(?P<value>{NUMBER})\s*(?P<unit>{UNITS})(?![A-Za-z/\d])', re.I)
+    loose = QUANTITY
     for match in loose.finditer(numeric_text):
         if any(a <= match.start() < b for a, b in consumed):
             continue
@@ -186,11 +220,13 @@ def extract_request(text, overrides=None, condition=None, target=None, field_spe
         labelled = nearest_field(prefix_text)
         if labelled:
             field = labelled
-        elif prefix_text and not re.fullmatch(r'(?:和|与|及|约|大约|为|是|想用|打算用|采用|使用|用|[-:：=\s])*', prefix_text):
+        elif prefix_text and not re.fullmatch(r'(?:和|与|及|约|大约|大概|差不多|近似|为|是|想用|打算用|采用|使用|用|[-:：=\s])*', prefix_text):
             field = None
         if field:
             try:
-                value = convert(field, float(match['value']), match['unit'])
+                if match['unit'].lower() == 'g' and '.' not in match['value']:
+                    continue
+                value = convert(field, quantity_value(match['value'], match['unit']), match['unit'])
                 if not math.isfinite(value):
                     raise ValueError('数值不是有限数')
                 values.setdefault(field, []).append((value, match.group()))

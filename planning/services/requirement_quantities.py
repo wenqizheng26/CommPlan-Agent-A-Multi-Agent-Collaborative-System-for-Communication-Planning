@@ -5,7 +5,7 @@ from the text itself, so a label can never introduce a number.
 """
 import re
 import unicodedata
-from formula_rag.parsing import FIELDS, NUMBER, UNITS, convert
+from formula_rag.parsing import FIELDS, NUMBER, UNITS, QUANTITY_NUMBER, QUANTITY_PATTERN, quantity_value, convert
 from planning.services.input_domains import extract_domains
 
 REQUIREMENT = 'required_margin_db'
@@ -18,10 +18,10 @@ LABEL_FIELDS = ['frequency_ghz', 'distance_km', 'tx_power_dbm', 'tx_gain_dbi', '
 SOLVE_UNKNOWNS = ['tx_power_dbm']
 
 # "10个dB" is spoken Chinese for 10 dB; the value and unit are still read from the text.
-QUANTITY = re.compile(rf'(?P<value>{NUMBER})\s*(?:个\s*)?(?P<unit>{UNITS})(?![A-Za-z/\d])', re.I)
+QUANTITY = re.compile(QUANTITY_PATTERN, re.I)
 # Contexts in which extract_request refuses to read a value; the model gets no say there either.
 UNCERTAIN = re.compile(r'(?i)\b(?:not|unknown|uncertain|maybe|perhaps|if|example)\b|do(?:es)?n.t|不是|不为|不用|不要用|不能用|未知|不确定|不知道|是否(?!满足|达标|达成|够用|可行|能通)|例如|假如|如果')
-RANGE = re.compile(rf'(?<![A-Za-z0-9_.+-]){NUMBER}\s*(?:{UNITS})?\s*(?:~|～|至|到|—|–|/|±|或者|或|、)\s*{NUMBER}\s*{UNITS}'
+RANGE = re.compile(rf'(?<![A-Za-z0-9_.+-]){QUANTITY_NUMBER}\s*(?:{UNITS})?\s*(?:~|～|至|到|—|–|/|±|或者|或|、)\s*{QUANTITY_NUMBER}\s*{UNITS}'
                    rf'|(?:{NUMBER}\s*[×*x]\s*)?10\s*\^\s*{NUMBER}\s*{UNITS}|\d+(?:,\d{{3}})+\s*{UNITS}', re.I)
 AT_LEAST = re.compile(r'(?:>=|≥|至少|不少于|不低于|不小于|最少|起码|at least|no less than)\s*$', re.I)
 AT_MOST = re.compile(r'(?:<=|≤|至多|不超过|不高于|不大于|最多|at most|no more than)\s*$', re.I)
@@ -49,12 +49,16 @@ def find_quantities(text):
     blocked += [[c.start(), c.end()] for c in clauses if UNCERTAIN.search(c.group())]
     found = []
     for m in QUANTITY.finditer(norm):
+        try:
+            value = quantity_value(m['value'], m['unit'])
+        except ValueError:
+            continue
         a, b = span(m)
         if any(x < b and a < y for x, y in blocked):
             continue
         prefix = norm[max(0, m.start() - 20):m.start()]
         clause = next((c.group().strip() for c in clauses if c.start() <= a < c.end()), text[a:b])
-        found.append(dict(id=f'q{len(found) + 1}', span=[a, b], text=text[a:b], value=float(m['value']),
+        found.append(dict(id=f'q{len(found) + 1}', span=[a, b], text=text[a:b], value=value,
                           unit=m['unit'], comparison='>=' if AT_LEAST.search(prefix) else '<=' if AT_MOST.search(prefix) else None,
                           context=clause[:60]))
     return found
@@ -62,7 +66,7 @@ def find_quantities(text):
 
 def count_quantities(text):
     """All numbers with units, including the ones find_quantities keeps away from the model."""
-    return len(QUANTITY.findall(normalized(text)[0]))
+    return sum(m['unit'].lower() != 'g' or '.' in m['value'] for m in QUANTITY.finditer(normalized(text)[0]))
 
 
 def ground_labels(text, quantities, model):

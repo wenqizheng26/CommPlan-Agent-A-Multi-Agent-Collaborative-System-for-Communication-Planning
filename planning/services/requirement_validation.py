@@ -187,7 +187,8 @@ def check_report(report, request, cards, root=None):
     require(not missing_conditions(order, conditions), 'CONDITION_MISMATCH')
     require(not any(d['code'] in {'INPUT_PARSE_ISSUE','SOURCE_AMBIGUOUS','PARAMETER_APPROXIMATE','LABEL_CONFLICT'} for d in issues), 'INPUT_NOT_RESOLVED')
     values = {p['canonical_name']:p['value'] for p in parameters if p['value'] is not None}
-    require(not facts['issues'] and not band_issues(facts['devices'], values), 'ENTITY_NOT_RESOLVED')
+    require(not [d for d in facts['issues'] if d['code'] != 'MODULATION_EXCLUDED']
+            and not band_issues(facts['devices'], values), 'ENTITY_NOT_RESOLVED')
     leaves = r['calculation_plan_proposal']['required_parameters']
     require(all(k in values for k in leaves) and not bound_issues(order, cards, values), 'INPUT_DOMAIN_INVALID')
     if 'fspl_ghz' in order:

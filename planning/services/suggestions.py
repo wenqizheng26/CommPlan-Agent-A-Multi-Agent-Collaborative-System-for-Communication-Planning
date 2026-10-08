@@ -42,6 +42,16 @@ def suggestions_for(request, report, root, selector=False, observer=None):
     if not report or report['execution_status'] != 'AWAITING_INPUT' or not plan or plan.get('tool') != 'calc_link_margin':
         return None
     rows = {r['field']: r for r in FactService(root).typical_values()}
+    excluded = {name for d in report['diagnostics'] if d['code'] == 'MODULATION_EXCLUDED'
+                for name in d['details']['modulations']}
+    if 'modulation' in rows and excluded:
+        row = rows['modulation']
+        row['candidates'] = [c for c in row['candidates'] if c not in excluded]
+        if not row['candidates']:
+            del rows['modulation']
+        elif row['default'] not in row['candidates']:
+            row['default'] = row['candidates'][0]
+            row['default_reason'] = '未排除的典型候选，需确认'
     fields = [f for f in open_fields(report) if f in rows]
     if not fields:
         return None
@@ -55,7 +65,8 @@ def suggestions_for(request, report, root, selector=False, observer=None):
         reason=dict(type='string', minLength=2, maxLength=REASON_LIMIT)))
     schema = dict(type='object', additionalProperties=False, required=['items'], properties=dict(
         items=dict(type='array', minItems=len(fields), maxItems=len(fields), items=item)))
-    fallback = dict(items=[dict(field=f, value=shown(rows[f]['default']), reason=FALLBACK_REASON) for f in fields])
+    fallback = dict(items=[dict(field=f, value=shown(rows[f]['default']), reason=rows[f].get('default_reason', FALLBACK_REASON))
+                          for f in fields])
 
     def validate(output):
         from planning.services.number_check import known, unquoted
