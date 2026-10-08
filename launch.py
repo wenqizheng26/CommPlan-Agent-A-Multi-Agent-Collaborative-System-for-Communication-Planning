@@ -1,11 +1,40 @@
 """Build an offline llama.cpp command from the default chat registry entry."""
 from pathlib import Path
+import re
+import subprocess
 from urllib.parse import urlparse
 
 from planning.providers.registry import Registry
 
 
 RUNTIME = Path('runtime/llama.cpp-b10950/llama-server.exe')
+# llama.cpp numbers Vulkan devices in enumeration order, which can change across reboots: on the
+# development laptop Vulkan1 was the RTX 4060 until a reboot made it the Radeon 610M iGPU.
+DISCRETE = re.compile(r'NVIDIA|GeForce|Quadro|Radeon RX|Radeon Pro|Arc A', re.I)
+
+
+def vulkan_devices(executable):
+    """[(VulkanN, name)] as this llama-server numbers them now; empty when it cannot be listed."""
+    try:
+        result = subprocess.run([str(executable), '--list-devices'], capture_output=True, text=True,
+                                encoding='utf-8', errors='replace', timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return []
+    return re.findall(r'^\s*(Vulkan\d+):\s*(.+?)\s*\(\d+ MiB', result.stdout + result.stderr, re.M)
+
+
+def resolve_device(executable, wanted):
+    """'auto': a discrete GPU by name, else the first Vulkan device, else none (CPU). A name fragment
+    such as 'NVIDIA' must match a device. An explicit VulkanN or none is used as written."""
+    if re.fullmatch(r'Vulkan\d+|none', wanted):
+        return wanted
+    devices = vulkan_devices(executable)
+    if wanted == 'auto':
+        return next((d for d, name in devices if DISCRETE.search(name)), devices[0][0] if devices else 'none')
+    match = next((d for d, name in devices if wanted.lower() in name.lower()), None)
+    if match is None:
+        raise RuntimeError(f'没有名称含 {wanted} 的 GPU：' + ('；'.join(f'{d} {n}' for d, n in devices) or '未列出设备'))
+    return match
 
 
 def model_paths(asset_root, model):
@@ -42,8 +71,8 @@ def model_command(asset_root, cpu=False, *, registry_root=None, model_id=None):
                '-ngl', '0' if cpu else str(runtime.get('gpu_layers', 99)),
                '--offline', '--reasoning', 'off', '--no-webui', '-t', '6',
                '--cors-origins', 'http://127.0.0.1:18080', '--no-cors-credentials']
-    if not cpu and runtime.get('device', 'Vulkan1'):
-        command.extend(['--device', runtime.get('device', 'Vulkan1')])
+    if not cpu:
+        command.extend(['--device', resolve_device(executable, runtime.get('device', 'auto'))])
     return command
 
 

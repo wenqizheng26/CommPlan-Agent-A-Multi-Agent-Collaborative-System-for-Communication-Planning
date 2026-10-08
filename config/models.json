@@ -21,7 +21,7 @@
         "timeout_s": 60
       },
       "runtime_options": {
-        "device": "Vulkan1",
+        "device": "auto",
         "gpu_layers": 99
       },
       "weights": "models/signal-formula-qwen3/models/Qwen3.5-9B-GGUF/Qwen3.5-9B-Q4_K_M.gguf",

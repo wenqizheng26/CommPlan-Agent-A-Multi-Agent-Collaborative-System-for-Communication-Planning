@@ -50,7 +50,7 @@
       "defaults": {"temperature": 0, "max_tokens": 700, "timeout_s": 30},
       "launch": {"executable": "runtime/llama.cpp-b10950/llama-server.exe",
                  "weights": "models/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf",
-                 "gpu_layers": 99, "device": "Vulkan1"},
+                 "gpu_layers": 99, "device": "auto"},
       "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b"
     },
     {
