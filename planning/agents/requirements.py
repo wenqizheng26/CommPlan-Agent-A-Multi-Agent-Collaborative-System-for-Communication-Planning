@@ -17,6 +17,7 @@ from planning.services.requirement_facts import sources_for, band_issues, fact_q
 from planning.services.requirement_quantities import (find_quantities, ground_labels, summary, LABEL_FIELDS,
     SOLVE_UNKNOWNS)
 from planning.services.requirement_evidence import snapshot_for, evidence_for
+from planning.knowledge.parameter_ranges import range_issues
 from planning.services.requirement_policy import (validate_target_semantics, intent_conflict, outside_scope, LINK_REQUEST,
     service_label)
 from planning.services.plans import TARGETS, chain, final_target, plan_for, requires_free_space, bound_issues
@@ -302,7 +303,10 @@ class RequirementsAgent:
                                           modulations=facts['modulations']))
         required = leaves if final else (REQUIRED if unsupported else [])
         parameters, conflicts, param_diagnostics = collect_parameters(request, original, required, numeric, facts['sources'])
+        engineering_issues = range_issues(parameters, self.root)
         diagnostics.extend(param_diagnostics + facts['issues'])
+        diagnostics.extend(engineering_issues)
+        questions.extend(d['message'] for d in engineering_issues)
         if any(d['code'] == 'LABEL_CONFLICT' for d in param_diagnostics):
             questions.append('原文中有数值的含义，规则与模型判断不一致，请写明它是哪个参数。')
         questions.extend(fact_questions(facts['issues']))
@@ -374,7 +378,7 @@ class RequirementsAgent:
             diagnostics.append(diagnostic('EVIDENCE_UNAVAILABLE', '没有可用的已登记模型证据。', next_action='检查知识目录与目标。'))
         plan = (plan_for(request, order, self.cards, parameters, evidence_ids, plan_requirement, solve_if_unmet, facts['notes'],
                          facts['tool'], facts['variants'])
-                if available and not unsupported else None)
+                if available and not unsupported and not engineering_issues else None)
         status = ('FAILED' if failed else 'NEEDS_MODEL' if unsupported or (final and not available) else
                   'AWAITING_INPUT' if questions or not plan else 'AWAITING_CONFIRMATION')
         diagnostics.append(diagnostic('SOURCE_REVIEW_LIMITATION', '来源状态来自库内登记，本次没有独立复核原始文献。'))

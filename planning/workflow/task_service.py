@@ -159,8 +159,13 @@ class TaskService:
         # Text the models write for the user follows the page language of this command.
         language_token=output_language.set(c.get('lang','zh'))
         try:
-            with self.model_calls.recording(c):
-                return self._apply_observed(c,running)
+            run=None
+            try:
+                run=self.activity.start(c)
+            except Exception:
+                pass
+            with self.model_calls.recording(c,run_id=run['run_id'] if run else None):
+                return self._apply_observed(c,running,run)
         finally:
             operation_deadline.reset(deadline_token)
             operation_cancel.reset(cancel_token)
@@ -168,13 +173,8 @@ class TaskService:
             with self._running_lock:
                 self._running.remove(running)
 
-    def _apply_observed(self, command, running):
+    def _apply_observed(self, command, running, run):
         c=validate_command(command)
-        run=None
-        try:
-            run=self.activity.start(c)
-        except Exception:
-            pass
         observer=lambda node, phase, details: self.activity.append(run,node,phase,details)
         try:
             result=self._apply(c,observer,running)

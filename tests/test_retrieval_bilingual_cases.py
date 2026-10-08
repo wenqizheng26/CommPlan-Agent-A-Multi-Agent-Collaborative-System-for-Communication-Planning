@@ -18,7 +18,7 @@ from planning.retrieval import DefaultRetrievalService
 class BilingualCaseTests(unittest.TestCase):
     def test_frozen_cases_have_complete_pairs_labels_and_allocation(self):
         meta,cases=load_cases()
-        self.assertEqual((len(cases),meta['index']['total_chunks'],meta['index']['filtered_chunks']),(48,314,305))
+        self.assertEqual((len(cases),meta['index']['total_chunks'],meta['index']['filtered_chunks']),(48,321,305))
         self.assertEqual(len({c['query'] for c in cases}),48)
         self.assertEqual(sum(c['colloquial'] for c in cases),8)
 

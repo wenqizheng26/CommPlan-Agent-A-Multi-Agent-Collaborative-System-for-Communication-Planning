@@ -1,5 +1,5 @@
 import {parameterNames,toolNames} from './details.mjs';
-import {originLabel,comparisonPresentation} from './m1.mjs';
+import {originLabel,comparisonPresentation,documentSource} from './m1.mjs';
 import {relevantEvents} from './flow.mjs';
 import {roleModeNames} from './roles.mjs';
 
@@ -100,6 +100,7 @@ export function reportModel(state,events=[],{facts={},cards={}}={}){
   comparison:comparisonFor(final.comparison),explanation:{answer:textOrNull(final.answer?.text),
    steps:(final.explanation||[]).map(step=>({id:step.id,text:textOrNull(step.note??step.text)})),
    opinions:(final.review?.opinions||[]).map(opinion=>({kind:opinion.kind,text:textOrNull(opinion.text)}))},
+  documents:(final.document_evidence||[]).map(reference=>({title:reference.title,source:{...reference.source}})),
   metadata:{...metadataFor(s,events,tools),fspl_mhz:usesMhzLoss(s)}};
 }
 
@@ -128,6 +129,15 @@ function rawNode(tag,text,className){
  const node=el(tag,text??NONE,className);
  if(text!=null)node.setAttribute('translate','no');
  return node;
+}
+function sourceNote(source){
+ const ref=documentSource(source);
+ if(!ref.source_url)return rawNode('p',ref.source_id||NONE,'hint');
+ try{
+  const url=new URL(ref.source_url);
+  if(!['http:','https:'].includes(url.protocol))return el('p','来源链接不可打开','hint');
+  const link=el('a','打开出处 ↗');link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';return link;
+ }catch{return el('p','来源链接格式无效','hint');}
 }
 function table(head,rows){
  const wrap=el('div',null,'report-table-wrap'),node=el('table',null,'report-table'),thead=el('thead'),tr=el('tr');
@@ -175,6 +185,14 @@ export function renderReportDocument(host,model){
  for(const [name,value,raw] of [['任务编号',data.task_id,true],['版本',data.revision,false],['完成时间',data.completed_at,true],
   ['模型名',data.models.join(' · ')||null,false],['模型调用次数',data.model_calls,false],['工具计算次数',data.tool_calls,false]]){
   list.append(el('dt',name),raw?rawNode('dd',value):el('dd',value??NONE));
+ }
+ for(const reference of model.documents||[]){
+  const source=reference.source||{},entry=el('dd');
+  for(const [index,value] of [reference.title,source.version,source.locator].filter(textOrNull).entries()){
+   if(index)entry.append(el('span',' · '));entry.append(rawNode('span',value));
+  }
+  if(source.simulated)entry.append(el('span',' · '),el('span','模拟数据','hint'));
+  entry.append(sourceNote(source));list.append(el('dt','文档依据'),entry);
  }
  meta.append(list,el('p',data.count_note,'hint'));
  if(data.fspl_mhz)meta.append(el('p',FSPL_MHZ_NOTE,'hint'));

@@ -7,7 +7,7 @@ from planning.requirements_contract import require
 from planning.services.confirmation import review_for, validate_snapshot
 from planning.services import calculation
 from planning.agents.calculation import CalculationAgent
-from planning.agents.review import ReviewAgent, validate_assessment, DECISIONS, PUBLISHABLE, SUMMARY
+from planning.agents.review import ReviewAgent, validate_assessment, document_query, DECISIONS, PUBLISHABLE, SUMMARY
 from planning.agents.role_model import LocalRoleSelector
 from planning.agents.planner import PlanningAgent
 from planning.services.requirement_validation import check_report
@@ -81,9 +81,11 @@ def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(
             report['calculation_plan_proposal'],report['planning_role']=planning_agent.run(state['request'],report,cards,observer)
             if report['planning_role']['mode']=='deterministic_fallback':
                 report['runtime_health']='degraded'
-            if isinstance(getattr(agent,'selector',None),ModelSelector):
-                mode=agent.retrieval_params.get('mode','lexical')
-                report['document_retrieval']=agent.retrieval.search(state['request']['raw_text'],top_k=4,top_n=3,
+            model_selector=isinstance(getattr(agent,'selector',None),ModelSelector)
+            plan=report['calculation_plan_proposal']
+            if model_selector or (plan.get('tool')=='calc_link_margin' and plan.get('variants')):
+                mode=agent.retrieval_params.get('mode','lexical') if model_selector else 'lexical'
+                report['document_retrieval']=agent.retrieval.search(document_query(state['request'],report),top_k=4,top_n=3,
                     mode=mode,filters={'source_type':'document_chunk'}).to_dict()
             check_report(report,state['request'],cards,agent.root)
         observe(observer,'requirements','failed' if status=='FAILED' else 'completed',status=status,caller='orchestrator')

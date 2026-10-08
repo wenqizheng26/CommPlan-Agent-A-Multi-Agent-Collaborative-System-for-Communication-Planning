@@ -77,6 +77,13 @@ def issues_for(state):
             add('clarification','task','请声明补充模型的适用条件',
                 '请在需求中写明采用单刃形障碍物模型，或光滑海面单点镜面反射两径模型。')
     params={p['canonical_name']:p for p in report.get('parameters_proposal',[])}
+    range_fields = set()
+    for d in diagnostics:
+        if d['code'] == 'PARAMETER_OUT_OF_RANGE':
+            field = d['details']['field']
+            range_fields.add(field)
+            add('PARAMETER_OUT_OF_RANGE', field, LABELS[field]+'超出工程范围', d['message'],
+                excerpt=' / '.join(f'{v:g}' for v in d['details']['values'])+' '+d['details']['unit'])
     approx={d['details'].get('field'):d['details'] for d in diagnostics if d['code']=='PARAMETER_APPROXIMATE'}
     # While a shared site name is open, the distance is not asked: the chosen site's coordinates give it.
     site_choice=any(d['code']=='ENTITY_AMBIGUOUS' and d['details'].get('kind')=='site' for d in diagnostics)
@@ -91,7 +98,7 @@ def issues_for(state):
         elif p['status']=='missing':
             if not (field=='distance_km' and site_choice):
                 add('missing',field,'请补充'+NAMES[field],'可输入单值、区间或离散候选，必须包含单位。')
-        elif min(numbers(p['value']))<=0:
+        elif field not in range_fields and min(numbers(p['value']))<=0:
             add('invalid',field,NAMES[field]+'必须大于零','区间的所有端点与候选都必须大于零。')
     # The link tool takes the sensitivity from the modulation table: the modulation is chosen, not typed in dBm.
     modulation=next((d for d in diagnostics if d['code'] in {'MODULATION_NEEDED','MODULATION_UNKNOWN'}),None)
@@ -316,6 +323,11 @@ def apply_answers(current,answers,event_id):
     require(type(answers) is dict and 0<len(answers)<=20,'INVALID_ANSWERS')
     require(set(answers)<=set(issues),'STALE_QUESTION')
     request=input_of(current);before=copy.deepcopy(request);conversation=conversation_of(current)
+    targets=(current.get('report') or {}).get('targets',[])
+    # Answering the already identified task's parameters keeps that task's goal.
+    # An explicit goal answer takes priority; editing uses its own fresh input.
+    if not request['target'] and len(targets)==1 and not any(issues[key]['field']=='goal' for key in answers):
+        request['target']=targets[0]
     answered=[]
     strip_labelled(request,current.get('report'),{issues[k]['field'] for k in answers if issues[k]['field'] in LABELS})
     for key,value in answers.items():

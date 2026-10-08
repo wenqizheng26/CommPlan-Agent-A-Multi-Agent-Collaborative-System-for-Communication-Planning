@@ -108,6 +108,13 @@ test('model logs match every retry inside the same revision, Agent and two-secon
  assert.deepEqual(matchModelCalls(card,[call(60000)]),[]); assert.deepEqual(matchModelCalls(records(state,[single])[0],logs),[]);
 });
 
+test('new model logs match the exact activity run while legacy rows keep the time-window fallback',()=>{
+ const [card] = records(state,model);
+ const logs = [call(14000,{run_id:'r1',call_id:'own'}),call(14000,{run_id:'r2',call_id:'other'}),call(15000,{call_id:'legacy'})];
+ assert.deepEqual(matchModelCalls(card,logs).map(row=>row.call_id),['own','legacy']);
+ assert.deepEqual(matchModelCalls({...card,run_id:'r2'},logs).map(row=>row.call_id),['other','legacy']);
+});
+
 test('supplement and other purposes use the documented log Agent rather than the displayed teacher name',()=>{
  for (const [purpose,caller,agent] of [['supplement','requirements','supplement'],['followup','requirements','requirements'],['compute_agent','compute_agent','compute_agent'],['validator_agent','validator_agent','validator_agent']]) {
   const [card] = records(state,[event('llm','started',10000,{purpose,caller}),event('llm','completed',20000,{purpose,caller})]);
@@ -137,7 +144,7 @@ test('polling appends cards and preserves the expanded model details, fetching l
  renderRecords(host,state,model,{fetch}); assert.equal(fetched,0);
  const details = walk(host).find(node=>node.tag==='details'), article=walk(host).find(node=>node.tag==='article');
  details.toggle(true); await flush();
- assert.equal(fetched,1); assert.equal(endpoint,'/api/tasks/teacher-records/model-calls');
+ assert.equal(fetched,1); assert.equal(endpoint,'/api/tasks/teacher-records/model-calls?run_id=r1');
  const pre = walk(host).filter(node=>node.tag==='pre');
  assert.equal(pre.length,6); assert.ok(pre.every(node=>node.attributes.translate==='no'));
  assert.equal(pre[2].textContent,'{\n  "ready": true\n}'); assert.equal(pre[0].textContent,'原样系统提示');
@@ -148,6 +155,53 @@ test('polling appends cards and preserves the expanded model details, fetching l
  assert.ok(walk(host).some(node=>node.textContent==='-71.71 dBm'));
  assert.ok(walk(host).some(node=>node.textContent==='28.29 dB'));
  assert.ok(walk(host).some(node=>node.textContent==='满足'));
+}));
+
+test('the default browser fetch keeps its global receiver when details open and refresh',async()=>withDOM(async()=>{
+ const previous=globalThis.fetch, host=new Element('section'), receivers=[],urls=[];
+ globalThis.fetch=async function(url) {
+  receivers.push(this===globalThis); urls.push(url);
+  if(this!==globalThis) throw new TypeError('Illegal invocation');
+  return {ok:true,json:async()=>({calls:[call(15000,{run_id:'r1',response:'native fetch response'})]})};
+ };
+ try {
+  renderRecords(host,state,[model[0]]);
+  const details=walk(host).find(node=>node.tag==='details');
+  details.toggle(true); await flush();
+  assert.deepEqual(receivers,[true]);
+  assert.equal(urls[0],'/api/tasks/teacher-records/model-calls?run_id=r1');
+  assert.ok(walk(host).some(node=>node.tag==='pre'&&node.textContent==='native fetch response'));
+  renderRecords(host,state,model); await flush();
+  assert.deepEqual(receivers,[true,true]); assert.equal(details.open,true);
+  assert.ok(walk(host).some(node=>node.tag==='pre'&&node.textContent==='native fetch response'));
+ } finally {globalThis.fetch=previous;}
+}));
+
+test('two overlapping runs fetch and cache their own logs without sharing responses',async()=>withDOM(async()=>{
+ const host = new Element('section'), urls = [];
+ const other = model.map(row=>({...row,run_id:'r2',seq:row.seq+1000}));
+ const fetch = async url=>{
+  urls.push(url); const run = new URL(url,'http://localhost').searchParams.get('run_id');
+  return {ok:true,json:async()=>({calls:[call(14000,{run_id:run,response:run})]})};
+ };
+ renderRecords(host,state,[...model,...other],{fetch});
+ const details = walk(host).filter(node=>node.tag==='details');
+ details[0].toggle(true); details[1].toggle(true); await flush();
+ assert.deepEqual(urls.sort(),['/api/tasks/teacher-records/model-calls?run_id=r1','/api/tasks/teacher-records/model-calls?run_id=r2']);
+ assert.deepEqual(details.map(node=>walk(node).filter(child=>child.tag==='pre').at(-1).textContent),['r1','r2']);
+ renderRecords(host,state,[...model,...other],{fetch}); await flush(); assert.equal(urls.length,2);
+}));
+
+test('an empty run-filtered response falls back only to legacy rows from the unfiltered log',async()=>withDOM(async()=>{
+ const host = new Element('section'), urls = [];
+ const fetch = async url=>{
+  urls.push(url);
+  return {ok:true,json:async()=>({calls:url.includes('?run_id=')?[]:[call(14000,{response:'legacy'}),call(14000,{run_id:'r2',response:'other run'})]})};
+ };
+ renderRecords(host,state,model,{fetch}); walk(host).find(node=>node.tag==='details').toggle(true); await flush();
+ assert.deepEqual(urls,['/api/tasks/teacher-records/model-calls?run_id=r1','/api/tasks/teacher-records/model-calls']);
+ const text = walk(host).filter(node=>node.tag==='pre').map(node=>node.textContent);
+ assert.ok(text.includes('legacy')); assert.equal(text.includes('other run'),false);
 }));
 
 test('logs with unsafe markup remain literal text and missing logs show the documented message',async()=>withDOM(async()=>{
@@ -161,12 +215,13 @@ test('logs with unsafe markup remain literal text and missing logs show the docu
 }));
 
 test('a model completing after logs were first opened refreshes the cache while keeping details open',async()=>withDOM(async()=>{
- const host=new Element('section'); let fetched=0;
- const fetch=async()=>({ok:true,json:async()=>({calls:++fetched===1?[]:[call(15000)]})});
+ const host=new Element('section'); let fetched=0,completed=false;
+ const fetch=async()=>{fetched++;return {ok:true,json:async()=>({calls:completed?[call(15000,{run_id:'r1'})]:[]})};};
  renderRecords(host,state,[model[0]],{fetch}); const details=walk(host).find(node=>node.tag==='details');
- details.toggle(true); await flush(); assert.equal(fetched,1);
+ details.toggle(true); await flush(); assert.equal(fetched,2);
+ completed=true;
  renderRecords(host,state,model,{fetch}); await flush();
- assert.equal(details.open,true); assert.equal(fetched,2); assert.equal(walk(host).filter(node=>node.tag==='pre').length,3);
+ assert.equal(details.open,true); assert.equal(fetched,3); assert.equal(walk(host).filter(node=>node.tag==='pre').length,3);
 }));
 
 test('a failed log read can be retried by closing and reopening without changing the task',async()=>withDOM(async()=>{
@@ -176,7 +231,7 @@ test('a failed log read can be retried by closing and reopening without changing
  details.toggle(true); await flush();
  assert.ok(walk(host).some(node=>node.textContent==='调用日志读取失败，请收起后重试。'));
  details.toggle(false); details.toggle(true); await flush();
- assert.equal(fetched,2); assert.ok(walk(host).some(node=>node.textContent==='日志中没有对应记录'));
+ assert.equal(fetched,3); assert.ok(walk(host).some(node=>node.textContent==='日志中没有对应记录'));
 }));
 
 test('historical rendering visibly labels the fallback and revision changes clear previous cards',async()=>withDOM(async()=>{
