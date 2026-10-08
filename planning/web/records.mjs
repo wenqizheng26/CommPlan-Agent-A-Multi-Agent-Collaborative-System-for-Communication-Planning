@@ -4,10 +4,10 @@ import {REASONS} from './timing.mjs';
 
 export const purposeNames = {intent:'需求解析', supplement:'合并补充', followup:'换用追问', suggest:'默认补全建议',
  compute_agent:'写计划与适用性评估', validator_agent:'解释与审查', extraction:'资料抽取'};
-const AGENTS = {intent:'Requirement', supplement:'Requirement', followup:'Requirement', suggest:'Requirement',
- compute_agent:'LinkBudget', validator_agent:'Report', extraction:'资料抽取'};
-const CALLERS = {requirements:'Requirement', supplement:'Requirement', suggest:'Requirement', compute_agent:'LinkBudget',
- validator_agent:'Report', extraction:'资料抽取'};
+const AGENTS = {intent:'需求与规划', supplement:'需求与规划', followup:'需求与规划', suggest:'需求与规划',
+ compute_agent:'专业计算', validator_agent:'验证与解释', extraction:'资料抽取'};
+const CALLERS = {requirements:'需求与规划', supplement:'需求与规划', suggest:'需求与规划', compute_agent:'专业计算',
+ validator_agent:'验证与解释', extraction:'资料抽取'};
 const PARAMETERS = {...parameterNames, frequency_mhz:'载波频率', modulation:'调制方式',
  rx_sensitivity_dbm:'接收灵敏度', required_margin_db:'要求余量'};
 const TOOLS = {...toolNames, fspl_mhz:'自由空间损耗', calc_link_margin:'链路余量计算'};
@@ -19,7 +19,7 @@ const identity = (event, index) => String(event.seq ?? event.id ?? event.event_i
 function modelCard(state, start, end, index) {
  const details = {...start.details, ...end?.details}, purpose = details.purpose || details.caller || '';
  const duration = end ? (Number.isFinite(details.latency_ms) ? details.latency_ms : time(end.at) - time(start.at)) : null;
- return {kind:'model', agent:AGENTS[purpose] || CALLERS[details.caller] || details.caller || 'Requirement',
+ return {kind:'model', agent:AGENTS[purpose] || CALLERS[details.caller] || details.caller || '需求与规划',
   purpose, status:end?.phase || 'running', model:details.model_id || '',
   duration_ms:Number.isFinite(duration) ? Math.max(0, duration) : null, reason:details.reason || '', started_at:start.at,
   finished_at:end?.at || null, caller:details.caller || '', task_id:state.task_id, revision:state.revision,
@@ -31,7 +31,7 @@ function toolCard(details, key, at) {
   return {kind:'tool', tool:'calc_link_margin', label:details.label || '', arguments:details.arguments || {},
    result:details.result || {}, steps:details.steps || [], key, started_at:at};
  }
- return {kind:'tool', agent:'LinkBudget', tool:details.tool_id || details.tool || details.card?.id || details.card || '',
+ return {kind:'tool', agent:'专业计算', tool:details.tool_id || details.tool || details.card?.id || details.card || '',
   inputs:details.inputs || {}, output:details.output || {value:details.value, unit:details.unit || ''}, key, started_at:at};
 }
 
@@ -93,7 +93,7 @@ export function modelLine(card) {
   (card.duration_ms == null ? '' : ` · ${(card.duration_ms / 1000).toFixed(1)} s`);
 }
 export function toolLine(card) {
- return `LinkBudget Agent → ${card.tool}：${parameterLine(card.inputs || card.arguments)} → ` +
+ return `专业计算 Agent → ${card.tool}：${parameterLine(card.inputs || card.arguments)} → ` +
   (card.tool === 'calc_link_margin' ? `${numeric(card.result?.link_margin_db)} dB` : `${numeric(card.output?.value)} ${card.output?.unit || ''}`).trimEnd();
 }
 

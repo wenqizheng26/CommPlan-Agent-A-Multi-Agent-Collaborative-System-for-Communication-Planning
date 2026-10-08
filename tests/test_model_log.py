@@ -32,7 +32,7 @@ class ModelCallLogTests(unittest.TestCase):
             chat(PAYLOAD, agent='validator_agent')
         [row] = self.log.calls('t1')
         self.assertEqual((row['agent'], row['agent_name'], row['model'], row['served']),
-                         ('validator_agent', 'Report', 'commplan-qwen35-9b', 'commplan-qwen35-9b'))
+                         ('validator_agent', 'Validation', 'commplan-qwen35-9b', 'commplan-qwen35-9b'))
         self.assertEqual(row['messages'], PAYLOAD['messages'])
         self.assertEqual((row['response'], row['status'], row['revision']), ('{"ok":true}', 'ok', 0))
         self.assertTrue(row['at'] and row['call_id'] and row['latency_ms'] >= 0)
@@ -43,7 +43,7 @@ class ModelCallLogTests(unittest.TestCase):
             with self.assertRaises(ModelResponseError):
                 chat(PAYLOAD, agent='requirements')
         [row] = self.log.calls('t1')
-        self.assertEqual((row['agent_name'], row['status']), ('Requirement', 'MODEL_OUTPUT_INVALID'))
+        self.assertEqual((row['agent_name'], row['status']), ('Requirements', 'MODEL_OUTPUT_INVALID'))
 
     def test_nothing_is_recorded_outside_a_command_and_other_tasks_are_filtered(self):
         with answer('{}'):

@@ -92,7 +92,7 @@ const FLOW={
  '专业知识库':'Knowledge base','版本化公式卡与来源':'Versioned cards and sources','共享状态／检查点':'Shared state / checkpoints',
  '确认快照、历史与恢复':'Snapshots, history, recovery','等待处理':'Waiting','未调用':'Not called','部分接入':'Partial','已中断':'Interrupted',
  '连线表示观测到的运行活动与责任关系，不表示 LangGraph 的直接调用链。':'Lines show observed run activity and responsibilities, not LangGraph’s direct call chain.',
- '用户核对':'User check','参数 / 损耗':'Inputs / loss','写计划与评估':'Plan & assess','解释与审查已接入':'Review connected','总控 · 调度各 Agent':'Coordinator · schedules the agents','需求与规划':'Requirements and planning','专业计算 · 写计划':'Calculation · writes the plan','验证、解释与报告':'Checks, explains, reports','需求与规划：模型抽取，程序核对':'Requirements and planning: model extracts, program checks','总控：受控策略 · 退回与重算有上限':'Coordinator: bounded policy · capped retries','专业计算：模型写计划、评估适用性，程序计算':'Calculation: model plans and assesses; program computes','验证与解释：硬校验 + 结构化审查与解释':'Validation: hard checks + structured review and explanation',
+ '用户核对':'User check','参数 / 损耗':'Inputs / loss','写计划与评估':'Plan & assess','解释与审查已接入':'Review connected',
  '文档与公式检索':'Docs & cards','可选':'Optional','用户输入通信需求':'User request','总体协同架构':'Overall architecture',
  'LangGraph 编排与状态':'LangGraph orchestration and state','共享能力':'Shared capabilities','知识增强过程':'Knowledge enhancement',
  '公式 · 站点 · 设备 · 文档':'Cards · sites · radios · docs','运行中 · 等待返回':'Running · awaiting reply','等待补充 · 见对话栏':'Awaiting input · see chat',
