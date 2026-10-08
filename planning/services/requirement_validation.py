@@ -13,6 +13,7 @@ from formula_rag.parsing import convert
 from planning.services.requirement_parameters import collect_parameters
 from planning.services.requirement_quantities import find_quantities, summary, SOLVE_UNKNOWNS
 from planning.services.requirement_evidence import snapshot_for, evidence_for
+from planning.knowledge.parameter_ranges import range_issues
 
 LABEL_KINDS = {'quantity', 'requirement', 'solve', 'site', 'device'}
 
@@ -109,6 +110,11 @@ def check_report(report, request, cards, root=None):
     require(r['parameters_proposal'] == parameters, 'PARAMETER_SOURCE_MISMATCH')
     require(r['conflicts'] == conflicts, 'CONFLICT_MISMATCH')
     require(r['missing_parameters'] == [p['canonical_name'] for p in parameters if p['status']=='missing'], 'MISSING_MISMATCH')
+    # Re-run the current table at the confirmation/recovery boundary, without
+    # trusting a saved status or previously produced diagnostics.
+    engineering_issues = range_issues(parameters, root or Path(__file__).resolve().parents[2])
+    if r['execution_status'] == 'AWAITING_CONFIRMATION' or r['calculation_plan_proposal'] is not None:
+        require(not engineering_issues, 'PARAMETER_OUT_OF_RANGE')
     snapshot = snapshot_for(cards, root)
     require(r['knowledge_snapshot'] == snapshot, 'SNAPSHOT_MISMATCH')
     by_id = {c['id']:c for c in cards}

@@ -7,6 +7,7 @@ from . import core
 from .catalog import load_catalog
 from .schema import card_input_schema, card_output_schema, check_schema, validate
 from planning.requirements_contract import digest
+from planning.knowledge.parameter_ranges import load_ranges, expand_range_schema
 
 
 COMPOSITE_ID = "calc_link_margin"
@@ -33,6 +34,7 @@ def _load(root):
     from planning.knowledge.facts import FactService
 
     root = Path(root)
+    ranges = load_ranges(root)
     cards = {card["id"]: card for card in load_catalog(root) if card["status"] == "verified"}
     facts = FactService(root)
     active_modulations = {
@@ -71,12 +73,13 @@ def _load(root):
             raise ValueError("TOOL_DEPENDENCY_NOT_VERIFIED")
         tool = {**copy.deepcopy(raw), "kind": "composite"}
         for field in ("input_schema", "output_schema"):
-            tool[field] = _expand_schema(tool[field], names)
+            tool[field] = expand_range_schema(_expand_schema(tool[field], names), ranges)
             check_schema(tool[field])
         tool["content_hash"] = digest({
             "tool": tool,
             "cards": {card_id: digest(cards[card_id]) for card_id in tool["steps"]},
             "modulations": modulation_catalog,
+            "parameter_ranges": ranges,
         })
         tools.append(tool)
         ids.add(tool["id"])

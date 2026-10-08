@@ -210,6 +210,34 @@ test('absent event history falls back to saved tool calls and keeps unknown mode
  assert.equal(deterministic.metadata.model_calls,0);assert.ok(deterministic.metadata.models[0].includes('确定性'));
 });
 
+test('the existing report notes visibly retain the modulation document title, version, locator and simulated source',()=>withDOM(()=>{
+ const state=structuredClone(fixture('comparison').state);
+ const record=readJson('../knowledge/documents/manifest.json').documents.find(row=>row.doc_id==='sim-modulation');
+ const locator='调制方式与接收灵敏度 / 同误码率要求下的信噪比与接收灵敏度, chunk 1';
+ state.final_report.document_evidence=[{id:'doc:sim-modulation:s2-1',title:record.title,
+  source:{doc_id:record.doc_id,uri:record.source,version:record.version,locator,sha256:record.sha256,simulated:record.simulated}}];
+ const before=JSON.stringify(state),model=reportModel(state),host=new Element('article');renderReportDocument(host,model);
+ assert.equal(JSON.stringify(state),before);
+ const notes=walk(host).find(node=>node.tag==='section'&&node.children.some(child=>child.textContent==='附注'));
+ for(const text of ['文档依据',record.title,record.version,locator,'模拟数据',record.source])assert.ok(leafText(notes).includes(text),text);
+ assert.equal(walk(notes).some(node=>node.tag==='a'),false,'local knowledge paths must remain literal text');
+ assert.equal(walk(host).filter(node=>node.tag==='section').length,8,'no report section or layout is added');
+}));
+
+test('document references keep their wording literal and link only valid http or https source URLs',()=>withDOM(()=>{
+ const state=structuredClone(fixture('comparison').state),title='<img src=x onerror=alert(1)> 出处原话';
+ state.final_report.document_evidence=[{id:'doc:unsafe:1',title,source:{uri:'javascript:alert(1)',version:'v1',locator:'<script>bad()</script>',simulated:false}},
+  {id:'doc:remote:1',title:'ITU document',source:{uri:'https://www.itu.int/rec/R-REC-P.525/en',version:'P.525',locator:'section 2',simulated:false}},
+  {id:'doc:invalid:1',title:'Bad URL',source:{uri:'https://',version:'v1',locator:'section 1',simulated:false}}];
+ const host=new Element('article');renderReportDocument(host,reportModel(state));
+ assert.ok(named(host,title));assert.equal(named(host,title).attributes.translate,'no');
+ assert.ok(named(host,'<script>bad()</script>'));
+ assert.equal(walk(host).some(node=>node.tag==='img'||node.tag==='script'),false);
+ const links=walk(host).filter(node=>node.tag==='a');assert.equal(links.length,1);
+ assert.equal(links[0].href,'https://www.itu.int/rec/R-REC-P.525/en');assert.equal(links[0].rel,'noopener noreferrer');
+ assert.equal(links[0].target,'_blank');
+}));
+
 test('states from before the tool events count their saved calls, not zero',()=>{
  // Older runs logged formula steps as node 'model', so the revision has events but no tool events.
  const f=fixture('margin'),state=f.state;

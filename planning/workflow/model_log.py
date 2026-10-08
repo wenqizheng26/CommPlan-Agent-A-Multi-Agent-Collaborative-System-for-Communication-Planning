@@ -4,6 +4,7 @@ One JSON line per call next to the task database. The page shows a summary of ea
 the full prompt and response are read back from this file on request.
 """
 from contextlib import contextmanager
+from datetime import datetime, timedelta
 import json
 from pathlib import Path
 import threading
@@ -21,13 +22,18 @@ class ModelCallLog:
         self._lock = threading.Lock()
 
     @contextmanager
-    def recording(self, command):
+    def recording(self, command, run_id=None):
         # Same revision rule as the activity run: these actions create the next revision.
         context = dict(task_id=command['task_id'], event_id=command['event_id'], action=command['action'],
-                       revision=command['expected_revision'] + (command['action'] in {'edit', 'supplement', 'answer'}))
+                       revision=command['expected_revision'] + (command['action'] in {'edit', 'supplement', 'answer'}),
+                       run_id=run_id)
 
         def write(record):
-            line = dict(context, call_id=str(uuid.uuid4()), agent_name=AGENTS.get(record['agent'], record['agent']), **record)
+            # Transport records at completion; preserve at and infer the start from its measured duration.
+            end_time = record['at']
+            start_time = (datetime.fromisoformat(end_time) - timedelta(milliseconds=record['latency_ms'])).isoformat()
+            line = dict(context, call_id=str(uuid.uuid4()), agent_name=AGENTS.get(record['agent'], record['agent']),
+                        **record, start_time=start_time, end_time=end_time)
             with self._lock, open(self.path, 'a', encoding='utf-8') as f:
                 f.write(json.dumps(line, ensure_ascii=False) + '\n')
         token = call_log.set(write)
@@ -36,7 +42,7 @@ class ModelCallLog:
         finally:
             call_log.reset(token)
 
-    def calls(self, task_id, limit=200):
+    def calls(self, task_id, limit=200, run_id=None):
         """This task's calls, oldest first; a damaged line is skipped."""
         if not self.path.is_file():
             return []
@@ -47,6 +53,6 @@ class ModelCallLog:
                     row = json.loads(line)
                 except ValueError:
                     continue
-                if isinstance(row, dict) and row.get('task_id') == task_id:
+                if isinstance(row, dict) and row.get('task_id') == task_id and (run_id is None or row.get('run_id') == run_id):
                     rows.append(row)
         return rows[-limit:]

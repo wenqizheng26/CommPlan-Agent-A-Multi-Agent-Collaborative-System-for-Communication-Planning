@@ -8,11 +8,11 @@
     "input_schema": {
       "type": "object",
       "properties": {
-        "distance_km": {"type": "number", "exclusiveMinimum": 0, "description": "链路距离，单位 km"},
-        "frequency_mhz": {"type": "number", "exclusiveMinimum": 0, "description": "载波频率，单位 MHz"},
-        "tx_power_dbm": {"type": "number", "description": "发射功率，单位 dBm"},
-        "tx_gain_dbi": {"type": "number", "description": "发射天线增益，单位 dBi"},
-        "rx_gain_dbi": {"type": "number", "description": "接收天线增益，单位 dBi"},
+        "distance_km": {"type": "number", "x-range-from": "distance_km", "description": "链路距离，单位 km"},
+        "frequency_mhz": {"type": "number", "x-range-from": "frequency_mhz", "description": "载波频率，单位 MHz"},
+        "tx_power_dbm": {"type": "number", "x-range-from": "tx_power_dbm", "description": "发射功率，单位 dBm"},
+        "tx_gain_dbi": {"type": "number", "x-range-from": "tx_gain_dbi", "description": "发射天线增益，单位 dBi"},
+        "rx_gain_dbi": {"type": "number", "x-range-from": "rx_gain_dbi", "description": "接收天线增益，单位 dBi"},
         "modulation": {"type": "string", "x-enum-from": "modulations", "description": "调制表中的规范名称，与直接给出的灵敏度二选一"},
         "rx_sensitivity_dbm": {"type": "number", "description": "接收灵敏度，单位 dBm，与调制方式二选一"},
         "required_margin_db": {"type": "number", "minimum": 0, "description": "要求的链路余量，单位 dB；省略时按 0 计"}

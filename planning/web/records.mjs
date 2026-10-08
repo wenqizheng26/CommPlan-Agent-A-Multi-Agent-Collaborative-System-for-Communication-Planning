@@ -73,6 +73,7 @@ export function matchModelCalls(card, calls = []) {
  const start = time(card.started_at), end = card.finished_at ? time(card.finished_at) : Infinity;
  if (!Number.isFinite(start)) return [];
  return ordered(calls.filter(call => call.task_id === card.task_id && call.revision === card.revision && call.agent === agent &&
+  (call.run_id == null || call.run_id === card.run_id) &&
   time(call.at) >= start - 2000 && time(call.at) <= end + 2000));
 }
 
@@ -122,16 +123,26 @@ function logsContent(host, calls) {
   host.append(section);
  }
 }
-function loadLogs(ctx, generation) {
- if (ctx.logs?.generation === generation) return ctx.logs.promise;
- const promise = Promise.resolve().then(async () => {
-  const response = await ctx.fetch(`/api/tasks/${encodeURIComponent(ctx.task_id)}/model-calls`);
-  if (!response.ok) throw new Error('MODEL_LOG_READ_FAILED');
-  const data = await response.json(); return data.calls || [];
- });
- ctx.logs = {generation,promise};
- promise.catch(() => { if (ctx.logs?.promise === promise) ctx.logs = null; });
- return promise;
+function loadLogs(ctx, generation, runId) {
+ if (ctx.logs?.generation !== generation) ctx.logs = {generation,promises:new Map()};
+ const cache = ctx.logs;
+ function load(run) {
+  const key = run || '';
+  if (cache.promises.has(key)) return cache.promises.get(key);
+  const promise = Promise.resolve().then(async () => {
+   const endpoint = `/api/tasks/${encodeURIComponent(ctx.task_id)}/model-calls` + (run ? `?run_id=${encodeURIComponent(run)}` : '');
+   const response = await ctx.fetch(endpoint);
+   if (!response.ok) throw new Error('MODEL_LOG_READ_FAILED');
+   const data = await response.json(), calls = data.calls || [];
+   // Old log rows have no run_id. Keep their existing time-window match without admitting other runs.
+   if (run && !calls.length) return (await load(null)).filter(call => call.run_id == null);
+   return calls;
+  });
+  cache.promises.set(key,promise);
+  promise.catch(() => { if (cache.promises.get(key) === promise) cache.promises.delete(key); });
+  return promise;
+ }
+ return load(runId);
 }
 async function showLogs(ctx, item) {
  const generation = ctx.generation, card = item.card;
@@ -139,7 +150,7 @@ async function showLogs(ctx, item) {
  item.loading = generation;
  item.content.replaceChildren(el('p','正在读取调用日志…','hint'));
  try {
-  const calls = await loadLogs(ctx,generation);
+  const calls = await loadLogs(ctx,generation,card.run_id);
   // A poll or task switch can complete while the request is in flight.
   if (generation !== ctx.generation || item.card.key !== card.key) return;
   logsContent(item.content,matchModelCalls(item.card,calls)); item.loaded = generation;
@@ -185,11 +196,11 @@ export function renderRecords(host, state, events = [], options = {}) {
  const cards = records(state,events), identity = `${state?.task_id || ''}|${state?.revision ?? ''}`;
  let ctx = hosts.get(host);
  if (!ctx || ctx.identity !== identity) {
-  ctx = {identity,task_id:state?.task_id,items:new Map(),fetch:options.fetch || globalThis.fetch,
+  ctx = {identity,task_id:state?.task_id,items:new Map(),fetch:options.fetch || ((...args) => globalThis.fetch(...args)),
    note:el('p',null,'hint records-note'),list:el('div',null,'records-list')};
   host.replaceChildren(el('h3','执行记录'),ctx.note,ctx.list); hosts.set(host,ctx);
  }
- ctx.fetch = options.fetch || globalThis.fetch;
+ ctx.fetch = options.fetch || ((...args) => globalThis.fetch(...args));
  ctx.generation = cards.filter(card => card.kind === 'model' && card.status !== 'running').map(card => `${card.key}:${card.finished_at}`).join('|');
  ctx.note.textContent = cards.some(card => card.historical) ? '历史版本只显示工具计算' : !cards.length ? '暂无执行记录。' : '';
  ctx.note.hidden = !!cards.length && !cards.some(card => card.historical);

@@ -29,9 +29,11 @@ ROOT_FILES = {
     "planning/run_planning.cmd",
     "knowledge/tools.json", "knowledge/facts/sites.json", "knowledge/facts/devices.json",
     "knowledge/facts/modulations.json", "knowledge/facts/typical_values.json",
+    "knowledge/facts/parameter_ranges.json",
     "knowledge/documents/manifest.json", "knowledge/documents/glossary.json",
     "knowledge/documents/simulated/站址表.md", "knowledge/documents/simulated/XX-100 手册.md",
     "knowledge/documents/simulated/XX-200 手册.md", "knowledge/documents/simulated/XX-300 手册.md",
+    "knowledge/documents/simulated/调制方式与接收灵敏度.md",
 }
 DOCUMENT_FILES = set("""
 docs/README.md docs/delivery/SOURCE_PACKAGE.md
@@ -65,7 +67,7 @@ planning/__init__.py planning/agents/__init__.py planning/agents/calculation.py
 planning/agents/orchestrator.py planning/agents/requirements.py planning/agents/review.py
 planning/agents/role_model.py planning/build_info.py planning/demo.py
 planning/agents/planner.py
-planning/knowledge/__init__.py planning/knowledge/facts.py
+planning/knowledge/__init__.py planning/knowledge/facts.py planning/knowledge/parameter_ranges.py
 planning/retrieval/convert.py planning/retrieval/documents.py planning/retrieval/http_encoder.py
 planning/services/fact_fields.py planning/services/number_check.py
 planning/services/requirement_facts.py planning/services/requirement_quantities.py planning/services/solve.py
