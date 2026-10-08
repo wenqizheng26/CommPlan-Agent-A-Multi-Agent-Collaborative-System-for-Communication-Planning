@@ -2,7 +2,7 @@
 import math
 import re
 import unicodedata
-from formula_rag.parsing import FIELDS, NUMBER, UNITS, convert, extract_request
+from formula_rag.parsing import FIELDS, NUMBER, UNITS, QUANTITY_NUMBER, QUANTITY_PATTERN, quantity_value, convert, extract_request
 from planning.services.input_domains import extract_domains, convert_domain, same, APPROX, field_for
 from planning.services.fact_fields import FACT_FIELDS, field_unit
 
@@ -24,6 +24,8 @@ def overlaps(text, excerpt, span):
 BOTH_GAINS = re.compile(rf'(?:收发两端|两端|两边|收发|发射(?:和|与|及|、)接收|transmit and receive|both)\s*(?:的)?\s*(?:天线|antennas?)?\s*(?:增益|gains?)?'
                         rf'\s*(?:都是|都为|均为|各为|各是|各|均|都|为|是|are|of|each|[:：=])?\s*(?:each\s*)?'
                         rf'(?P<value>{NUMBER})\s*(?P<unit>dBi)(?![A-Za-z/\d])', re.I)
+NUMERIC_FRAGMENT = re.compile(rf'\d|[-+负]?[零〇一二两三四五六七八九十百千万亿]+(?:点[零一二三四五六七八九]+)?'
+                              rf'(?=\s*(?:个\s*)?(?:{UNITS}|左右|上下|出头|$))', re.I)
 
 
 def collect_parameters(request, parsed, required, labeled=(), sources=None):
@@ -57,7 +59,7 @@ def collect_parameters(request, parsed, required, labeled=(), sources=None):
         diagnostics.append(diagnostic('PARAMETER_APPROXIMATE', '近似表达没有明确误差范围，请指定区间或明确采用单值。',
             field=field_for(match.group()), excerpt=match.group(), span=list(match.span())))
     normalized_text = unicodedata.normalize('NFKC', ''.join(masked))
-    alternatives = rf'(?<![A-Za-z0-9_.+-]){NUMBER}\s*(?:{UNITS})?\s*(?:或者|或|、|至|到|~|～|±)\s*{NUMBER}\s*{UNITS}'
+    alternatives = rf'(?<![A-Za-z0-9_.+-]){QUANTITY_NUMBER}\s*(?:{UNITS})?\s*(?:或者|或|、|至|到|~|～|±)\s*{QUANTITY_NUMBER}\s*{UNITS}'
     for match in re.finditer(alternatives, normalized_text, re.I):
         diagnostics.append(diagnostic('INPUT_PARSE_ISSUE', '发现范围或多个候选值，不能自动选取其中一个。',
                                       excerpt=match.group(), next_action='请明确本次采用的单个频率和距离。'))
@@ -76,13 +78,13 @@ def collect_parameters(request, parsed, required, labeled=(), sources=None):
     for field, excerpts in snippets.items():
         for excerpt in excerpts:
             normalized = unicodedata.normalize('NFKC', excerpt).replace('−', '-')
-            matches = list(re.finditer(rf'(?P<value>{NUMBER})\s*(?P<unit>{UNITS})(?![A-Za-z/\d])', normalized, re.I))
+            matches = list(re.finditer(QUANTITY_PATTERN, normalized, re.I))
             if not matches:
                 matches = list(re.finditer(rf'\(\s*(?P<unit>{UNITS})\s*\)\s*(?P<value>{NUMBER})', normalized, re.I))
             found = []
             for match in matches:
                 try:
-                    original, unit = float(match['value']), match['unit']
+                    original, unit = quantity_value(match['value'], match['unit']), match['unit']
                     value = convert(field, original, unit)
                     if math.isfinite(value):
                         found.append((original, unit))
@@ -130,7 +132,7 @@ def collect_parameters(request, parsed, required, labeled=(), sources=None):
     labels = r'载波频率|工作频率|频率|载频|路径距离|通信距离|链路距离|距离|相距'
     for match in re.finditer(rf'(?:{labels})(?:(?!(?:{labels})|[，,。；;\n？?！!]).)*', request['raw_text']):
         fragment = match.group()
-        if not re.search(r'\d', fragment):
+        if not NUMERIC_FRAGMENT.search(fragment):
             continue
         field = 'frequency_ghz' if re.match(r'载波频率|工作频率|频率|载频', fragment) else 'distance_km'
         local = [o for o in observations.get(field, []) if o['span'] and
@@ -142,7 +144,7 @@ def collect_parameters(request, parsed, required, labeled=(), sources=None):
         # A later labelled parameter in the same clause is handled independently.
         remainder = re.split(r'(?:载波频率|工作频率|频率|载频|路径距离|通信距离|链路距离|距离|相距)', ''.join(residue), maxsplit=2)
         unexplained = remainder[1] if len(remainder)>1 else ''.join(residue)
-        if re.search(r'\d', unexplained):
+        if NUMERIC_FRAGMENT.search(unexplained):
             diagnostics.append(diagnostic('INPUT_PARSE_ISSUE', '该参数包含尚未明确采用或缺少单位的数值，请重新填写完整表达。',
                                           field=field, excerpt=fragment, span=list(match.span())))
     for field, item in request['manual_parameters'].items():

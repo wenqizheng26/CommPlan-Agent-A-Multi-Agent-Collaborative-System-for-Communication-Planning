@@ -2,13 +2,14 @@
 import itertools
 import math
 import re
-from formula_rag.parsing import NUMBER, convert, FIELDS
+from formula_rag.parsing import NUMBER, QUANTITY_NUMBER, convert, FIELDS
 
-UNIT = r'(?:GHz|MHz|kHz|Hz|吉赫兹|兆赫兹|千赫兹|赫兹|km|千米|公里|m|米)'
+UNIT = r'(?:GHz|MHz|kHz|Hz|吉赫兹|兆赫兹|千赫兹|赫兹|兆赫|km|千米|公里|m|米)'
 PAIR = re.compile(rf'(?<![0-9A-Za-z_.-])(?P<a>{NUMBER})\s*(?P<u>{UNIT})?\s*(?P<op>\+/-|\+-|±|至|到|to|~|～|–|—|-(?!\d*[eE]))\s*(?P<b>{NUMBER})\s*(?P<v>{UNIT})(?![A-Za-z/\d])', re.I)
 CHOICES = re.compile(rf'(?<![0-9A-Za-z_.-]){NUMBER}\s*(?:{UNIT})?(?:\s*(?:或者|或|、|or)\s*{NUMBER}\s*(?:{UNIT})?)+', re.I)
 TOKEN = re.compile(rf'(?P<n>{NUMBER})\s*(?P<u>{UNIT})?', re.I)
-APPROX = re.compile(rf'(?:大约|大概|差不多|近似|约|approximately|about|roughly)\s*{NUMBER}\s*{UNIT}|{NUMBER}\s*{UNIT}\s*(?:左右|上下)', re.I)
+APPROX_QUANTITY = rf'(?:{QUANTITY_NUMBER}\s*(?:个\s*)?{UNIT}|[-+]?\d+\.\d+\s*(?:个\s*)?G(?![A-Za-z/\d]))'
+APPROX = re.compile(rf'(?:大约|大概|差不多|近似|约|approximately|about|roughly)\s*{APPROX_QUANTITY}(?:\s*(?:左右|上下|出头))?|{APPROX_QUANTITY}\s*(?:左右|上下|出头)', re.I)
 
 
 def numbers(value):
@@ -57,7 +58,7 @@ def scenarios(parameters):
 
 
 def field_for(unit):
-    return 'frequency_ghz' if re.search(r'hz|赫兹', unit, re.I) else 'distance_km'
+    return 'frequency_ghz' if re.search(r'hz|赫|g(?![A-Za-z])', unit, re.I) else 'distance_km'
 
 
 def labelled_field(text, start, unit):

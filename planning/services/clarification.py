@@ -4,14 +4,14 @@ import re
 from planning.requirements_contract import digest, require
 from planning.services.requirement_parameters import collect_parameters
 from planning.services.input_domains import numbers, APPROX, format_value
-from formula_rag.parsing import extract_request, FIELDS, UNITS, NUMBER
+from formula_rag.parsing import extract_request, FIELDS, UNITS, NUMBER, QUANTITY_PATTERN
 from planning.services.supplement import input_of, conversation_of
 from planning.services.fact_fields import FACT_FIELDS
 
 NAMES={'frequency_ghz':'载波频率','distance_km':'路径距离'}
 SUGGESTED='（默认补全）'
 APPROX_BEFORE=re.compile(r'(?:大约|大概|差不多|近似|约)\s*$')
-APPROX_AFTER=re.compile(r'\s*(?:左右|上下)')
+APPROX_AFTER=re.compile(r'\s*(?:左右|上下|出头)')
 # Link-budget inputs: one confirmed scalar each, any sign; card bounds are checked by planning.
 BUDGET={'tx_power_dbm':'发射功率','tx_gain_dbi':'发射天线增益','rx_gain_dbi':'接收天线增益',
         'tx_loss_db':'发射馈线损耗','rx_loss_db':'接收馈线损耗','extra_loss_db':'额外损耗',
@@ -36,6 +36,29 @@ EXAMPLES={'tx_power_dbm':'30dBm','rx_threshold_dbm':'-100dBm','rx_power_dbm':'-7
 
 def example(field):
     return EXAMPLES.get(field,{'dBi':'10dBi','dB':'2dB'}.get(FIELDS[field][1],'1'+FIELDS[field][1]))
+
+
+def goal_suggestion(state):
+    """A deterministic topic suggestion; it supplies neither values nor a chosen goal."""
+    report=state.get('report') or {}
+    fields={p['canonical_name'] for p in report.get('parameters_proposal',[])
+            if any(o['kind']!='default' for o in p.get('origins',[]))}
+    budget={'tx_power_dbm','tx_gain_dbi','rx_gain_dbi','rx_threshold_dbm'}
+    text=(state.get('request') or {}).get('raw_text','')
+    # A missing quantity can still name the intended field ("功率也没定").
+    # These topic hints do not add any parsed parameter or source observation.
+    topics=re.search(r'发射功率|(?<!接收)(?<!噪声)功率(?!谱|密度)|天线增益|增益|调制|接收灵敏度|接收门限|灵敏度'
+                     r'|\b(?:transmit power|tx power|antenna gain|modulation|receiver sensitivity)\b',text,re.I)
+    from planning.services.requirement_facts import MODULATION
+    if fields & budget or topics or MODULATION.search(text):
+        value,display='link_margin','链路余量'
+        reason='原文或已识别参数涉及链路预算，建议计算链路余量；缺项仍需补充确认。'
+    elif fields == {'distance_km','frequency_ghz'}:
+        value,display='fspl_ghz','路径损耗'
+        reason='已识别距离和频率，建议计算路径损耗；模型条件仍需确认。'
+    else:
+        return None
+    return dict(value=value,display=display,reason=reason,note='默认补全，需确认')
 
 
 def issues_for(state):
@@ -68,6 +91,9 @@ def issues_for(state):
                      dict(value='fresnel_radius',label='第一菲涅耳区半径'),dict(value='knife_edge_nu',label='绕射参数'),
                      dict(value='knife_edge_loss',label='单刃形绕射损耗'),dict(value='sea_reflection_two_ray',label='海面反射附加损耗'),
                      dict(value='link_feasibility',label='判断能否通信'),dict(value='scheme_comparison',label='比较方案')])
+        proposal=goal_suggestion(state)
+        if proposal:
+            issues[-1]['suggestion']=proposal
         return issues
     if any(d['code']=='MISSING_CONDITION' for d in diagnostics):
         add('clarification','condition','是否明确只做自由空间基准？','自由空间基准不代表实际海面或遮挡环境。',
@@ -257,15 +283,15 @@ def replace_parameter(request, report, field, answer, mark=''):
     old=next((p for p in old_parameters if p['canonical_name']==field),None)
     remove=[o['span'] for o in old['origins'] if o['kind']=='user_text' and o['span']] if old else []
     text=request['raw_text']
-    units=r'GHz|MHz|kHz|Hz|吉赫兹|兆赫兹|千赫兹|赫兹|km|千米|公里|m|米' if field in NAMES else UNITS
+    units=r'GHz|MHz|kHz|Hz|吉赫兹|兆赫兹|千赫兹|赫兹|兆赫|G|km|千米|公里|m|米' if field in NAMES else UNITS
     # Consume the whole old numeric expression, including approximation/negation
     # and incomplete units. Never rewrite unrelated prose in that clause.
     fragment=re.compile(rf'(?:{labels})(?:\s|为|是|不是|不为|不确定|未知|大约|大概|约|近似|差不多|改为|采用|[:：=])*'
-                        rf'[-+0-9.eE\s±/~～–—至到或、]*(?:{units})?'
-                        rf'(?:\s*(?:或者|或|、)\s*[-+0-9.eE]+\s*(?:{units})?)*'
-                        r'(?:左右|上下)?',re.I)
+                        rf'[-+负零〇一二两三四五六七八九十百千0-9.eE\s个±/~～–—至到或、]*(?:{units})?'
+                        rf'(?:\s*(?:或者|或|、)\s*[-+负零〇一二两三四五六七八九十百千0-9.eE]+\s*(?:{units})?)*'
+                        r'(?:左右|上下|出头)?',re.I)
     for m in fragment.finditer(text):
-        if re.search(r'\d',m.group()):
+        if re.search(r'[\d零〇一二两三四五六七八九十百千]',m.group()):
             remove.append(list(m.span()))
     for d in current_diagnostics:
         if d['code']=='PARAMETER_APPROXIMATE' and d['details'].get('field')==field:
@@ -278,7 +304,7 @@ def replace_parameter(request, report, field, answer, mark=''):
             merged.append([start,end])
     numeric=answer[slice(*spans[0])].strip()
     if field in BUDGET:  # the span may include the label; keep only the value and unit
-        numeric=re.search(rf'{NUMBER}\s*(?:{UNITS})(?![A-Za-z/\d])',numeric,re.I).group()
+        numeric=re.search(QUANTITY_PATTERN,numeric,re.I).group()
     from formula_rag.parsing import EN_FIELDS
     label=EN_FIELDS.get(field,[LABELS[field]])[0]+' ' if not re.search(r'[\u3400-\u9fff]',request['raw_text']) else LABELS[field]
     replacement=label+numeric+mark

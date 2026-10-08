@@ -8,7 +8,7 @@ in for each other. Model names, standard numbers, dates and ordinals are not qua
 import math
 import re
 import unicodedata
-from formula_rag.parsing import FIELDS
+from formula_rag.parsing import FIELDS, CHINESE_INTEGER, quantity_value
 
 # unit -> (dimension, scale to the dimension's base unit)
 SCALE = {'dbm/hz': ('dbm/hz', 1), 'dbm': ('dbm', 1), 'dbi': ('dbi', 1), 'dbw': ('dbw', 1), 'db': ('db', 1),
@@ -33,8 +33,9 @@ NOT_QUANTITY = re.compile(
     r'|(?i:\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{1,2}(?:\s*,\s*\d{4})?)'
     r'|(?i:\b(?:in|since|of)\s+(?:19|20)\d{2}\b)', re.M)
 DIGIT = '零一二两三四五六七八九十'
-CHINESE_NUMERAL = re.compile(rf'[{DIGIT}百千万]*[{DIGIT}][{DIGIT}百千万]*(?:点[{DIGIT}]+)?\s*(?:个\s*)?'
-                             r'(?:分贝|dBm|dBi|dB|千米|公里|米|毫瓦|瓦|千兆赫|吉赫|兆赫)')
+CHINESE_NUMERAL = re.compile(rf'[-+负]?[{DIGIT}〇百千万亿]*[{DIGIT}〇][{DIGIT}〇百千万亿]*(?:点[{DIGIT}]+)?\s*(?:个\s*)?'
+                             rf'(?:{UNIT})(?![A-Za-z])', re.I)
+CHINESE_WRITTEN = re.compile(rf'(?P<num>{CHINESE_INTEGER})\s*(?:个\s*)?(?P<unit>{UNIT})(?![A-Za-z])', re.I)
 IDENTITY_KEYS = {'id', 'refs', 'uses', 'tool_id', 'step_id'}
 
 
@@ -69,6 +70,10 @@ def written(text):
         if m['sign'] == '-' or m['neg']:
             value = -value
         found.append((m.group().strip(), value, decimals, *unit_of(m['unit'])))
+    for m in CHINESE_NUMERAL.finditer(text):
+        supported = CHINESE_WRITTEN.fullmatch(m.group())
+        if supported:
+            found.append((m.group(), quantity_value(supported['num']), 0, *unit_of(supported['unit'])))
     return found
 
 
@@ -115,5 +120,5 @@ def quotes(number, values):
 
 def unquoted(text, values):
     """Numbers in the text that quote none of the values; empty when the text passes H4."""
-    bad = [m.group() for m in CHINESE_NUMERAL.finditer(normalized(text))]
+    bad = [m.group() for m in CHINESE_NUMERAL.finditer(normalized(text)) if not CHINESE_WRITTEN.fullmatch(m.group())]
     return bad + [n[0] for n in written(text) if not quotes(n, values)]

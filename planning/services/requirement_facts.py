@@ -19,6 +19,8 @@ DEVICE = (('tx_power_dbm', 'tx_power_dbm'), ('antenna_gain_dbi', 'tx_gain_dbi'),
           ('antenna_gain_dbi', 'rx_gain_dbi'), ('rx_sensitivity_dbm', 'rx_threshold_dbm'))
 KIND = {'site': '站点', 'device': '设备'}
 MODULATION = re.compile(r'(?<![A-Za-z0-9])(?:[BQ]PSK|\d+\s*-?\s*(?:QAM|A?PSK)|QAM\s*-?\s*\d+)(?![A-Za-z0-9])', re.I)
+MODULATION_NEGATION = re.compile(r'不要|不用|(?<!分)别用|不采用|排除|除了|非(?!常)')
+MODULATION_BOUNDARY = re.compile(r'[，,。；;！？!?：:\n]')
 # The teacher's link tool takes these as zero; a stated value means the general link budget instead.
 ZERO = ('tx_loss_db', 'rx_loss_db', 'extra_loss_db', 'reserve_db')
 
@@ -74,16 +76,20 @@ def fact_observations(request, sites, devices):
 
 
 def modulations(text, store):
-    """Modulations named in the text, in text order: the table's records, and the names it does not have."""
-    found, unknown = [], []
+    """Affirmative table records, unknown names and explicitly excluded mentions, in text order."""
+    found, unknown, excluded = [], [], []
     for m in MODULATION.finditer(text):
         records = [c['record'] for c in store.find_modulation(m.group())['candidates']]
+        prefix = MODULATION_BOUNDARY.split(text[max(0, m.start() - 6):m.start()])[-1]
+        if MODULATION_NEGATION.search(prefix) or re.match(r'[ \t]*除外', text[m.end():]):
+            excluded.append(dict(mention=m.group(), span=list(m.span()), modulations=[r['names'][0] for r in records]))
+            continue
         if len(records) == 1:
             if all(r['id'] != records[0]['id'] for r in found):
                 found.append(records[0])
         elif all(u['mention'] != m.group() for u in unknown):
             unknown.append(dict(mention=m.group(), span=list(m.span())))
-    return found, unknown
+    return found, unknown, excluded
 
 
 def link_tool(root):
@@ -126,7 +132,8 @@ def sources_for(request, entities, cards, final, observed, root=None):
     sites, devices, issues = resolve([e for e in entities if not (labels and e['kind'] == 'site')], root, store)
     facts = fact_observations(request, sites, devices)
     supplied = set(observed) | set(facts)
-    found, unknown = modulations(request['raw_text'], store) if final == 'link_margin' else ([], [])
+    found, unknown, excluded = modulations(request['raw_text'], store) if final == 'link_margin' else ([], [], [])
+    issues.extend(diagnostic('MODULATION_EXCLUDED', f"已按原文排除调制方式“{e['mention']}”。", **e) for e in excluded)
     # A radio named in the text supplies the sensitivity once its record is read: the general link budget.
     text = request['raw_text'].lower()
     radio = bool(devices) or any(n.lower() in text for r in store.records() if r['type'] == 'device' for n in r['names'])
@@ -163,7 +170,8 @@ def sources_for(request, entities, cards, final, observed, root=None):
         elif len(found) > 1:
             issues.append(diagnostic('MODULATION_COUNT', '写了损耗时一次只按一种调制方式计算，请只保留一种。',
                                      modulations=[r['names'][0] for r in found]))
-    choices = [r['names'][0] for r in store.modulation_records()] if unknown or teacher else []
+    excluded_names = {name for e in excluded for name in e['modulations']}
+    choices = [r['names'][0] for r in store.modulation_records() if r['names'][0] not in excluded_names] if unknown or teacher else []
     for u in unknown:
         issues.append(diagnostic('MODULATION_UNKNOWN', f"调制表中没有“{u['mention']}”。", mention=u['mention'],
                                  span=u['span'], choices=choices))
@@ -213,7 +221,8 @@ def fact_questions(issues):
     asks = {'ENTITY_UNKNOWN': lambda d: '请改用库中的名称，或直接写出距离与设备参数。',
             'ENTITY_AMBIGUOUS': lambda d: '可选：' + '、'.join(d['details']['choices']) + '。',
             'MODULATION_UNKNOWN': lambda d: '可选：' + '、'.join(d['details']['choices']) + '。',
-            'MODULATION_NEEDED': lambda d: '请选择调制方式（' + '、'.join(d['details']['choices']) + '），或直接写出接收灵敏度。',
+            'MODULATION_NEEDED': lambda d: ('请选择调制方式（' + '、'.join(d['details']['choices']) + '），或直接写出接收灵敏度。'
+                if d['details']['choices'] else '已排除全部登记调制方式，请核对选择或直接写出接收灵敏度。'),
             'SITE_COUNT': lambda d: '', 'DEVICE_COUNT': lambda d: '', 'MODULATION_COUNT': lambda d: ''}
     return [d['message'] + asks[d['code']](d) for d in issues if d['code'] in asks]
 
