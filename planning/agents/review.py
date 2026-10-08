@@ -118,6 +118,18 @@ def steps_of(result, report):
             for step_id, tool, outputs in rows]
 
 
+def document_query(request, report):
+    """Retrieve explanation evidence using the modulations the plan actually compares."""
+    query = request['raw_text']
+    plan = report.get('calculation_plan_proposal') or {}
+    if plan.get('tool') == 'calc_link_margin' and plan.get('variants'):
+        names = [o['source_ref'].split('#')[0].split(':')[1].upper()
+                 for p in report['parameters_proposal'] for o in p['origins'] if o['kind'] == 'modulation']
+        names.extend(v['label'] for v in plan['variants'])
+        query += '\n' + ' '.join(dict.fromkeys(names)) + ' 接收灵敏度 链路余量'
+    return query
+
+
 def facts_for(result, snapshot, validations):
     """What the model may state and cite. Rebuilt from the confirmed snapshot on every check."""
     report, request = snapshot['review']['report'], snapshot['review']['request']

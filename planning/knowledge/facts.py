@@ -104,6 +104,7 @@ class FactService:
 
     def _load_typical_values(self, path):
         from formula_rag.schema import check_schema, validate
+        from planning.knowledge.parameter_ranges import load_ranges, expand_range_schema
 
         records = json.loads(path.read_text(encoding='utf-8-sig'))
         tools = json.loads((self.root / 'knowledge' / 'tools.json').read_text(encoding='utf-8-sig'))
@@ -113,7 +114,7 @@ class FactService:
                    if isinstance(tool, dict) and tool.get('id') == 'calc_link_margin']
         if len(schemas) != 1 or not isinstance(schemas[0], dict):
             raise ValueError('FACT_TYPICAL_VALUES_INVALID')
-        properties = schemas[0].get('properties')
+        properties = expand_range_schema(schemas[0], load_ranges(self.root)).get('properties')
         if not isinstance(properties, dict):
             raise ValueError('FACT_TYPICAL_VALUES_INVALID')
         fields = {'distance_km', 'tx_power_dbm', 'tx_gain_dbi', 'rx_gain_dbi', 'modulation'}

@@ -245,7 +245,10 @@ def create_server(root, db_path=None, port=18082, instance_secret=None):
                                          'available':service.activity.available,'authoritative':False})
                     elif len(parts)==4 and parts[3]=='model-calls':
                         identifier(parts[2])
-                        self.respond(200,{'calls':service.model_calls.calls(parts[2]),'file':service.model_calls.path.name})
+                        run_id=parse_qs(urlsplit(self.path).query,keep_blank_values=True).get('run_id',[None])[0]
+                        if run_id is not None:
+                            identifier(run_id)
+                        self.respond(200,{'calls':service.model_calls.calls(parts[2],run_id=run_id),'file':service.model_calls.path.name})
                     else:
                         self.error(404,'NOT_FOUND')
                 except ValueError as exc:

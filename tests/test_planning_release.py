@@ -72,6 +72,8 @@ class PlanningReleaseTests(unittest.TestCase):
                      'planning/workflow/model_log.py','planning/web/i18n-en.mjs','planning/web/i18n.mjs',
                      'planning/web/lang.js','planning/web/records.mjs','planning/web/report.mjs',
                      'knowledge/tools.json','knowledge/facts/modulations.json','knowledge/facts/typical_values.json',
+                     'knowledge/facts/parameter_ranges.json','planning/knowledge/parameter_ranges.py',
+                     'knowledge/documents/simulated/调制方式与接收灵敏度.md',
                      'scripts/eval_teacher.py','tests/test_core.py','tests/eval/teacher_cases.jsonl'):
             with self.subTest(name=name):
                 self.assertTrue(builder.permitted(name))
@@ -86,7 +88,9 @@ class PlanningReleaseTests(unittest.TestCase):
         self.assertEqual(self.inspect()['version'],'0.2.0-dev')
         with self.assertRaisesRegex(ValueError,'SHA256 mismatch'):
             self.inspect(tamper='VERSION')
-        for name in ('knowledge/tools.json','knowledge/facts/modulations.json','planning/web/report.mjs'):
+        for name in ('knowledge/tools.json','knowledge/facts/modulations.json','planning/web/report.mjs',
+                     'knowledge/facts/parameter_ranges.json','planning/knowledge/parameter_ranges.py',
+                     'knowledge/documents/simulated/调制方式与接收灵敏度.md'):
             with self.subTest(name=name), self.assertRaisesRegex(ValueError,'required release input missing'):
                 self.inspect(missing=name)
 
@@ -394,7 +398,7 @@ class GitSourceBytesTests(unittest.TestCase):
         records=json.loads((self.source/'knowledge/documents/manifest.json').read_bytes())['documents']
         simulated=[record for record in records if record['simulated']]
         self.assertEqual({record['doc_id'] for record in simulated},
-                         {'sim-sites','sim-xx100','sim-xx200','sim-xx300'})
+                         {'sim-sites','sim-xx100','sim-xx200','sim-xx300','sim-modulation'})
         for record in simulated:
             name=record['local_path']
             with self.subTest(document=record['doc_id']):

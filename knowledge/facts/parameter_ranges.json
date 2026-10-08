@@ -1,0 +1,7 @@
+{
+  "distance_km": {"unit": "km", "exclusiveMinimum": 0, "maximum": 1000, "reason": "距离须为正值，演示单链路的工程检查上限为 1000 km。"},
+  "frequency_mhz": {"unit": "MHz", "exclusiveMinimum": 0, "maximum": 300000, "reason": "频率须为正值，演示范围限定在不超过 300 GHz。"},
+  "tx_power_dbm": {"unit": "dBm", "minimum": -30, "maximum": 60, "reason": "发射功率按演示电台的工程检查范围约束，避免异常量级进入预算。"},
+  "tx_gain_dbi": {"unit": "dBi", "minimum": -10, "maximum": 60, "reason": "发射天线增益按演示天线的工程检查范围约束，避免异常量级进入预算。"},
+  "rx_gain_dbi": {"unit": "dBi", "minimum": -10, "maximum": 60, "reason": "接收天线增益按演示天线的工程检查范围约束，避免异常量级进入预算。"}
+}

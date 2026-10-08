@@ -1,4 +1,5 @@
 """Answering what the fact store left open: a missing antenna height, a shared site name, a text-versus-record conflict."""
+import json
 import tempfile
 import unittest
 import uuid
@@ -27,7 +28,16 @@ class FactAnswerTests(unittest.TestCase):
         c = dict(action=action, task_id=state['task_id'] if state else str(uuid.uuid4()), event_id=str(uuid.uuid4()),
                  expected_revision=state['revision'] if state else 0, expected_state_version=state['state_version'] if state else 0,
                  **extra)
-        with patch('planning.workflow.task_service.LocalSelector', return_value=understand):
+        def current_selector(text, candidates):
+            envelope = understand(text, candidates)
+            # LocalSelector receives manual_target on the answer revision and
+            # must label quantities/entities without selecting that goal again.
+            if action == 'answer' and (state['request']['target'] or len(state['report']['targets']) == 1):
+                proposal = json.loads(envelope['raw_output'])
+                proposal['targets'] = []
+                envelope = dict(envelope, raw_output=json.dumps(proposal, ensure_ascii=False))
+            return envelope
+        with patch('planning.workflow.task_service.LocalSelector', return_value=current_selector):
             return self.service.apply(c)['state']
 
     def create(self, text):

@@ -77,6 +77,17 @@
       "sha256": "48b96a699af60d15cd326dc8341d77734539ea6ff7fe22f07db8b6a3128a38f2",
       "redistributable": true,
       "simulated": true
+    },
+    {
+      "doc_id": "sim-modulation",
+      "title": "调制方式与接收灵敏度",
+      "version": "2026-10-08",
+      "language": "zh",
+      "source": "knowledge/documents/simulated/调制方式与接收灵敏度.md",
+      "local_path": "knowledge/documents/simulated/调制方式与接收灵敏度.md",
+      "sha256": "4076d4e94acd968eaa581b66669c39a7fd3909436fe64877adf6fc1791af99ae",
+      "redistributable": true,
+      "simulated": true
     }
   ]
 }
