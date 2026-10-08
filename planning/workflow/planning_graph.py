@@ -72,7 +72,7 @@ def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(
             report['questions']=list(dict.fromkeys(report['questions']+list(pending_questions)))
             status=report['execution_status']='AWAITING_INPUT'
         if status=='AWAITING_INPUT' and report:
-            # Default completion (TEACHER_CASES): the Requirement agent suggests table values for the open inputs.
+            # Default completion (TEACHER_CASES): the requirements agent suggests table values for the open inputs.
             from planning.services.suggestions import suggestions_for
             found=suggestions_for(state['request'],report,agent.root,role_selector(agent,bindings,'supplement'),observer)
             if found:

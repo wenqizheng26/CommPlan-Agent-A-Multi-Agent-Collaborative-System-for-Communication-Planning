@@ -39,10 +39,10 @@ test('future composite/model fixtures honor card counts and include all matched 
 
 test('model started/completed events become one card with the owning Agent and measured duration',()=>{
  const [card] = records(state,[...model].reverse());
- assert.equal(card.kind,'model'); assert.equal(card.agent,'Requirement'); assert.equal(card.purpose,'intent');
+ assert.equal(card.kind,'model'); assert.equal(card.agent,'需求与规划'); assert.equal(card.purpose,'intent');
  assert.equal(card.status,'completed'); assert.equal(card.model,'qwen-local'); assert.equal(card.duration_ms,21300);
  assert.equal(card.started_at,model[0].at); assert.equal(card.finished_at,model[1].at);
- assert.equal(modelLine(card),'Requirement Agent → qwen-local · 需求解析 · 完成 · 21.3 s');
+ assert.equal(modelLine(card),'需求与规划 Agent → qwen-local · 需求解析 · 完成 · 21.3 s');
 });
 
 test('unmatched starts remain running, failed ends preserve reasons, and repeated purposes remain separate calls',()=>{
@@ -57,7 +57,7 @@ test('unmatched starts remain running, failed ends preserve reasons, and repeate
 test('an optional attempt on a start does not leave a spinner when failure omits it',()=>{
  const cards = records(state,[event('llm','started',0,{caller:'compute_agent',purpose:'compute_agent',attempt:1}),
   event('llm','failed',2000,{caller:'compute_agent',purpose:'compute_agent',reason:'offline'})]);
- assert.equal(cards[0].status,'failed'); assert.equal(cards[0].agent,'LinkBudget');
+ assert.equal(cards[0].status,'failed'); assert.equal(cards[0].agent,'专业计算');
  const withAttempt = records(state,[event('llm','started',0,{caller:'compute_agent',purpose:'compute_agent',attempt:1}),
   event('llm','failed',2000,{caller:'compute_agent',purpose:'compute_agent',attempt:2,reason:'offline'})]);
  assert.equal(withAttempt[0].status,'running');
@@ -66,19 +66,19 @@ test('an optional attempt on a start does not leave a spinner when failure omits
 test('purpose maps all three teacher Agents and extraction and separates runs',()=>{
  const purposes = Object.keys(purposeNames);
  const cards = records(state,purposes.map((purpose,index) => event('llm','started',index,{caller:purpose,purpose})));
- assert.deepEqual(cards.map(card=>card.agent),['Requirement','Requirement','Requirement','Requirement','LinkBudget','Report','资料抽取']);
+ assert.deepEqual(cards.map(card=>card.agent),['需求与规划','需求与规划','需求与规划','需求与规划','专业计算','验证与解释','资料抽取']);
  const otherRun = event('llm','completed',31300,{caller:'requirements',purpose:'intent'},{run_id:'r2'});
  assert.equal(records(state,[model[0],otherRun])[0].status,'running');
 });
 
 test('single-step and composite tool events retain inputs and output without creating duplicate steps',()=>{
  const [first,second] = records(state,[composite,single]);
- assert.equal(first.kind,'tool'); assert.equal(first.agent,'LinkBudget'); assert.equal(first.tool,'fspl_mhz');
+ assert.equal(first.kind,'tool'); assert.equal(first.agent,'专业计算'); assert.equal(first.tool,'fspl_mhz');
  assert.deepEqual(first.inputs,single.details.inputs); assert.deepEqual(first.output,single.details.output);
  assert.equal(second.tool,'calc_link_margin'); assert.equal(second.label,'QPSK');
  assert.deepEqual(second.arguments,composite.details.arguments); assert.deepEqual(second.steps,composite.details.steps);
  assert.deepEqual(second.result,composite.details.result);
- assert.equal(toolLine(first),'LinkBudget Agent → fspl_mhz：路径距离 = 10.00 km，载波频率 = 5800.00 MHz → 127.71 dB');
+ assert.equal(toolLine(first),'专业计算 Agent → fspl_mhz：路径距离 = 10.00 km，载波频率 = 5800.00 MHz → 127.71 dB');
 });
 
 test('only the current task and revision are shown in event time order, without mutating supplied data',()=>{
