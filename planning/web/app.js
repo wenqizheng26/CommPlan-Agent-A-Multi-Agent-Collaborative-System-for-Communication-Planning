@@ -154,7 +154,7 @@ async function ensureComparison(){
 }
 // The 资料 page: documents, sections, extraction and review.
 const lib={library:null,selectedDoc:null,sections:null,chosen:new Set(),kind:'device',extracting:null,message:'',drafts:null,reviewer:'',reason:'',rejecting:null,busy:false,uploading:false,
- cards:null,deleting:null,cardForm:null,forms:{manual:{},model:{}},reviewForms:{},drafting:null};
+ cards:null,capabilities:{},deleting:null,cardForm:null,forms:{manual:{},model:{}},reviewForms:{},drafting:null};
 try{lib.reviewer=localStorage.getItem('planning-reviewer')||'';}catch{}
 function drawLibrary(){
  renderLibrary($('library-body'),{...lib,onSelectDoc:selectDoc,onToggleChunk:toggleChunk,onKind:k=>{lib.kind=k;drawLibrary();},onExtract:extractDraft,
@@ -166,11 +166,13 @@ function drawLibrary(){
   onReviewForm:(id,key,value)=>{(lib.reviewForms[id]??={})[key]=value;}});
  syncButtons();
 }
+// The full listing carries what this build can do with cards; switch and delete answers carry the cards only.
+function takeCards(data){lib.cards=data.cards;lib.capabilities=data.capabilities||{};}
 async function loadLibrary(){
  const [docs,drafts,cards]=await Promise.allSettled([api('/api/documents'),api('/api/drafts'),api('/api/formula-library')]);
  if(docs.status==='fulfilled')lib.library=docs.value;else lib.message='文档读取失败：'+docs.reason.message;
  // A server without the card library answers 404: the card section is simply not shown.
- if(cards.status==='fulfilled')lib.cards=cards.value.cards;else if(cards.reason.status===404)lib.cards=undefined;else lib.message='公式卡读取失败：'+cards.reason.message;
+ if(cards.status==='fulfilled')takeCards(cards.value);else if(cards.reason.status===404)lib.cards=undefined;else lib.message='公式卡读取失败：'+cards.reason.message;
  if(drafts.status==='fulfilled')lib.drafts=drafts.value.drafts;else lib.message='草稿读取失败：'+drafts.reason.message;
  drawLibrary();
 }
@@ -224,7 +226,7 @@ async function reviewDraft(draft,decision,reason){
   lib.rejecting=null;lib.reason='';notice(decision==='approve'?'已入库：'+draftTitle(draft):'已驳回：'+draftTitle(draft));
   lib.drafts=(await api('/api/drafts')).drafts;  // other drafts may now name a record already in the library
   if(decision==='approve'){const f=await api('/api/facts');for(const record of f.records)facts[record.id]=record;
-   if(draft.kind==='formula'&&lib.cards!==undefined)lib.cards=(await api('/api/formula-library')).cards;}
+   if(draft.kind==='formula'&&lib.cards!==undefined)takeCards(await api('/api/formula-library'));}
  }catch(e){lib.message=e.message;}
  finally{lib.busy=false;drawLibrary();}
 }

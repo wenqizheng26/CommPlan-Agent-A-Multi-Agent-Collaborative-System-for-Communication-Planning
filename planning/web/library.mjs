@@ -80,22 +80,29 @@ function itemControls(ctx,kind,id,enabled,removable,onText){
 }
 const CALC={dedicated:['专用程序','ok'],generic:['通用计算','run'],needs_tool:['需专用程序','warn']};
 export const SOURCE_KINDS={builtin:'内置',document:'文档抽取',model_knowledge:'模型起草',manual:'手填'};
+// The server says which card features this build has; anything not reported as true stays hidden.
+const can=(ctx,name)=>ctx.capabilities?.[name]===true;
+const calcLabel=(ctx,calc)=>calc==='generic'&&!can(ctx,'generic_calculation')?['仅作检索','']:CALC[calc]||[calc,''];
+const computable=(ctx,calc)=>calc==='dedicated'||calc==='generic'&&can(ctx,'generic_calculation');
 // Registered formula cards: what each can be used for, where it came from, and its switch.
 function cardList(host,ctx){
  if(ctx.cards===undefined)return;  // a server without the card library endpoint
  const head=el('div',undefined,'lib-head'),actions=el('div',undefined,'lib-actions');
  for(const [form,text] of [['manual','新建公式卡'],['model','让模型起草']]){
+  if(!can(ctx,form+'_drafts'))continue;
   const b=button(ctx.cardForm===form?'收起':text,()=>ctx.onCardForm(ctx.cardForm===form?null:form));b.disabled=!!ctx.busy;actions.append(b);
  }
  head.append(el('h3','公式卡'),actions);host.append(head);
- host.append(el('p','专用程序：已有独立计算与复核。通用计算：已审核的封闭式公式按卡上表达式求值。需迭代或查表的公式要专用程序。停用后不参与检索和计算。','hint'));
- if(ctx.cardForm==='manual')host.append(manualForm(ctx));
- if(ctx.cardForm==='model')host.append(modelForm(ctx));
+ host.append(el('p',can(ctx,'generic_calculation')
+  ?'专用程序：已有独立计算与复核。通用计算：已审核的封闭式公式按卡上表达式求值。需迭代或查表的公式要专用程序。停用后不参与检索和计算。'
+  :'专用程序：已有独立计算与复核，可作为计算目标。其余公式卡已入库，目前只参与公式检索，尚未支持作为计算目标。停用后不参与检索和计算。','hint'));
+ if(ctx.cardForm==='manual'&&can(ctx,'manual_drafts'))host.append(manualForm(ctx));
+ if(ctx.cardForm==='model'&&can(ctx,'model_drafts'))host.append(modelForm(ctx));
  if(ctx.cards===null){host.append(el('p','正在读取…','hint'));return;}
  const list=el('div',undefined,'card-list');
  for(const c of ctx.cards){
   const item=el('div',undefined,'lib-item card-item'+(c.enabled===false?' off':'')),top=el('div',undefined,'card-top'),tags=el('span',undefined,'doc-tags');
-  const [calc,tone]=CALC[c.calc]||[c.calc,''];
+  const [calc,tone]=calcLabel(ctx,c.calc);
   tags.append(el('span',calc,'chip '+tone));
   if(SOURCE_KINDS[c.source_kind])tags.append(el('span',SOURCE_KINDS[c.source_kind],'chip'));
   if(c.enabled===false)tags.append(el('span','已停用','chip warn'));
@@ -103,7 +110,7 @@ function cardList(host,ctx){
   item.append(el('p',`${c.id} · v${c.version}${c.output?` · 输出 ${c.output.name}（${c.output.unit}）`:''}`,'hint mono'));
   if(c.expression)item.append(raw('code',c.expression,'card-expr mono'));
   const src=c.sources?.[0];if(src)item.append(raw('p',[src.title,src.locator].filter(Boolean).join(' · '),'hint'));
-  item.append(itemControls(ctx,'card',c.id,c.enabled!==false,c.added,'参与计算'));
+  item.append(itemControls(ctx,'card',c.id,c.enabled!==false,c.added,computable(ctx,c.calc)?'参与计算':'参与检索'));
   list.append(item);
  }
  host.append(list);
@@ -261,7 +268,8 @@ function draftCard(draft,ctx){
   card.append(el('p',`${label} · 审核人 ${draft.review.reviewer} · ${when}${draft.review.reason?' · '+draft.review.reason:''}`,'hint'));
   if(draft.status==='approved'&&draft.kind==='formula'){
    const calc=ctx.cards?.find(c=>c.id===draft.record?.id)?.calc;
-   card.append(el('p',calc==='generic'?'公式卡已入库，可作为计算目标（通用计算）。':calc==='needs_tool'?'公式卡已入库；这类公式需要专用程序，暂不能计算。'
+   card.append(el('p',calc==='generic'?(can(ctx,'generic_calculation')?'公式卡已入库，可作为计算目标（通用计算）。':'公式卡已入库，目前只参与公式检索，尚未支持作为计算目标。')
+    :calc==='needs_tool'?'公式卡已入库；这类公式需要专用程序，暂不能计算。'
     :'公式卡已入库；计算规划目前只用已支持的公式，这张卡先作资料与检索使用。','hint'));
   }
  }

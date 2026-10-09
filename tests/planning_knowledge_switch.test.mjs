@@ -28,9 +28,22 @@ test('cards show what they can be used for and where they came from',()=>{
  const cards=[{id:'fspl_ghz',title:'自由空间',version:'1.0.0',expression:'92.4',output:{name:'path_loss_db',unit:'dB'},sources:[{title:'ITU',locator:'(6)'}],calc:'dedicated',source_kind:'builtin',enabled:true,added:false},
   {id:'x',title:'新卡',version:'1.0.0',expression:'a*b',output:{name:'c',unit:'dB'},sources:[],calc:'generic',source_kind:'manual',enabled:false,added:true},
   {id:'slant',title:'直线距离',version:'1.0.0',expression:null,output:{name:'d',unit:'km'},sources:[],calc:'needs_tool',source_kind:'builtin',enabled:true,added:false}];
- const texts=render({library:{documents:[],formats:[],converter:true},cards}).map(n=>n.textContent);
- for(const t of ['专用程序','通用计算','需专用程序','内置','手填','已停用'])assert.ok(texts.includes(t),t);
+ const all=caps=>render({library:{documents:[],formats:[],converter:true},cards,capabilities:caps}).map(n=>n.textContent);
+ const texts=all({generic_calculation:true,manual_drafts:true,model_drafts:true});
+ for(const t of ['专用程序','通用计算','需专用程序','内置','手填','已停用','新建公式卡','让模型起草'])assert.ok(texts.includes(t),t);
  assert.equal(texts.filter(t=>t==='删除').length,1);
+ assert.equal(texts.filter(t=>t==='参与计算').length,2);
+});
+
+test('a build without card drafts or generic calculation does not offer them',()=>{
+ const cards=[{id:'x',title:'新卡',version:'1.0.0',expression:'a*b',output:{name:'c',unit:'dB'},sources:[],calc:'generic',source_kind:'document',enabled:true,added:true},
+  {id:'fspl_ghz',title:'自由空间',version:'1.0.0',expression:'92.4',output:{name:'path_loss_db',unit:'dB'},sources:[],calc:'dedicated',source_kind:'builtin',enabled:true,added:false}];
+ for(const capabilities of [undefined,{manual_drafts:false,model_drafts:false}]){
+  const texts=render({library:{documents:[],formats:[],converter:true},cards,capabilities,cardForm:'manual'}).map(n=>n.textContent);
+  assert.ok(!texts.includes('新建公式卡')&&!texts.includes('让模型起草')&&!texts.includes('提交草稿'),'no draft entry that would answer 404');
+  assert.ok(texts.includes('仅作检索')&&!texts.includes('通用计算'));
+  assert.deepEqual(texts.filter(t=>t==='参与计算'||t==='参与检索'),['参与检索','参与计算']);
+ }
 });
 
 test('a hand-written card is checked before it is sent as a draft',()=>{

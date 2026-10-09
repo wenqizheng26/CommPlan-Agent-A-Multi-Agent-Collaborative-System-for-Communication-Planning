@@ -341,7 +341,7 @@ function evidenceView(host,ctx){
  const found=r.document_retrieval,plan=(state.review?.report||r).calculation_plan_proposal;
  const uncited=uncitedCards(plan,found,ctx.cards);
  if(uncited?.length)host.append(block('未检索到原文片段',
-  `未检索到${uncited.map(c=>'「'+c.title+'」').join('、')}的原文片段，仅有公式卡登记的出处。`,'warning'));
+  `未检索到${uncited.map(c=>'「'+metadataText(c.title)+'」').join('、')}的原文片段，仅有公式卡登记的出处。`,'warning'));
  if(found?.hits?.length)documentHits(host,ctx,found);
  else host.append(block('文档检索',found?'没有命中的文档片段。':'本次未检索文档。','hint'));
  if(state.retrieval)host.append(retrievalTable(state.retrieval));
