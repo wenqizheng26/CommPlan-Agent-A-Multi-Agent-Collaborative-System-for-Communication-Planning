@@ -65,6 +65,13 @@ MESSAGES={
     'EXTRACTION_CHUNKS':'请选择 1–6 个片段。',
     'EXTRACTION_ONE_DOCUMENT':'一次只能从同一份文档抽取。',
     'DRAFT_KIND':'请选择站点、设备或公式。',
+    'DRAFT_SOURCE_REQUIRED':'请填写真实出处及独立核来的算例，再审核通过。',
+    'DRAFT_EXAMPLE_FAILED':'算例未通过核对，请检查输入、期望结果与公式定义域。',
+    'DRAFT_DUPLICATE_ID':'已有同编号公式卡，请使用新的编号。',
+    'DRAFT_TOPIC':'起草主题请填写 1 至 100 字。',
+    'DRAFT_UNIT':'参数和输出单位需使用系统支持的单位。',
+    'DRAFT_PYTHON_FORBIDDEN':'目前只支持白名单表达式，不能新增程序工具。',
+    'DRAFT_APPLICABILITY':'适用条件无效，请核对公式卡声明。',
     'DRAFT_ID':'草稿不存在。',
     'DRAFT_CHANGED':'草稿文件已被改动，不能审核。',
     'DRAFT_STALE_REVIEW':'草稿内容已变化，请刷新后再审核。',
@@ -239,8 +246,8 @@ def create_server(root, db_path=None, port=18082, instance_secret=None):
                 from planning.knowledge.library import cards
                 try:
                     self.respond(200,{'cards':cards(root),
-                                      'capabilities':{'manual_drafts':False,'model_drafts':False,
-                                                      'generic_calculation':False}})
+                                      'capabilities':{'manual_drafts':True,'model_drafts':True,
+                                                       'generic_calculation':True}})
                 except (OSError,ValueError):
                     self.error(500,'SERVER_ERROR')
             elif path.startswith('/api/tasks/'):
@@ -331,6 +338,16 @@ def create_server(root, db_path=None, port=18082, instance_secret=None):
 
         def draft_command(self,payload):
             from planning.knowledge.drafts import DraftStore
+            if self.path=='/api/drafts/manual':
+                if type(payload) is not dict or set(payload)!={'kind','record'}:
+                    raise ValueError('INVALID_REQUEST')
+                return {'draft':DraftStore(root).create_manual(payload['kind'],payload['record'])}
+            if self.path=='/api/drafts/model':
+                if type(payload) is not dict or set(payload)!={'kind','topic'}:
+                    raise ValueError('INVALID_REQUEST')
+                from planning.agents.role_model import LocalRoleSelector
+                binding=service.settings.bindings(service.settings.get()['settings'])['requirements']
+                return DraftStore(root).create_model(payload['kind'],payload['topic'],LocalRoleSelector(binding))
             if self.path=='/api/drafts/extract':
                 if type(payload) is not dict or set(payload)!={'kind','chunk_ids'}:
                     raise ValueError('INVALID_REQUEST')
@@ -338,10 +355,11 @@ def create_server(root, db_path=None, port=18082, instance_secret=None):
                 from planning.agents.role_model import LocalRoleSelector
                 binding=service.settings.bindings(service.settings.get()['settings'])['requirements']
                 return extract(root,payload['kind'],payload['chunk_ids'],LocalRoleSelector(binding))
-            if type(payload) is not dict or set(payload)!={'id','decision','reviewer','reason','content_hash'}:
+            required={'id','decision','reviewer','reason','content_hash'}
+            if type(payload) is not dict or not required<=set(payload)<=required|{'source','example'}:
                 raise ValueError('INVALID_REQUEST')
             return {'draft':DraftStore(root).review(payload['id'],payload['reviewer'],payload['content_hash'],
-                                                    payload['decision'],payload['reason'])}
+                                                      payload['decision'],payload['reason'],payload.get('source'),payload.get('example'))}
 
         def library_command(self,payload):
             from planning.knowledge import sources, library
@@ -398,7 +416,7 @@ def create_server(root, db_path=None, port=18082, instance_secret=None):
                     self.reject(503,'DATABASE_BUSY')
                 return
             library_paths={'/api/documents/switch','/api/documents/delete','/api/formula-cards/switch','/api/formula-cards/delete'}
-            if self.path not in {'/api/commands','/api/cancel-operation','/api/settings','/api/drafts/extract','/api/drafts/review','/api/model-switch',*library_paths}:
+            if self.path not in {'/api/commands','/api/cancel-operation','/api/settings','/api/drafts/extract','/api/drafts/review','/api/drafts/manual','/api/drafts/model','/api/model-switch',*library_paths}:
                 self.reject(404,'NOT_FOUND'); return
             if self.headers.get_content_type()!='application/json':
                 self.reject(400,'JSON_REQUIRED'); return

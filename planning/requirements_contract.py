@@ -107,9 +107,15 @@ def validate_request(value, *, expected_revision=None):
         string(value['target'])
     require(type(value['manual_parameters']) is dict, 'MANUAL_PARAMETERS_OBJECT')
     for name, item in value['manual_parameters'].items():
-        require(name in FIELDS or name in FACT_FIELDS, 'UNKNOWN_PARAMETER')
+        from planning.services.plans import TARGETS
+        generic = value['target'] is not None and value['target'] not in TARGETS
+        require(name in FIELDS or name in FACT_FIELDS or
+                (generic and re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,63}', name)), 'UNKNOWN_PARAMETER')
         obj(item, 'value unit'); number(item['value']); string(item['unit'])
-        if name in FACT_FIELDS:
+        if generic:
+            from planning.services.card_units import convert_unit
+            convert_unit(item['value'],item['unit'],item['unit'])
+        elif name in FACT_FIELDS:
             require(item['unit'] == FACT_FIELDS[name][1], 'UNIT_MISMATCH')
         else:
             number(convert(name, item['value'], item['unit']))
@@ -118,7 +124,7 @@ def validate_request(value, *, expected_revision=None):
 
 def validate_report(value, request):
     request = validate_request(request)
-    require(type(value) is dict and set(REPORT_FIELDS.split())<=set(value)<=set(REPORT_FIELDS.split())|{'planning_role','document_retrieval','suggestions','service','disabled_goals','unit_suggestions'},'SCHEMA_FIELDS: report')
+    require(type(value) is dict and set(REPORT_FIELDS.split())<=set(value)<=set(REPORT_FIELDS.split())|{'planning_role','document_retrieval','suggestions','service','disabled_goals','available_goals','unit_suggestions','generic_card','generic_parameters','generic_choices'},'SCHEMA_FIELDS: report')
     json_value(value); identity(value)
     require(value['profile'] == PROFILE, 'PROFILE')
     for key in ('task_id', 'revision', 'request_id'):

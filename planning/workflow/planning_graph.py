@@ -197,6 +197,8 @@ def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(
             report['review'] = dict(assessment_hash=assessment['assessment_hash'], decision=proposal['decision'],
                 label=DECISIONS[proposal['decision']], mode=assessment['role']['mode'], summary=SUMMARY[proposal['decision']],
                 opinions=copy.deepcopy(proposal['opinions']), withheld=withheld)
+            if report.get('calculation_mode')=='generic_card' and proposal['decision']=='pass':
+                report['review']['summary']='审核入库公式卡的算例与结果检查通过；无独立复核模型。'
             report['answer'] = dict(text=proposal['answer'], mode=assessment['role']['mode'], withheld='answer' in withheld)
             report['explanation'] = copy.deepcopy(proposal['steps'])
             if state['confirmed_snapshot']['review']['report'].get('document_retrieval'):

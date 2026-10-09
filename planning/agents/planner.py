@@ -331,6 +331,9 @@ class PlanningAgent:
     def __init__(self,selector=False,root=None):self.selector=selector;self.root=root
 
     def run(self,request,report,cards,observer=None):
+        if 'generic_card' in report:
+            from planning.services.generic_cards import planning_role
+            return copy.deepcopy(report['calculation_plan_proposal']), planning_role()
         available=available_cards(cards,report['calculation_plan_proposal'])
         facts=planning_view(request,report,available,self.root)
         string=lambda values:dict(type='string',enum=values)

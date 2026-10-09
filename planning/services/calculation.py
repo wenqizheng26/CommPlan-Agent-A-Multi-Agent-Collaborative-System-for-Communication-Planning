@@ -45,7 +45,7 @@ def single_fspl(plan):
     return [s['tool_id'] for s in plan['steps']] == ['fspl_ghz']
 
 
-def run_steps(plan, cards, parameters, parameter_names, conditions):
+def run_steps(plan, cards, parameters, parameter_names, conditions, raw_text=''):
     by_id = {c['id']: c for c in cards}
     done, steps = {}, []
     for step in plan['steps']:
@@ -62,7 +62,8 @@ def run_steps(plan, cards, parameters, parameter_names, conditions):
                 require(binding['ref'] in done and done[binding['ref']]['name']==name, 'PLAN_BINDING')
                 inputs[name] = done[binding['ref']]['value']
         require(all(type(v) in (int, float) for v in inputs.values()), 'PLAN_DOMAIN_UNSUPPORTED')
-        require(not scope_issues(card['id'], inputs, {'conditions':conditions}), 'MODEL_NOT_APPLICABLE')
+        from formula_rag.applicability import noise_confirmation
+        require(not scope_issues(card['id'], inputs, {'conditions':conditions,'noise_reference':noise_confirmation(raw_text)}), 'MODEL_NOT_APPLICABLE')
         result = core.evaluate(card, inputs)
         require(result['status']=='ok', 'CALCULATION_DOMAIN_ERROR')
         value = result.get('value')
@@ -217,7 +218,7 @@ def execute_plan(snapshot, cards, observer, attempt, root=None):
     started = stamp()
     observe(observer,'model','started',caller='compute_agent',model_id=final['id'],steps=len(plan['steps']))
     try:
-        steps = run_steps(plan, cards, parameters, names, report['conditions'])
+        steps = run_steps(plan, cards, parameters, names, report['conditions'],snapshot['review']['request']['raw_text'])
     except Exception:
         observe(observer,'model','failed',caller='compute_agent')
         raise
@@ -248,6 +249,11 @@ def execute_plan(snapshot, cards, observer, attempt, root=None):
                   outputs=[copy.deepcopy(steps[-1]['output'])], steps=steps, **extra,
                   evidence_ids=copy.deepcopy(report['evidence_ids']), runtime_mode='deterministic',
                   tool_version='confirmed-plan-v1/'+RULE_VERSION, started_at=started, finished_at=stamp())
+    if 'generic_card' in report:
+        from planning.services.generic_cards import LIMITATION
+        output.update(calculation_mode='generic_card',card=dict(id=final['id'],version=final['version'],content_hash=digest(final)),
+            verification=dict(method='registered_examples_and_finite_result',independent_model=False),
+            limitations=[LIMITATION])
     output['result_hash'] = digest(output)
     return output
 
@@ -277,16 +283,31 @@ def validate_plan_result(result, snapshot, expected_inputs):
             except (KeyError, TypeError, AttributeError, ValueError):
                 ok = False
             chain_ok = chain_ok and ok
-            magnitude_ok = magnitude_ok and ok and agrees(step['tool_id'], got['inputs'], got['output']['value'])
+            if 'generic_card' in report:
+                card=model
+                examples_ok=bool(card.get('examples'))
+                for example in card.get('examples',[]):
+                    replay=core.evaluate(card,example['inputs'])
+                    examples_ok=examples_ok and replay.get('status')=='ok' and abs(replay['value']-example['expected'])<=example.get('tolerance',1e-6)
+                replay=core.evaluate(card,got['inputs']) if ok else {}
+                magnitude_ok=magnitude_ok and ok and examples_ok and replay.get('status')=='ok' and replay.get('value')==value
+            else:
+                magnitude_ok = magnitude_ok and ok and agrees(step['tool_id'], got['inputs'], got['output']['value'])
             done[step['step_id']] = got['output'] if ok else {}
     numeric_ok = chain_ok and result['outputs']==[steps[-1]['output']] and result['outputs'][0]['name']==model['output']['name']
-    return dict(
+    checks = dict(
         model_identity=result['model_id']==model['id']==plan['steps'][-1]['tool_id'] and result['model_version']==model['version']
             and result['formula']==model.get('expression', model.get('algorithm')),
         numeric_domain=numeric_ok, step_chain=chain_ok, independent_magnitude=magnitude_ok,
         plan_checks=chain_ok and all(done[c['distance']]['value'] <= done[c['horizon']]['value'] for c in plan.get('checks', [])),
         requirement_and_solve=numeric_ok and goal_ok(result, snapshot, expected_inputs),
         link_tool=numeric_ok and tools_ok(result, plan, expected_inputs))
+    if 'generic_card' in report:
+        checks['registered_examples_and_finite_result']=checks.pop('independent_magnitude')
+        checks['generic_card_identity']=(result.get('calculation_mode')=='generic_card' and
+            result.get('card')==dict(id=model['id'],version=model['version'],content_hash=digest(model)) and
+            result.get('verification')==dict(method='registered_examples_and_finite_result',independent_model=False))
+    return checks
 
 
 def tools_ok(result, plan, inputs):
@@ -431,9 +452,13 @@ def publish(result, snapshot, validations):
                 runtime_health=report['runtime_health'], generated_at=stamp())
 
 
-def plan_conclusion(result):
+def plan_conclusion(result, objective=None):
     tools = [s['tool_id'] for s in result['steps']]
     out = result['outputs'][0]
+    if result.get('calculation_mode')=='generic_card':
+        label=objective or result['model_id']
+        value=format(out['value'],'.4g') if 0<abs(out['value'])<1 else format(out['value'],'.2f')
+        return f"按已确认输入，{label} {value} {out['unit']}。"
     text = '按已确认自由空间条件，' if {'fspl_ghz', 'fspl_mhz'} & set(tools) else '按已确认输入，'
     if result.get('comparison'):
         c = result['comparison']
@@ -485,8 +510,8 @@ def publish_plan(result, snapshot, validations):
                 model_id=result['model_id'],model_version=result['model_version'],formula=result['formula'],
                 parameters=copy.deepcopy(report['parameters_proposal']),conditions=copy.deepcopy(report['conditions']),
                 validation_ids=[v['validation_id'] for v in validations],
-                conclusion=plan_conclusion(result),
+                conclusion=plan_conclusion(result,report['calculation_plan_proposal']['objective']),
                 limitations=list(dict.fromkeys(limits)),
                 evidence_refs=copy.deepcopy(report['evidence_refs']), component_modes=copy.deepcopy(report['component_modes']),
                 runtime_health=report['runtime_health'], generated_at=stamp(),
-                **{k: copy.deepcopy(result[k]) for k in ('requirement', 'solve', 'tool_calls', 'comparison') if k in result})
+                **{k: copy.deepcopy(result[k]) for k in ('requirement', 'solve', 'tool_calls', 'comparison', 'calculation_mode', 'card', 'verification') if k in result})

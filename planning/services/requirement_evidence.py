@@ -21,10 +21,10 @@ def evidence_for(cards, snapshot, ranks):
     refs = []
     for card in cards:
         for i, source in enumerate(card['sources']):
-            if not source.get('title') or not (source.get('url') or source.get('path')):
+            if not source.get('title') or not (source.get('url') or source.get('path') or source.get('locator')):
                 continue
             refs.append(dict(evidence_id=f"{snapshot['snapshot_id']}:{card['id']}:{i}", kind='formula_card',
-                source_title=source['title'], source_url=source.get('url'), source_id=None if source.get('url') else source.get('path'),
+                source_title=source['title'], source_url=source.get('url'), source_id=None if source.get('url') else source.get('path') or f'card:{card["id"]}#source:{i}',
                 locator=source.get('locator') or 'formula card source metadata', excerpt=card['description'],
                 content_hash=digest(card), catalog_id=card['id'], card_version=card['version'], status=card['status'],
                 knowledge_snapshot_id=snapshot['snapshot_id'], parameter_names=list(card['parameters']),

@@ -34,7 +34,7 @@ def validate_card(card: dict) -> list[str]:
     if kind == 'python_tool' and ('expression' in card or
                                   not isinstance(card.get('algorithm'), str) or not card['algorithm'].strip()):
         errors.append('python_tool requires algorithm and must not declare expression')
-    if isinstance(card.get("id"), str) and not re.fullmatch(r"[a-z][a-z0-9_]*", card["id"]):
+    if isinstance(card.get("id"), str) and not re.fullmatch(r"[a-z0-9_]{1,64}", card["id"]):
         errors.append("id must use lowercase letters, digits and underscores")
     if card.get("status") not in ("verified", "draft"):
         errors.append("status must be verified or draft")
@@ -88,7 +88,7 @@ def validate_card(card: dict) -> list[str]:
     sources = card.get("sources")
     if not isinstance(sources, list) or any(not isinstance(source, dict) for source in sources):
         errors.append("sources must be an object list")
-    elif card.get("status") == "verified" and (not sources or any(not source.get("title") or not (source.get("url") or source.get("path")) for source in sources)):
+    elif card.get("status") == "verified" and (not sources or any(not source.get("title") or not (source.get("url") or source.get("path") or source.get("locator")) for source in sources)):
         errors.append("verified formulas require titled, locatable sources")
     examples = card.get("examples")
     if not isinstance(examples, list):

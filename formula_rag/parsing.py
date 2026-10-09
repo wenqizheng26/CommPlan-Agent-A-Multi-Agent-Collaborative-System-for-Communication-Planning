@@ -270,10 +270,14 @@ def extract_request(text, overrides=None, condition=None, target=None, field_spe
     for identifier, pattern in [('link_margin', r'余量|裕量|link margin'), ('received_power', r'接收(?:信号)?电平|接收功率|链路预算|received (?:signal level|power)|link budget'),
                                 ('receiver_threshold', r'接收门限|接收灵敏度|receiver (?:sensitivity|threshold)'),
                                 ('thermal_noise', r'热噪声|噪声功率|thermal noise|noise power'), ('doppler_max', r'多普勒|Doppler'),
-                                ('fspl_ghz', r'传输损耗|传播损耗|路径损耗|衰减|自由空间|(?:^|；)损耗|path loss|propagation loss|free[ -]space loss|attenuation')]:
+                                ('fspl_ghz', r'传输损耗|传播损耗|路径损耗|衰减|(?:^|；)损耗|path loss|propagation loss|free[ -]space loss|attenuation')]:
         if re.search(pattern, goal_text, re.I):
             targets.append(identifier)
     unsupported = []
+    # Free space states a condition, not a request for path loss. A wavelength
+    # request needs its own reviewed card; the dedicated parser cannot replace it.
+    if explicit and re.search(r'波长|wavelength',goal_text,re.I):
+        unsupported.append('wavelength')
     if re.search(r'多普勒(?:效应)?损耗|Doppler loss', goal_text, re.I):
         targets = [t for t in targets if t != 'doppler_max']
         unsupported.append('doppler_loss')

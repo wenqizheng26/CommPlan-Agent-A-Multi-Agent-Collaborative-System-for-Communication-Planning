@@ -58,11 +58,31 @@ def issues_for(state):
                                           note='默认补全，需确认')
         if field in unit_suggested:
             issues[-1]['suggestion']={k:v for k,v in unit_suggested[field].items() if k != 'field'}
+        from planning.services.unit_typos import unsupported
+        unsupported_units=[p['message'] for p in unsupported((state.get('request') or {}).get('raw_text','')) if p['field']==field]
+        if unsupported_units:
+            issues[-1]['detail']='；'.join(dict.fromkeys(unsupported_units))
+            issues[-1].pop('suggestion',None)
     if state['status']=='NEEDS_MODEL':
-        disabled=[d['message'] for d in report.get('diagnostics',[]) if d['code']=='CARD_DISABLED']
-        add('capability','task','需求明确，但当前模型不支持','；'.join(disabled) if disabled else '当前支持自由空间条件下的路径损耗、接收信号电平与链路余量。可编辑任务重新定义目标；系统不会擅自替换你的需求。')
+        add('capability','task','需求明确，但当前模型不支持','当前支持自由空间条件下的路径损耗、接收信号电平与链路余量。可编辑任务重新定义目标；系统不会擅自替换你的需求。')
         return issues
     diagnostics=report.get('diagnostics',[])
+    if 'generic_card' in report:
+        if any(d['code']=='INTENT_CONFLICT' for d in diagnostics):
+            add('conflict','task','目标或模型条件存在冲突','请直接编辑当前任务，明确本次采用的单个目标。')
+            return issues
+        params={p['canonical_name']:p for p in report['parameters_proposal']}
+        for field,spec in report['generic_parameters'].items():
+            p=params[field]
+            problems=[d for d in diagnostics if d['details'].get('field')==field]
+            if p['status'] in {'missing','conflicting'} or problems:
+                kind='PARAMETER_OUT_OF_RANGE' if any(d['code']=='PARAMETER_OUT_OF_RANGE' for d in problems) else p['status']
+                add(kind,field,spec['description']+'（'+spec['unit']+'）',
+                    '；'.join(d['message'] for d in problems) or '请填写本次采用的明确数值和单位。')
+        for d in diagnostics:
+            if d['code']=='CARD_CONDITION_REQUIRED':
+                add('clarification','task','请声明公式卡适用条件',d['message'])
+        return issues
     if any(d['code']=='INTENT_CONFLICT' for d in diagnostics):
         add('conflict','task','目标或模型条件存在冲突','请直接编辑当前任务，统一原文和手工模型条件。')
         return issues
@@ -72,10 +92,12 @@ def issues_for(state):
                      dict(value='fresnel_radius',label='第一菲涅耳区半径'),dict(value='knife_edge_nu',label='绕射参数'),
                      dict(value='knife_edge_loss',label='单刃形绕射损耗'),dict(value='sea_reflection_two_ray',label='海面反射附加损耗'),
                      dict(value='link_feasibility',label='判断能否通信'),dict(value='scheme_comparison',label='比较方案')])
+        from planning.services.plans import TARGETS
+        issues[-1]['choices'] = [c for c in issues[-1]['choices'] if c['value'] not in TARGETS
+                                or c['value'] in report.get('available_goals',TARGETS)]
         for choice in issues[-1]['choices']:
-            reason=report.get('disabled_goals',{}).get(choice['value'])
-            if reason:
-                choice.update(disabled=True,reason=reason)
+            choice['group']='dedicated'
+        issues[-1]['choices'].extend(report.get('generic_choices',[]))
         return issues
     if any(d['code']=='MISSING_CONDITION' for d in diagnostics):
         add('clarification','condition','是否明确只做自由空间基准？','自由空间基准不代表实际海面或遮挡环境。',
@@ -146,6 +168,8 @@ def issues_for(state):
                 choices=[dict(value=name,label=name) for name in det['choices']])
         elif d['code'] in {'ENTITY_UNKNOWN','SITE_COUNT','DEVICE_COUNT','DEVICE_BAND'}:
             add('clarification','task','站点或设备需要核对',d['message']+'请在补充中说明或编辑原文。',excerpt=d['message'])
+        elif d['code']=='MODULATION_COUNT':
+            add('clarification','task','请明确本次采用的调制方式',d['message']+'请编辑原文。',excerpt=d['message'])
     for field,p in params.items():
         if field in FACT_FIELDS and p['status']=='missing':
             add('missing',field,f'请补充{FACT_FIELDS[field][0]}（{FACT_FIELDS[field][1]}）','站点库没有这一项；输入单个数值和单位，例如 20m。')
@@ -330,8 +354,29 @@ def record_fields(report):
 
 
 
-def apply_answers(current,answers,event_id):
-    issues={i['id']:i for i in issues_for(current)}
+def active_goal_issues(issues,cards):
+    """Project current choices without changing saved report, history or hashes."""
+    by_id={c['id']:c for c in cards}
+    from planning.services.plans import TARGETS
+    from planning.services.generic_cards import choices as generic_choices
+    labels=['路径损耗','接收信号电平','链路余量','第一菲涅耳区半径','绕射参数','单刃形绕射损耗','海面反射附加损耗']
+    choices=[dict(value=t,label=label,group='dedicated') for t,label in zip(TARGETS,labels) if t in by_id]
+    choices += [dict(value='link_feasibility',label='判断能否通信',group='dedicated'),
+                dict(value='scheme_comparison',label='比较方案',group='dedicated')]
+    choices += generic_choices(cards=cards)
+    projected=copy.deepcopy(issues)
+    for issue in projected:
+        if issue['field']!='goal':
+            continue
+        issue['choices']=copy.deepcopy(choices)
+    return projected
+
+
+def apply_answers(current,answers,event_id,cards=None):
+    questions=issues_for(current)
+    if cards is not None:
+        questions=active_goal_issues(questions,cards)
+    issues={i['id']:i for i in questions}
     require(type(answers) is dict and 0<len(answers)<=20,'INVALID_ANSWERS')
     require(set(answers)<=set(issues),'STALE_QUESTION')
     request=input_of(current);before=copy.deepcopy(request);conversation=conversation_of(current)
@@ -341,7 +386,12 @@ def apply_answers(current,answers,event_id):
     if not request['target'] and len(targets)==1 and not any(issues[key]['field']=='goal' for key in answers):
         request['target']=targets[0]
     answered=[]
-    strip_labelled(request,current.get('report'),{issues[k]['field'] for k in answers if issues[k]['field'] in LABELS})
+    generic_parameters=(current.get('report') or {}).get('generic_parameters',{})
+    if generic_parameters:
+        from planning.services.generic_cards import remove_answered_sources
+        remove_answered_sources(request,current['report'],{issues[k]['field'] for k in answers if issues[k]['field'] in generic_parameters})
+    else:
+        strip_labelled(request,current.get('report'),{issues[k]['field'] for k in answers if issues[k]['field'] in LABELS})
     for key,value in answers.items():
         require(type(value) is str and 0<len(value.strip())<=500,'INVALID_ANSWER')
         issue=issues[key];field=issue['field'];value=value.strip()
@@ -356,6 +406,9 @@ def apply_answers(current,answers,event_id):
         elif field=='condition':
             require(value in {c['value'] for c in issue['choices']},'INVALID_ANSWER_CHOICE')
             request['condition']=value
+        elif field in (current.get('report') or {}).get('generic_parameters',{}):
+            from planning.services.generic_cards import answer_parameter
+            answer_parameter(request,current['report'],field,value,spans_removed=True)
         elif field in LABELS:
             accepted=replace_parameter(request,current['report'],field,value,mark)
             if field in record_fields(current['report']):
