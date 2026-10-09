@@ -264,6 +264,21 @@ class GenericCardTests(unittest.TestCase):
                     self.assertNotEqual(s['status'],'AWAITING_CONFIRMATION')
                     self.assertIsNone(s['report']['calculation_plan_proposal'])
 
+    def test_mixed_generic_and_missing_wavelength_never_drops_second_goal(self):
+        from planning.knowledge.library import switch_card,delete_card
+        self.add_wavelength()
+        switch_card(self.root,'wavelength_free_space',False)
+        for absent in ('disabled','deleted'):
+            if absent=='deleted':
+                delete_card(self.root,'wavelength_free_space')
+            for text in ('计算热噪声功率和自由空间波长，温度290K，带宽1MHz，频率2GHz',
+                         '计算热噪声功率，温度290K，带宽1MHz；计算自由空间波长，频率2GHz'):
+                with self.subTest(absent=absent,text=text):
+                    s=self.create(text)
+                    self.assertEqual(s['status'],'AWAITING_INPUT')
+                    self.assertIsNone(s['report']['calculation_plan_proposal'])
+                    self.assertTrue(any(d['code']=='INTENT_CONFLICT' for d in s['report']['diagnostics']))
+
     def test_generic_goal_choices_include_disabled_tools(self):
         s=self.create('频率2GHz')
         issue=next(i for i in s['input_issues'] if i['field']=='goal')

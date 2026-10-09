@@ -66,19 +66,26 @@ def explicit_target_hits(text, cards):
 def explicit_targets(text, cards):
     return {ident for _,_,ident in explicit_target_hits(text,cards)}
 
-def intended_targets(text, cards):
+def remaining_intent(text, cards):
     hits=explicit_target_hits(text,cards)
     remaining=text
     for a,b in sorted({(a,b) for a,b,_ in hits},reverse=True):
         remaining=remaining[:a]+' '*(b-a)+remaining[b:]
-    parsed=extract_request(remaining)
+    return hits,extract_request(remaining)
+
+def intended_targets(text, cards):
+    hits,parsed=remaining_intent(text,cards)
     return {ident for _,_,ident in hits} | (set(parsed['targets'])
         if parsed['target_origin']=='explicit_text' else set())
 
 def manual_target_conflict(request, root):
     if request['target'] not in TARGETS:
         return False
-    named=intended_targets(request['raw_text'],load_catalog(root))
+    active=load_catalog(root)
+    named=intended_targets(request['raw_text'],active)
+    _,remaining=remaining_intent(request['raw_text'],active)
+    if remaining['unsupported_targets']:
+        return True
     return bool(named and named!={request['target']})
 
 def selected_card(request, root):
@@ -260,7 +267,11 @@ def build_report(request, card, cards, root, role):
                 diagnostics.append(diagnostic('PARAMETER_OUT_OF_RANGE',f'{spec["description"]}超出公式卡登记范围。',field=name))
     conditions=conditions_for(request)
     parsed=extract_request(request['raw_text'])
-    named=intended_targets(request['raw_text'],load_catalog(root))
+    active=load_catalog(root)
+    named=intended_targets(request['raw_text'],active)
+    _,remaining=remaining_intent(request['raw_text'],active)
+    if remaining['unsupported_targets']:
+        diagnostics.append(diagnostic('INTENT_CONFLICT','原文还要求了当前没有可用公式卡的计算目标，请编辑任务明确本次采用的单个目标。'))
     if re.search(r'(?:不要|不用|不必|无需|不)(?:再|进行)?(?:计算|求出|求|算)|\b(?:do not|don.t|not to)\s+(?:calculate|compute|find)',request['raw_text'],re.I):
         diagnostics.append(diagnostic('INTENT_CONFLICT','原文排除了计算目标，请编辑任务明确本次采用的目标。'))
     original_targets=named or (set(parsed['targets']) if parsed['target_origin']=='explicit_text' else set())
