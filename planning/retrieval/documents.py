@@ -105,7 +105,7 @@ def chunks(path, record, root=None):
 
 
 class DocumentStore:
-    def __init__(self, root):
+    def __init__(self, root, *, include_disabled=False):
         self.root = Path(root)
         self.records, self.chunks, self.status = [], [], []
         path = self.root / 'knowledge/documents/manifest.json'
@@ -114,12 +114,15 @@ class DocumentStore:
         data = json.loads(path.read_text(encoding='utf-8'))
         if data.get('schema_version') != 1 or not isinstance(data.get('documents'), list):
             raise ValueError('DOCUMENT_MANIFEST')
+        from planning.knowledge.switches import read
+        off = read(root)['documents']
         seen = set()
         for record in data['documents']:
             self._validate(record, seen)
             seen.add(record['doc_id'])
             self.records.append(record)
-            item = dict(doc_id=record['doc_id'], title=record['title'], status='not_installed', chunks=0)
+            active = record['doc_id'] not in off
+            item = dict(doc_id=record['doc_id'], title=record['title'], status='not_installed', chunks=0, enabled=active)
             file = self.root / record['local_path']
             if file.is_file():
                 if hashlib.sha256(file.read_bytes()).hexdigest() != record['sha256']:
@@ -127,7 +130,8 @@ class DocumentStore:
                 else:
                     try:
                         parts = copy.deepcopy(cached_chunks(str(self.root.resolve()), json.dumps(record,sort_keys=True)))
-                        self.chunks.extend(parts)
+                        if active or include_disabled:
+                            self.chunks.extend(parts)
                         item.update(status='ready', chunks=len(parts))
                     except (ImportError, ValueError, OSError) as exc:
                         item.update(status='unreadable', error=type(exc).__name__, code=str(exc)[:80])

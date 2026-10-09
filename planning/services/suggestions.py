@@ -43,6 +43,9 @@ def suggestions_for(request, report, root, selector=False, observer=None):
         return None
     rows = {r['field']: r for r in FactService(root).typical_values()}
     fields = [f for f in open_fields(report) if f in rows]
+    from planning.services.unit_typos import problems
+    typo_fields = {p['field'] for p in problems(request['raw_text'])}
+    fields = [f for f in fields if f not in typo_fields]
     if not fields:
         return None
     candidates = {f: [shown(c) for c in rows[f]['candidates']] for f in fields}

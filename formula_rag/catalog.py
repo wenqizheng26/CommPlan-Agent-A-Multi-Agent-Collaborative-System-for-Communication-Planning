@@ -104,7 +104,7 @@ def validate_card(card: dict) -> list[str]:
     return errors
 
 
-def load_catalog(root: Path) -> list[dict]:
+def load_catalog(root: Path, *, include_disabled=False) -> list[dict]:
     path = Path(root)/"knowledge"/"formulas.json"
     cards = json.loads(path.read_text(encoding="utf-8-sig"))
     if not isinstance(cards, list):
@@ -121,4 +121,8 @@ def load_catalog(root: Path) -> list[dict]:
             # The loaded card, evidence hash and knowledge snapshot all include
             # the executable implementation, including helper functions.
             card['implementation_sha256'] = hashlib.sha256((Path(__file__).parent / 'tools.py').read_bytes()).hexdigest()
-    return cards
+    if include_disabled:
+        return cards
+    from planning.knowledge.switches import read
+    off = read(root)['cards']
+    return [c for c in cards if c['id'] not in off]

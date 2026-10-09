@@ -77,6 +77,10 @@ def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(
             found=suggestions_for(state['request'],report,agent.root,role_selector(agent,bindings,'supplement'),observer)
             if found:
                 report['suggestions']=found
+            from planning.services.unit_typos import suggestions
+            unit_found=suggestions(state['request'],report,role_selector(agent,bindings,'supplement'),observer)
+            if unit_found:
+                report['unit_suggestions']=unit_found
         if status=='AWAITING_CONFIRMATION':
             report['calculation_plan_proposal'],report['planning_role']=planning_agent.run(state['request'],report,cards,observer)
             if report['planning_role']['mode']=='deterministic_fallback':
@@ -85,8 +89,10 @@ def build_planning_graph(agent, saver, cards, observer=None, pending_questions=(
             plan=report['calculation_plan_proposal']
             if model_selector or (plan.get('tool')=='calc_link_margin' and plan.get('variants')):
                 mode=agent.retrieval_params.get('mode','lexical') if model_selector else 'lexical'
-                report['document_retrieval']=agent.retrieval.search(document_query(state['request'],report),top_k=4,top_n=3,
+                query=document_query(state['request'],report)
+                report['document_retrieval']=agent.retrieval.search(query,top_k=4,top_n=3,
                     mode=mode,filters={'source_type':'document_chunk'}).to_dict()
+                report['document_retrieval']['query']=query
             check_report(report,state['request'],cards,agent.root)
         observe(observer,'requirements','failed' if status=='FAILED' else 'completed',status=status,caller='orchestrator')
         if status in {'AWAITING_INPUT','NEEDS_MODEL'}:

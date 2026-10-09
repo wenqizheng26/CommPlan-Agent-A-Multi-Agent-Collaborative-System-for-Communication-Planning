@@ -103,9 +103,14 @@ def check_report(report, request, cards, root=None):
     needed = [p['canonical_name'] for p in r['parameters_proposal'] if p['status']=='missing']
     require(all(n in FIELDS or n in FACT_FIELDS for n in needed), 'UNKNOWN_PARAMETER')
     # Fact-store values and card assumptions are looked up again, for the same target as the agent chose.
-    final = None if outside_scope(request['raw_text'], parsed, r['targets'], set(r['conditions'])) else final_target(r['targets'], cards)
+    from planning.knowledge.switches import disabled_dependencies
+    final = None if (outside_scope(request['raw_text'], parsed, r['targets'], set(r['conditions']))
+                     or disabled_dependencies(root or Path(__file__).resolve().parents[2], r['targets'])) else final_target(r['targets'], cards)
     observed = {p['canonical_name'] for p in collect_parameters(request, parsed, [], numeric)[0]}
     facts = sources_for(request, r['entities'], cards, final, observed, root)
+    if disabled_dependencies(root or Path(__file__).resolve().parents[2], facts['order']):
+        final = None
+        facts = sources_for(request, r['entities'], cards, None, observed, root)
     parameters, conflicts, issues = collect_parameters(request, parsed, needed, numeric, facts['sources'])
     require(r['parameters_proposal'] == parameters, 'PARAMETER_SOURCE_MISMATCH')
     require(r['conflicts'] == conflicts, 'CONFLICT_MISMATCH')

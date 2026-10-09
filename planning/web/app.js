@@ -11,7 +11,7 @@ import {renderReport} from './report.mjs';
 import {summary,factorySettings,renderSettingsForm,switchView} from './settings.mjs';
 import {nodeLatency,stepTimes,runSummary,renderWaterfall,miniWaterfall,renderMetrics} from './timing.mjs';
 import {headerText,setMarquee,fitMarquee} from './marquee.mjs';
-import {renderLibrary,draftTitle,MAX_CHUNKS} from './library.mjs';
+import {renderLibrary,draftTitle,MAX_CHUNKS,manualRecord,sourcePayload} from './library.mjs';
 import {lastSwap,previousVersion,comparisonLine} from './compare.mjs';
 import {lang,setLang,install,watch} from './i18n.mjs';
 // English swaps rendered text through the dictionary; Chinese needs nothing loaded.
@@ -46,8 +46,14 @@ function notice(text,error=false){
  if(text)toastTimer=setTimeout(()=>{if(toastCount===shown)toast.hidden=true;},4000);
 }
 const clearError=()=>notice('',true);
-const TIMEOUTS={'/api/commands':125000,'/api/drafts/extract':200000,'/api/drafts/review':30000,'/api/documents':30000};
+const TIMEOUTS={'/api/commands':125000,'/api/drafts/extract':200000,'/api/drafts/model':200000,'/api/drafts/review':30000,'/api/documents':30000};
 async function api(path,body){const r=await fetch(path,{signal:AbortSignal.timeout(TIMEOUTS[path]||(path.startsWith('/api/documents/')?30000:10000)),method:body?'POST':'GET',headers:body?{'Content-Type':'application/json','X-Planning-Token':token}:{},body:body?JSON.stringify(body):undefined});const data=await r.json();if(!r.ok){const err=new Error(data.error.message+' ['+data.error.code+']');err.status=r.status;throw err;}return data;}
+// Which folder, branch and commit this page is served from, so two working copies are never confused.
+function showInstance(x){
+ const line=$('instance-line');if(!line||!x?.folder)return;
+ const text=[x.folder,x.branch,x.commit&&x.commit+(x.dirty?'*':'')].filter(Boolean).join(' · ');
+ line.textContent=text;line.title=text+(x.dirty?'（* 有未提交改动）':'');line.hidden=false;
+}
 function syncButtons(){
  // A model switch holds every command that may call a model; cancelling a task still works.
  const hold=busy||switching()||lib.uploading||lib.busy;
@@ -79,7 +85,7 @@ async function ensureCards(){
  catch(e){notice('公式卡读取失败：'+e.message,true);}
  finally{cardsLoading=false;if(loaded)drawRight();}
 }
-function setView(next){view=next;popover=null;if(next==='main')focusParameter=null;if(next==='formula')ensureCards();if(!matchMedia('(min-width: 1350px)').matches)sideChoice='plan';draw();$('detail-content').scrollTop=0;}
+function setView(next){view=next;popover=null;if(next==='main')focusParameter=null;if(next==='formula'||next==='evidence')ensureCards();if(!matchMedia('(min-width: 1350px)').matches)sideChoice='plan';draw();$('detail-content').scrollTop=0;}
 function chooseParameter(name){focusParameter=name;setView('parameters');}
 // Fixed-height panels are overflow:hidden; scroll only the thread there so no panel shifts.
 function reveal(node,align='top'){
@@ -147,17 +153,26 @@ async function ensureComparison(){
  catch{comparisons.delete(key);}
 }
 // The 资料 page: documents, sections, extraction and review.
-const lib={library:null,selectedDoc:null,sections:null,chosen:new Set(),kind:'device',extracting:null,message:'',drafts:null,reviewer:'',reason:'',rejecting:null,busy:false,uploading:false};
+const lib={library:null,selectedDoc:null,sections:null,chosen:new Set(),kind:'device',extracting:null,message:'',drafts:null,reviewer:'',reason:'',rejecting:null,busy:false,uploading:false,
+ cards:null,capabilities:{},deleting:null,cardForm:null,forms:{manual:{},model:{}},reviewForms:{},drafting:null};
 try{lib.reviewer=localStorage.getItem('planning-reviewer')||'';}catch{}
 function drawLibrary(){
  renderLibrary($('library-body'),{...lib,onSelectDoc:selectDoc,onToggleChunk:toggleChunk,onKind:k=>{lib.kind=k;drawLibrary();},onExtract:extractDraft,
   onUpload:uploadDocument,onReview:reviewDraft,onReason:v=>{lib.reason=v;},onRejectToggle:id=>{lib.rejecting=lib.rejecting===id?null:id;lib.reason='';drawLibrary();},
-  onReviewer:v=>{lib.reviewer=v.trim();try{localStorage.setItem('planning-reviewer',lib.reviewer);}catch{}}});
+  onReviewer:v=>{lib.reviewer=v.trim();try{localStorage.setItem('planning-reviewer',lib.reviewer);}catch{}},
+  onSwitch:switchItem,onDelete:deleteItem,onDeleteToggle:key=>{lib.deleting=key;drawLibrary();},
+  onCardForm:form=>{lib.cardForm=form;drawLibrary();},onFormInput:(form,key,value)=>{lib.forms[form][key]=value;},
+  onManualDraft:manualDraft,onModelDraft:modelDraft,
+  onReviewForm:(id,key,value)=>{(lib.reviewForms[id]??={})[key]=value;}});
  syncButtons();
 }
+// The full listing carries what this build can do with cards; switch and delete answers carry the cards only.
+function takeCards(data){lib.cards=data.cards;lib.capabilities=data.capabilities||{};}
 async function loadLibrary(){
- const [docs,drafts]=await Promise.allSettled([api('/api/documents'),api('/api/drafts')]);
+ const [docs,drafts,cards]=await Promise.allSettled([api('/api/documents'),api('/api/drafts'),api('/api/formula-library')]);
  if(docs.status==='fulfilled')lib.library=docs.value;else lib.message='文档读取失败：'+docs.reason.message;
+ // A server without the card library answers 404: the card section is simply not shown.
+ if(cards.status==='fulfilled')takeCards(cards.value);else if(cards.reason.status===404)lib.cards=undefined;else lib.message='公式卡读取失败：'+cards.reason.message;
  if(drafts.status==='fulfilled')lib.drafts=drafts.value.drafts;else lib.message='草稿读取失败：'+drafts.reason.message;
  drawLibrary();
 }
@@ -205,12 +220,52 @@ async function reviewDraft(draft,decision,reason){
  if(decision==='reject'&&!(reason||lib.reason).trim()){lib.message='驳回时请写明原因。';drawLibrary();return;}
  lib.busy=true;lib.message='';drawLibrary();
  try{
-  const data=await api('/api/drafts/review',{id:draft.id,decision,reviewer:lib.reviewer,reason:decision==='reject'?(reason||lib.reason).trim():'',content_hash:draft.content_hash});
+  // A draft without a document behind it is approved with the reviewer's source and example.
+  const own=decision==='approve'&&(draft.source_kind||'document')!=='document'?sourcePayload(lib.reviewForms[draft.id],draft.record):null;
+  const data=await api('/api/drafts/review',{id:draft.id,decision,reviewer:lib.reviewer,reason:decision==='reject'?(reason||lib.reason).trim():'',content_hash:draft.content_hash,...own});
   lib.rejecting=null;lib.reason='';notice(decision==='approve'?'已入库：'+draftTitle(draft):'已驳回：'+draftTitle(draft));
   lib.drafts=(await api('/api/drafts')).drafts;  // other drafts may now name a record already in the library
-  if(decision==='approve'){const f=await api('/api/facts');for(const record of f.records)facts[record.id]=record;}
+  if(decision==='approve'){const f=await api('/api/facts');for(const record of f.records)facts[record.id]=record;
+   if(draft.kind==='formula'&&lib.cards!==undefined)takeCards(await api('/api/formula-library'));}
  }catch(e){lib.message=e.message;}
  finally{lib.busy=false;drawLibrary();}
+}
+const ITEM={doc:{switch:'/api/documents/switch',remove:'/api/documents/delete',key:'doc_id'},card:{switch:'/api/formula-cards/switch',remove:'/api/formula-cards/delete',key:'id'}};
+function itemTitle(kind,id){return kind==='doc'?lib.library?.documents.find(d=>d.doc_id===id)?.title||id:lib.cards?.find(c=>c.id===id)?.title||id;}
+function takeItems(kind,data){if(kind==='doc')lib.library=data.library;else lib.cards=data.cards;}
+// Switching a document or card changes what retrieval and planning can use from the next operation on.
+async function switchItem(kind,id,enabled){
+ if(lib.busy)return;lib.busy=true;lib.message='';const title=itemTitle(kind,id);drawLibrary();
+ try{takeItems(kind,await api(ITEM[kind].switch,{[ITEM[kind].key]:id,enabled}));lib.message=(enabled?'已启用：':'已停用：')+title;}
+ catch(e){lib.message='操作失败：'+e.message;}
+ finally{lib.busy=false;drawLibrary();}
+}
+async function deleteItem(kind,id){
+ if(lib.busy)return;lib.busy=true;lib.message='';const title=itemTitle(kind,id);drawLibrary();
+ try{takeItems(kind,await api(ITEM[kind].remove,{[ITEM[kind].key]:id}));lib.deleting=null;lib.message='已删除：'+title;
+  if(kind==='doc'&&lib.selectedDoc===id){lib.selectedDoc=null;lib.sections=null;lib.chosen=new Set();}
+  lib.drafts=(await api('/api/drafts')).drafts;}
+ catch(e){lib.message='删除失败：'+e.message;}
+ finally{lib.busy=false;drawLibrary();}
+}
+function addDraft(data){lib.message=data.message||'已生成草稿，请填写出处与算例后审核。';if(data.draft)lib.drafts=[data.draft,...(lib.drafts||[]).filter(d=>d.id!==data.draft.id)];}
+async function manualDraft(){
+ if(lib.busy)return;
+ const made=manualRecord(lib.forms.manual);if(made.error){lib.message=made.error;drawLibrary();return;}
+ lib.busy=true;lib.message='';drawLibrary();
+ try{addDraft(await api('/api/drafts/manual',{kind:'formula',record:made.record}));lib.forms.manual={};lib.cardForm=null;}
+ catch(e){lib.message='提交失败：'+e.message;}
+ finally{lib.busy=false;drawLibrary();}
+}
+async function modelDraft(){
+ const topic=(lib.forms.model.topic||'').trim();
+ if(lib.busy)return;if(!topic){lib.message='请写明要起草的公式。';drawLibrary();return;}
+ if(switching()){lib.message='正在切换模型，完成后再起草。';drawLibrary();return;}
+ lib.busy=true;lib.message='';lib.drafting=0;drawLibrary();const started=Date.now();
+ const timer=setInterval(()=>{lib.drafting=Math.round((Date.now()-started)/1000);const b=$('model-draft');if(b)b.textContent=`起草中 · ${lib.drafting} s`;},1000);
+ try{addDraft(await api('/api/drafts/model',{kind:'formula',topic}));lib.forms.model={};lib.cardForm=null;}
+ catch(e){lib.message='起草失败：'+e.message;}
+ finally{clearInterval(timer);lib.busy=false;lib.drafting=null;drawLibrary();}
 }
 function openNodeCard(id){popover=popover?.id===id?null:{id};drawFlow();}
 function renderNodeCard(){
@@ -484,4 +539,4 @@ $('export').addEventListener('click',()=>{toggleMenu(false);const s=shown();if(!
 draw();
 new ResizeObserver(()=>fitMarquee($('task-meta'))).observe($('task-meta').parentElement);
 checkModel();
-(async()=>{try{token=(await api('/api/session')).token;const data=await api('/api/facts');for(const record of data.records)facts[record.id]=record;await loadSettings();draw();await recentTasks();const id=location.hash.slice(1)||localStorage.getItem('planning-task');if(id)await restore(id);}catch(e){notice('无法连接本地服务：'+e.message,true);}})();
+(async()=>{try{const session=await api('/api/session');token=session.token;showInstance(session.instance);const data=await api('/api/facts');for(const record of data.records)facts[record.id]=record;await loadSettings();draw();await recentTasks();const id=location.hash.slice(1)||localStorage.getItem('planning-task');if(id)await restore(id);}catch(e){notice('无法连接本地服务：'+e.message,true);}})();

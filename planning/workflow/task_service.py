@@ -112,6 +112,12 @@ class TaskService:
             return self.retrieval_for(r['embedding']).warm()
         return 'disabled'
 
+    def refresh_knowledge(self):
+        cards = load_catalog(self.root)
+        with self._retrieval_lock:
+            for retrieval in self._retrieval.values():
+                retrieval.update(cards)
+
     def update_settings(self, settings, expected_version):
         saved=self.settings.put(settings,expected_version)
         self.warm_retrieval(saved['settings'])

@@ -45,6 +45,7 @@ def issues_for(state):
     issues=[]
     # Default completion: a suggested table value prefills its question (TEACHER_CASES).
     suggested={x['field']:x for x in (report.get('suggestions') or {}).get('items',[])}
+    unit_suggested={x['field']:x for x in report.get('unit_suggestions',[])}
     def add(kind,field,title,detail,excerpt='',choices=()):
         key='issue-'+digest([kind,field,excerpt])[:20]
         if any(i['id']==key for i in issues):
@@ -55,8 +56,11 @@ def issues_for(state):
             x=suggested[field]
             issues[-1]['suggestion']=dict(value=suggestion_answer(x),display=suggestion_display(x),reason=x['reason'],
                                           note='默认补全，需确认')
+        if field in unit_suggested:
+            issues[-1]['suggestion']={k:v for k,v in unit_suggested[field].items() if k != 'field'}
     if state['status']=='NEEDS_MODEL':
-        add('capability','task','需求明确，但当前模型不支持','当前支持自由空间条件下的路径损耗、接收信号电平与链路余量。可编辑任务重新定义目标；系统不会擅自替换你的需求。')
+        disabled=[d['message'] for d in report.get('diagnostics',[]) if d['code']=='CARD_DISABLED']
+        add('capability','task','需求明确，但当前模型不支持','；'.join(disabled) if disabled else '当前支持自由空间条件下的路径损耗、接收信号电平与链路余量。可编辑任务重新定义目标；系统不会擅自替换你的需求。')
         return issues
     diagnostics=report.get('diagnostics',[])
     if any(d['code']=='INTENT_CONFLICT' for d in diagnostics):
@@ -68,6 +72,10 @@ def issues_for(state):
                      dict(value='fresnel_radius',label='第一菲涅耳区半径'),dict(value='knife_edge_nu',label='绕射参数'),
                      dict(value='knife_edge_loss',label='单刃形绕射损耗'),dict(value='sea_reflection_two_ray',label='海面反射附加损耗'),
                      dict(value='link_feasibility',label='判断能否通信'),dict(value='scheme_comparison',label='比较方案')])
+        for choice in issues[-1]['choices']:
+            reason=report.get('disabled_goals',{}).get(choice['value'])
+            if reason:
+                choice.update(disabled=True,reason=reason)
         return issues
     if any(d['code']=='MISSING_CONDITION' for d in diagnostics):
         add('clarification','condition','是否明确只做自由空间基准？','自由空间基准不代表实际海面或遮挡环境。',
@@ -266,7 +274,11 @@ def replace_parameter(request, report, field, answer, mark=''):
                         r'(?:左右|上下)?',re.I)
     for m in fragment.finditer(text):
         if re.search(r'\d',m.group()):
-            remove.append(list(m.span()))
+            from planning.services.unit_typos import adjacent_unit
+            last = list(re.finditer(NUMBER,m.group()))[-1]
+            numeric_end = m.start()+last.end()
+            unit = adjacent_unit(text,numeric_end)
+            remove.append([m.start(),max(m.end(),numeric_end+len(unit))])
     for d in current_diagnostics:
         if d['code']=='PARAMETER_APPROXIMATE' and d['details'].get('field')==field:
             remove.append(d['details']['span'])
@@ -335,11 +347,11 @@ def apply_answers(current,answers,event_id):
         issue=issues[key];field=issue['field'];value=value.strip()
         # Adopting the prefilled suggestion: the value is marked in the text as a default completion.
         adopted=bool(issue.get('suggestion')) and value==issue['suggestion']['value']
-        mark=SUGGESTED if adopted else ''
+        mark=('（单位修正已确认）' if issue.get('suggestion',{}).get('note')=='单位猜测，需确认' else SUGGESTED) if adopted else ''
         if issue['kind']=='pending' and value=='withdraw':
             conversation['pending']=[p for p in conversation['pending'] if p['turn_id']!=issue['excerpt']]
         elif field=='goal':
-            require(value in {c['value'] for c in issue['choices']},'INVALID_ANSWER_CHOICE')
+            require(value in {c['value'] for c in issue['choices'] if not c.get('disabled')},'INVALID_ANSWER_CHOICE')
             request['target']=value
         elif field=='condition':
             require(value in {c['value'] for c in issue['choices']},'INVALID_ANSWER_CHOICE')

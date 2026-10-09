@@ -8,7 +8,9 @@ def snapshot_for(cards, root=None):
     catalog_hash = digest(cards)
     root = Path(root) if root is not None else Path(__file__).resolve().parents[2]
     sources = [{'id': c['id'], 'sources': c['sources']} for c in cards]
-    source_manifest_hash = digest({'formula_sources': sources, 'facts_and_documents': fact_manifest(root)})
+    from planning.knowledge.switches import read
+    source_manifest_hash = digest({'formula_sources': sources, 'facts_and_documents': fact_manifest(root),
+                                  'switches': read(root)})
     return dict(snapshot_id='knowledge:' + digest({'catalog_hash': catalog_hash, 'source_manifest_hash': source_manifest_hash}), catalog_hash=catalog_hash,
                 source_manifest_hash=source_manifest_hash,
                 embedding_weights_hash=None, tokenizer_config_hash=None,
