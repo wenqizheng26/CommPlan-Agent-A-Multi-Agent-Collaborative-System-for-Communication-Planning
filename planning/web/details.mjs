@@ -48,10 +48,11 @@ export function planSteps(plan,report,result,facts={},cards={},text=''){
  const single=plan.steps.length===1&&result&&!result.steps;
  return plan.steps.map((step,i)=>{
   const value=done[step.step_id]?.output.value??(single&&result.outputs.length===1?result.outputs[0].value:null);
-  return {n:i+1,id:step.step_id,tool:step.tool_id,title:toolNames[step.tool_id]||step.tool_id,cite:citation(refs[step.tool_id]),unit:step.expected_unit,value,
+  const card=cards?.[step.tool_id];
+  return {n:i+1,id:step.step_id,tool:step.tool_id,title:toolNames[step.tool_id]||card?.title||step.tool_id,cite:citation(refs[step.tool_id]),unit:step.expected_unit,value,
    out:value!=null?`${formatDomain(value,2)} ${step.expected_unit}`:single&&result.outputs.length>1?`${result.outputs.length} 组结果`:null,
    inputs:Object.entries(step.inputs).map(([name,b])=>{
-    const base={name,label:parameterNames[name]||name,symbol:symbols[name]||''};
+    const base={name,label:parameterNames[name]||card?.parameters?.[name]?.description||name,symbol:symbols[name]||''};
     if(b.kind==='step')return {...base,kind:'step',tag:'上一步',value:'← '+circled(order[b.ref]),ref:order[b.ref]};
     const p=params[b.ref];
     if(!p||p.value===null)return p?.status==='conflicting'?{...base,kind:'conflict',tag:'冲突',value:'待选定'}:{...base,kind:'missing',tag:'待补充',value:'待补充'};
@@ -85,7 +86,7 @@ function formulaMath(){
 }
 function retrievalTable(found){
  const b=el('section',undefined,'detail-block');
- b.append(el('h3','检索命中'),el('p',`${RETRIEVAL[found.mode_used]}检索 · 知识库 ${found.corpus.size} 条 · 返回 ${found.hits.length}/${found.top_k} · 送入 ${found.top_n} · ${fmt(found.latency_ms.total)}`+(found.degraded?` · 请求${RETRIEVAL[found.mode_requested]}，向量未就绪`:''),'hint'));
+ b.append(el('h3','公式卡检索'),el('p',`${RETRIEVAL[found.mode_used]}检索 · 知识库 ${found.corpus.size} 条 · 返回 ${found.hits.length}/${found.top_k} · 送入 ${found.top_n} · ${fmt(found.latency_ms.total)}`+(found.degraded?` · 请求${RETRIEVAL[found.mode_requested]}，向量未就绪`:''),'hint'));
  const table=el('table'),head=el('tr');['#','公式卡','词项','向量','融合','上下文'].forEach(t=>head.append(el('th',t)));const thead=el('thead');thead.append(head);table.append(thead);
  const body=el('tbody'),num=v=>v==null?'—':v.toFixed(4);
  for(const h of found.hits){const row=el('tr'),card=el('td'),used=found.used.includes(h.id);card.append(el('strong',metadataText(h.title)),el('small',h.id+(h.source?.title?' · '+metadataText(h.source.title):'')));
@@ -169,17 +170,21 @@ function knownView(host,state,ctx={}){
   row.append(el('span',parameterNames[p.canonical_name]||p.canonical_name,'in-name'),el('span',`${formatDomain(p.value)} ${p.unit}${approx.has(p.canonical_name)?'（近似）':''}`,'in-value'),el('span',label.tag,'tag '+label.kind));ul.append(row);}
  box.append(ul);host.append(box);
 }
-function answer(host,state,comparison=null){
+function answer(host,state,comparison=null,cards={}){
  const sec=el('section',undefined,'answer'),outs=state.result.outputs;
+ // A result from a reviewed card's own expression (no dedicated program) names that card.
+ const generic=state.result.calculation_mode==='generic_card'?state.result.card||{}:null,card=generic&&cards[generic.id];
  const presentation=answerPresentation(state.final_report);
  if(presentation.caution)host.append(block('审查提示需要核对',presentation.opinions,'warning'));
  if(presentation.show)host.append(block('答复 · '+presentation.label,presentation.text,'model-answer'));
- const title=state.result.steps?toolNames[state.result.model_id]||state.result.model_id:toolNames.fspl_ghz;
+ const title=generic?card?.title||generic.id||'公式卡计算':state.result.steps?toolNames[state.result.model_id]||state.result.model_id:toolNames.fspl_ghz;
+ const unitOf=k=>({frequency_ghz:'GHz',distance_km:'km'}[k]||card?.parameters?.[k]?.unit||'');
  for(const [i,value] of outs.entries()){
   const metric=el('div',undefined,'metric');metric.append(el('strong',formatDomain(value.value,2)),el('span',value.unit));
   sec.append(el('p',outs.length>1?`候选 ${i+1} · ${title}`:title,'eyebrow'),metric);
-  if(value.inputs)sec.append(el('p',Object.entries(value.inputs).map(([k,v])=>`${parameterNames[k]||k} ${formatDomain(v)} ${{frequency_ghz:'GHz',distance_km:'km'}[k]||''}`).join('；'),'hint'));
+  if(value.inputs)sec.append(el('p',Object.entries(value.inputs).map(([k,v])=>`${parameterNames[k]||card?.parameters?.[k]?.description||k} ${formatDomain(v)} ${unitOf(k)}`).join('；'),'hint'));
  }
+ if(generic)sec.append(el('p',`按审核入库公式卡计算，无独立复核模型 · ${generic.id} v${generic.version}`,'hint generic-note'));
  const req=state.final_report.requirement;if(req)sec.append(el('p',`要求 ≥ ${formatDomain(req.value)} dB · ${req.met?'满足':'不满足'}`,req.met?'ok':'warn-text'));
  if(comparison)sec.append(el('p',comparison,'compare-line'));
  sec.append(el('p',(presentation.show?'程序结论：':'')+state.final_report.conclusion,presentation.show?'hint':'conclusion'));host.append(sec);
@@ -202,7 +207,7 @@ function recordsContent(host,ctx){
  const ds=diagnosticMessages(state.report?.diagnostics);if(ds.length)host.append(block('处理说明',ds),jsonDetails('逐次诊断',state.report.diagnostics));
 }
 function resultView(host,ctx){
- const {state}=ctx;answer(host,state,ctx.comparison);
+ const {state}=ctx;answer(host,state,ctx.comparison,ctx.cards||{});
  const drift=ctx.historical?[]:settingsDrift(state,ctx.settings);
  if(drift.length){const p=el('p',`默认设置已变：${drift.join('；')}。本结果不变。`,'drift');if(ctx.onReparse)p.append(button('按新设置重新解析',ctx.onReparse));host.append(p);}
  const r=state.review?.report||state.report,plan=r?.calculation_plan_proposal;
@@ -213,18 +218,22 @@ function resultView(host,ctx){
  if(lim.length){const scope=el('section',undefined,'scope');scope.append(el('h3','适用范围'),el('p',lim[0]));if(lim.length>1){const more=fold(ctx,'scope',`其余 ${lim.length-1} 条`),ul=el('ul');lim.slice(1).forEach(t=>ul.append(el('li',t)));more.append(ul);scope.append(more);}host.append(scope);}
  const records=fold(ctx,'records','记录与配置');recordsContent(records,ctx);host.append(records);
 }
-function links(ctx){const nav=el('nav',undefined,'detail-links');for(const [v,t] of [['parameters','参数溯源'],['formula','公式'],['evidence','依据']])nav.append(button(t,()=>ctx.onView(v)));return nav;}
+function links(host,ctx){
+ const line=documentLine(ctx);if(line)host.append(line);
+ const nav=el('nav',undefined,'detail-links');for(const [v,t] of [['parameters','参数溯源'],['formula','公式'],['evidence','依据']])nav.append(button(t,()=>ctx.onView(v)));
+ host.append(nav);
+}
 function mainView(host,ctx){
  const {state}=ctx;
  if(!state){const size=ctx.models?.corpus?.size;host.append(el('p',`已登记公式${size?` ${size} 张`:''} · 确定性求值 · 独立校验`,'muted intro'));return;}
  if(ctx.activeContext){host.append(el('p','解析完成后在此生成计算计划','muted intro'));return;}
- if(state.status==='COMPLETED'&&state.final_report){resultView(host,ctx);host.append(links(ctx));return;}
+ if(state.status==='COMPLETED'&&state.final_report){resultView(host,ctx);links(host,ctx);return;}
  const horizon=horizonPresentation(state);
  if(horizon)host.append(block(horizon.title,[horizon.text,horizon.next],'warning'));
  else if(state.failure)host.append(block('原因',[state.failure.message,'下一步：'+state.failure.next_action],'warning'));
  const r=state.report,plan=r?.calculation_plan_proposal;
  if(plan)planCard(host,ctx,state.status!=='CANCELLED');else if(r)knownView(host,state,ctx);
- if(r)host.append(links(ctx));
+ if(r)links(host,ctx);
 }
 
 function paramsView(host,ctx){
@@ -282,18 +291,60 @@ function formulaView(host,ctx){
  const raw=steps.filter(s=>s.card?.kind!=='python_tool'&&s.card?.expression).map(s=>`${s.card.id} v${s.card.version}: ${s.card.expression}`);
  if(raw.length)host.append(jsonDetails('程序表达式',raw));
 }
+// Documents a plan's cards cite (card source doc_id) that no adopted chunk came from; null when cards do not say.
+export function uncitedCards(plan,found,cards={}){
+ if(!plan)return null;
+ const used=new Set((found?.hits||[]).filter(h=>found.used.includes(h.id)).map(h=>h.source?.doc_id));
+ const named=[...new Set(plan.steps.map(s=>s.tool_id))].map(id=>cards[id]).filter(c=>c?.sources?.some(s=>s.doc_id));
+ if(!named.length)return null;
+ return named.filter(c=>!c.sources.some(s=>used.has(s.doc_id)));
+}
+// One line for the main view: how many document chunks the explanation and review read.
+function documentLine(ctx){
+ const r=ctx.state.review?.report||ctx.state.report,found=r?.document_retrieval;
+ if(!found?.hits?.length)return null;
+ const used=found.hits.filter(h=>found.used.includes(h.id)),docs=[...new Set(used.map(h=>metadataText(h.source?.title||h.title)))];
+ const p=el('p',undefined,'document-line');
+ p.append(button(`参考文档 ${used.length} 段`,()=>ctx.onView('evidence')),raw('span',docs.slice(0,2).join('、'),'hint'));
+ if(docs.length>2)p.append(el('span',`等 ${docs.length} 份`,'hint'));
+ return p;
+}
+// Chunk text without its Markdown headings (the locator names them) and table rule rows.
+function chunkText(text){
+ return text.split('\n').filter(l=>!/^#{1,6}\s/.test(l)&&!/^<!--.*-->$/.test(l.trim())&&!/^\|?\s*:?-{3,}/.test(l.trim())).join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+function documentHits(host,ctx,found){
+ const used=new Set(found.used),b=el('section',undefined,'detail-block document-hits');
+ b.append(el('h3','文档检索'),el('p',`${RETRIEVAL[found.mode_used]||found.mode_used}检索 · 命中 ${found.hits.length}/${found.top_k} · 采用 ${found.used.length}`
+  +(found.latency_ms?.total!=null?` · ${fmt(found.latency_ms.total)}`:'')+(found.degraded?` · 请求${RETRIEVAL[found.mode_requested]||found.mode_requested}，向量未就绪`:''),'hint'),
+  el('p','检索原文用于解释与审查，不作为本次计算数值来源。','hint'));
+ if(found.query){const q=fold(ctx,'doc-query','查询词');q.append(raw('p',found.query,'excerpt'));b.append(q);}
+ const list=el('ol',undefined,'hit-list'),num=v=>v==null?'—':v.toFixed(3);
+ for(const h of found.hits){
+  const on=used.has(h.id),row=el('li',undefined,'hit'+(on?' used':'')),head=el('div',undefined,'hit-head');
+  head.append(el('span','#'+h.rank,'hit-rank'),raw('strong',metadataText(h.source?.title||h.title)),el('span',on?'已采用':'未采用','chip'+(on?' run':'')));
+  if(h.source?.simulated)head.append(el('span','模拟','chip'));
+  const meta=el('p',undefined,'hint hit-meta');
+  meta.append(raw('span',h.source?.locator||h.id));
+  for(const [name,v] of [['词项',h.scores?.lexical],['向量',h.scores?.dense],['融合',h.scores?.fused]])if(v!=null||name!=='融合')meta.append(el('span',`${name} ${num(v)}`));
+  row.append(head,meta);
+  const text=chunkText(h.excerpt||''),short=text.length>160?text.slice(0,160)+'…':text;
+  if(text&&on)row.append(raw('p',short,'excerpt'));
+  if(text&&(!on||short!==text)){const more=fold(ctx,'hit:'+h.id,on?'展开全文':'展开片段');more.append(raw('p',text,'excerpt'));row.append(more);}
+  if(on)row.append(sourceLink(documentSource(h.source)));
+  list.append(row);
+ }
+ b.append(list);host.append(b);
+}
 function evidenceView(host,ctx){
  const {state}=ctx,r=state.report,model=state.review?.model;
+ const found=r.document_retrieval,plan=(state.review?.report||r).calculation_plan_proposal;
+ const uncited=uncitedCards(plan,found,ctx.cards);
+ if(uncited?.length)host.append(block('未检索到原文片段',
+  `未检索到${uncited.map(c=>'「'+c.title+'」').join('、')}的原文片段，仅有公式卡登记的出处。`,'warning'));
+ if(found?.hits?.length)documentHits(host,ctx,found);
+ else host.append(block('文档检索',found?'没有命中的文档片段。':'本次未检索文档。','hint'));
  if(state.retrieval)host.append(retrievalTable(state.retrieval));
- if(r.document_retrieval){
-  const found=r.document_retrieval;
-  host.append(block('文档依据',found.degraded?'向量未就绪，按词项检索；文档不作为本次计算数值来源。':'检索原文用于解释与审查，不作为本次计算数值来源。','hint'));
-  for(const hit of found.hits.filter(h=>found.used.includes(h.id))){
-   const b=block(hit.title,undefined,'document-evidence');if(hit.excerpt)b.append(raw('p',hit.excerpt));
-   b.append(el('p',`${hit.source.locator}${hit.source.simulated?' · 模拟数据':''}`,'hint'),
-    sourceLink(documentSource(hit.source)));host.append(b);
-  }
- }
  if(!r.evidence_refs.length){host.append(block('暂无可用依据','检索为空时不推定公式适用。','warning'));return;}
  for(const [i,ref] of r.evidence_refs.entries()){
   const b=block(citation(ref)||`依据 ${i+1}`);

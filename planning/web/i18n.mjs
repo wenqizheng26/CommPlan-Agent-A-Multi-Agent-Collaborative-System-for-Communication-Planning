@@ -69,7 +69,7 @@ export function t(text){
 
 // Text inside these is user content, code or raw data: never translated.
 const SKIP='script,style,textarea,pre,[translate="no"]';
-const ATTRS=['placeholder','title','aria-label'];
+const ATTRS=['placeholder','title','aria-label','label'];
 const written=new WeakMap();
 function text(node){
  const parent=node.parentElement;
