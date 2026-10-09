@@ -309,4 +309,3 @@ class KnowledgeAPITests(RootFixture, unittest.TestCase):
         self.assertTrue(done.is_set())
         self.assertEqual(results[0][0],200)
         self.assertFalse(switches.enabled(self.root,'documents','sim-sites'))
-
