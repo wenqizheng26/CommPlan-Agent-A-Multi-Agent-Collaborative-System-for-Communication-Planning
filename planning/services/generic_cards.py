@@ -321,6 +321,6 @@ def answer_parameter(request,report,field,answer,spans_removed=False):
     # Preserve unrelated text. Remove only source spans for the answered parameter.
     if not spans_removed:
         remove_answered_sources(request,report,{field})
-    request['raw_text']+='\n'+field+'='+m[1]+m[2]
+    request['raw_text']+='\n'+field+'='+m[1]+' '+m[2]
     request['manual_parameters'].pop(field,None)
     return dict(value=value,unit=spec['unit'])

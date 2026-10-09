@@ -212,6 +212,26 @@ class GenericCardTests(unittest.TestCase):
         self.assertEqual(quantities('系数2021'),[])
         self.assertEqual(quantities('系数2 1')[0]['value'],2)
 
+    def test_dimensionless_answer_preserves_separator_through_confirm(self):
+        from planning.knowledge.drafts import DraftStore
+        from tests.test_planning_formula_card_drafts import manual
+        record=manual('double_ratio')
+        record.update(title='倍数',expression='ratio*2',parameters=dict(ratio=dict(unit='1',description='系数')),
+                      output=dict(name='ratio_out',unit='1'))
+        store=DraftStore(self.root)
+        draft=store.create_manual('formula',record)
+        store.review(draft['id'],'Reviewer',draft['content_hash'],'approve',source=dict(title='核查资料',locator='式1'),
+            example=dict(inputs=dict(ratio=2),expected=4,note='独立算例'))
+        self.service.refresh_knowledge()
+        s=self.create('计算倍数')
+        issue=next(i for i in s['input_issues'] if i['field']=='ratio')
+        s=self.service.apply(command('answer',s,answers={issue['id']:'2 1'},mode='deterministic'))['state']
+        self.assertEqual(s['status'],'AWAITING_CONFIRMATION')
+        self.assertIn('ratio=2 1',s['request']['raw_text'])
+        done=self.service.apply(command('confirm',s))['state']
+        self.assertEqual(done['status'],'COMPLETED',done.get('failure'))
+        self.assertEqual(done['result']['outputs'][0]['value'],4)
+
     def test_h4_recognizes_all_registered_units_and_rejects_wrong_scale(self):
         from planning.services.card_units import UNITS
         from planning.services.number_check import known,unquoted,written
