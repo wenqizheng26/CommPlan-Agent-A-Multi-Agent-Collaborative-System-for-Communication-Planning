@@ -31,17 +31,14 @@ def standalone(card):
     return card['id'] not in TARGETS and card['status']=='verified' and card.get('kind','expression')=='expression'
 
 def choices(root):
-    from planning.knowledge.switches import read
-    off = read(root)['cards']
     rows = []
-    for card in load_catalog(root, include_disabled=True):
+    for card in load_catalog(root):
         if card['id'] in TARGETS or card['id']=='fspl_mhz':
             continue
         tool = card.get('kind','expression')=='python_tool'
         row = dict(value=card['id'], label=card['title'], group='needs_tool' if tool else 'generic')
-        if tool or card['status']!='verified' or card['id'] in off:
-            row.update(disabled=True, reason=(f'公式卡「{card["title"]}」已停用' if card['id'] in off else
-                '需专用程序，暂不能作为独立目标计算' if tool else '公式卡尚未审核'))
+        if tool or card['status']!='verified':
+            row.update(disabled=True, reason='需专用程序，暂不能作为独立目标计算' if tool else '公式卡尚未审核')
         rows.append(row)
     return rows
 
@@ -81,11 +78,11 @@ def intended_targets(text, cards):
 def manual_target_conflict(request, root):
     if request['target'] not in TARGETS:
         return False
-    named=intended_targets(request['raw_text'],load_catalog(root,include_disabled=True))
+    named=intended_targets(request['raw_text'],load_catalog(root))
     return bool(named and named!={request['target']})
 
 def selected_card(request, root):
-    cards = load_catalog(root, include_disabled=True)
+    cards = load_catalog(root)
     if request['target']:
         return next((c for c in cards if c['id']==request['target'] and c['id'] not in TARGETS), None)
     text = request['raw_text']
@@ -263,7 +260,7 @@ def build_report(request, card, cards, root, role):
                 diagnostics.append(diagnostic('PARAMETER_OUT_OF_RANGE',f'{spec["description"]}超出公式卡登记范围。',field=name))
     conditions=conditions_for(request)
     parsed=extract_request(request['raw_text'])
-    named=intended_targets(request['raw_text'],load_catalog(root,include_disabled=True))
+    named=intended_targets(request['raw_text'],load_catalog(root))
     if re.search(r'(?:不要|不用|不必|无需|不)(?:再|进行)?(?:计算|求出|求|算)|\b(?:do not|don.t|not to)\s+(?:calculate|compute|find)',request['raw_text'],re.I):
         diagnostics.append(diagnostic('INTENT_CONFLICT','原文排除了计算目标，请编辑任务明确本次采用的目标。'))
     original_targets=named or (set(parsed['targets']) if parsed['target_origin']=='explicit_text' else set())
@@ -277,12 +274,9 @@ def build_report(request, card, cards, root, role):
         values={p['canonical_name']:p['value'] for p in parameters if p['value'] is not None}
         for issue in scope_issues(card['id'],values,dict(noise_reference=noise_confirmation(request['raw_text']))):
             diagnostics.append(diagnostic('CARD_CONDITION_REQUIRED',issue['message']))
-    from planning.knowledge.switches import read
-    off=card['id'] in read(root)['cards']
-    usable=standalone(card) and not off
+    usable=standalone(card)
     if not usable:
-        diagnostics.append(diagnostic('CARD_DISABLED' if off else 'CARD_NEEDS_TOOL',
-            f'公式卡「{card["title"]}」已停用' if off else '该公式卡尚无可用的独立计算程序。'))
+        diagnostics.append(diagnostic('CARD_NEEDS_TOOL','该公式卡尚无可用的独立计算程序。'))
     if card['id']=='doppler_max' and 'two_way' in conditions:
         usable=False
         diagnostics.append(diagnostic('CARD_SCOPE_UNSUPPORTED','单程最大多普勒上界不能回答双程雷达频移。'))

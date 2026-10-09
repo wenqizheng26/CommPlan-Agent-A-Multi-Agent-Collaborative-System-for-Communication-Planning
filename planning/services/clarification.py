@@ -64,8 +64,7 @@ def issues_for(state):
             issues[-1]['detail']='；'.join(dict.fromkeys(unsupported_units))
             issues[-1].pop('suggestion',None)
     if state['status']=='NEEDS_MODEL':
-        disabled=[d['message'] for d in report.get('diagnostics',[]) if d['code']=='CARD_DISABLED']
-        add('capability','task','需求明确，但当前模型不支持','；'.join(disabled) if disabled else '当前支持自由空间条件下的路径损耗、接收信号电平与链路余量。可编辑任务重新定义目标；系统不会擅自替换你的需求。')
+        add('capability','task','需求明确，但当前模型不支持','当前支持自由空间条件下的路径损耗、接收信号电平与链路余量。可编辑任务重新定义目标；系统不会擅自替换你的需求。')
         return issues
     diagnostics=report.get('diagnostics',[])
     if 'generic_card' in report:
@@ -93,11 +92,11 @@ def issues_for(state):
                      dict(value='fresnel_radius',label='第一菲涅耳区半径'),dict(value='knife_edge_nu',label='绕射参数'),
                      dict(value='knife_edge_loss',label='单刃形绕射损耗'),dict(value='sea_reflection_two_ray',label='海面反射附加损耗'),
                      dict(value='link_feasibility',label='判断能否通信'),dict(value='scheme_comparison',label='比较方案')])
+        from planning.services.plans import TARGETS
+        issues[-1]['choices'] = [c for c in issues[-1]['choices'] if c['value'] not in TARGETS
+                                or c['value'] in report.get('available_goals',TARGETS)]
         for choice in issues[-1]['choices']:
             choice['group']='dedicated'
-            reason=report.get('disabled_goals',{}).get(choice['value'])
-            if reason:
-                choice.update(disabled=True,reason=reason)
         issues[-1]['choices'].extend(report.get('generic_choices',[]))
         return issues
     if any(d['code']=='MISSING_CONDITION' for d in diagnostics):
@@ -169,6 +168,8 @@ def issues_for(state):
                 choices=[dict(value=name,label=name) for name in det['choices']])
         elif d['code'] in {'ENTITY_UNKNOWN','SITE_COUNT','DEVICE_COUNT','DEVICE_BAND'}:
             add('clarification','task','站点或设备需要核对',d['message']+'请在补充中说明或编辑原文。',excerpt=d['message'])
+        elif d['code']=='MODULATION_COUNT':
+            add('clarification','task','请明确本次采用的调制方式',d['message']+'请编辑原文。',excerpt=d['message'])
     for field,p in params.items():
         if field in FACT_FIELDS and p['status']=='missing':
             add('missing',field,f'请补充{FACT_FIELDS[field][0]}（{FACT_FIELDS[field][1]}）','站点库没有这一项；输入单个数值和单位，例如 20m。')

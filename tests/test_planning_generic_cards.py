@@ -246,6 +246,9 @@ class GenericCardTests(unittest.TestCase):
         self.service.refresh_knowledge()
         s=self.create(CASES[1][1])
         self.assertEqual(s['status'],'NEEDS_MODEL')
+        self.assertNotIn('generic_card',s['report'])
+        self.assertNotIn('thermal_noise',{c['value'] for i in s['input_issues'] for c in i['choices']})
+        self.assertFalse(any(d['code']=='CARD_DISABLED' for d in s['report']['diagnostics']))
 
     def test_generic_goal_choices_include_disabled_tools(self):
         s=self.create('频率2GHz')

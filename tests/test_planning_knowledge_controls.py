@@ -62,29 +62,33 @@ class KnowledgeControlsTests(RootFixture, unittest.TestCase):
             self.assertEqual(self.service.get(state['task_id']),state)
             switches.set_enabled(self.root,kind,identifier,True)
 
-    def test_disabled_target_and_dependencies_are_needs_model(self):
+    def test_disabled_cards_follow_missing_card_path(self):
         for card,text in [('fspl_ghz',TEXT),('fspl_ghz','按自由空间计算接收信号电平。'),
                           ('fspl_mhz','频率2GHz，距离1km，求链路余量。')]:
             with self.subTest(card=card):
                 library.switch_card(self.root,card,False)
                 state=self.service.apply(command(text=text))['state']
-                self.assertEqual(state['status'],'NEEDS_MODEL',state)
-                self.assertTrue(any(d['code']=='CARD_DISABLED' for d in state['report']['diagnostics']))
-                self.assertIsNone(state['report']['calculation_plan_proposal'])
-                self.assertIn('已停用',state['input_issues'][0]['detail'])
+                self.assertEqual(state['status'],'AWAITING_INPUT',state)
+                self.assertFalse(any(d['code']=='CARD_DISABLED' for d in state['report']['diagnostics']))
+                self.assertNotIn('已停用',json.dumps(state['input_issues'],ensure_ascii=False))
+                if text != TEXT:
+                    self.assertIn('path_loss_db',state['report']['missing_parameters'])
                 library.switch_card(self.root,card,True)
 
     def test_disabled_goal_choices_cannot_be_selected_by_api(self):
         library.switch_card(self.root,'fspl_ghz',False)
         state=self.service.apply(command(text='请帮我规划通信。'))['state']
         goal=state['input_issues'][0]
-        choice=next(c for c in goal['choices'] if c['value']=='received_power')
-        self.assertTrue(choice['disabled'])
+        choices={c['value']:c for c in goal['choices']}
+        self.assertNotIn('fspl_ghz',choices)
+        self.assertNotIn('disabled',choices['received_power'])
         with self.assertRaisesRegex(ValueError,'INVALID_ANSWER_CHOICE'):
-            self.service.apply(command('answer',state,answers={goal['id']:'received_power'},mode='deterministic'))
+            self.service.apply(command('answer',state,answers={goal['id']:'fspl_ghz'},mode='deterministic'))
+        answered=self.service.apply(command('answer',state,answers={goal['id']:'received_power'},mode='deterministic'))['state']
+        self.assertIn('path_loss_db',answered['report']['missing_parameters'])
         self.assertNotIn('fspl_ghz',[c['id'] for c in self.service.retrieval_for(None).cards])
 
-    def test_only_actual_chain_dependencies_are_blocked(self):
+    def test_absent_dependency_becomes_input_without_composite_recalculation(self):
         text='频率2GHz，距离1km，发射功率20dBm，两端天线增益18dBi，求链路余量，比较QPSK和16QAM。'
         library.switch_card(self.root,'fspl_ghz',False)
         state=self.service.apply(command(text=text))['state']
@@ -92,9 +96,18 @@ class KnowledgeControlsTests(RootFixture, unittest.TestCase):
         self.assertEqual(state['report']['calculation_plan_proposal']['selected_model'],
                          ['fspl_mhz','received_power','link_margin'])
         library.switch_card(self.root,'fspl_mhz',False)
-        blocked=self.service.apply(command(text=text))['state']
-        self.assertEqual(blocked['status'],'NEEDS_MODEL',blocked)
-        self.assertEqual([d['details']['id'] for d in blocked['report']['diagnostics'] if d['code']=='CARD_DISABLED'],['fspl_mhz'])
+        missing=self.service.apply(command(text=text.replace('和16QAM','')))['state']
+        self.assertEqual(missing['status'],'AWAITING_INPUT',missing)
+        self.assertIn('path_loss_db',missing['report']['missing_parameters'])
+        issue=next(i for i in missing['input_issues'] if i['field']=='path_loss_db')
+        supplied=self.service.apply(command('answer',missing,answers={issue['id']:'100dB'},mode='deterministic'))['state']
+        self.assertEqual(supplied['status'],'AWAITING_CONFIRMATION',supplied)
+        self.assertNotIn('tool',supplied['report']['calculation_plan_proposal'])
+        self.assertEqual(supplied['report']['calculation_plan_proposal']['selected_model'],['received_power','link_margin'])
+        done=self.service.apply(command('confirm',supplied))['state']
+        self.assertEqual(done['status'],'COMPLETED',done)
+        self.assertNotIn('tool_calls',done['result'])
+        self.assertEqual(done['result']['steps'][0]['inputs']['path_loss_db'],100)
         library.switch_card(self.root,'fspl_mhz',True)
         supplied='按自由空间基准，路径损耗100dB，发射功率20dBm，发射天线增益18dBi，接收天线增益18dBi，求接收信号电平。'
         state=self.service.apply(command(text=supplied))['state']
@@ -109,6 +122,54 @@ class KnowledgeControlsTests(RootFixture, unittest.TestCase):
         self.assertEqual(switches.read(self.root),dict(schema_version=1,cards={'doppler_max':False},documents={'sim-sites':False}))
         reloaded=TaskService(self.root,self.root / 'restart.sqlite')
         self.assertNotIn('doppler_max',[c['id'] for c in reloaded.retrieval_for(None).cards])
+
+    def test_disabled_and_deleted_cards_produce_same_tasks_and_restore(self):
+        cases = [('fspl_ghz',TEXT),
+            ('fspl_ghz','按自由空间基准，发射功率20dBm，发射天线增益18dBi，接收天线增益18dBi，接收门限-100dBm，求链路余量。'),
+            ('fspl_mhz','频率2GHz，距离1km，发射功率20dBm，两端天线增益18dBi，求链路余量，调制QPSK。'),
+            ('received_power','按自由空间基准，接收门限-100dBm，求链路余量。'),
+            ('link_margin','按自由空间基准，求链路余量。'),
+            ('thermal_noise','计算热噪声功率，温度290K，带宽1MHz'),
+            ('thermal_noise','请规划通信。')]
+        raw=load_catalog(self.root,include_disabled=True)
+        def behavior(state):
+            report=state['report'];plan=report['calculation_plan_proposal']
+            return (state['status'], report['targets'], report['missing_parameters'],
+                plan['selected_model'] if plan else None, [d['code'] for d in report['diagnostics']],
+                [(i['field'],i['title'],i['choices']) for i in state['input_issues']])
+        for card,text in cases:
+            with self.subTest(card=card,text=text):
+                library.switch_card(self.root,card,False)
+                off=self.service.apply(command(text=text))['state']
+                library.switch_card(self.root,card,True)
+                write_json(self.root/'knowledge/formulas.json',[c for c in raw if c['id']!=card])
+                absent=self.service.apply(command(text=text))['state']
+                self.assertEqual(behavior(off),behavior(absent))
+                write_json(self.root/'knowledge/formulas.json',raw)
+        restored=self.service.apply(command(text=TEXT))['state']
+        self.assertEqual(restored['status'],'AWAITING_CONFIRMATION')
+        self.assertEqual(self.service.apply(command('confirm',restored))['state']['status'],'COMPLETED')
+
+    def test_registry_missing_composite_member_preserves_active_card_tools(self):
+        from formula_rag.registry import call_tool,load_tools
+        for member in ('fspl_mhz','received_power','link_margin'):
+            with self.subTest(member=member):
+                library.switch_card(self.root,member,False)
+                ids={t['id'] for t in load_tools(self.root)}
+                self.assertNotIn(member,ids)
+                self.assertNotIn('calc_link_margin',ids)
+                self.assertEqual(call_tool(self.root,'fspl_ghz',dict(frequency_ghz=2,distance_km=1))['status'],'ok')
+                self.assertEqual(call_tool(self.root,'calc_link_margin',{})['errors'],['UNREGISTERED_TOOL: calc_link_margin'])
+                library.switch_card(self.root,member,True)
+        self.assertIn('calc_link_margin',{t['id'] for t in load_tools(self.root)})
+
+    def test_shortened_modulation_chain_asks_single_choice_instead_of_losing_comparison(self):
+        library.switch_card(self.root,'fspl_mhz',False)
+        state=self.service.apply(command(text='发射功率20dBm，两端天线增益18dBi，路径损耗100dB，求链路余量，比较QPSK和16QAM。'))['state']
+        self.assertEqual(state['status'],'AWAITING_INPUT')
+        self.assertTrue(any(d['code']=='MODULATION_COUNT' for d in state['report']['diagnostics']))
+        self.assertNotIn('variants',state['report']['calculation_plan_proposal'] or {})
+        self.assertTrue(any('调制方式' in i['title'] for i in state['input_issues']))
 
     def test_library_exposes_all_cards_hashes_examples_and_source_kind(self):
         library.switch_card(self.root,'doppler_max',False)
@@ -224,19 +285,25 @@ class KnowledgeControlsTests(RootFixture, unittest.TestCase):
         self.assertEqual(answered['status'],'AWAITING_CONFIRMATION')
         self.assertIn('单位修正已确认',answered['request']['raw_text'])
 
-    def test_disabled_geometry_dependency_cannot_form_plan(self):
+    def test_missing_geometry_member_asks_distance_without_skipping_horizon_check(self):
         from planning.agents.requirements import RequirementsAgent
         from planning.workflow.requirements_graph import run_requirements
-        library.switch_card(self.root,'radio_horizon',False)
         text='按自由空间基准计算，频率2GHz，A站到C站，求路径损耗。'
         output=dict(selected_ids=['fspl_ghz'],targets=[],conditions=[],sites=[
             dict(mention=name,evidence=name) for name in ['A站','C站']])
-        agent=RequirementsAgent(self.root,selector=lambda *args:dict(raw_output=json.dumps(output)))
         request=dict(schema_version='1.0.0',task_id='geometry',request_id='geometry',revision=0,
                      **command(text=text)['input'])
-        state=run_requirements(request,agent)
-        self.assertEqual(state['status'],'NEEDS_MODEL',state)
-        self.assertTrue(any(d['code']=='CARD_DISABLED' for d in state['report']['diagnostics']))
+        for member in ('radio_horizon','slant_range_wgs84'):
+            with self.subTest(member=member):
+                library.switch_card(self.root,member,False)
+                agent=RequirementsAgent(self.root,selector=lambda *args:dict(raw_output=json.dumps(output)))
+                state=run_requirements(request,agent)
+                self.assertEqual(state['status'],'AWAITING_INPUT',state)
+                self.assertIn('distance_km',state['report']['missing_parameters'])
+                plan=state['report']['calculation_plan_proposal']
+                self.assertEqual(plan['selected_model'],['fspl_ghz'])
+                self.assertNotIn('checks',plan)
+                library.switch_card(self.root,member,True)
 
     def test_document_query_is_recorded_in_report(self):
         state=self.service.apply(command(text='频率2GHz，距离1km，发射功率20dBm，两端天线增益18dBi，求链路余量，比较QPSK和16QAM。'))['state']

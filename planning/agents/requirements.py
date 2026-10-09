@@ -288,29 +288,20 @@ class RequirementsAgent:
 
         # No guess from a bare keyword or the top retrieval result.
         unsupported = outside_scope(request['raw_text'], original, targets, conditions)
-        from planning.knowledge.switches import disabled_dependencies, read as knowledge_switches
-        disabled = disabled_dependencies(self.root, targets)
-        if disabled:
-            unsupported = True
-            for card in disabled:
-                diagnostics.append(diagnostic('CARD_DISABLED', f'公式卡「{card["title"]}」已停用', id=card['id']))
         if not targets and not unsupported:
             questions.append('请说明希望得到路径损耗、接收信号电平还是链路余量；当前支持自由空间条件下的单链路预算。')
         final = None if unsupported else final_target(targets, self.cards)
         order, leaves = [], []
         if targets and not unsupported and final is None:
-            questions.append('多个计算目标不在同一条计算链上，请只保留一个目标。')
-            diagnostics.append(diagnostic('PLAN_TARGETS_SPLIT', '请求的目标不能由一条计算链同时给出。', targets=targets))
+            message = ('当前公式库没有可用的目标公式卡，请选择其他目标或补入审核通过的公式卡。'
+                       if any(t not in by_id for t in targets) else '请求的目标不能由一条计算链同时给出，请只保留一个目标。')
+            questions.append(message)
+            diagnostics.append(diagnostic('PLAN_TARGETS_SPLIT', message, targets=targets))
         numeric = [a for a in labels if a['kind'] in {'quantity', 'requirement'}]
         requirement, solve, entities = summary(labels)
         # Named sites and radios are looked up; inputs nothing states take their card's assumption.
         observed = {p['canonical_name'] for p in collect_parameters(request, original, [], numeric)[0]}
         facts = sources_for(request, entities, self.cards, final, observed, self.root)
-        off = disabled_dependencies(self.root, facts['order'])
-        if off:
-            unsupported, final = True, None
-            diagnostics.extend(diagnostic('CARD_DISABLED', f'公式卡「{c["title"]}」已停用', id=c['id']) for c in off)
-            facts = sources_for(request, entities, self.cards, None, observed, self.root)
         order, leaves = facts['order'], facts['leaves']
         if facts['tool']:
             # The registered link tool computes free space only; the condition is its assumption, not a question.
@@ -407,10 +398,7 @@ class RequirementsAgent:
             conditions=sorted(conditions), targets=targets, requirement=requirement, solve=solve, entities=entities,
             execution_status=status,
             component_modes=dict(interpretation=mode, retrieval='lexical_fallback'), runtime_health=health, diagnostics=diagnostics)
-        if not targets and knowledge_switches(self.root)['cards']:
-            report['disabled_goals'] = {t: '；'.join(f'公式卡「{c["title"]}」已停用' for c in blocked)
-                for t in TARGETS if (blocked := disabled_dependencies(self.root,
-                    sources_for(request, entities, self.cards, t, observed, self.root)['order']))}
+        report['available_goals'] = [t for t in TARGETS if t in by_id]
         service = service_label(request['raw_text'])
         if service:
             report['service'] = service

@@ -35,7 +35,8 @@ def _load(root):
 
     root = Path(root)
     ranges = load_ranges(root)
-    cards = {card["id"]: card for card in load_catalog(root) if card["status"] == "verified"}
+    catalog = load_catalog(root)
+    cards = {card["id"]: card for card in catalog if card["status"] == "verified"}
     facts = FactService(root)
     active_modulations = {
         row["id"] for row in facts.public_records()["records"] if row["type"] == "modulation"
@@ -70,7 +71,11 @@ def _load(root):
                 or any(type(item) is not str or not item.strip() for item in raw["assumptions"])):
             raise ValueError("TOOL_CATALOG_INVALID")
         if any(card_id not in cards for card_id in raw["steps"]):
-            raise ValueError("TOOL_DEPENDENCY_NOT_VERIFIED")
+            # Missing cards remove only their composite tool. Present but
+            # unverified dependencies still indicate an invalid registration.
+            if any(c['id'] in raw['steps'] and c['status'] != 'verified' for c in catalog):
+                raise ValueError("TOOL_DEPENDENCY_NOT_VERIFIED")
+            continue
         tool = {**copy.deepcopy(raw), "kind": "composite"}
         for field in ("input_schema", "output_schema"):
             tool[field] = expand_range_schema(_expand_schema(tool[field], names), ranges)

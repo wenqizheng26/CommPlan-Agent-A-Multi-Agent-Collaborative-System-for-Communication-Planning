@@ -75,7 +75,8 @@ def chain(target, cards, known, exclude=GEOMETRY + TEACHER):
 
 def final_target(targets, cards):
     """The one requested quantity whose chain covers every other requested one, else None."""
-    if not targets or any(t not in TARGETS for t in targets):
+    available = {c['id'] for c in cards}
+    if not targets or any(t not in TARGETS or t not in available for t in targets):
         return None
     for target in targets:
         order, _ = chain(target, cards, set())

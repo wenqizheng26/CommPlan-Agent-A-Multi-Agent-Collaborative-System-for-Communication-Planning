@@ -56,14 +56,3 @@ def set_enabled(root, kind, identifier, value):
 def save(root, data):
     from planning.knowledge.drafts import write_json
     write_json(Path(root) / FILE, data)
-
-
-def disabled_dependencies(root, targets):
-    """Check actual plan card IDs; alternate paths must not inherit the default chain."""
-    from formula_rag.catalog import load_catalog
-    off = read(root)['cards']
-    if not off:
-        return []
-    all_cards = load_catalog(root, include_disabled=True)
-    wanted = set(targets)
-    return [c for c in all_cards if c['id'] in wanted and c['id'] in off]

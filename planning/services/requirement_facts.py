@@ -121,10 +121,6 @@ def sources_for(request, entities, cards, final, observed, root=None):
     does not know are then only labels too, and so is a placeholder such as a bare "A" that only
     resembles the library's "A站": coordinates are read only for names written as in the library.
     """
-    from planning.knowledge.switches import read
-    if read(root or ROOT)['cards']:
-        from formula_rag.catalog import load_catalog
-        cards = load_catalog(root or ROOT, include_disabled=True)
     store = FactService(root or ROOT)
     labels = [e['mention'] for e in entities if e['kind'] == 'site'] if 'distance_km' in observed else []
     sites, devices, issues = resolve([e for e in entities if not (labels and e['kind'] == 'site')], root, store)
@@ -148,24 +144,28 @@ def sources_for(request, entities, cards, final, observed, root=None):
         supplied = set(observed) | set(facts)
     order, leaves = [], []
     if final:
-        exclude = (() if len(sites) == 2 else GEOMETRY) + (('fspl_ghz',) if teacher else TEACHER)
+        # Coordinate distance requires both registered geometry cards for the
+        # horizon check. An absent member leaves distance as a user input.
+        geometry = len(sites) == 2 and set(GEOMETRY) <= {c['id'] for c in cards}
+        exclude = (() if geometry else GEOMETRY) + (('fspl_ghz',) if teacher else TEACHER)
         order, leaves = chain(final, cards, supplied, exclude)
         order = with_line_of_sight(order)
         by_id = {c['id']: c for c in cards}
         leaves += [n for i in order for n in by_id[i]['parameters'] if n not in leaves and n not in
                    {by_id[j]['output']['name'] for j in order}]
         leaves = list(dict.fromkeys(ALIASES.get(n, (n,))[0] for n in leaves))
-    # The receiver sensitivity of the first named modulation; the others are compared with it.
+    composite = teacher and order[-3:] == ['fspl_mhz', 'received_power', 'link_margin']
+    # A shortened chain cannot call a tool that reintroduces its missing cards.
     chosen, variants = {}, []
     if 'rx_threshold_dbm' in leaves and 'rx_threshold_dbm' not in observed and found:
         first = found[0]
         chosen['rx_threshold_dbm'] = [dict(kind='modulation', source_ref=f"{first['id']}#rx_sensitivity_dbm", span=None,
                                            value=first['rx_sensitivity_dbm'], unit='dBm')]
-        if teacher:
+        if composite:
             variants = [dict(label=r['names'][0], parameter='rx_threshold_dbm', value=r['rx_sensitivity_dbm'], unit='dBm',
                              source_ref=f"{r['id']}#rx_sensitivity_dbm") for r in found[1:]]
         elif len(found) > 1:
-            issues.append(diagnostic('MODULATION_COUNT', '写了损耗时一次只按一种调制方式计算，请只保留一种。',
+            issues.append(diagnostic('MODULATION_COUNT', '当前计算链一次只按一种调制方式计算，请只保留一种。',
                                      modulations=[r['names'][0] for r in found]))
     choices = [r['names'][0] for r in store.modulation_records()] if unknown or teacher else []
     for u in unknown:
@@ -184,7 +184,8 @@ def sources_for(request, entities, cards, final, observed, root=None):
     if named:
         notes.append('、'.join(f'“{m}”' for m in dict.fromkeys(named)) + '不在站点库，只作标签；距离按原文或补充的数值。')
     if teacher:
-        notes.extend(a.rstrip('。') + '。' for a in link_tool(root)['assumptions'])
+        assumptions = link_tool(root)['assumptions']
+        notes.extend(a.rstrip('。') + '。' for a in (assumptions if composite else assumptions[1:]))
     if chosen:
         used = found if teacher else found[:1]
         notes.append('接收灵敏度取调制表（模拟参数，可配置）：'
@@ -202,8 +203,8 @@ def sources_for(request, entities, cards, final, observed, root=None):
         for field, origins in extra.items():
             sources.setdefault(field, []).extend(origins)
     return dict(order=order, leaves=leaves, sources=sources, notes=notes, issues=issues, sites=sites, devices=devices,
-                labels=list(dict.fromkeys(labels + named)), tool=LINK_TOOL if teacher else None, variants=variants,
-                conditions=['free_space'] if teacher else [], modulations=[r['names'][0] for r in found])
+                labels=list(dict.fromkeys(labels + named)), tool=LINK_TOOL if composite else None, variants=variants,
+                conditions=['free_space'] if composite else [], modulations=[r['names'][0] for r in found])
 
 
 def plan_goal(requirement, solve, final, leaves):
