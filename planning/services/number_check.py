@@ -62,8 +62,13 @@ def unit_of(unit):
         return None, 1
     if unit in CARD_SCALES:
         return CARD_SCALES[unit]
-    # SI prefix case matters: MW cannot be silently interpreted as milliwatts.
-    if unit.lower() in {'mw','kw','mbit/s','gbit/s','mbps','gbps'} and unit not in CARD_SCALES:
+    # Registered SI spelling is exact: mHz is not MHz, and Ms is not ms.
+    # Keep legacy case-insensitive logarithmic unit aliases, whose case changes
+    # do not stand for a different SI prefix or base unit.
+    sensitive={u.lower() for u,(d,_) in CARD_UNITS.items()
+               if d in {'frequency','length','speed','temperature','celsius','time','power','bit_rate'}
+               and re.search(r'[A-Za-z]',u)}
+    if unit.lower() in sensitive:
         return 'unsupported:'+unit,1
     key = ALIAS.get(unit, unit.lower())
     return SCALE.get(key, (key, 1))

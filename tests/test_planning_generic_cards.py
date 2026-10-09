@@ -176,6 +176,22 @@ class GenericCardTests(unittest.TestCase):
             s=self.create('计算热噪声功率，温度'+token+'，带宽1MHz')
             self.assertEqual(s['status'],'AWAITING_INPUT')
 
+    def test_postfix_bounds_require_exact_answer_and_recover(self):
+        for suffix in ['以内','以下','以上','以外','不等','左右']:
+            with self.subTest(suffix=suffix):
+                s=self.create('计算热噪声功率，温度290K，带宽1MHz'+suffix)
+                self.assertEqual(s['status'],'AWAITING_INPUT')
+                issue=next(i for i in s['input_issues'] if i['field']=='bandwidth_hz')
+                s=self.service.apply(command('answer',s,answers={issue['id']:'2MHz'},mode='deterministic'))['state']
+                self.assertEqual(s['status'],'AWAITING_CONFIRMATION')
+
+    def test_explicit_noise_target_conflicts_in_both_directions(self):
+        for text,target in [('计算热噪声谱密度，温度290K，带宽1MHz','thermal_noise'),
+                            ('计算热噪声功率，温度290K，带宽1MHz','noise_density')]:
+            s=self.create(text,target=target)
+            self.assertEqual(s['status'],'AWAITING_INPUT')
+            self.assertIn('INTENT_CONFLICT',[d['code'] for d in s['report']['diagnostics']])
+
     def test_new_manual_card_and_multiple_conflicts_answered_without_offset_corruption(self):
         from planning.knowledge.drafts import DraftStore
         from tests.test_planning_formula_card_drafts import manual
@@ -247,6 +263,8 @@ class GenericCardTests(unittest.TestCase):
         self.assertTrue(unquoted('结果为 2 Mbps',known(dict(value=2,unit='bit/s'))))
         self.assertEqual(unquoted('结果为 200 cm',known(dict(value=2,unit='m'))),[])
         self.assertTrue(unquoted('结果为 2 MW',known(dict(value=2,unit='mW'))))
+        for wrong,unit in [('mHz','MHz'),('Ms','ms'),('MM','mm'),('NS','ns'),('Khz','kHz')]:
+            self.assertTrue(unquoted('结果为 2 '+wrong,known(dict(value=2,unit=unit))),(wrong,unit))
 
     def test_generic_known_unsupported_unit_can_be_answered(self):
         s=self.create('计算无线电视距，第一端天线高度20ft，第二端天线高度25m')

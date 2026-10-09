@@ -45,6 +45,22 @@ def choices(root):
         rows.append(row)
     return rows
 
+def explicit_targets(text, cards):
+    """Card names and aliases are checked independently of the legacy target parser."""
+    hits=[]
+    for card in cards:
+        patterns=[r'(?<![A-Za-z0-9_])'+re.escape(card['id'])+r'(?![A-Za-z0-9_])',re.escape(card['title'])]
+        if card['id'] in TARGET_ALIASES:
+            patterns.append(TARGET_ALIASES[card['id']])
+        for pattern in patterns:
+            for m in re.finditer(pattern,text,re.I):
+                prefix=re.split(r'[，,。；;\n]',text[:m.start()])[-1]
+                if re.search(r'计算|求|估算|calculate|compute|estimate|find',prefix,re.I):
+                    hits.append((m.start(),m.end(),card['id']))
+    # A complete title may contain another card's shorter alias.
+    return {ident for a,b,ident in hits if not any(c<=a and b<=d and (c<a or b<d)
+        for c,d,_ in hits)}
+
 def selected_card(request, root):
     cards = load_catalog(root, include_disabled=True)
     if request['target']:
@@ -173,7 +189,7 @@ def build_report(request, card, cards, root, role):
             whole_clause=clause+re.split(r'[，,。；;\n]',request['raw_text'][a:])[0]
             uncertain=re.search(r'[~～±–]|至少|至多|不超过|不低于|(?:或|至|到)\s*[负−+\-]?\d|\d\s*[-—]\s*\d|\b(?:or|to)\s*[+\-]?\d',whole_clause,re.I)
             if uncertain or re.search(r'不是|不要|并非|不采用|不使用|不用|不取|如果|假如|大约|大概|约|可能|not |about |approximately ',clause,re.I) or \
-                    re.match(r'\s*(?:左右|上下|至|到|~|±|[，,]\s*或)',request['raw_text'][b:]):
+                    re.match(r'\s*(?:左右|上下|以内|以下|以上|以外|不等|至|到|~|±|[，,]\s*或)',request['raw_text'][b:]):
                 diagnostics.append(diagnostic('SOURCE_AMBIGUOUS','该数量尚未明确采用，请填写一个明确数值和单位。',field=name,span=q['span']))
                 continue
             observations.append(dict(kind='user_text',source_ref=request['request_id']+':raw_text',
@@ -212,11 +228,11 @@ def build_report(request, card, cards, root, role):
                 diagnostics.append(diagnostic('PARAMETER_OUT_OF_RANGE',f'{spec["description"]}超出公式卡登记范围。',field=name))
     conditions=conditions_for(request)
     parsed=extract_request(request['raw_text'])
+    named=explicit_targets(request['raw_text'],load_catalog(root,include_disabled=True))
     if re.search(r'(?:不要|不用|不必|无需|不)(?:再|进行)?(?:计算|求出|求|算)|\b(?:do not|don.t|not to)\s+(?:calculate|compute|find)',request['raw_text'],re.I):
         diagnostics.append(diagnostic('INTENT_CONFLICT','原文排除了计算目标，请编辑任务明确本次采用的目标。'))
-    if request['target'] and parsed['target_origin']=='explicit_text' and parsed['targets'] and \
-            parsed['targets']!=[card['id']] and not (card['id']=='noise_density' and
-            parsed['targets']==['thermal_noise'] and re.search(TARGET_ALIASES['noise_density'],request['raw_text'],re.I)):
+    original_targets=named or (set(parsed['targets']) if parsed['target_origin']=='explicit_text' else set())
+    if request['target'] and original_targets and original_targets!={card['id']}:
         diagnostics.append(diagnostic('INTENT_CONFLICT','原文目标与所选公式卡不同，请编辑任务明确本次采用的目标。'))
     missing_conditions=sorted(set(card['applicability']['requires'])-set(conditions))
     if missing_conditions:
