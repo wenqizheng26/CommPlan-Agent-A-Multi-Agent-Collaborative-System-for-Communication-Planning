@@ -9,6 +9,12 @@ STOPS = sorted({alias for spec in FIELDS.values() for alias in spec[2]} | {
     '请', '要', '能', '帮', '进行', '作为', '通信', '实验', '补充', '说明',
     '场景', '测试', '链路', '规划', '情况下', '条件下', '之间', '时'}, key=len, reverse=True)
 
+UNSUPPORTED = {'海里':'km','nmi':'km','英里':'km','mi':'km','英尺':'m','ft':'m'}
+
+def unsupported(text):
+    return [dict(p,message=f'暂不支持 {p["unit"]}，请换算成 {UNSUPPORTED[p["unit"].lower()]} 后填写。')
+            for p in problems(text) if p['unit'].lower() in UNSUPPORTED]
+
 
 def adjacent_unit(text, number_end):
     tail = text[number_end:]
@@ -48,7 +54,8 @@ def suggestions(request, report, selector=False, observer=None):
         return []
     from planning.agents.role_model import suggest
     from planning.requirements_contract import require
-    typos = [p for p in problems(request['raw_text']) if p['field'] in report['missing_parameters']]
+    typos = [p for p in problems(request['raw_text']) if p['field'] in report['missing_parameters']
+             and p['unit'].lower() not in UNSUPPORTED]
     if not typos:
         return []
     schema = dict(type='object', additionalProperties=False, required=['items'], properties=dict(

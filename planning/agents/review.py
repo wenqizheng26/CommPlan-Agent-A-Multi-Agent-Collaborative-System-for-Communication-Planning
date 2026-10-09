@@ -150,7 +150,10 @@ def facts_for(result, snapshot, validations):
                                           for o in result['outputs']]),
         checks=dict(id='checks', passed=sum(v['passed'] for v in validations), total=len(validations)),
         assumptions=[dict(id=f'as:{i}', text=t) for i, t in enumerate(dict.fromkeys(notes), 1)],
-        scope=dict(id='scope', conditions=report['conditions']),
+        scope=dict(id='scope', conditions=report['conditions'], **(
+            dict(calculation_mode='generic_card', independent_model=False,
+                 limitation='按审核入库公式卡计算，无独立复核模型；只重跑入库算例并检查结果。',
+                 card_description=snapshot['review']['model']['description']) if 'generic_card' in report else {})),
         **goal_facts(result, params),
         **comparison_facts(result),
         **plan_assessment(plan),

@@ -70,6 +70,10 @@ def check_source_labels(parameters, text):
 
 def check_report(report, request, cards, root=None):
     r = validate_report(report, request)
+    if 'generic_card' in r:
+        from planning.services.generic_cards import check_report as check_generic
+        # Document evidence below is still checked against the current manifest.
+        check_generic(r, request, cards, root or Path(__file__).resolve().parents[2])
     if 'document_retrieval' in r:
         from planning.retrieval.documents import DocumentStore
         found=r['document_retrieval']
@@ -83,6 +87,8 @@ def check_report(report, request, cards, root=None):
             source=item['sources'][0]
             require(hit['source']==dict(title=source['title'],uri=source['url'],version=item['version'],
                 **{k:source[k] for k in ('doc_id','locator','sha256','simulated')}),'DOCUMENT_EVIDENCE_CHANGED')
+    if 'generic_card' in r:
+        return r
     require(r['component_modes']['retrieval']=='lexical_fallback', 'UNVERIFIED_RETRIEVAL_MODE')
     calls = [d for d in r['diagnostics'] if d['code']=='MODEL_CALL']
     if r['component_modes']['interpretation'] in {'llm','stub'}:

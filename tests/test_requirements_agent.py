@@ -78,7 +78,7 @@ class RequirementsTests(unittest.TestCase):
         self.assertIn('frequency_ghz', r['missing_parameters'])
 
     def test_month_one_scope_and_conditions(self):
-        cases = [('求热噪声功率，温度300K，带宽2MHz', 'NEEDS_MODEL'),
+        cases = [('求热噪声功率，温度300K，带宽2MHz', 'AWAITING_CONFIRMATION'),
                  ('频率2GHz，距离1km，求路径损耗', 'AWAITING_INPUT'),
                  ('按自由空间基准，频率0GHz，距离1km，求路径损耗', 'AWAITING_INPUT'),
                  ('按自由空间基准，频率2GHz，距离1e-12km，求路径损耗', 'NEEDS_MODEL'),

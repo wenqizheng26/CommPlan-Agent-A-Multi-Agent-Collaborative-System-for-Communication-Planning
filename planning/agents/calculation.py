@@ -11,7 +11,16 @@ PROMPT = ('你是受控专业计算 Agent。输入是已确认快照中的计划
 def propose_calculation(snapshot):
     plan = snapshot['review']['report']['calculation_plan_proposal']
     require(plan['selected_model']==[s['tool_id'] for s in plan['steps']] and 1 <= len(plan['steps']) <= MAX_STEPS, 'UNSUPPORTED_CALCULATION_PLAN')
-    require(all(s['tool_id'] in SUPPORTED for s in plan['steps']), 'TOOL_NOT_ALLOWED')
+    if 'generic_card' in snapshot['review']['report']:
+        from planning.services.generic_cards import standalone
+        from planning.requirements_contract import digest
+        card=snapshot['review']['model']
+        marker=snapshot['review']['report']['generic_card']
+        require(standalone(card) and plan['selected_model']==[card['id']] and
+                marker['id']==card['id'] and marker['version']==card['version'] and
+                marker['content_hash']==digest(card),'TOOL_NOT_ALLOWED')
+    else:
+        require(all(s['tool_id'] in SUPPORTED for s in plan['steps']), 'TOOL_NOT_ALLOWED')
     # One allowed call runs the confirmed plan through its final step.
     step = plan['steps'][-1]
     return dict(tool_id=step['tool_id'], plan_step_id=step['step_id'],

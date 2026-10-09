@@ -115,6 +115,10 @@ class RequirementsAgent:
         observer=getattr(self,'observer',None)
         observe(observer,'parse','started')
         request = validate_request(request, expected_revision=expected_revision)
+        from planning.services.generic_cards import run as run_generic
+        generic = run_generic(request, self.cards, self.root, self.selector or False, observer)
+        if generic is not None:
+            return validate_report(generic, request)
         parsed = extract_request(request['raw_text'])
         observe(observer,'parse','completed',mode='deterministic')
         original = copy.deepcopy(parsed)
@@ -408,6 +412,8 @@ class RequirementsAgent:
         service = service_label(request['raw_text'])
         if service:
             report['service'] = service
+        from planning.services.generic_cards import choices as card_choices
+        report['generic_choices'] = card_choices(self.root)
         checked=validate_report(report, request)
         observe(observer,'planning','completed',status=status)
         return checked

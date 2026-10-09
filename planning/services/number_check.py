@@ -14,11 +14,21 @@ from formula_rag.parsing import FIELDS
 SCALE = {'dbm/hz': ('dbm/hz', 1), 'dbm': ('dbm', 1), 'dbi': ('dbi', 1), 'dbw': ('dbw', 1), 'db': ('db', 1),
          'ghz': ('hz', 1e9), 'mhz': ('hz', 1e6), 'khz': ('hz', 1e3), 'hz': ('hz', 1),
          'km': ('m', 1e3), 'm': ('m', 1), 'kw': ('w', 1e3), 'w': ('w', 1), 'mw': ('w', 1e-3),
-         '%': ('%', 1), '°': ('deg', 1), 'k': ('k', 1)}
+         '%': ('%', 1), '°': ('deg', 1), 'k': ('k', 1), 'deg':('deg',1),
+         'm/s':('speed',1),'km/h':('speed',1/3.6),'bit/s':('bit_rate',1),
+         'kbit/s':('bit_rate',1e3),'mbit/s':('bit_rate',1e6),'gbit/s':('bit_rate',1e9),
+         's':('time',1),'ms':('time',1e-3),'us':('time',1e-6),'ns':('time',1e-9)}
 ALIAS = {'分贝': 'db', '吉赫兹': 'ghz', '吉赫': 'ghz', '千兆赫': 'ghz', '兆赫兹': 'mhz', '兆赫': 'mhz',
          '千赫兹': 'khz', '千赫': 'khz', '赫兹': 'hz', '千米': 'km', '公里': 'km', '米': 'm',
          '千瓦': 'kw', '毫瓦': 'mw', '瓦': 'w', '度': '°'}
-UNIT = '|'.join(re.escape(u) for u in sorted({*SCALE, *ALIAS}, key=len, reverse=True))
+from planning.services.card_units import UNITS as CARD_UNITS
+DIMENSIONS={'frequency':'hz','length':'m','power':'w','temperature':'k','angle':'deg'}
+CARD_SCALES={u:(DIMENSIONS.get(d,d.lower()),s) for u,(d,s) in CARD_UNITS.items()}
+# Preserve the old aliases while recognizing every unit the card editor accepts.
+for _u,_scale in CARD_SCALES.items():
+    SCALE.setdefault(_u.lower(),_scale)
+UNIT = '|'.join(('(?<=\\s)' if u[0].isdigit() else '')+re.escape(u)
+                for u in sorted({*SCALE, *ALIAS, *CARD_SCALES}, key=len, reverse=True))
 # A minus sign is not a hyphen: "1.4-2.7 GHz" is a range, "-92 dBm" is negative.
 NUMBER = re.compile(rf'(?:(?<![A-Za-z0-9_.)）])(?P<sign>[-+])|(?P<neg>负))?(?P<num>\d+(?:\.\d+)?)'
                     rf'(?:\s*/\s*(?P<den>\d+(?:\.\d+)?))?(?:\s*(?:个\s*)?(?P<unit>{UNIT})(?![A-Za-z]))?', re.I)
@@ -50,6 +60,11 @@ def blank(text, pattern, keep=lambda m: False):
 def unit_of(unit):
     if not unit:
         return None, 1
+    if unit in CARD_SCALES:
+        return CARD_SCALES[unit]
+    # SI prefix case matters: MW cannot be silently interpreted as milliwatts.
+    if unit.lower() in {'mw','kw','mbit/s','gbit/s','mbps','gbps'} and unit not in CARD_SCALES:
+        return 'unsupported:'+unit,1
     key = ALIAS.get(unit, unit.lower())
     return SCALE.get(key, (key, 1))
 

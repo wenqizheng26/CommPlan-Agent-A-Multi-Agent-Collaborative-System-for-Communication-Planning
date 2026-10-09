@@ -68,6 +68,7 @@ planning/agents/orchestrator.py planning/agents/requirements.py planning/agents/
 planning/agents/role_model.py planning/build_info.py planning/demo.py
 planning/instance_info.py planning/knowledge/library.py planning/knowledge/switches.py
 planning/services/unit_typos.py
+planning/services/card_units.py planning/services/generic_cards.py planning/knowledge/formula_drafts.py
 planning/agents/planner.py
 planning/knowledge/__init__.py planning/knowledge/facts.py planning/knowledge/parameter_ranges.py
 planning/retrieval/convert.py planning/retrieval/documents.py planning/retrieval/http_encoder.py
