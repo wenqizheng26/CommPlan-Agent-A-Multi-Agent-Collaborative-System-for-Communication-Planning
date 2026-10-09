@@ -50,7 +50,7 @@ def explicit_target_hits(text, cards):
         # Two built-in FSPL cards share a title. Keep their title on the dedicated
         # route; a complete new card title may still override its short keywords.
         duplicate=any(c['id']!=card['id'] and c['title']==card['title'] for c in cards)
-        if not (card['id'] in SUPPORTED and duplicate):
+        if card['id'] not in {'fspl_ghz','fspl_mhz'} and not (card['id'] in SUPPORTED and duplicate):
             patterns.append(re.escape(card['title']))
         if card['id'] in TARGET_ALIASES:
             patterns.append(TARGET_ALIASES[card['id']])

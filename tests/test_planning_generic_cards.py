@@ -98,6 +98,12 @@ class GenericCardTests(unittest.TestCase):
         s=self.create('按自由空间基准，计算自由空间基本传输损耗，频率2GHz，距离1km')
         self.assertEqual(s['status'],'AWAITING_CONFIRMATION')
         self.assertNotIn('generic_card',s['report'])
+        from planning.knowledge.library import switch_card
+        switch_card(self.root,'fspl_ghz',False)
+        missing=self.create('按自由空间基准，计算自由空间基本传输损耗，频率2GHz，距离1km')
+        self.assertEqual(missing['status'],'AWAITING_INPUT')
+        self.assertNotIn('generic_card',missing['report'])
+        self.assertIsNone(missing['report']['calculation_plan_proposal'])
 
     def test_generic_conclusion_and_answer_use_product_labels(self):
         s=self.create(CASES[1][2])
