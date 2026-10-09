@@ -48,10 +48,11 @@ export function planSteps(plan,report,result,facts={},cards={},text=''){
  const single=plan.steps.length===1&&result&&!result.steps;
  return plan.steps.map((step,i)=>{
   const value=done[step.step_id]?.output.value??(single&&result.outputs.length===1?result.outputs[0].value:null);
-  return {n:i+1,id:step.step_id,tool:step.tool_id,title:toolNames[step.tool_id]||step.tool_id,cite:citation(refs[step.tool_id]),unit:step.expected_unit,value,
+  const card=cards?.[step.tool_id];
+  return {n:i+1,id:step.step_id,tool:step.tool_id,title:toolNames[step.tool_id]||card?.title||step.tool_id,cite:citation(refs[step.tool_id]),unit:step.expected_unit,value,
    out:value!=null?`${formatDomain(value,2)} ${step.expected_unit}`:single&&result.outputs.length>1?`${result.outputs.length} 组结果`:null,
    inputs:Object.entries(step.inputs).map(([name,b])=>{
-    const base={name,label:parameterNames[name]||name,symbol:symbols[name]||''};
+    const base={name,label:parameterNames[name]||card?.parameters?.[name]?.description||name,symbol:symbols[name]||''};
     if(b.kind==='step')return {...base,kind:'step',tag:'上一步',value:'← '+circled(order[b.ref]),ref:order[b.ref]};
     const p=params[b.ref];
     if(!p||p.value===null)return p?.status==='conflicting'?{...base,kind:'conflict',tag:'冲突',value:'待选定'}:{...base,kind:'missing',tag:'待补充',value:'待补充'};
@@ -169,17 +170,21 @@ function knownView(host,state,ctx={}){
   row.append(el('span',parameterNames[p.canonical_name]||p.canonical_name,'in-name'),el('span',`${formatDomain(p.value)} ${p.unit}${approx.has(p.canonical_name)?'（近似）':''}`,'in-value'),el('span',label.tag,'tag '+label.kind));ul.append(row);}
  box.append(ul);host.append(box);
 }
-function answer(host,state,comparison=null){
+function answer(host,state,comparison=null,cards={}){
  const sec=el('section',undefined,'answer'),outs=state.result.outputs;
+ // A result from a reviewed card's own expression (no dedicated program) names that card.
+ const generic=state.result.calculation_mode==='generic_card'?state.result.card||{}:null,card=generic&&cards[generic.id];
  const presentation=answerPresentation(state.final_report);
  if(presentation.caution)host.append(block('审查提示需要核对',presentation.opinions,'warning'));
  if(presentation.show)host.append(block('答复 · '+presentation.label,presentation.text,'model-answer'));
- const title=state.result.steps?toolNames[state.result.model_id]||state.result.model_id:toolNames.fspl_ghz;
+ const title=generic?card?.title||generic.id||'公式卡计算':state.result.steps?toolNames[state.result.model_id]||state.result.model_id:toolNames.fspl_ghz;
+ const unitOf=k=>({frequency_ghz:'GHz',distance_km:'km'}[k]||card?.parameters?.[k]?.unit||'');
  for(const [i,value] of outs.entries()){
   const metric=el('div',undefined,'metric');metric.append(el('strong',formatDomain(value.value,2)),el('span',value.unit));
   sec.append(el('p',outs.length>1?`候选 ${i+1} · ${title}`:title,'eyebrow'),metric);
-  if(value.inputs)sec.append(el('p',Object.entries(value.inputs).map(([k,v])=>`${parameterNames[k]||k} ${formatDomain(v)} ${{frequency_ghz:'GHz',distance_km:'km'}[k]||''}`).join('；'),'hint'));
+  if(value.inputs)sec.append(el('p',Object.entries(value.inputs).map(([k,v])=>`${parameterNames[k]||card?.parameters?.[k]?.description||k} ${formatDomain(v)} ${unitOf(k)}`).join('；'),'hint'));
  }
+ if(generic)sec.append(el('p',`按审核入库公式卡计算，无独立复核模型 · ${generic.id} v${generic.version}`,'hint generic-note'));
  const req=state.final_report.requirement;if(req)sec.append(el('p',`要求 ≥ ${formatDomain(req.value)} dB · ${req.met?'满足':'不满足'}`,req.met?'ok':'warn-text'));
  if(comparison)sec.append(el('p',comparison,'compare-line'));
  sec.append(el('p',(presentation.show?'程序结论：':'')+state.final_report.conclusion,presentation.show?'hint':'conclusion'));host.append(sec);
@@ -202,7 +207,7 @@ function recordsContent(host,ctx){
  const ds=diagnosticMessages(state.report?.diagnostics);if(ds.length)host.append(block('处理说明',ds),jsonDetails('逐次诊断',state.report.diagnostics));
 }
 function resultView(host,ctx){
- const {state}=ctx;answer(host,state,ctx.comparison);
+ const {state}=ctx;answer(host,state,ctx.comparison,ctx.cards||{});
  const drift=ctx.historical?[]:settingsDrift(state,ctx.settings);
  if(drift.length){const p=el('p',`默认设置已变：${drift.join('；')}。本结果不变。`,'drift');if(ctx.onReparse)p.append(button('按新设置重新解析',ctx.onReparse));host.append(p);}
  const r=state.review?.report||state.report,plan=r?.calculation_plan_proposal;

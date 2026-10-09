@@ -195,6 +195,8 @@ const DETAILS={
  '正在切换模型，完成后再起草。':'The model is switching; draft after it finishes.','已生成草稿，请填写出处与算例后审核。':'Draft created; give its source and an example, then review it.',
  '公式卡已入库，可作为计算目标（通用计算）。':'Formula card approved; it can be a calculation target (generic calculation).','公式卡已入库；这类公式需要专用程序，暂不能计算。':'Formula card approved; this kind of formula needs a dedicated program and cannot be calculated yet.',
  '模型知识，出处未核':'model knowledge, source unchecked','模型起草，审核人已补出处':'model draft, source given by the reviewer',
+ '其他已入库公式（通用计算）':'Other approved formulas (generic calculation)','需专用程序（暂不能计算）':'Need a dedicated program (not yet calculable)','公式卡已停用':'formula card disabled','暂不可用':'not available',
+ '按审核入库公式卡计算':'Calculated from the approved formula card','无独立复核模型':'no independent check model','公式卡计算':'Formula card calculation',
  '文档依据':'Document evidence','文档检索':'Document retrieval','已采用':'Used','未采用':'Not used','展开片段':'Show excerpt','展开全文':'Show full text','公式卡检索':'Formula card retrieval','查询词':'Query',
  '没有命中的文档片段。':'No document excerpts matched.','本次未检索文档。':'No documents were retrieved for this task.','未检索到原文片段':'No source excerpt retrieved',
 '向量未就绪，按词项检索；文档不作为本次计算数值来源。':'Embeddings not ready; lexical retrieval used. Documents are not a source of values for this calculation.',

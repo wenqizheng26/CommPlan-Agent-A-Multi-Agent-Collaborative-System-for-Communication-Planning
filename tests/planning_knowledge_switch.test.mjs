@@ -55,3 +55,31 @@ test('approving a draft without a document needs a source and a numeric example'
  assert.equal(sourcePayload({...form,url:'https://itu.int'},record).source.url,'https://itu.int');
  assert.equal(sourcePayload(undefined,record),null);
 });
+
+test('goal choices from cards come after the dedicated targets, in their own groups',async()=>{
+ const {fillChoices}=await import('../planning/web/questions.mjs');
+ const old=globalThis.document;globalThis.document={createElement:make};
+ try{
+  const select=make('select');
+  fillChoices(select,[{value:'fspl_ghz',label:'路径损耗'},{value:'doppler_max',label:'多普勒',group:'generic'},{value:'slant',label:'直线距离',group:'needs_tool',disabled:true},{value:'link_margin',label:'链路余量'}],
+   c=>{const o=make('option');o.textContent=c.label;return o;});
+  assert.deepEqual(select.children.map(n=>n.tag==='optgroup'?n.label:n.textContent),['路径损耗','链路余量','其他已入库公式（通用计算）','需专用程序（暂不能计算）']);
+  const plain=make('select');fillChoices(plain,[{value:'a',label:'A'}],c=>{const o=make('option');o.textContent=c.label;return o;});
+  assert.deepEqual(plain.children.map(n=>n.tag),['option']);
+ }finally{globalThis.document=old;}
+});
+
+test('a result from a card expression names the card and says it has no independent check',async()=>{
+ const {renderRight}=await import('../planning/web/details.mjs');
+ const old=globalThis.document;globalThis.document={createElement:make};
+ try{
+  const state={status:'COMPLETED',request:{raw_text:'t'},report:{},validations:[],final_report:{conclusion:'',limitations:[]},
+   result:{outputs:[{name:'doppler_hz',value:185.3,unit:'Hz',inputs:{speed_kmh:100}}],calculation_mode:'generic_card',card:{id:'doppler_max',version:'1.0.0'}}};
+  const cards={doppler_max:{title:'最大多普勒频移',parameters:{speed_kmh:{unit:'km/h',description:'相对速率'}}}};
+  const host=make('div');renderRight(host,{state,view:'main',open:new Map(),cards,onView(){}});
+  const texts=flatten(host).map(n=>n.textContent);
+  assert.ok(texts.includes('最大多普勒频移'));
+  assert.ok(texts.includes('相对速率 100 km/h'));
+  assert.ok(texts.includes('按审核入库公式卡计算，无独立复核模型 · doppler_max v1.0.0'));
+ }finally{globalThis.document=old;}
+});
