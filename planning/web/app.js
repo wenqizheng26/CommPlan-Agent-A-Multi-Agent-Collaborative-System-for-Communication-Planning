@@ -48,6 +48,12 @@ function notice(text,error=false){
 const clearError=()=>notice('',true);
 const TIMEOUTS={'/api/commands':125000,'/api/drafts/extract':200000,'/api/drafts/review':30000,'/api/documents':30000};
 async function api(path,body){const r=await fetch(path,{signal:AbortSignal.timeout(TIMEOUTS[path]||(path.startsWith('/api/documents/')?30000:10000)),method:body?'POST':'GET',headers:body?{'Content-Type':'application/json','X-Planning-Token':token}:{},body:body?JSON.stringify(body):undefined});const data=await r.json();if(!r.ok){const err=new Error(data.error.message+' ['+data.error.code+']');err.status=r.status;throw err;}return data;}
+// Which folder, branch and commit this page is served from, so two working copies are never confused.
+function showInstance(x){
+ const line=$('instance-line');if(!line||!x?.folder)return;
+ const text=[x.folder,x.branch,x.commit&&x.commit+(x.dirty?'*':'')].filter(Boolean).join(' · ');
+ line.textContent=text;line.title=text+(x.dirty?'（* 有未提交改动）':'');line.hidden=false;
+}
 function syncButtons(){
  // A model switch holds every command that may call a model; cancelling a task still works.
  const hold=busy||switching()||lib.uploading||lib.busy;
@@ -484,4 +490,4 @@ $('export').addEventListener('click',()=>{toggleMenu(false);const s=shown();if(!
 draw();
 new ResizeObserver(()=>fitMarquee($('task-meta'))).observe($('task-meta').parentElement);
 checkModel();
-(async()=>{try{token=(await api('/api/session')).token;const data=await api('/api/facts');for(const record of data.records)facts[record.id]=record;await loadSettings();draw();await recentTasks();const id=location.hash.slice(1)||localStorage.getItem('planning-task');if(id)await restore(id);}catch(e){notice('无法连接本地服务：'+e.message,true);}})();
+(async()=>{try{const session=await api('/api/session');token=session.token;showInstance(session.instance);const data=await api('/api/facts');for(const record of data.records)facts[record.id]=record;await loadSettings();draw();await recentTasks();const id=location.hash.slice(1)||localStorage.getItem('planning-task');if(id)await restore(id);}catch(e){notice('无法连接本地服务：'+e.message,true);}})();
