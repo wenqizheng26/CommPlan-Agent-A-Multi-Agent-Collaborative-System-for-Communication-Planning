@@ -95,7 +95,7 @@ function cardList(host,ctx){
  head.append(el('h3','公式卡'),actions);host.append(head);
  host.append(el('p',can(ctx,'generic_calculation')
   ?'专用程序：已有独立计算与复核。通用计算：已审核的封闭式公式按卡上表达式求值。需迭代或查表的公式要专用程序。停用后不参与检索和计算。'
-  :'专用程序：已有独立计算与复核，可作为计算目标。其余公式卡已入库，目前只参与公式检索，尚未支持作为计算目标。停用后不参与检索和计算。','hint'));
+  :'专用程序：已有独立计算与复核，可参与计算链。其余公式卡已入库，目前只参与公式检索，尚未支持计算。停用后不参与检索和计算。','hint'));
  if(ctx.cardForm==='manual'&&can(ctx,'manual_drafts'))host.append(manualForm(ctx));
  if(ctx.cardForm==='model'&&can(ctx,'model_drafts'))host.append(modelForm(ctx));
  if(ctx.cards===null){host.append(el('p','正在读取…','hint'));return;}
