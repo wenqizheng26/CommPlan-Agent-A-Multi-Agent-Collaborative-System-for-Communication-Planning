@@ -269,7 +269,8 @@ class RequirementsAgent:
             targets = parsed['targets']
         conflicting_intent = intent_conflict(request, original)
         from planning.services.generic_cards import manual_target_conflict
-        conflicting_intent = conflicting_intent or manual_target_conflict(request,self.root)
+        manual_card_conflict = manual_target_conflict(request,self.root)
+        conflicting_intent = conflicting_intent or manual_card_conflict
         if request['target']:
             if original['target_origin'] == 'explicit_text' and set(original['targets']) != {request['target']}:
                 conflicting_intent = True
@@ -387,7 +388,7 @@ class RequirementsAgent:
         plan = (plan_for(request, order, self.cards, parameters, evidence_ids, plan_requirement, solve_if_unmet, facts['notes'],
                          facts['tool'], facts['variants'])
                 if available and not unsupported and not engineering_issues else None)
-        status = ('FAILED' if failed else 'AWAITING_INPUT' if conflicting_intent else
+        status = ('FAILED' if failed else 'AWAITING_INPUT' if manual_card_conflict else
                   'NEEDS_MODEL' if unsupported or (final and not available) else
                   'AWAITING_INPUT' if questions or not plan else 'AWAITING_CONFIRMATION')
         diagnostics.append(diagnostic('SOURCE_REVIEW_LIMITATION', '来源状态来自库内登记，本次没有独立复核原始文献。'))
