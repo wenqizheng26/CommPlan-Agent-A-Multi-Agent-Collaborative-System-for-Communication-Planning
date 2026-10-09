@@ -163,6 +163,44 @@ class KnowledgeControlsTests(RootFixture, unittest.TestCase):
                 library.switch_card(self.root,member,True)
         self.assertIn('calc_link_margin',{t['id'] for t in load_tools(self.root)})
 
+    def test_saved_goal_choices_follow_current_catalog_without_rewriting_history(self):
+        create=command(text='请帮我规划通信。')
+        state=self.service.apply(create)['state']
+        original=self.service.store.get(state['task_id'])
+        history=self.service.history(state['task_id'])
+        issue=next(i for i in state['input_issues'] if i['field']=='goal')
+        for card in ('fspl_ghz','thermal_noise'):
+            library.switch_card(self.root,card,False)
+        for response in (self.service.get(state['task_id']),self.service.apply(create)['state']):
+            choices={c['value'] for i in response['input_issues'] for c in i['choices']}
+            self.assertFalse({'fspl_ghz','thermal_noise'} & choices)
+        for card in ('fspl_ghz','thermal_noise'):
+            with self.assertRaisesRegex(ValueError,'INVALID_ANSWER_CHOICE'):
+                self.service.apply(command('answer',state,answers={issue['id']:card},mode='deterministic'))
+        self.assertEqual(self.service.store.get(state['task_id']),original)
+        self.assertEqual(self.service.history(state['task_id']),history)
+        library.switch_card(self.root,'fspl_ghz',True)
+        self.assertIn('fspl_ghz',{c['value'] for i in self.service.get(state['task_id'])['input_issues'] for c in i['choices']})
+        while_off=self.service.apply(command(text='请帮我规划通信。'))['state']
+        library.switch_card(self.root,'thermal_noise',True)
+        self.assertIn('thermal_noise',{c['value'] for i in self.service.get(while_off['task_id'])['input_issues'] for c in i['choices']})
+
+    def test_old_report_goal_projection_filters_missing_cards(self):
+        from planning.services.clarification import active_goal_issues,issues_for
+        state=self.service.apply(command(text='请帮我规划通信。'))['state']
+        state['report'].pop('available_goals')
+        state['report']['disabled_goals']={'received_power':'旧停用依赖提示'}
+        state.pop('input_issues')
+        library.switch_card(self.root,'fspl_ghz',False)
+        choices={c['value']:c for i in active_goal_issues(issues_for(state),load_catalog(self.root)) for c in i['choices']}
+        self.assertNotIn('fspl_ghz',choices)
+        self.assertNotIn('disabled',choices['received_power'])
+
+    def test_full_modulation_chain_with_manual_threshold_requires_intent_resolution(self):
+        state=self.service.apply(command(text='频率2GHz，距离1km，发射功率20dBm，两端天线增益18dBi，接收门限-100dBm，求链路余量，比较QPSK和16QAM。'))['state']
+        self.assertEqual(state['status'],'AWAITING_INPUT')
+        self.assertTrue(any(d['code']=='MODULATION_COUNT' for d in state['report']['diagnostics']))
+
     def test_shortened_modulation_chain_asks_single_choice_instead_of_losing_comparison(self):
         library.switch_card(self.root,'fspl_mhz',False)
         for threshold in ('','接收门限-100dBm，'):

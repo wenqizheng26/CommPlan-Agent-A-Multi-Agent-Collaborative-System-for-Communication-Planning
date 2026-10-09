@@ -250,6 +250,20 @@ class GenericCardTests(unittest.TestCase):
         self.assertNotIn('thermal_noise',{c['value'] for i in s['input_issues'] for c in i['choices']})
         self.assertFalse(any(d['code']=='CARD_DISABLED' for d in s['report']['diagnostics']))
 
+    def test_missing_wavelength_goal_never_falls_back_to_path_loss(self):
+        from planning.knowledge.library import switch_card,delete_card
+        self.add_wavelength()
+        text='计算自由空间波长，频率2GHz，距离1km'
+        switch_card(self.root,'wavelength_free_space',False)
+        for absent in ('disabled','deleted'):
+            if absent=='deleted':
+                delete_card(self.root,'wavelength_free_space')
+            for target in (None,'fspl_ghz','wavelength_free_space'):
+                with self.subTest(absent=absent,target=target):
+                    s=self.create(text,target=target)
+                    self.assertNotEqual(s['status'],'AWAITING_CONFIRMATION')
+                    self.assertIsNone(s['report']['calculation_plan_proposal'])
+
     def test_generic_goal_choices_include_disabled_tools(self):
         s=self.create('频率2GHz')
         issue=next(i for i in s['input_issues'] if i['field']=='goal')

@@ -30,9 +30,9 @@ PARAMETER_ALIASES = {
 def standalone(card):
     return card['id'] not in TARGETS and card['status']=='verified' and card.get('kind','expression')=='expression'
 
-def choices(root):
+def choices(root=None,*,cards=None):
     rows = []
-    for card in load_catalog(root):
+    for card in cards if cards is not None else load_catalog(root):
         if card['id'] in TARGETS or card['id']=='fspl_mhz':
             continue
         tool = card.get('kind','expression')=='python_tool'

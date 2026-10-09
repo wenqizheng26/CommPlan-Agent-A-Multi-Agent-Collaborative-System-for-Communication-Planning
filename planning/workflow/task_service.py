@@ -17,7 +17,7 @@ from planning.workflow.requirements_graph import stamp
 from planning.workflow.activity import ActivityStore, observe
 from planning.workflow.model_log import ModelCallLog
 from planning.services.supplement import merge_supplement, conversation_of, edited_conversation
-from planning.services.clarification import apply_answers, attach_issues
+from planning.services.clarification import apply_answers, attach_issues, active_goal_issues
 from planning.services.supplement import LocalSupplementSelector
 from planning.services.entity_followup import replace_entities
 from planning.agents.role_model import LocalRoleSelector, output_language
@@ -138,7 +138,15 @@ class TaskService:
     def get(self, task_id):
         identifier(task_id)
         state=self.store.get(task_id)
-        return attach_issues(state) if 'input_issues' not in state else state
+        return self.present(state)
+
+    def present(self,state):
+        state=copy.deepcopy(state)
+        if 'input_issues' not in state:
+            attach_issues(state)
+        if any(i['field']=='goal' for i in state['input_issues']):
+            state['input_issues']=active_goal_issues(state['input_issues'],load_catalog(self.root))
+        return state
 
     def history(self, task_id):
         identifier(task_id)
@@ -213,7 +221,7 @@ class TaskService:
             recorded=conn.execute('SELECT payload_hash,ack FROM events WHERE task_id=? AND event_id=?',(task_id,event_id)).fetchone()
             if recorded:
                 require(recorded[0]==payload_hash,'IDEMPOTENCY_CONFLICT')
-                return dict(state=current,acknowledgement=strict_json(recorded[1]),replayed=True)
+                return dict(state=self.present(current),acknowledgement=strict_json(recorded[1]),replayed=True)
             if action=='create':
                 require(current is None,'TASK_EXISTS')
                 require(c['expected_revision']==0,'STALE_REVISION')
@@ -229,7 +237,7 @@ class TaskService:
             run,bindings,retrieval=self.run_settings(mode,defaults)
             conversation=conversation_of(current) if current else None
             if action=='answer':
-                next_input,conversation=apply_answers(current,c['answers'],event_id)
+                next_input,conversation=apply_answers(current,c['answers'],event_id,load_catalog(self.root))
             elif action=='supplement':
                 observe(observer,'requirements','started',caller='orchestrator',purpose='supplement')
                 # A swap of the radio or one site ("换 XX-200 呢") is checked against the reviewed library;
@@ -314,4 +322,4 @@ class TaskService:
                 if running is not None:
                     running['committing']=True
             self.store.save(conn,state,event_id,payload_hash,ack)
-            return dict(state=state,acknowledgement=ack,replayed=False)
+            return dict(state=self.present(state),acknowledgement=ack,replayed=False)

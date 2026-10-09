@@ -74,6 +74,9 @@ def check_report(report, request, cards, root=None):
         from planning.services.generic_cards import check_report as check_generic
         # Document evidence below is still checked against the current manifest.
         check_generic(r, request, cards, root or Path(__file__).resolve().parents[2])
+    elif r['execution_status']=='AWAITING_CONFIRMATION':
+        from planning.services.generic_cards import manual_target_conflict
+        require(not manual_target_conflict(request,root or Path(__file__).resolve().parents[2]), 'INTENT_CONFLICT')
     if 'document_retrieval' in r:
         from planning.retrieval.documents import DocumentStore
         found=r['document_retrieval']
@@ -164,8 +167,6 @@ def check_report(report, request, cards, root=None):
     check_source_labels(parameters,request['raw_text'])
     require(r['runtime_health'] != 'unavailable', 'UNAVAILABLE_CONFIRMATION')
     require(not intent_conflict(request, parsed), 'INTENT_CONFLICT')
-    from planning.services.generic_cards import manual_target_conflict
-    require(not manual_target_conflict(request,root or Path(__file__).resolve().parents[2]), 'INTENT_CONFLICT')
     # Re-ground model evidence; neither report status nor its condition list is trusted.
     interpreted = copy.deepcopy(parsed)
     for d in r['diagnostics']:

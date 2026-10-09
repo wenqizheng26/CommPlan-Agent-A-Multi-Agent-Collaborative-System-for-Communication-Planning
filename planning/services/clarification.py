@@ -354,8 +354,29 @@ def record_fields(report):
 
 
 
-def apply_answers(current,answers,event_id):
-    issues={i['id']:i for i in issues_for(current)}
+def active_goal_issues(issues,cards):
+    """Project current choices without changing saved report, history or hashes."""
+    by_id={c['id']:c for c in cards}
+    from planning.services.plans import TARGETS
+    from planning.services.generic_cards import choices as generic_choices
+    labels=['路径损耗','接收信号电平','链路余量','第一菲涅耳区半径','绕射参数','单刃形绕射损耗','海面反射附加损耗']
+    choices=[dict(value=t,label=label,group='dedicated') for t,label in zip(TARGETS,labels) if t in by_id]
+    choices += [dict(value='link_feasibility',label='判断能否通信',group='dedicated'),
+                dict(value='scheme_comparison',label='比较方案',group='dedicated')]
+    choices += generic_choices(cards=cards)
+    projected=copy.deepcopy(issues)
+    for issue in projected:
+        if issue['field']!='goal':
+            continue
+        issue['choices']=copy.deepcopy(choices)
+    return projected
+
+
+def apply_answers(current,answers,event_id,cards=None):
+    questions=issues_for(current)
+    if cards is not None:
+        questions=active_goal_issues(questions,cards)
+    issues={i['id']:i for i in questions}
     require(type(answers) is dict and 0<len(answers)<=20,'INVALID_ANSWERS')
     require(set(answers)<=set(issues),'STALE_QUESTION')
     request=input_of(current);before=copy.deepcopy(request);conversation=conversation_of(current)

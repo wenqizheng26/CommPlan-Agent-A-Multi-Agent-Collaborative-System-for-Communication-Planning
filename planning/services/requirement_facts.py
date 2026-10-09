@@ -164,7 +164,7 @@ def sources_for(request, entities, cards, final, observed, root=None):
         if composite:
             variants = [dict(label=r['names'][0], parameter='rx_threshold_dbm', value=r['rx_sensitivity_dbm'], unit='dBm',
                              source_ref=f"{r['id']}#rx_sensitivity_dbm") for r in found[1:]]
-    if not composite and len(found) > 1:
+    if len(found) > 1 and (not composite or 'rx_threshold_dbm' in observed):
         issues.append(diagnostic('MODULATION_COUNT', '当前计算链一次只按一种调制方式计算，请只保留一种。',
                                  modulations=[r['names'][0] for r in found]))
     choices = [r['names'][0] for r in store.modulation_records()] if unknown or teacher else []

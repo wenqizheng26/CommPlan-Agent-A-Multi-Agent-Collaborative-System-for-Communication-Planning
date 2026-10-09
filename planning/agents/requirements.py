@@ -387,7 +387,8 @@ class RequirementsAgent:
         plan = (plan_for(request, order, self.cards, parameters, evidence_ids, plan_requirement, solve_if_unmet, facts['notes'],
                          facts['tool'], facts['variants'])
                 if available and not unsupported and not engineering_issues else None)
-        status = ('FAILED' if failed else 'NEEDS_MODEL' if unsupported or (final and not available) else
+        status = ('FAILED' if failed else 'AWAITING_INPUT' if conflicting_intent else
+                  'NEEDS_MODEL' if unsupported or (final and not available) else
                   'AWAITING_INPUT' if questions or not plan else 'AWAITING_CONFIRMATION')
         diagnostics.append(diagnostic('SOURCE_REVIEW_LIMITATION', '来源状态来自库内登记，本次没有独立复核原始文献。'))
         report = dict(schema_version=VERSION, profile=PROFILE, **{k: request[k] for k in ('task_id','revision','request_id')},
