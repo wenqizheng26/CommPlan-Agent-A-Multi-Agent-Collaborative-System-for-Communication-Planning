@@ -180,7 +180,7 @@ class DraftStore:
 
     # --- evidence and checks ------------------------------------------------
     def chunks(self):
-        return {c['id']: c for c in DocumentStore(self.root).chunks}
+        return {c['id']: c for c in DocumentStore(self.root, include_disabled=True).chunks}
 
     def check(self, kind, record, evidence, by_id=None, source_hashes=None):
         """Every quote verbatim in a chunk of one document; every number found in its quote.
@@ -276,7 +276,10 @@ class DraftStore:
     def view(self, draft, rows=None, by_id=None):
         """The draft with the program's checks, recomputed against the current documents."""
         shown = copy.deepcopy(draft)
+        shown['source_kind'] = draft.get('source_kind', 'document')
         problems = []
+        if not any(r['doc_id'] == draft['doc_id'] for r in DocumentStore(self.root).records):
+            problems.append('来源文档已删除')
         try:
             validate_record(draft['kind'], draft['record'])
             shown['checks'] = rows if rows is not None else self.check(
@@ -313,7 +316,7 @@ class DraftStore:
     def library(self, kind):
         path = self.root / LIBRARY[kind]
         if kind == 'formula':
-            return load_catalog(self.root) if path.is_file() else []
+            return load_catalog(self.root, include_disabled=True) if path.is_file() else []
         return strict_json(path.read_text(encoding='utf-8-sig')) if path.is_file() else []
 
     def review(self, identifier, reviewer, expected_hash, decision, reason=''):
@@ -322,7 +325,8 @@ class DraftStore:
         require(decision in ('approve', 'reject'), 'DRAFT_DECISION')
         require(type(reason) is str and len(reason) <= 500 and (decision == 'approve' or reason.strip()), 'DRAFT_REASON')
         self.folder.mkdir(parents=True, exist_ok=True)
-        with _lock:
+        from planning.knowledge.switches import mutation
+        with _lock, mutation(self.root):
             # The SQLite lock also serialises a command-line review against the workbench.
             conn = sqlite3.connect(self.folder / 'reviews.sqlite', timeout=10)
             try:
@@ -362,7 +366,8 @@ class DraftStore:
         record['status'] = 'verified'
         record['review'] = {k: review[k] for k in ('reviewer', 'at', 'draft_id', 'content_hash')}
         if draft['kind'] == 'formula':
-            record['sources'] = [dict(title=title, path=document['local_path'], locator=locator,
+            record['source_kind'] = 'document'
+            record['sources'] = [dict(title=title, path=document['local_path'], locator=locator, doc_id=document['doc_id'],
                                       sha256=document['sha256'], simulated=document['simulated'])]
             require(not validate_card(record), 'DRAFT_FORMULA_INVALID')
         else:

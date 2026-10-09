@@ -12,6 +12,7 @@ import webbrowser
 
 from launch import model_command, model_paths, embedding_command
 from planning.build_info import build_fingerprint
+from planning.instance_info import instance_info, label
 from planning.providers.registry import Registry
 from stop_commplan import PROFILE, listening, read_json, stop_workbench
 
@@ -172,6 +173,8 @@ def main(argv=None):
     if not 1 <= args.port <= 65535 or args.port in (model_port, embedding_port):
         parser.error(f'工作台端口必须在 1–65535 之间，且不能占用模型端口 {model_port}。')
     address = f'http://127.0.0.1:{args.port}'
+    identity = instance_info(ROOT)
+    print('CommPlan 工作台 · '+label(identity),flush=True)
 
     def workbench_ready():
         data = read_json(address + '/api/session')
@@ -179,11 +182,12 @@ def main(argv=None):
 
     session = read_json(address + '/api/session')
     existing = isinstance(session, dict) and session.get('profile') == PROFILE
-    if existing and session.get('build') != build_fingerprint(ROOT) or not existing and listening(args.port):
+    if existing and (session.get('build') != build_fingerprint(ROOT) or isinstance(session.get('instance'),dict)
+            and session['instance'].get('folder') != identity['folder']) or not existing and listening(args.port):
         # An older CommPlan build holds the port: replace it. Anything else there is left alone.
         if not stop_workbench(args.port):
             raise RuntimeError(f'{args.port} 端口已被其他程序占用，请使用 --port 指定其他端口。')
-        print('已停止旧版工作台，启动当前版本。', flush=True)
+        print('已停止 '+label((session or {}).get('instance'))+'，启动 '+label(identity)+'。', flush=True)
         existing = False
     if existing and args.db is not None:
         raise RuntimeError('指定了 --db，但该端口已有工作台。请使用空闲的 --port 启动独立数据库。')

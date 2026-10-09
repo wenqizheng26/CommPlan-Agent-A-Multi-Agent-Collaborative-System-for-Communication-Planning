@@ -114,6 +114,7 @@ class DraftTests(unittest.TestCase):
         draft = extract(self.root, 'formula', [self.eirp], model(self.formula))['draft']
         self.assertTrue(draft['approvable'])
         self.assertEqual((draft['example']['value'], draft['example']['passed'], draft['example']['tolerance']), (44, True, 0.5))
+        self.assertEqual(draft['source_kind'],'document')
         statuses = {row['field']: row['status'] for row in draft['checks']}
         self.assertEqual((statuses['expression'], statuses['examples.0.expected']), ('manual', 'match'))
         wrong = dict(self.formula, expression='tx_power_dbm + tx_gain_dbi + tx_loss_db')

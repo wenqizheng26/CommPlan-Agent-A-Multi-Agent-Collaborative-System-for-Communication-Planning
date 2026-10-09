@@ -143,6 +143,13 @@ class ReplaceWorkbenchTests(unittest.TestCase):
         stop.assert_not_called()
         spawn.assert_not_called()
 
+    def test_same_build_from_another_folder_is_replaced(self):
+        info=dict(folder='other-worktree',branch='other',commit='abcdef12',dirty=False)
+        result,stop,spawn=self.launch({'profile':'confirmed-fspl-loop-v1','build':'new','instance':info},True)
+        self.assertEqual(result,0)
+        stop.assert_called_once_with(18082)
+        self.assertEqual(spawn.call_count,1)
+
     def test_other_program_on_the_port_is_left_alone(self):
         result, stop, spawn = self.launch(None, False)
         self.assertIsInstance(result, RuntimeError)

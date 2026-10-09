@@ -35,6 +35,7 @@
     "sources": [
       {
         "title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+        "doc_id": "itu-p525-5",
         "url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
         "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
         "checked_date": "2026-09-14",
@@ -539,6 +540,7 @@
     "sources": [
       {
         "title": "ITU-R P.530-19",
+        "doc_id": "itu-p530-19",
         "url": "https://www.itu.int/rec/R-REC-P.530-19/en",
         "locator": "§2.2.1, equation (3), PDF page 7 / printed page 5",
         "checked_date": "2026-09-30",
@@ -758,6 +760,7 @@
     "sources": [
       {
         "title": "ITU-R P.530-19",
+        "doc_id": "itu-p530-19",
         "url": "https://www.itu.int/rec/R-REC-P.530-19/en",
         "locator": "§6.1.2.3 steps 3–4, equations (121)–(126), PDF pages 44–45 / printed pages 42–43; §6.1.2.4",
         "checked_date": "2026-09-30",
@@ -838,6 +841,7 @@
     "sources": [
       {
         "title": "ITU-R P.525-5 (11/2024), Calculation of free-space attenuation",
+        "doc_id": "itu-p525-5",
         "url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.525-5-202411-I!!PDF-E.pdf",
         "locator": "Annex 1 and 2.3; printed pages 1 and 3; equation (6)",
         "checked_date": "2026-09-14",

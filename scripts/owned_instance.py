@@ -227,7 +227,7 @@ def workbench_session(port):
 def workbench_answers(record, port):
     session = workbench_session(port)
     return (session is not None and session.get('profile') == PROFILE and session.get('build') == record['build']
-            and session.get('instance') == record['instance'])
+            and session.get('instance_id', session.get('instance')) == record['instance'])
 
 
 def answers(record, row):
@@ -492,7 +492,7 @@ def stop_workbench(record, row, launched, server, deadline):
         if listeners(port) != {server.pid}:
             raise Refused(f'workbench port {port} is not held by its recorded process')
         session = workbench_session(port)
-        if session is None or session.get('instance') != record['instance']:
+        if session is None or session.get('instance_id', session.get('instance')) != record['instance']:
             raise Refused('workbench does not answer with this instance id')
         code, body = http_json(f'http://127.0.0.1:{port}/api/instance/shutdown', data=b'', timeout=60,
                                headers={'X-Planning-Token': session.get('token', ''),

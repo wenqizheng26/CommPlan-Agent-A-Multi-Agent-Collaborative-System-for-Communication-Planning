@@ -123,7 +123,7 @@ class OwnedInstanceTests(unittest.TestCase):
         base = saved['workbench']
         with urlopen(base + '/api/session', timeout=10) as response:
             session = json.load(response)
-        self.assertEqual(session['instance'], saved['instance'])
+        self.assertEqual(session['instance_id'], saved['instance'])
         self.assertNotIn(saved['secret'], json.dumps(session))
         token = {'X-Planning-Token': session['token'], 'Content-Type': 'application/json'}
         code, body = post(base + '/api/model-switch', token, json.dumps({'model_id': 'qwen3-4b-q4'}).encode())
@@ -267,7 +267,7 @@ class InstanceEndpointTests(unittest.TestCase):
 
     def test_close_needs_token_secret_and_no_body(self):
         url = self.base + '/api/instance/shutdown'
-        self.assertEqual(self.session['instance'], self.web.instance_id(self.secret))
+        self.assertEqual(self.session['instance_id'], self.web.instance_id(self.secret))
         self.assertEqual(post(url, self.headers(**{'X-Instance-Secret': 'wrong'}))[0], 403)
         self.assertEqual(post(url, {'X-Instance-Secret': self.secret})[0], 403)
         self.assertEqual(post(url, self.headers(), b'{}')[0], 400)
@@ -319,7 +319,8 @@ class InstanceEndpointTests(unittest.TestCase):
             base = f'http://127.0.0.1:{server.server_port}'
             with urlopen(base + '/api/session', timeout=15) as response:
                 session = json.load(response)
-            self.assertNotIn('instance', session)
+            self.assertNotIn('instance_id', session)
+            self.assertIsInstance(session['instance'], dict)
             code, _ = post(base + '/api/instance/shutdown', {'X-Planning-Token': session['token'],
                                                              'X-Instance-Secret': ''})
             self.assertEqual(code, 404)

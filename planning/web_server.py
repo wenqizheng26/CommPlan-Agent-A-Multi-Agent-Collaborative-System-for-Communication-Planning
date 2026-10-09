@@ -18,6 +18,7 @@ from planning.workflow.task_service import TaskService, identifier
 from planning.services.model_status import probe_model, probe_registry
 from planning.services.model_switch import Gate, ModelSwitcher
 from planning.build_info import build_fingerprint
+from planning.instance_info import instance_info, label
 
 MESSAGES={
     'OPERATION_CANCELLED':'本次操作已停止并回滚；此前保存的版本保持有效。',
@@ -58,6 +59,9 @@ MESSAGES={
     'DOCUMENT_PDF_UNREADABLE':'PDF 无法读取，可能已损坏或加密。',
     'DOCUMENT_EMPTY':'文件里没有可读取的文字；扫描件需要先做文字识别。',
     'DOCUMENT_NOT_FOUND':'资料库里没有这份文档。',
+    'DOCUMENT_BUILTIN':'内置文档不能删除，可以停用。',
+    'CARD_BUILTIN':'内置公式卡不能删除，可以停用。',
+    'CARD_NOT_FOUND':'公式库里没有这张卡。',
     'EXTRACTION_CHUNKS':'请选择 1–6 个片段。',
     'EXTRACTION_ONE_DOCUMENT':'一次只能从同一份文档抽取。',
     'DRAFT_KIND':'请选择站点、设备或公式。',
@@ -125,9 +129,9 @@ def create_server(root, db_path=None, port=18082, instance_secret=None):
     gate=Gate()
     switcher=ModelSwitcher(service,gate)
     writes=Writes()
-    session={'token':token,'profile':'confirmed-fspl-loop-v1','build':build}
+    session={'token':token,'profile':'confirmed-fspl-loop-v1','build':build,'instance':instance_info(root)}
     if instance_secret is not None:
-        session['instance']=instance_id(instance_secret)
+        session['instance_id']=instance_id(instance_secret)
     assets={'/':('index.html','text/html'),'/app.js':('app.js','text/javascript'),
             '/text.mjs':('text.mjs','text/javascript'),'/flow.mjs':('flow.mjs','text/javascript'),
             '/details.mjs':('details.mjs','text/javascript'),'/m1.mjs':('m1.mjs','text/javascript'),'/conversation.mjs':('conversation.mjs','text/javascript'),
@@ -231,6 +235,12 @@ def create_server(root, db_path=None, port=18082, instance_secret=None):
                     self.error(500,'SERVER_ERROR');return
                 self.respond(200,{'cards':[dict(cards[i],content_hash=digest(cards[i])) for i in ids if i in cards],
                                   'missing':[i for i in ids if i not in cards]})
+            elif path=='/api/formula-library':
+                from planning.knowledge.library import cards
+                try:
+                    self.respond(200,{'cards':cards(root)})
+                except (OSError,ValueError):
+                    self.error(500,'SERVER_ERROR')
             elif path.startswith('/api/tasks/'):
                 parts=path.strip('/').split('/')
                 try:
@@ -331,6 +341,21 @@ def create_server(root, db_path=None, port=18082, instance_secret=None):
             return {'draft':DraftStore(root).review(payload['id'],payload['reviewer'],payload['content_hash'],
                                                     payload['decision'],payload['reason'])}
 
+        def library_command(self,payload):
+            from planning.knowledge import sources, library
+            document = self.path.startswith('/api/documents/')
+            switching = self.path.endswith('/switch')
+            key = 'doc_id' if document else 'id'
+            if type(payload) is not dict or set(payload) != ({key,'enabled'} if switching else {key}):
+                raise ValueError('INVALID_REQUEST')
+            if switching and type(payload['enabled']) is not bool:
+                raise ValueError('INVALID_REQUEST')
+            operation = (sources.switch_document if switching else sources.delete_document) if document else (
+                library.switch_card if switching else library.delete_card)
+            operation(root,payload[key],*([payload['enabled']] if switching else []))
+            service.refresh_knowledge()
+            return {'library':sources.describe(root)} if document else {'cards':library.cards(root)}
+
         def stop_instance(self):
             # Only an owned instance has this: page token and the secret from its record, no body.
             if instance_secret is None:
@@ -361,8 +386,17 @@ def create_server(root, db_path=None, port=18082, instance_secret=None):
 
         def post(self):
             if urlsplit(self.path).path=='/api/documents':
-                self.upload(parse_qs(urlsplit(self.path).query)); return
-            if self.path not in {'/api/commands','/api/cancel-operation','/api/settings','/api/drafts/extract','/api/drafts/review','/api/model-switch'}:
+                try:
+                    with gate.command(), service.store.transaction():
+                        self.upload(parse_qs(urlsplit(self.path).query))
+                        service.refresh_knowledge()
+                except ValueError as exc:
+                    self.reject(409,str(exc))
+                except sqlite3.OperationalError:
+                    self.reject(503,'DATABASE_BUSY')
+                return
+            library_paths={'/api/documents/switch','/api/documents/delete','/api/formula-cards/switch','/api/formula-cards/delete'}
+            if self.path not in {'/api/commands','/api/cancel-operation','/api/settings','/api/drafts/extract','/api/drafts/review','/api/model-switch',*library_paths}:
                 self.reject(404,'NOT_FOUND'); return
             if self.headers.get_content_type()!='application/json':
                 self.reject(400,'JSON_REQUIRED'); return
@@ -386,10 +420,14 @@ def create_server(root, db_path=None, port=18082, instance_secret=None):
                     if instance_secret is not None:
                         raise ValueError('MODEL_SWITCH_DISABLED')
                     result=switcher.start(payload['model_id'])
+                elif self.path in library_paths:
+                    with gate.command(), service.store.transaction():
+                        result=self.library_command(payload)
                 elif self.path.startswith('/api/drafts/'):
                     # Extraction calls the model: it and a model switch exclude each other.
-                    with gate.command() if self.path=='/api/drafts/extract' else nullcontext():
+                    with gate.command(), service.store.transaction():
                         result=self.draft_command(payload)
+                        service.refresh_knowledge()
                 else:
                     with nullcontext() if type(payload) is dict and payload.get('action')=='cancel' else gate.command():
                         result=service.apply(payload)
@@ -398,7 +436,7 @@ def create_server(root, db_path=None, port=18082, instance_secret=None):
                 code=str(exc) if isinstance(exc,ValueError) and not isinstance(exc,UnicodeError) else 'INVALID_REQUEST'
                 status=409 if code in {'STALE_SETTINGS','STALE_REVISION','STALE_STATE_VERSION','REVIEW_HASH_MISMATCH','KNOWLEDGE_CHANGED',
                     'TASK_EXISTS','NOT_CONFIRMABLE','NOT_CANCELLABLE','IDEMPOTENCY_CONFLICT','CHECKPOINT_STATE_MISMATCH',
-                    'DRAFT_STALE_REVIEW','DRAFT_ALREADY_REVIEWED','MODEL_SWITCHING','MODEL_SWITCH_BUSY','MODEL_SWITCH_RUNNING','MODEL_SWITCH_DISABLED'} or code.startswith('DRAFT_NOT_APPROVABLE') else 400
+                    'DOCUMENT_BUILTIN','CARD_BUILTIN','DRAFT_STALE_REVIEW','DRAFT_ALREADY_REVIEWED','MODEL_SWITCHING','MODEL_SWITCH_BUSY','MODEL_SWITCH_RUNNING','MODEL_SWITCH_DISABLED'} or code.startswith('DRAFT_NOT_APPROVABLE') else 404 if code in {'DOCUMENT_NOT_FOUND','CARD_NOT_FOUND'} else 400
                 self.error(status,code)
             except sqlite3.OperationalError:
                 self.error(503,'DATABASE_BUSY')
@@ -408,6 +446,7 @@ def create_server(root, db_path=None, port=18082, instance_secret=None):
 
     server=ThreadingHTTPServer(('127.0.0.1',port),Handler)
     server.daemon_threads=True
+    server.instance_info=session['instance']
     return server
 
 
@@ -418,6 +457,7 @@ def main(argv=None):
     parser.add_argument('--port',type=int,default=18082)
     args=parser.parse_args(argv)
     server=create_server(args.root,args.db,args.port,os.environ.pop(INSTANCE_SECRET_ENV,None) or None)
+    print('CommPlan 工作台 · '+label(server.instance_info),flush=True)
     print(f'通信筹划已启动：http://127.0.0.1:{server.server_port}  （Ctrl+C 停止，任务保存在本地）',flush=True)
     try:
         server.serve_forever()

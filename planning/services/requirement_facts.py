@@ -121,6 +121,10 @@ def sources_for(request, entities, cards, final, observed, root=None):
     does not know are then only labels too, and so is a placeholder such as a bare "A" that only
     resembles the library's "A站": coordinates are read only for names written as in the library.
     """
+    from planning.knowledge.switches import read
+    if read(root or ROOT)['cards']:
+        from formula_rag.catalog import load_catalog
+        cards = load_catalog(root or ROOT, include_disabled=True)
     store = FactService(root or ROOT)
     labels = [e['mention'] for e in entities if e['kind'] == 'site'] if 'distance_km' in observed else []
     sites, devices, issues = resolve([e for e in entities if not (labels and e['kind'] == 'site')], root, store)

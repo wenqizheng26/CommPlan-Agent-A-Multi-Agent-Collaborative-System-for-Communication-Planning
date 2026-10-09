@@ -66,6 +66,8 @@ formula_rag/pipeline.py formula_rag/presentation.py formula_rag/retrieval.py
 planning/__init__.py planning/agents/__init__.py planning/agents/calculation.py
 planning/agents/orchestrator.py planning/agents/requirements.py planning/agents/review.py
 planning/agents/role_model.py planning/build_info.py planning/demo.py
+planning/instance_info.py planning/knowledge/library.py planning/knowledge/switches.py
+planning/services/unit_typos.py
 planning/agents/planner.py
 planning/knowledge/__init__.py planning/knowledge/facts.py planning/knowledge/parameter_ranges.py
 planning/retrieval/convert.py planning/retrieval/documents.py planning/retrieval/http_encoder.py
