@@ -96,3 +96,16 @@ test('a result from a card expression names the card and says it has no independ
   assert.ok(texts.includes('按审核入库公式卡计算，无独立复核模型 · doppler_max v1.0.0'));
  }finally{globalThis.document=old;}
 });
+
+test('a unit guess is offered as a suggestion, not as a default value',async()=>{
+ const {renderQuestions}=await import('../planning/web/questions.mjs');
+ const old=globalThis.document;globalThis.document={createElement:tag=>({...make(tag),dataset:{}})};
+ const issue=(id,field,suggestion)=>({id,field,kind:'missing',status:'open',title:'请补充'+field,choices:[],suggestion});
+ const unit={value:'1km',display:'1 km',reason:'kn 不是距离单位，可能是 km',note:'单位猜测，需确认'};
+ const typical={value:'2GHz',display:'2 GHz',reason:'典型值',note:'默认补全，需确认'};
+ const button=state=>{const host=make('div');renderQuestions(host,state,{disabled:true});return flatten(host).find(n=>n.tag==='button'&&/^全部采用/.test(n.textContent))?.textContent;};
+ try{
+  assert.equal(button({task_id:'t1',revision:1,status:'AWAITING_INPUT',input_issues:[issue('a','distance_km',unit),issue('b','frequency_ghz',typical)]}),'全部采用建议（2 项）');
+  assert.equal(button({task_id:'t2',revision:1,status:'AWAITING_INPUT',input_issues:[issue('b','frequency_ghz',typical)]}),'全部采用默认值（1 项）');
+ }finally{globalThis.document=old;}
+});

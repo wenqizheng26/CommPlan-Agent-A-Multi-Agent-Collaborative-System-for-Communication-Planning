@@ -43,7 +43,7 @@ export function renderQuestions(host,state,{disabled=false,onSubmit,onEdit}={}){
    // A suggested table value is prefilled until the user types something else (TEACHER_CASES).
    input.value=drafts.get(key)??q.suggestion?.value??'';if(input.selectedOptions?.[0]?.disabled)input.value='';
    input.addEventListener('input',()=>{drafts.set(key,input.value);count();});input.addEventListener('change',()=>{drafts.set(key,input.value);count();});
-   row.append(input);inputs.push({input,id:q.id,suggestion:q.suggestion?.value});
+   row.append(input);inputs.push({input,id:q.id,suggestion:q.suggestion?.value,note:q.suggestion?.note});
    if(q.suggestion){const note=el('p',undefined,'hint suggestion-note');note.append(el('span',q.suggestion.note,'tag suggested'),el('span',' '+q.suggestion.reason));row.append(note);}
   }
   form.append(row);
@@ -51,7 +51,8 @@ export function renderQuestions(host,state,{disabled=false,onSubmit,onEdit}={}){
  const suggested=inputs.filter(x=>x.suggestion);
  if(suggested.length){
   // One click adopts every suggestion; the other answers typed so far go with them.
-  const adopt=el('button',`全部采用默认值（${suggested.length} 项）`,'secondary compact');adopt.type='button';adopt.disabled=disabled;
+  // A unit guess is not a default value; the button says so when one is among them.
+  const adopt=el('button',`${suggested.every(x=>x.note==='默认补全，需确认')?'全部采用默认值':'全部采用建议'}（${suggested.length} 项）`,'secondary compact');adopt.type='button';adopt.disabled=disabled;
   adopt.addEventListener('click',()=>{for(const x of suggested)x.input.value=x.suggestion;
    const answers=Object.fromEntries(inputs.filter(x=>x.input.value.trim()).map(x=>[x.id,x.input.value.trim()]));onSubmit(answers);});
   form.append(adopt);

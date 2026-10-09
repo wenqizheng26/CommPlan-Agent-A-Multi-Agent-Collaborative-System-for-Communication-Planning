@@ -645,7 +645,7 @@ const TEACHER={
  '与 GHz 形式采用的 92.4 常数相比，统一频率单位后结果约高 0.04 dB。':'After converting frequency units, the result is about 0.04 dB higher than the GHz form using a constant of 92.4.',
  '物理关系来自 ITU-R P.525-5，f 为 MHz、d 为 km；常数 32.44 为链路余量计算约定（docs/design/TEACHER_CASES.md · 决定 · 公式），不同于标准式(6)的 32.4 舍入常数。':'The physical relationship comes from ITU-R P.525-5, with f in MHz and d in km. The 32.44 constant is a link-margin calculation convention (docs/design/TEACHER_CASES.md, formula decision), distinct from the rounded constant of 32.4 in the standard’s equation (6).',
  '调制灵敏度表（模拟）':'Modulation sensitivity table (simulated)','决定 · 调制灵敏度':'Receiver sensitivity convention',
- '选择调制方式':'Choose the modulation','默认补全，需确认':'Default value, please confirm','典型值表的默认值':'Default from the typical-value table',
+ '选择调制方式':'Choose the modulation','默认补全，需确认':'Default value, please confirm','单位猜测，需确认':'Unit guess, please confirm','典型值表的默认值':'Default from the typical-value table',
  '默认补全':'Default value','采用默认补全':'Adopted default values','调制方式对比':'Modulation comparison','调制':'Modulation','灵敏度 dBm':'Sensitivity dBm',
  '接收电平 dBm':'Rx level dBm','余量 dB':'Margin dB',
  '各调制共用路径损耗与接收电平；灵敏度为模拟参数，可配置。':'All modulations share the path loss and the received level; the sensitivities are simulated, configurable values.',
@@ -656,6 +656,7 @@ const TEACHER={
 };
 const TEACHER_PATTERNS=[
  [/^全部采用默认值（(\d+) 项）$/,'Adopt all defaults ($1)'],
+ [/^全部采用建议（(\d+) 项）$/,'Adopt all suggestions ($1)'],
  [/^相差 ([-\d.]+) dB · 推荐 (\S+)（余量最大）$/,'Spread $1 dB · recommended: $2 (largest margin)'],
  [/^调制表 (\S+) · 模拟参数$/,'Modulation table $1 · simulated'],
  [/^调制表 (\S+) · 模拟参数 · 默认补全$/,'Modulation table $1 · simulated · default value'],
