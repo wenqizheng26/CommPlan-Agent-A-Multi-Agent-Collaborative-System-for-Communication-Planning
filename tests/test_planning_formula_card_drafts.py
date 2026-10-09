@@ -7,6 +7,7 @@ import unittest
 
 from formula_rag.catalog import load_catalog
 from planning.knowledge.drafts import DraftStore, write_json
+from planning.knowledge.formula_drafts import check_example, review_inputs, review_tolerance
 from planning.knowledge.switches import set_enabled
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -203,6 +204,77 @@ class FormulaDraftTests(unittest.TestCase):
     def test_numeric_first_id_matches_declared_contract(self):
         draft = self.store.create_manual('formula', manual('9_power'))
         self.assertTrue(draft['approvable'])
+
+    def precision_record(self, expression='power_w'):
+        record = manual('rounded_example')
+        record['expression'] = expression
+        record['parameters']['power_w'].pop('min')
+        record['parameters']['power_w'].pop('max')
+        return record
+
+    def test_written_rounding_precision_allows_textbook_example_and_survives_publish(self):
+        draft = self.store.create_manual('formula', self.precision_record())
+        example = dict(inputs=dict(power_w=.149896), expected=.1499, expected_text='0.1499', note='教材第 2 页')
+        approved = self.approve(draft, source=self.source, example=example)
+        card = next(c for c in load_catalog(self.root) if c['id'] == 'rounded_example')
+        self.assertEqual(card['examples'][0]['expected_text'], '0.1499')
+        self.assertEqual(approved['review']['example']['expected_text'], '0.1499')
+        self.assertAlmostEqual(card['examples'][0]['tolerance'], .00005)
+
+    def test_missing_expected_text_keeps_existing_strict_tolerance(self):
+        example = dict(inputs=dict(power_w=.149896), expected=.1499, note='原文算例')
+        with self.assertRaisesRegex(ValueError, 'DRAFT_EXAMPLE_FAILED'):
+            review_inputs(self.precision_record(), self.source, example)
+
+    def test_error_beyond_last_written_half_place_is_rejected(self):
+        example = dict(inputs=dict(power_w=.14984), expected=.1499, expected_text='0.1499', note='原文算例')
+        with self.assertRaisesRegex(ValueError, 'DRAFT_EXAMPLE_FAILED'):
+            review_inputs(self.precision_record(), self.source, example)
+
+    def test_trailing_zeroes_and_scientific_notation_preserve_decimal_precision(self):
+        self.assertEqual(review_tolerance(.1499, '0.1499'), .00005)
+        self.assertEqual(review_tolerance(.1499, '0.149900'), .000001)
+        self.assertEqual(review_tolerance(.1499, '1.499e-1'), .00005)
+        self.assertEqual(review_tolerance(.1499, '1.49900E-1'), .000001)
+        self.assertEqual(review_tolerance(14990, '1.4990e4'), .5)
+        self.assertEqual(review_tolerance(-.1499, '-0.1499'), .00005)
+        source, example = review_inputs(self.precision_record(), self.source,
+            dict(inputs=dict(power_w=-.149896), expected=-.1499, expected_text='-0.1499', note='负值原文算例'))
+        self.assertEqual(example['expected_text'], '-0.1499')
+
+    def test_invalid_nonfinite_long_or_inconsistent_expected_text_is_rejected(self):
+        for text in ('NaN', 'inf', 'Infinity', '1e999', '1e-999', '0x1', '1_4', '１４', ' 14', '14 ',
+                     '14 m', '14\n', '', '9' * 81, None, 14, True, '14e' + '9' * 500, '14.1'):
+            with self.subTest(text=text), self.assertRaisesRegex(ValueError, 'DRAFT_EXAMPLE_FAILED'):
+                review_inputs(self.precision_record(), self.source,
+                    dict(inputs=dict(power_w=14), expected=14, expected_text=text, note='原文算例'))
+
+    def test_underflow_text_cannot_claim_numeric_zero(self):
+        with self.assertRaisesRegex(ValueError, 'DRAFT_EXAMPLE_FAILED'):
+            review_inputs(self.precision_record(), self.source,
+                dict(inputs=dict(power_w=0), expected=0, expected_text='1e-999', note='原文算例'))
+
+    def test_coarse_zero_integer_or_scientific_precision_cannot_validate_wrong_result(self):
+        for expected, text, actual in ((0, '0', .1), (0, '0e9', .1), (1, '1', 1.2),
+                                       (1000000000, '1e9', 1200000000), (14, '14', 14.3)):
+            with self.subTest(text=text), self.assertRaisesRegex(ValueError, 'DRAFT_EXAMPLE_FAILED'):
+                review_inputs(self.precision_record(), self.source,
+                    dict(inputs=dict(power_w=actual), expected=expected, expected_text=text, note='粗精度原文算例'))
+        self.assertEqual(review_tolerance(0, '0'), 1e-6)
+        self.assertEqual(review_tolerance(1, '1'), .01)
+
+    def test_model_and_manual_self_checks_do_not_use_expected_text_to_widen_tolerance(self):
+        record = self.precision_record()
+        example = dict(inputs=dict(power_w=.149896), expected=.1499, expected_text='0.1499')
+        self.assertFalse(check_example(record, example)['passed'])
+        record['examples'] = [example]
+        with self.assertRaisesRegex(ValueError, 'DRAFT_EXAMPLE_FAILED'):
+            self.store.create_manual('formula', record)
+
+    def test_expected_text_cannot_be_combined_with_caller_selected_tolerance(self):
+        with self.assertRaisesRegex(ValueError, 'DRAFT_SOURCE_REQUIRED'):
+            review_inputs(self.precision_record(), self.source,
+                dict(inputs=dict(power_w=14), expected=14, expected_text='14', note='原文算例', tolerance=999))
 
 
 if __name__ == '__main__':

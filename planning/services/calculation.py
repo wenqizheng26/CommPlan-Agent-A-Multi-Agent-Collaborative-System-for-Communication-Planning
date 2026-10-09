@@ -452,9 +452,13 @@ def publish(result, snapshot, validations):
                 runtime_health=report['runtime_health'], generated_at=stamp())
 
 
-def plan_conclusion(result):
+def plan_conclusion(result, objective=None):
     tools = [s['tool_id'] for s in result['steps']]
     out = result['outputs'][0]
+    if result.get('calculation_mode')=='generic_card':
+        label=objective or result['model_id']
+        value=format(out['value'],'.4g') if 0<abs(out['value'])<1 else format(out['value'],'.2f')
+        return f"按已确认输入，{label} {value} {out['unit']}。"
     text = '按已确认自由空间条件，' if {'fspl_ghz', 'fspl_mhz'} & set(tools) else '按已确认输入，'
     if result.get('comparison'):
         c = result['comparison']
@@ -506,7 +510,7 @@ def publish_plan(result, snapshot, validations):
                 model_id=result['model_id'],model_version=result['model_version'],formula=result['formula'],
                 parameters=copy.deepcopy(report['parameters_proposal']),conditions=copy.deepcopy(report['conditions']),
                 validation_ids=[v['validation_id'] for v in validations],
-                conclusion=plan_conclusion(result),
+                conclusion=plan_conclusion(result,report['calculation_plan_proposal']['objective']),
                 limitations=list(dict.fromkeys(limits)),
                 evidence_refs=copy.deepcopy(report['evidence_refs']), component_modes=copy.deepcopy(report['component_modes']),
                 runtime_health=report['runtime_health'], generated_at=stamp(),

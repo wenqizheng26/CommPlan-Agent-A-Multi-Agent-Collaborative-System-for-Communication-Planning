@@ -69,6 +69,9 @@ def issues_for(state):
         return issues
     diagnostics=report.get('diagnostics',[])
     if 'generic_card' in report:
+        if any(d['code']=='INTENT_CONFLICT' for d in diagnostics):
+            add('conflict','task','目标或模型条件存在冲突','请直接编辑当前任务，明确本次采用的单个目标。')
+            return issues
         params={p['canonical_name']:p for p in report['parameters_proposal']}
         for field,spec in report['generic_parameters'].items():
             p=params[field]

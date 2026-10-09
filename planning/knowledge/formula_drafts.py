@@ -1,5 +1,6 @@
 """Untrusted formula proposals and independent human review inputs."""
 import copy
+from decimal import Decimal
 import math
 import re
 from urllib.parse import urlsplit
@@ -48,8 +49,11 @@ def check_example(record, example):
             and set(example['inputs']) == set(record['parameters'])
             and all(finite(value) for value in example['inputs'].values())
             and finite(example.get('expected')), 'DRAFT_EXAMPLE_FAILED')
+    return _evaluate_example(record, example, max(1e-6, abs(example['expected']) * 1e-6))
+
+
+def _evaluate_example(record, example, tolerance):
     expected = example['expected']
-    tolerance = max(1e-6, abs(expected) * 1e-6)
     result = evaluate(dict(record, status='verified'), example['inputs'])
     value = result.get('value')
     passed = result.get('status') == 'ok' and finite(value) and abs(value - expected) <= tolerance
@@ -58,11 +62,33 @@ def check_example(record, example):
                 unit=record['output']['unit'], passed=passed)
 
 
+def review_tolerance(expected, text):
+    """Use the written final decimal place, bounded so coarse text cannot rubber-stamp a wrong result.
+
+    Decimal preserves trailing zeroes and scientific notation. The numeric JSON field and
+    its written source must agree. Zero and severely rounded text never grant an arbitrary
+    absolute error budget: the extra rounding allowance is at most 1% of a nonzero result.
+    """
+    require(finite(expected) and type(text) is str and 1 <= len(text) <= 80
+            and re.fullmatch(r'[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]{1,3})?', text),
+            'DRAFT_EXAMPLE_FAILED')
+    decimal = Decimal(text)
+    numeric = float(decimal)
+    require(math.isfinite(numeric) and numeric == expected
+            and (numeric != 0 or decimal.is_zero()), 'DRAFT_EXAMPLE_FAILED')
+    base = max(1e-6, abs(expected) * 1e-6)
+    # float conversion may overflow/underflow, so bound the decimal power before conversion.
+    exponent = decimal.as_tuple().exponent
+    half_place = float(Decimal('0.5').scaleb(max(-400, min(400, exponent))))
+    return max(base, min(half_place, abs(expected) * .01))
+
+
 def review_inputs(record, source, example):
     require(type(source) is dict and {'title', 'locator'} <= set(source) <= {'title', 'locator', 'url'}
             and all(type(source[key]) is str and 1 <= len(source[key].strip()) <= 1000
                     for key in ('title', 'locator'))
-            and type(example) is dict and set(example) == {'inputs', 'expected', 'note'}
+            and type(example) is dict and {'inputs', 'expected', 'note'} <= set(example)
+            <= {'inputs', 'expected', 'note', 'expected_text'}
             and type(example['note']) is str and 1 <= len(example['note'].strip()) <= 1000,
             'DRAFT_SOURCE_REQUIRED')
     clean_source = {key: value.strip() for key, value in source.items() if type(value) is str}
@@ -72,9 +98,14 @@ def review_inputs(record, source, example):
         require(parsed.scheme in ('https', 'http') and parsed.netloc and not parsed.username,
                 'DRAFT_SOURCE_REQUIRED')
     checked = check_example(record, example)
+    if 'expected_text' in example:
+        tolerance = review_tolerance(example['expected'], example['expected_text'])
+        checked = _evaluate_example(record, example, tolerance)
     require(checked['passed'], 'DRAFT_EXAMPLE_FAILED')
     clean_example = dict(inputs=copy.deepcopy(example['inputs']), expected=example['expected'],
                          tolerance=checked['tolerance'], note=example['note'].strip())
+    if 'expected_text' in example:
+        clean_example['expected_text'] = example['expected_text']
     return clean_source, clean_example
 
 

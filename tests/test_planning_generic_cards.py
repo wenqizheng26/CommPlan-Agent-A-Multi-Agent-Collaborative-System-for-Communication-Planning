@@ -46,6 +46,57 @@ class GenericCardTests(unittest.TestCase):
         c['input'].update(target=target,manual_parameters=manual or {})
         return self.service.apply(c)['state']
 
+    def add_wavelength(self,title='自由空间波长',identifier='wavelength_free_space'):
+        from planning.knowledge.drafts import DraftStore
+        from tests.test_planning_formula_card_drafts import manual
+        record=manual(identifier)
+        record.update(title=title,expression='0.299792458/frequency_ghz',
+            parameters=dict(frequency_ghz=dict(unit='GHz',description='载波频率',exclusive_min=0)),
+            output=dict(name='wavelength_m',unit='m'))
+        store=DraftStore(self.root)
+        draft=store.create_manual('formula',record)
+        store.review(draft['id'],'Reviewer',draft['content_hash'],'approve',source=dict(title='测试资料',locator='波长公式'),
+            example=dict(inputs=dict(frequency_ghz=2),expected=.149896229,note='独立算例'))
+        self.service.refresh_knowledge()
+
+    def test_exact_new_card_title_precedes_old_keywords_and_retains_conflicts(self):
+        for title in ['自由空间波长','路径损耗换算波长','接收电平示例波长']:
+            with self.subTest(title=title):
+                identifier='wavelength_'+str(len(load_catalog(self.root)))
+                self.add_wavelength(title,identifier)
+                s=self.create('计算'+title+'，载波频率2GHz。')
+                self.assertEqual(s['status'],'AWAITING_CONFIRMATION',s.get('input_issues'))
+                self.assertEqual(s['report']['targets'],[identifier])
+                done=self.service.apply(command('confirm',s))['state']
+                self.assertEqual(done['status'],'COMPLETED')
+                self.assertAlmostEqual(done['result']['outputs'][0]['value'],.149896229)
+
+    def test_independent_old_and_new_goals_are_not_silently_selected(self):
+        self.add_wavelength()
+        for text in ['计算自由空间波长和路径损耗，载波频率2GHz，距离1km',
+                     '计算自由空间波长，载波频率2GHz；求路径损耗，距离1km']:
+            s=self.create(text)
+            self.assertEqual(s['status'],'AWAITING_INPUT')
+            self.assertIn('INTENT_CONFLICT',[d['code'] for d in s['report']['diagnostics']])
+            self.assertTrue(any(i['kind']=='conflict' for i in s['input_issues']))
+
+    def test_builtin_duplicate_title_keeps_dedicated_path_and_choice_is_unique(self):
+        from planning.services.generic_cards import choices
+        self.assertNotIn('fspl_mhz',{r['value'] for r in choices(self.root)})
+        s=self.create('按自由空间基准，计算自由空间基本传输损耗，频率2GHz，距离1km')
+        self.assertEqual(s['status'],'AWAITING_CONFIRMATION')
+        self.assertNotIn('generic_card',s['report'])
+
+    def test_generic_conclusion_and_answer_use_product_labels(self):
+        s=self.create(CASES[1][2])
+        issue=next(i for i in s['input_issues'] if i['field']==CASES[1][3])
+        s=self.service.apply(command('answer',s,answers={issue['id']:CASES[1][4]},mode='deterministic'))['state']
+        self.assertNotIn('bandwidth_hz=',s['request']['raw_text'])
+        self.assertIn('噪声等效带宽',s['request']['raw_text'])
+        done=self.service.apply(command('confirm',s))['state']
+        self.assertIn('热噪声功率',done['final_report']['conclusion'])
+        self.assertNotIn('thermal_noise_dbm',done['final_report']['conclusion'])
+
     def test_four_targets_only_execute_after_confirmation_and_recover(self):
         for ident,text,_,_,_,expected in CASES:
             with self.subTest(ident=ident):
@@ -243,7 +294,7 @@ class GenericCardTests(unittest.TestCase):
         issue=next(i for i in s['input_issues'] if i['field']=='ratio')
         s=self.service.apply(command('answer',s,answers={issue['id']:'2 1'},mode='deterministic'))['state']
         self.assertEqual(s['status'],'AWAITING_CONFIRMATION')
-        self.assertIn('ratio=2 1',s['request']['raw_text'])
+        self.assertIn('系数 2 1',s['request']['raw_text'])
         done=self.service.apply(command('confirm',s))['state']
         self.assertEqual(done['status'],'COMPLETED',done.get('failure'))
         self.assertEqual(done['result']['outputs'][0]['value'],4)

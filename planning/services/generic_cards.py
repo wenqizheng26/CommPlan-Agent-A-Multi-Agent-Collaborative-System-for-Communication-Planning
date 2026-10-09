@@ -7,7 +7,7 @@ from formula_rag.catalog import load_catalog
 from formula_rag.parsing import NUMBER, extract_request
 from planning.requirements_contract import PROFILE, VERSION, digest, require
 from planning.services.card_units import UNIT_PATTERN, convert_unit
-from planning.services.plans import TARGETS
+from planning.services.plans import TARGETS, SUPPORTED
 from planning.services.requirement_evidence import snapshot_for, evidence_for
 from planning.services.requirement_parameters import diagnostic
 
@@ -35,7 +35,7 @@ def choices(root):
     off = read(root)['cards']
     rows = []
     for card in load_catalog(root, include_disabled=True):
-        if card['id'] in TARGETS:
+        if card['id'] in TARGETS or card['id']=='fspl_mhz':
             continue
         tool = card.get('kind','expression')=='python_tool'
         row = dict(value=card['id'], label=card['title'], group='needs_tool' if tool else 'generic')
@@ -45,11 +45,16 @@ def choices(root):
         rows.append(row)
     return rows
 
-def explicit_targets(text, cards):
+def explicit_target_hits(text, cards):
     """Card names and aliases are checked independently of the legacy target parser."""
     hits=[]
     for card in cards:
-        patterns=[r'(?<![A-Za-z0-9_])'+re.escape(card['id'])+r'(?![A-Za-z0-9_])',re.escape(card['title'])]
+        patterns=[r'(?<![A-Za-z0-9_])'+re.escape(card['id'])+r'(?![A-Za-z0-9_])']
+        # Two built-in FSPL cards share a title. Keep their title on the dedicated
+        # route; a complete new card title may still override its short keywords.
+        duplicate=any(c['id']!=card['id'] and c['title']==card['title'] for c in cards)
+        if not (card['id'] in SUPPORTED and duplicate):
+            patterns.append(re.escape(card['title']))
         if card['id'] in TARGET_ALIASES:
             patterns.append(TARGET_ALIASES[card['id']])
         for pattern in patterns:
@@ -58,25 +63,38 @@ def explicit_targets(text, cards):
                 if re.search(r'计算|求|估算|calculate|compute|estimate|find',prefix,re.I):
                     hits.append((m.start(),m.end(),card['id']))
     # A complete title may contain another card's shorter alias.
-    return {ident for a,b,ident in hits if not any(c<=a and b<=d and (c<a or b<d)
-        for c,d,_ in hits)}
+    return [(a,b,ident) for a,b,ident in hits if not any(c<=a and b<=d and (c<a or b<d)
+        for c,d,_ in hits)]
+
+def explicit_targets(text, cards):
+    return {ident for _,_,ident in explicit_target_hits(text,cards)}
+
+def intended_targets(text, cards):
+    hits=explicit_target_hits(text,cards)
+    remaining=text
+    for a,b in sorted({(a,b) for a,b,_ in hits},reverse=True):
+        remaining=remaining[:a]+' '*(b-a)+remaining[b:]
+    parsed=extract_request(remaining)
+    return {ident for _,_,ident in hits} | (set(parsed['targets'])
+        if parsed['target_origin']=='explicit_text' else set())
 
 def selected_card(request, root):
     cards = load_catalog(root, include_disabled=True)
     if request['target']:
         return next((c for c in cards if c['id']==request['target'] and c['id'] not in TARGETS), None)
-    # Existing dedicated targets always retain their original route. No semantic fallback guess.
-    parsed=extract_request(request['raw_text'])
-    if set(parsed['targets']) & set(TARGETS):
-        return None
     text = request['raw_text']
     if not re.search(r'计算|求|估算|calculate|compute|estimate',text,re.I):
         return None
-    matches = [c for c in cards if c['id'] not in TARGETS and
-        (re.search(r'(?<![A-Za-z0-9_])'+re.escape(c['id'])+r'(?![A-Za-z0-9_])',text) or
-         c['title'] in text or (c['id'] in TARGET_ALIASES and re.search(TARGET_ALIASES[c['id']],text,re.I)))]
-    if not matches:
-        matches=[c for c in cards if c['id'] not in TARGETS and c['id'] in parsed['targets']]
+    named=explicit_targets(text,cards)
+    matches=[c for c in cards if c['id'] not in TARGETS and c['id'] in named]
+    if matches:
+        # Multiple explicit targets enter the generic report only to ask for one
+        # goal; build_report independently rejects the conflicting intentions.
+        return matches[0]
+    parsed=extract_request(text)
+    if set(parsed['targets']) & set(TARGETS):
+        return None
+    matches=[c for c in cards if c['id'] not in TARGETS and c['id'] in parsed['targets']]
     return matches[0] if len(matches)==1 else None
 
 def quantities(text):
@@ -86,8 +104,13 @@ def quantities(text):
     return [dict(id='q'+str(i),value=numeric(m),unit=m['unit'],span=list(m.span()),excerpt=m[0])
             for i,m in enumerate(re.finditer(pattern,text)) if math.isfinite(numeric(m))]
 
+def parameter_label(name, spec):
+    if name in PARAMETER_ALIASES:
+        return PARAMETER_ALIASES[name][0]
+    return re.split(r'[，,。；;\n]',spec['description'])[0].strip() or name
+
 def aliases(name, spec):
-    return list(dict.fromkeys([name, spec['description'], *PARAMETER_ALIASES.get(name,[])]))
+    return list(dict.fromkeys([name, spec['description'], parameter_label(name,spec), *PARAMETER_ALIASES.get(name,[])]))
 
 def source_labels(text, card, found):
     from formula_rag.parsing import FIELDS
@@ -228,11 +251,11 @@ def build_report(request, card, cards, root, role):
                 diagnostics.append(diagnostic('PARAMETER_OUT_OF_RANGE',f'{spec["description"]}超出公式卡登记范围。',field=name))
     conditions=conditions_for(request)
     parsed=extract_request(request['raw_text'])
-    named=explicit_targets(request['raw_text'],load_catalog(root,include_disabled=True))
+    named=intended_targets(request['raw_text'],load_catalog(root,include_disabled=True))
     if re.search(r'(?:不要|不用|不必|无需|不)(?:再|进行)?(?:计算|求出|求|算)|\b(?:do not|don.t|not to)\s+(?:calculate|compute|find)',request['raw_text'],re.I):
         diagnostics.append(diagnostic('INTENT_CONFLICT','原文排除了计算目标，请编辑任务明确本次采用的目标。'))
     original_targets=named or (set(parsed['targets']) if parsed['target_origin']=='explicit_text' else set())
-    if request['target'] and original_targets and original_targets!={card['id']}:
+    if original_targets and original_targets!={card['id']}:
         diagnostics.append(diagnostic('INTENT_CONFLICT','原文目标与所选公式卡不同，请编辑任务明确本次采用的目标。'))
     missing_conditions=sorted(set(card['applicability']['requires'])-set(conditions))
     if missing_conditions:
@@ -337,6 +360,6 @@ def answer_parameter(request,report,field,answer,spans_removed=False):
     # Preserve unrelated text. Remove only source spans for the answered parameter.
     if not spans_removed:
         remove_answered_sources(request,report,{field})
-    request['raw_text']+='\n'+field+'='+m[1]+' '+m[2]
+    request['raw_text']+='\n'+parameter_label(field,spec)+' '+m[1]+' '+m[2]
     request['manual_parameters'].pop(field,None)
     return dict(value=value,unit=spec['unit'])
