@@ -239,7 +239,8 @@ def create_server(root, db_path=None, port=18082, instance_secret=None):
                 from planning.knowledge.library import cards
                 try:
                     self.respond(200,{'cards':cards(root),
-                                      'capabilities':{'manual_drafts':False,'model_drafts':False}})
+                                      'capabilities':{'manual_drafts':False,'model_drafts':False,
+                                                      'generic_calculation':False}})
                 except (OSError,ValueError):
                     self.error(500,'SERVER_ERROR')
             elif path.startswith('/api/tasks/'):

@@ -10,7 +10,7 @@ from planning.knowledge.drafts import write_json
 
 
 def cards(root):
-    from planning.services.plans import TARGETS
+    from planning.services.plans import SUPPORTED
     off = switches.read(root)['cards']
     rows = []
     for card in load_catalog(root, include_disabled=True):
@@ -25,7 +25,7 @@ def cards(root):
         rows.append(dict(card, kind=kind, expression=card.get('expression'), examples_passed=bool(passed),
             enabled=card['id'] not in off, added=added,
             source_kind=card.get('source_kind', 'document' if added else 'builtin'),
-            calc='dedicated' if card['id'] in TARGETS else 'needs_tool' if kind == 'python_tool' else 'generic',
+            calc='dedicated' if card['id'] in SUPPORTED else 'needs_tool' if kind == 'python_tool' else 'generic',
             content_hash=digest(card)))
     return rows
 

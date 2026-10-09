@@ -120,7 +120,8 @@ class KnowledgeControlsTests(RootFixture, unittest.TestCase):
         self.assertEqual(rows['doppler_max']['source_kind'],'builtin')
         self.assertEqual(rows['doppler_max']['calc'],'generic')
         self.assertEqual(rows['fspl_ghz']['calc'],'dedicated')
-        self.assertEqual(rows['slant_range_wgs84']['calc'],'needs_tool')
+        for identifier in ('slant_range_wgs84','radio_horizon','fspl_mhz'):
+            self.assertEqual(rows[identifier]['calc'],'dedicated')
         self.assertTrue(all(c['examples_passed'] for c in rows.values()),rows)
         self.assertTrue(all(len(c['content_hash'])==64 for c in rows.values()))
 
@@ -279,7 +280,8 @@ class KnowledgeAPITests(RootFixture, unittest.TestCase):
         self.assertEqual(self.call('/api/formula-cards/delete',{'id':'missing'})[0],404)
         library=self.call('/api/formula-library')[1]
         self.assertFalse(next(c for c in library['cards'] if c['id']=='doppler_max')['enabled'])
-        self.assertEqual(library['capabilities'],{'manual_drafts':False,'model_drafts':False})
+        self.assertEqual(library['capabilities'],{'manual_drafts':False,'model_drafts':False,
+                                                'generic_calculation':False})
         self.assertEqual(self.call('/api/formula-cards?ids=fspl_ghz')[1]['cards'][0]['sources'][0]['doc_id'],'itu-p525-5')
 
     def test_api_switch_invalidates_confirm_and_reports_folder_without_git(self):
