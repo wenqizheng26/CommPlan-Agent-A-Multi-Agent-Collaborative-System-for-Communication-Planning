@@ -131,6 +131,16 @@ class GenericCardTests(unittest.TestCase):
         self.assertEqual(done['status'],'COMPLETED')
         self.assertEqual(done['result']['outputs'][0]['value'],13)
 
+    def test_answered_labels_compare_case_like_source_binding(self):
+        from planning.services.generic_cards import parameter_label, source_labels, quantities
+        for parameters in [dict(a=dict(description='Length，第一端',unit='m'),b=dict(description='length，第二端',unit='m')),
+                           dict(a=dict(description='B',unit='m'),b=dict(description='第二端',unit='m'))]:
+            label=parameter_label('a',parameters['a'],parameters)
+            self.assertIn('（参数 a）',label)
+            text=label+' 10 m'
+            self.assertEqual(source_labels(text,dict(parameters=parameters),quantities(text)),
+                             [dict(quantity_id='q0',parameter='a')])
+
     def test_four_targets_only_execute_after_confirmation_and_recover(self):
         for ident,text,_,_,_,expected in CASES:
             with self.subTest(ident=ident):

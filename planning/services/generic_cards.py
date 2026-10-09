@@ -115,8 +115,8 @@ def parameter_label(name, spec, parameters=None):
         label=PARAMETER_ALIASES[name][0]
     else:
         label=re.split(r'[，,。；;\n]',spec['description'])[0].strip() or name
-    if parameters and any(other!=name and label in
-            [other,s['description'],parameter_label(other,s),*PARAMETER_ALIASES.get(other,[])]
+    if parameters and any(other!=name and any(re.fullmatch(re.escape(label),alias,re.I) for alias in
+            [other,s['description'],parameter_label(other,s),*PARAMETER_ALIASES.get(other,[])])
             for other,s in parameters.items()):
         return label+'（参数 '+name+'）'
     return label
