@@ -244,7 +244,9 @@ class KnowledgeAPITests(RootFixture, unittest.TestCase):
         self.assertEqual(self.call(routes[3][0],routes[3][1])[0],409)
         self.assertEqual(self.call('/api/documents/switch',{'doc_id':'sim-sites','enabled':'false'})[0],400)
         self.assertEqual(self.call('/api/formula-cards/delete',{'id':'missing'})[0],404)
-        self.assertFalse(next(c for c in self.call('/api/formula-library')[1]['cards'] if c['id']=='doppler_max')['enabled'])
+        library=self.call('/api/formula-library')[1]
+        self.assertFalse(next(c for c in library['cards'] if c['id']=='doppler_max')['enabled'])
+        self.assertEqual(library['capabilities'],{'manual_drafts':False,'model_drafts':False})
         self.assertEqual(self.call('/api/formula-cards?ids=fspl_ghz')[1]['cards'][0]['sources'][0]['doc_id'],'itu-p525-5')
 
     def test_api_switch_invalidates_confirm_and_reports_folder_without_git(self):

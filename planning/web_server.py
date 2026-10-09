@@ -238,7 +238,8 @@ def create_server(root, db_path=None, port=18082, instance_secret=None):
             elif path=='/api/formula-library':
                 from planning.knowledge.library import cards
                 try:
-                    self.respond(200,{'cards':cards(root)})
+                    self.respond(200,{'cards':cards(root),
+                                      'capabilities':{'manual_drafts':False,'model_drafts':False}})
                 except (OSError,ValueError):
                     self.error(500,'SERVER_ERROR')
             elif path.startswith('/api/tasks/'):
