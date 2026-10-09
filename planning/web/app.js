@@ -79,7 +79,7 @@ async function ensureCards(){
  catch(e){notice('公式卡读取失败：'+e.message,true);}
  finally{cardsLoading=false;if(loaded)drawRight();}
 }
-function setView(next){view=next;popover=null;if(next==='main')focusParameter=null;if(next==='formula')ensureCards();if(!matchMedia('(min-width: 1350px)').matches)sideChoice='plan';draw();$('detail-content').scrollTop=0;}
+function setView(next){view=next;popover=null;if(next==='main')focusParameter=null;if(next==='formula'||next==='evidence')ensureCards();if(!matchMedia('(min-width: 1350px)').matches)sideChoice='plan';draw();$('detail-content').scrollTop=0;}
 function chooseParameter(name){focusParameter=name;setView('parameters');}
 // Fixed-height panels are overflow:hidden; scroll only the thread there so no panel shifts.
 function reveal(node,align='top'){
