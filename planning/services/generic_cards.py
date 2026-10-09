@@ -78,6 +78,12 @@ def intended_targets(text, cards):
     return {ident for _,_,ident in hits} | (set(parsed['targets'])
         if parsed['target_origin']=='explicit_text' else set())
 
+def manual_target_conflict(request, root):
+    if request['target'] not in TARGETS:
+        return False
+    named=intended_targets(request['raw_text'],load_catalog(root,include_disabled=True))
+    return bool(named and named!={request['target']})
+
 def selected_card(request, root):
     cards = load_catalog(root, include_disabled=True)
     if request['target']:
@@ -104,13 +110,19 @@ def quantities(text):
     return [dict(id='q'+str(i),value=numeric(m),unit=m['unit'],span=list(m.span()),excerpt=m[0])
             for i,m in enumerate(re.finditer(pattern,text)) if math.isfinite(numeric(m))]
 
-def parameter_label(name, spec):
+def parameter_label(name, spec, parameters=None):
     if name in PARAMETER_ALIASES:
-        return PARAMETER_ALIASES[name][0]
-    return re.split(r'[，,。；;\n]',spec['description'])[0].strip() or name
+        label=PARAMETER_ALIASES[name][0]
+    else:
+        label=re.split(r'[，,。；;\n]',spec['description'])[0].strip() or name
+    if parameters and any(other!=name and label in
+            [other,s['description'],parameter_label(other,s),*PARAMETER_ALIASES.get(other,[])]
+            for other,s in parameters.items()):
+        return label+'（参数 '+name+'）'
+    return label
 
-def aliases(name, spec):
-    return list(dict.fromkeys([name, spec['description'], parameter_label(name,spec), *PARAMETER_ALIASES.get(name,[])]))
+def aliases(name, spec, parameters=None):
+    return list(dict.fromkeys([name, spec['description'], parameter_label(name,spec,parameters), *PARAMETER_ALIASES.get(name,[])]))
 
 def source_labels(text, card, found):
     from formula_rag.parsing import FIELDS
@@ -118,7 +130,7 @@ def source_labels(text, card, found):
     labels={name:list(spec[2])+[name] for name,spec in FIELDS.items()}
     labels.update({name:[spec[0],name] for name,spec in FACT_FIELDS.items()})
     for name,spec in card['parameters'].items():
-        labels[name]=list(dict.fromkeys(labels.get(name,[])+aliases(name,spec)))
+        labels[name]=list(dict.fromkeys(labels.get(name,[])+aliases(name,spec,card['parameters'])))
     bindings = []
     for q in found:
         start=q['span'][0]
@@ -360,6 +372,6 @@ def answer_parameter(request,report,field,answer,spans_removed=False):
     # Preserve unrelated text. Remove only source spans for the answered parameter.
     if not spans_removed:
         remove_answered_sources(request,report,{field})
-    request['raw_text']+='\n'+parameter_label(field,spec)+' '+m[1]+' '+m[2]
+    request['raw_text']+='\n'+parameter_label(field,spec,report['generic_parameters'])+' '+m[1]+' '+m[2]
     request['manual_parameters'].pop(field,None)
     return dict(value=value,unit=spec['unit'])

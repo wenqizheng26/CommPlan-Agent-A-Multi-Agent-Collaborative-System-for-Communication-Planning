@@ -268,6 +268,8 @@ class RequirementsAgent:
         if mode in {'stub', 'llm'} and 'info' in locals() and info['target_origin'] == 'model':
             targets = parsed['targets']
         conflicting_intent = intent_conflict(request, original)
+        from planning.services.generic_cards import manual_target_conflict
+        conflicting_intent = conflicting_intent or manual_target_conflict(request,self.root)
         if request['target']:
             if original['target_origin'] == 'explicit_text' and set(original['targets']) != {request['target']}:
                 conflicting_intent = True

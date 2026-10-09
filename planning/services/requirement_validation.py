@@ -167,6 +167,8 @@ def check_report(report, request, cards, root=None):
     check_source_labels(parameters,request['raw_text'])
     require(r['runtime_health'] != 'unavailable', 'UNAVAILABLE_CONFIRMATION')
     require(not intent_conflict(request, parsed), 'INTENT_CONFLICT')
+    from planning.services.generic_cards import manual_target_conflict
+    require(not manual_target_conflict(request,root or Path(__file__).resolve().parents[2]), 'INTENT_CONFLICT')
     # Re-ground model evidence; neither report status nor its condition list is trusted.
     interpreted = copy.deepcopy(parsed)
     for d in r['diagnostics']:

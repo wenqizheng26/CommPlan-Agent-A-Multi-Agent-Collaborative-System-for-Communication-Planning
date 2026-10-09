@@ -80,6 +80,18 @@ class GenericCardTests(unittest.TestCase):
             self.assertIn('INTENT_CONFLICT',[d['code'] for d in s['report']['diagnostics']])
             self.assertTrue(any(i['kind']=='conflict' for i in s['input_issues']))
 
+    def test_manual_dedicated_goal_conflict_is_rechecked_at_confirmation(self):
+        self.add_wavelength()
+        s=self.create('按自由空间基准，计算自由空间波长，载波频率2GHz，距离1km',target='fspl_ghz')
+        self.assertEqual(s['status'],'AWAITING_INPUT')
+        self.assertIn('INTENT_CONFLICT',[d['code'] for d in s['report']['diagnostics']])
+        good=self.create('按自由空间基准，计算路径损耗，载波频率2GHz，距离1km',target='fspl_ghz')
+        self.assertEqual(good['status'],'AWAITING_CONFIRMATION')
+        changed=copy.deepcopy(good['request'])
+        changed['raw_text']+='；计算自由空间波长'
+        with self.assertRaisesRegex(ValueError,'INTENT_CONFLICT'):
+            check_report(good['report'],changed,load_catalog(self.root),self.root)
+
     def test_builtin_duplicate_title_keeps_dedicated_path_and_choice_is_unique(self):
         from planning.services.generic_cards import choices
         self.assertNotIn('fspl_mhz',{r['value'] for r in choices(self.root)})
@@ -96,6 +108,28 @@ class GenericCardTests(unittest.TestCase):
         done=self.service.apply(command('confirm',s))['state']
         self.assertIn('热噪声功率',done['final_report']['conclusion'])
         self.assertNotIn('thermal_noise_dbm',done['final_report']['conclusion'])
+
+    def test_answered_parameter_labels_with_same_prefix_rebind_to_exact_field(self):
+        from planning.knowledge.drafts import DraftStore
+        from tests.test_planning_formula_card_drafts import manual
+        record=manual('two_lengths')
+        record.update(title='两端长度和',expression='a+b',
+            parameters=dict(a=dict(unit='m',description='长度，第一端'),
+                            b=dict(unit='m',description='长度，第二端')),
+            output=dict(name='length_m',unit='m'))
+        store=DraftStore(self.root)
+        d=store.create_manual('formula',record)
+        store.review(d['id'],'Reviewer',d['content_hash'],'approve',source=dict(title='核查资料',locator='式1'),
+            example=dict(inputs=dict(a=1,b=2),expected=3,note='独立算例'))
+        self.service.refresh_knowledge()
+        s=self.create('计算两端长度和，a=1m，a=2m，b=3m')
+        issue=next(i for i in s['input_issues'] if i['field']=='a')
+        s=self.service.apply(command('answer',s,answers={issue['id']:'10m'},mode='deterministic'))['state']
+        self.assertEqual(s['status'],'AWAITING_CONFIRMATION',s['input_issues'])
+        self.assertIn('长度（参数 a） 10 m',s['request']['raw_text'])
+        done=self.service.apply(command('confirm',s))['state']
+        self.assertEqual(done['status'],'COMPLETED')
+        self.assertEqual(done['result']['outputs'][0]['value'],13)
 
     def test_four_targets_only_execute_after_confirmation_and_recover(self):
         for ident,text,_,_,_,expected in CASES:
