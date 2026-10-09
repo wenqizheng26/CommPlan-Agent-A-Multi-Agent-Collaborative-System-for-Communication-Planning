@@ -84,6 +84,23 @@ class KnowledgeControlsTests(RootFixture, unittest.TestCase):
             self.service.apply(command('answer',state,answers={goal['id']:'received_power'},mode='deterministic'))
         self.assertNotIn('fspl_ghz',[c['id'] for c in self.service.retrieval_for(None).cards])
 
+    def test_only_actual_chain_dependencies_are_blocked(self):
+        text='频率2GHz，距离1km，发射功率20dBm，两端天线增益18dBi，求链路余量，比较QPSK和16QAM。'
+        library.switch_card(self.root,'fspl_ghz',False)
+        state=self.service.apply(command(text=text))['state']
+        self.assertEqual(state['status'],'AWAITING_CONFIRMATION',state)
+        self.assertEqual(state['report']['calculation_plan_proposal']['selected_model'],
+                         ['fspl_mhz','received_power','link_margin'])
+        library.switch_card(self.root,'fspl_mhz',False)
+        blocked=self.service.apply(command(text=text))['state']
+        self.assertEqual(blocked['status'],'NEEDS_MODEL',blocked)
+        self.assertEqual([d['details']['id'] for d in blocked['report']['diagnostics'] if d['code']=='CARD_DISABLED'],['fspl_mhz'])
+        library.switch_card(self.root,'fspl_mhz',True)
+        supplied='按自由空间基准，路径损耗100dB，发射功率20dBm，发射天线增益18dBi，接收天线增益18dBi，求接收信号电平。'
+        state=self.service.apply(command(text=supplied))['state']
+        self.assertEqual(state['status'],'AWAITING_CONFIRMATION',state)
+        self.assertEqual(state['report']['calculation_plan_proposal']['selected_model'],['received_power'])
+
     def test_switches_are_persistent_and_concurrent_updates_do_not_get_lost(self):
         with ThreadPoolExecutor(2) as pool:
             futures=[pool.submit(switches.set_enabled,self.root,kind,ident,False)
@@ -172,6 +189,22 @@ class KnowledgeControlsTests(RootFixture, unittest.TestCase):
         for value in ['10km','1GHz','1kn']:
             self.assertEqual(suggestions(request,report,selector(value)),[])
         self.assertEqual(suggestions(request,report,lambda *args: (_ for _ in ()).throw(OSError())),[])
+
+    def test_unit_replacement_preserves_adjacent_prose(self):
+        from planning.services.clarification import replace_parameter
+        from planning.services.unit_typos import problems
+        for token,prose in [('1km','通信'),('10公里','通信'),('10公理','通信'),
+                            ('1kn','实验'),('1kn','补充说明'),('1km','任意说明')]:
+            with self.subTest(token=token,prose=prose):
+                request=dict(raw_text='频率2GHz，距离'+token+prose+'，求路径损耗。',
+                             manual_parameters={},condition=None,target=None)
+                replace_parameter(request,None,'distance_km','10km')
+                self.assertEqual(request['raw_text'],'频率2GHz，路径距离10km'+prose+'，求路径损耗。')
+        self.assertEqual(problems('距离1km通信'),[])
+        self.assertEqual(problems('距离1kn补充说明')[0]['unit'],'kn')
+        request=dict(raw_text='频率2Ghzz实验，距离1km，求路径损耗。',manual_parameters={},condition=None,target=None)
+        replace_parameter(request,None,'frequency_ghz','3GHz')
+        self.assertEqual(request['raw_text'],'载波频率3GHz实验，距离1km，求路径损耗。')
 
     def test_unit_typo_does_not_get_offline_default_distance(self):
         state=self.service.apply(command(text='频率2GHz，距离1kn，求链路余量。'))['state']

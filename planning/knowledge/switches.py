@@ -59,15 +59,11 @@ def save(root, data):
 
 
 def disabled_dependencies(root, targets):
-    """Dedicated goals cannot silently turn a disabled producer into a missing input."""
+    """Check actual plan card IDs; alternate paths must not inherit the default chain."""
     from formula_rag.catalog import load_catalog
-    from planning.services.plans import TARGETS, chain
     off = read(root)['cards']
     if not off:
         return []
     all_cards = load_catalog(root, include_disabled=True)
     wanted = set(targets)
-    for target in targets:
-        if target in TARGETS:
-            wanted.update(chain(target, all_cards, set())[0])
     return [c for c in all_cards if c['id'] in wanted and c['id'] in off]

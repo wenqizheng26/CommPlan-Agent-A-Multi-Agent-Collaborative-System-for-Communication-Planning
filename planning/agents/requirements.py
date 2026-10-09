@@ -282,7 +282,7 @@ class RequirementsAgent:
 
         # No guess from a bare keyword or the top retrieval result.
         unsupported = outside_scope(request['raw_text'], original, targets, conditions)
-        from planning.knowledge.switches import disabled_dependencies
+        from planning.knowledge.switches import disabled_dependencies, read as knowledge_switches
         disabled = disabled_dependencies(self.root, targets)
         if disabled:
             unsupported = True
@@ -401,9 +401,10 @@ class RequirementsAgent:
             conditions=sorted(conditions), targets=targets, requirement=requirement, solve=solve, entities=entities,
             execution_status=status,
             component_modes=dict(interpretation=mode, retrieval='lexical_fallback'), runtime_health=health, diagnostics=diagnostics)
-        if not targets:
+        if not targets and knowledge_switches(self.root)['cards']:
             report['disabled_goals'] = {t: '；'.join(f'公式卡「{c["title"]}」已停用' for c in blocked)
-                for t in TARGETS if (blocked := disabled_dependencies(self.root, [t]))}
+                for t in TARGETS if (blocked := disabled_dependencies(self.root,
+                    sources_for(request, entities, self.cards, t, observed, self.root)['order']))}
         service = service_label(request['raw_text'])
         if service:
             report['service'] = service

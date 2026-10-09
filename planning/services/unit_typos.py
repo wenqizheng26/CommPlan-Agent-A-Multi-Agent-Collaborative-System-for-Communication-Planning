@@ -1,16 +1,22 @@
 """Bounded adjacent unit tokens; model proposals never change the written number."""
 import re
 import math
-from formula_rag.parsing import FIELDS, NUMBER, convert
+from formula_rag.parsing import FIELDS, NUMBER, UNITS, convert
 
 STOPS = sorted({alias for spec in FIELDS.values() for alias in spec[2]} | {
     '求', '计算', '希望', '要求', '用于', '以', '并', '且', '到', '传', '收', '发', '按',
     '需要', '结果', '左右', '上下', '的', '和', '或', '在', '视距', '海面', '自由空间',
-    '请', '要', '能', '帮', '进行', '作为'}, key=len, reverse=True)
+    '请', '要', '能', '帮', '进行', '作为', '通信', '实验', '补充', '说明',
+    '场景', '测试', '链路', '规划', '情况下', '条件下', '之间', '时'}, key=len, reverse=True)
 
 
 def adjacent_unit(text, number_end):
-    token = re.match(r'[A-Za-z㐀-鿿]+', text[number_end:])
+    tail = text[number_end:]
+    known = re.match(rf'{UNITS}(?![A-Za-z/\d])', tail, re.I)
+    if known:
+        return known[0]
+    # A Latin unit and Chinese prose are separate tokens, even without a space.
+    token = re.match(r'[A-Za-z]+|[㐀-鿿]+', tail)
     if not token:
         return ''
     value = token[0]
