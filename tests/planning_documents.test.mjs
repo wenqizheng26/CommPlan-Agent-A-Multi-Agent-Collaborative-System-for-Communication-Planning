@@ -45,4 +45,8 @@ test('a plan card whose source document was not retrieved is named; unknown sour
  assert.ok(render('evidence',cards).some(n=>n.textContent==='未检索到「自由空间基本传输损耗」的原文片段，仅有公式卡登记的出处。'));
  const used={...found,hits:[...found.hits,hit('doc:p525:p1-1',3,'itu-p525-5','P.525','free space')],used:['doc:p525:p1-1']};
  assert.equal(uncitedCards(plan,used,cards).length,0);
+ const saved={fspl_ghz:{...cards.fspl_ghz,title:'老师验收口径的自由空间基本传输损耗'}};
+ const texts=render('evidence',saved).map(n=>n.textContent);
+ assert.ok(texts.includes('未检索到「自由空间基本传输损耗」的原文片段，仅有公式卡登记的出处。'),'a saved card title shows its display name');
+ assert.ok(!texts.some(t=>/老师|验收/.test(t)));
 });

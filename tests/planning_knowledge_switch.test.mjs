@@ -28,9 +28,22 @@ test('cards show what they can be used for and where they came from',()=>{
  const cards=[{id:'fspl_ghz',title:'自由空间',version:'1.0.0',expression:'92.4',output:{name:'path_loss_db',unit:'dB'},sources:[{title:'ITU',locator:'(6)'}],calc:'dedicated',source_kind:'builtin',enabled:true,added:false},
   {id:'x',title:'新卡',version:'1.0.0',expression:'a*b',output:{name:'c',unit:'dB'},sources:[],calc:'generic',source_kind:'manual',enabled:false,added:true},
   {id:'slant',title:'直线距离',version:'1.0.0',expression:null,output:{name:'d',unit:'km'},sources:[],calc:'needs_tool',source_kind:'builtin',enabled:true,added:false}];
- const texts=render({library:{documents:[],formats:[],converter:true},cards}).map(n=>n.textContent);
- for(const t of ['专用程序','通用计算','需专用程序','内置','手填','已停用'])assert.ok(texts.includes(t),t);
+ const all=caps=>render({library:{documents:[],formats:[],converter:true},cards,capabilities:caps}).map(n=>n.textContent);
+ const texts=all({generic_calculation:true,manual_drafts:true,model_drafts:true});
+ for(const t of ['专用程序','通用计算','需专用程序','内置','手填','已停用','新建公式卡','让模型起草'])assert.ok(texts.includes(t),t);
  assert.equal(texts.filter(t=>t==='删除').length,1);
+ assert.equal(texts.filter(t=>t==='参与计算').length,2);
+});
+
+test('a build without card drafts or generic calculation does not offer them',()=>{
+ const cards=[{id:'x',title:'新卡',version:'1.0.0',expression:'a*b',output:{name:'c',unit:'dB'},sources:[],calc:'generic',source_kind:'document',enabled:true,added:true},
+  {id:'fspl_ghz',title:'自由空间',version:'1.0.0',expression:'92.4',output:{name:'path_loss_db',unit:'dB'},sources:[],calc:'dedicated',source_kind:'builtin',enabled:true,added:false}];
+ for(const capabilities of [undefined,{manual_drafts:false,model_drafts:false}]){
+  const texts=render({library:{documents:[],formats:[],converter:true},cards,capabilities,cardForm:'manual'}).map(n=>n.textContent);
+  assert.ok(!texts.includes('新建公式卡')&&!texts.includes('让模型起草')&&!texts.includes('提交草稿'),'no draft entry that would answer 404');
+  assert.ok(texts.includes('仅作检索')&&!texts.includes('通用计算'));
+  assert.deepEqual(texts.filter(t=>t==='参与计算'||t==='参与检索'),['参与检索','参与计算']);
+ }
 });
 
 test('a hand-written card is checked before it is sent as a draft',()=>{
@@ -81,5 +94,18 @@ test('a result from a card expression names the card and says it has no independ
   assert.ok(texts.includes('最大多普勒频移'));
   assert.ok(texts.includes('相对速率 100 km/h'));
   assert.ok(texts.includes('按审核入库公式卡计算，无独立复核模型 · doppler_max v1.0.0'));
+ }finally{globalThis.document=old;}
+});
+
+test('a unit guess is offered as a suggestion, not as a default value',async()=>{
+ const {renderQuestions}=await import('../planning/web/questions.mjs');
+ const old=globalThis.document;globalThis.document={createElement:tag=>({...make(tag),dataset:{}})};
+ const issue=(id,field,suggestion)=>({id,field,kind:'missing',status:'open',title:'请补充'+field,choices:[],suggestion});
+ const unit={value:'1km',display:'1 km',reason:'kn 不是距离单位，可能是 km',note:'单位猜测，需确认'};
+ const typical={value:'2GHz',display:'2 GHz',reason:'典型值',note:'默认补全，需确认'};
+ const button=state=>{const host=make('div');renderQuestions(host,state,{disabled:true});return flatten(host).find(n=>n.tag==='button'&&/^全部采用/.test(n.textContent))?.textContent;};
+ try{
+  assert.equal(button({task_id:'t1',revision:1,status:'AWAITING_INPUT',input_issues:[issue('a','distance_km',unit),issue('b','frequency_ghz',typical)]}),'全部采用建议（2 项）');
+  assert.equal(button({task_id:'t2',revision:1,status:'AWAITING_INPUT',input_issues:[issue('b','frequency_ghz',typical)]}),'全部采用默认值（1 项）');
  }finally{globalThis.document=old;}
 });

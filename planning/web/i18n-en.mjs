@@ -181,7 +181,7 @@ const DETAILS={
  '公式卡已变更，与本任务所用版本不同，不显示':'The formula card changed since this task used it; not shown','尚无可执行公式':'No executable formula yet',
  '算法':'Algorithm','未提供定位':'no locator','实际代入':'Actual substitution','候选分别执行':'Each candidate runs separately','程序表达式':'Program expressions',
  '已停用':'Disabled','参与检索':'Used in retrieval','参与计算':'Used in calculations','删除':'Delete','确认删除':'Confirm delete',
- '专用程序':'Dedicated program','通用计算':'Generic calculation','需专用程序':'Needs a dedicated program','内置':'Built-in','文档抽取':'From a document','模型起草':'Model draft',
+ '专用程序':'Dedicated program','通用计算':'Generic calculation','需专用程序':'Needs a dedicated program','仅作检索':'Retrieval only','专用程序：已有独立计算与复核，可作为计算目标。其余公式卡已入库，目前只参与公式检索，尚未支持作为计算目标。停用后不参与检索和计算。':'Dedicated program: has its own calculation and independent check, and can be a calculation target. Other approved cards are used only in formula retrieval and cannot be calculation targets yet. A disabled item is not used in retrieval or calculations.','公式卡已入库，目前只参与公式检索，尚未支持作为计算目标。':'Formula card approved; it is used in formula retrieval only and cannot be a calculation target yet.','内置':'Built-in','文档抽取':'From a document','模型起草':'Model draft',
  '新建公式卡':'New formula card','让模型起草':'Ask the model to draft','起草':'Draft','提交草稿':'Submit draft','名称':'Name','定位':'Locator','输出量':'Output','输出单位':'Output unit',
  '专用程序：已有独立计算与复核。通用计算：已审核的封闭式公式按卡上表达式求值。需迭代或查表的公式要专用程序。停用后不参与检索和计算。':'Dedicated program: has its own calculation and independent check. Generic calculation: an approved closed-form formula is evaluated from the card expression. Formulas that iterate or look up tables need a dedicated program. A disabled item is not used in retrieval or calculations.',
  '手填的公式先进草稿；审核时须填写真实出处与算例，算例经程序重算一致才能入库。':'A hand-written formula starts as a draft; at review, give its real source and an example, which the program recomputes before the card is approved.',
@@ -645,7 +645,7 @@ const TEACHER={
  '与 GHz 形式采用的 92.4 常数相比，统一频率单位后结果约高 0.04 dB。':'After converting frequency units, the result is about 0.04 dB higher than the GHz form using a constant of 92.4.',
  '物理关系来自 ITU-R P.525-5，f 为 MHz、d 为 km；常数 32.44 为链路余量计算约定（docs/design/TEACHER_CASES.md · 决定 · 公式），不同于标准式(6)的 32.4 舍入常数。':'The physical relationship comes from ITU-R P.525-5, with f in MHz and d in km. The 32.44 constant is a link-margin calculation convention (docs/design/TEACHER_CASES.md, formula decision), distinct from the rounded constant of 32.4 in the standard’s equation (6).',
  '调制灵敏度表（模拟）':'Modulation sensitivity table (simulated)','决定 · 调制灵敏度':'Receiver sensitivity convention',
- '选择调制方式':'Choose the modulation','默认补全，需确认':'Default value, please confirm','典型值表的默认值':'Default from the typical-value table',
+ '选择调制方式':'Choose the modulation','默认补全，需确认':'Default value, please confirm','单位猜测，需确认':'Unit guess, please confirm','典型值表的默认值':'Default from the typical-value table',
  '默认补全':'Default value','采用默认补全':'Adopted default values','调制方式对比':'Modulation comparison','调制':'Modulation','灵敏度 dBm':'Sensitivity dBm',
  '接收电平 dBm':'Rx level dBm','余量 dB':'Margin dB',
  '各调制共用路径损耗与接收电平；灵敏度为模拟参数，可配置。':'All modulations share the path loss and the received level; the sensitivities are simulated, configurable values.',
@@ -656,6 +656,7 @@ const TEACHER={
 };
 const TEACHER_PATTERNS=[
  [/^全部采用默认值（(\d+) 项）$/,'Adopt all defaults ($1)'],
+ [/^全部采用建议（(\d+) 项）$/,'Adopt all suggestions ($1)'],
  [/^相差 ([-\d.]+) dB · 推荐 (\S+)（余量最大）$/,'Spread $1 dB · recommended: $2 (largest margin)'],
  [/^调制表 (\S+) · 模拟参数$/,'Modulation table $1 · simulated'],
  [/^调制表 (\S+) · 模拟参数 · 默认补全$/,'Modulation table $1 · simulated · default value'],
