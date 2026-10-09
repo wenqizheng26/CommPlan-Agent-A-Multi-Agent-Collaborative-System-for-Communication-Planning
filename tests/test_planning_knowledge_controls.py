@@ -165,11 +165,13 @@ class KnowledgeControlsTests(RootFixture, unittest.TestCase):
 
     def test_shortened_modulation_chain_asks_single_choice_instead_of_losing_comparison(self):
         library.switch_card(self.root,'fspl_mhz',False)
-        state=self.service.apply(command(text='发射功率20dBm，两端天线增益18dBi，路径损耗100dB，求链路余量，比较QPSK和16QAM。'))['state']
-        self.assertEqual(state['status'],'AWAITING_INPUT')
-        self.assertTrue(any(d['code']=='MODULATION_COUNT' for d in state['report']['diagnostics']))
-        self.assertNotIn('variants',state['report']['calculation_plan_proposal'] or {})
-        self.assertTrue(any('调制方式' in i['title'] for i in state['input_issues']))
+        for threshold in ('','接收门限-100dBm，'):
+            with self.subTest(threshold=threshold):
+                state=self.service.apply(command(text='发射功率20dBm，两端天线增益18dBi，路径损耗100dB，'+threshold+'求链路余量，比较QPSK和16QAM。'))['state']
+                self.assertEqual(state['status'],'AWAITING_INPUT')
+                self.assertTrue(any(d['code']=='MODULATION_COUNT' for d in state['report']['diagnostics']))
+                self.assertNotIn('variants',state['report']['calculation_plan_proposal'] or {})
+                self.assertTrue(any('调制方式' in i['title'] for i in state['input_issues']))
 
     def test_library_exposes_all_cards_hashes_examples_and_source_kind(self):
         library.switch_card(self.root,'doppler_max',False)
